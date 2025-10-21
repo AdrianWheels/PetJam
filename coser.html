@@ -1,0 +1,336 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Minijuego: Coser (OSU-like)</title>
+<style>
+  html,body{height:100%;margin:0;background:#0b0f14;color:#e5e7eb;font-family:system-ui,Segoe UI,Roboto,Arial}
+  .wrap{height:100%;display:grid;place-items:center}
+  canvas{background:#0b0f14;display:block;border:1px solid #0f172a}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="game" width="640" height="360"></canvas>
+</div>
+<script>
+/*
+TL;DR
+- 8 notas tipo OSU: anillo objetivo fijo y un círculo exterior que colapsa.
+- Pulsa clic o Espacio cuando el radio del círculo coincide con el del anillo.
+- Ventanas por diferencia de radio (px): Perfect≤3, Bien≤8, Regular≤14, Miss>14.
+- Blueprint: { name, stitchSpeed, agility[0..1], precision[0..1] }.
+  * stitchSpeed: velocidad de colapso (×).
+  * agility: perdona retardos cerca del objetivo: Miss→Regular si estás casi.
+  * precision: ensancha ventanas de Perfect/Bien (más indulgente).
+- API global window.GameAPI: start, pause, resume, reset, getResult().
+- Al terminar emite "minigame:end" con el resultado.
+*/
+(function(){
+  const TUNING = {
+    W: 640, H: 360,
+    ringR: 42,
+    startR: 140,
+    baseSpeed: 120, // px/s de colapso
+    interNoteMs: 420,
+    colors: {
+      bg: '#0b0f14', ring: '#8bd3dd', circle: '#7c3aed',
+      text: '#e5e7eb', sub: '#94a3b8',
+      p: '#22c55e', b: '#38bdf8', r: '#f59e0b', m: '#ef4444'
+    },
+    thresholds: { perfect: 3, bien: 8, regular: 14 }
+  };
+
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+
+  const ScoreMap = { Perfect:300, Bien:200, Regular:100, Miss:0 };
+  const OrdMap = { Perfect:3, Bien:2, Regular:1, Miss:0 };
+  const Labels = ['Miss','Regular','Bien','Perfect'];
+
+  function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+  function computeWindows(precision){
+    const {perfect,bien,regular} = TUNING.thresholds;
+    // Más precision => ventanas más indulgentes para Perfect/Bien, y un poco para Regular.
+    return {
+      perfect: perfect * (1 + 0.5*clamp(precision,0,1)),
+      bien: bien * (1 + 0.35*clamp(precision,0,1)),
+      regular: regular * (1 + 0.20*clamp(precision,0,1))
+    };
+  }
+
+  function judge(diff, late, windows, agility){
+    let label = 'Miss';
+    if (diff <= windows.perfect) label = 'Perfect';
+    else if (diff <= windows.bien) label = 'Bien';
+    else if (diff <= windows.regular) label = 'Regular';
+    else {
+      // Perdón por agilidad: solo si vas tarde y casi estabas
+      const forgive = windows.regular + 6*clamp(agility,0,1);
+      if (late && diff <= forgive) label = 'Regular';
+    }
+    return { label, ord: OrdMap[label], score: ScoreMap[label] };
+  }
+
+  class Game {
+    constructor(){
+      this.reset(true);
+      this._bindInputs();
+      this._loop = this._loop.bind(this);
+      requestAnimationFrame(this._loop);
+    }
+
+    start(blueprint){
+      this.reset(true);
+      this.bp = this._sanitizeBlueprint(blueprint);
+      this.running = true;
+      this.paused = false;
+      this.startedAt = performance.now();
+      this.noteActive = true;
+    }
+
+    pause(){ if (this.running && !this.finished){ this.paused = true; } }
+    resume(){ if (this.running && !this.finished){ this.paused = false; this._lastTs = performance.now(); } }
+    reset(hard=false){
+      this.running = false; this.paused = false; this.finished = false;
+      this.bp = this._sanitizeBlueprint();
+      this.idx = 0; this.totalNotes = 8;
+      this.combo = 0; this.maxCombo = 0;
+      this.score = 0;
+      this.ords = [];
+      this.qualityCounts = { Perfect:0, Bien:0, Regular:0, Miss:0 };
+      this.startedAt = null; this.endedAt = null;
+      this.noteActive = false; this.noteJudged = false;
+      this.r = TUNING.startR; this.ringR = TUNING.ringR;
+      this.cx = TUNING.W/2; this.cy = TUNING.H/2;
+      this.windows = computeWindows(this.bp.precision);
+      this.speed = Math.max(20, TUNING.baseSpeed * Math.max(0.4, this.bp.stitchSpeed||1));
+      this.cooldownUntil = 0;
+      this.feedbackTimer = 0;
+      this.lastLabel = '';
+      if(hard){ this._lastTs = performance.now(); }
+    }
+
+    _sanitizeBlueprint(bp){
+      bp = bp || {};
+      return {
+        name: String(bp.name || 'Coser-Default'),
+        stitchSpeed: Number.isFinite(bp.stitchSpeed) ? bp.stitchSpeed : 1,
+        agility: clamp(Number(bp.agility||0),0,1),
+        precision: clamp(Number(bp.precision||0),0,1)
+      };
+    }
+
+    _bindInputs(){
+      canvas.addEventListener('mousedown', ()=>this._onHit());
+      window.addEventListener('keydown', (e)=>{
+        if (e.code === 'Space'){ e.preventDefault(); this._onHit(); }
+      });
+    }
+
+    _onHit(){
+      if (!this.running || this.paused || this.finished || !this.noteActive || this.noteJudged) return;
+      const diff = Math.abs(this.r - this.ringR);
+      const late = this.r < this.ringR; // círculo ya pasó por debajo del objetivo
+      const { label, ord, score } = judge(diff, late, this.windows, this.bp.agility);
+      this._applyJudgement(label, ord, score);
+    }
+
+    _applyJudgement(label, ord, score){
+      this.noteJudged = true;
+      this.lastLabel = label;
+      this.feedbackTimer = performance.now() + 420; // ms para mostrar feedback grande
+      this.ords.push(ord);
+      this.score += score;
+      this.qualityCounts[label]++;
+      if (label === 'Miss'){ this.maxCombo = Math.max(this.maxCombo, this.combo); this.combo = 0; }
+      else { this.combo++; this.maxCombo = Math.max(this.maxCombo, this.combo); }
+      this._scheduleNextNote();
+    }
+
+    _scheduleNextNote(){
+      this.cooldownUntil = performance.now() + TUNING.interNoteMs;
+    }
+
+    _advanceNoteIfReady(now){
+      if (this.noteJudged && now >= this.cooldownUntil){
+        this.idx++;
+        if (this.idx >= this.totalNotes){
+          this._finish();
+          return;
+        }
+        // siguiente nota
+        this.noteJudged = false;
+        this.noteActive = true;
+        this.r = TUNING.startR;
+      }
+    }
+
+    _finish(){
+      this.finished = true; this.running = false;
+      this.endedAt = performance.now();
+      const avgQuality = this.ords.reduce((a,b)=>a+b,0) / this.totalNotes;
+      const nonMiss = this.qualityCounts.Perfect + this.qualityCounts.Bien + this.qualityCounts.Regular;
+      const success = nonMiss >= 5;
+      const bonusEvasion = avgQuality >= 2.0;
+      const result = {
+        finished: true,
+        success,
+        score: this.score,
+        qualityCounts: this.qualityCounts,
+        avgQuality: Number(avgQuality.toFixed(2)),
+        bonusEvasion,
+        timeMs: Math.round(this.endedAt - this.startedAt),
+        blueprintName: this.bp.name
+      };
+      window.dispatchEvent(new CustomEvent('minigame:end', { detail: result }));
+      this._resultCache = result;
+    }
+
+    getResult(){
+      if (!this.finished){
+        const avg = this.ords.length ? (this.ords.reduce((a,b)=>a+b,0) / this.totalNotes) : 0;
+        return {
+          finished: false,
+          success: false,
+          score: this.score,
+          qualityCounts: this.qualityCounts,
+          avgQuality: Number(avg.toFixed(2)),
+          bonusEvasion: false,
+          timeMs: this.startedAt ? Math.round(performance.now() - this.startedAt) : 0,
+          blueprintName: this.bp.name
+        };
+      }
+      return this._resultCache;
+    }
+
+    _loop(ts){
+      const dt = this._lastTs ? (ts - this._lastTs)/1000 : 0;
+      this._lastTs = ts;
+      if (this.running && !this.paused && !this.finished){
+        if (this.noteActive && !this.noteJudged){
+          this.r -= this.speed * dt;
+          if (this.r < 0) this.r = 0;
+          // Auto Miss si se agota sin input suficiente
+          if (this.r === 0){
+            this._applyJudgement('Miss', 0, 0);
+          }
+        }
+        this._advanceNoteIfReady(ts);
+      }
+      this._draw(ts);
+      requestAnimationFrame(this._loop);
+    }
+
+    _draw(now){
+      const {W,H} = TUNING;
+      ctx.clearRect(0,0,W,H);
+      // fondo
+      ctx.fillStyle = TUNING.colors.bg;
+      ctx.fillRect(0,0,W,H);
+
+      // anillo y círculo
+      ctx.save();
+      ctx.translate(this.cx, this.cy);
+
+      // anillo objetivo
+      ctx.strokeStyle = TUNING.colors.ring;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0,0,this.ringR,0,Math.PI*2);
+      ctx.stroke();
+
+      // círculo colapsante
+      if (!this.finished){
+        ctx.globalAlpha = 0.9;
+        ctx.strokeStyle = TUNING.colors.circle;
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.arc(0,0,this.r,0,Math.PI*2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+
+      // feedback grande
+      if (this.feedbackTimer && now <= this.feedbackTimer){
+        const lbl = this.lastLabel || '';
+        const c = lbl==='Perfect'?TUNING.colors.p: lbl==='Bien'?TUNING.colors.b: lbl==='Regular'?TUNING.colors.r: TUNING.colors.m;
+        ctx.fillStyle = c;
+        ctx.font = '700 28px system-ui,Segoe UI,Roboto';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(lbl, 0, -90);
+      }
+      ctx.restore();
+
+      // HUD superior
+      const avg = this.ords.length ? (this.ords.reduce((a,b)=>a+b,0)/this.totalNotes) : 0;
+      ctx.fillStyle = TUNING.colors.text;
+      ctx.font = '600 14px system-ui,Segoe UI,Roboto';
+      ctx.fillText(`Nota ${Math.min(this.idx+1,this.totalNotes)}/${this.totalNotes}`, 16, 22);
+      ctx.fillText(`Combo ${this.combo}`, 16, 42);
+      ctx.fillText(`AVG ${avg.toFixed(2)} / 3`, 16, 62);
+
+      // barras de progreso de calidades
+      const qc = this.qualityCounts;
+      const total = this.totalNotes;
+      const barX = 180, barY = 12, barW = 440, barH = 10;
+      const frac = k=> (qc[k]/total)*barW;
+      ctx.fillStyle = '#1f2937'; ctx.fillRect(barX, barY, barW, barH);
+      ctx.fillStyle = TUNING.colors.p; ctx.fillRect(barX, barY, frac('Perfect'), barH);
+      ctx.fillStyle = TUNING.colors.b; ctx.fillRect(barX + frac('Perfect'), barY, frac('Bien'), barH);
+      ctx.fillStyle = TUNING.colors.r; ctx.fillRect(barX + frac('Perfect')+frac('Bien'), barY, frac('Regular'), barH);
+      ctx.fillStyle = TUNING.colors.m; ctx.fillRect(barX + frac('Perfect')+frac('Bien')+frac('Regular'), barY, frac('Miss'), barH);
+
+      ctx.fillStyle = TUNING.colors.sub;
+      ctx.font = '500 12px system-ui,Segoe UI,Roboto';
+      ctx.fillText(`P:${qc.Perfect}  B:${qc.Bien}  R:${qc.Regular}  M:${qc.Miss}`, barX, barY+barH+14);
+
+      // estado
+      if (this.paused){
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '700 24px system-ui,Segoe UI,Roboto';
+        ctx.textAlign='center'; ctx.fillText('PAUSA', TUNING.W/2, 28);
+      }
+
+      // resumen final
+      if (this.finished){
+        const avgQ = this.ords.reduce((a,b)=>a+b,0)/this.totalNotes;
+        const nonMiss = qc.Perfect+qc.Bien+qc.Regular;
+        const success = nonMiss >= 5;
+        const bonus = avgQ >= 2.0;
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.fillRect(0,0,W,H);
+        ctx.fillStyle = '#e5e7eb';
+        ctx.textAlign='center';
+        ctx.font = '800 24px system-ui,Segoe UI,Roboto';
+        ctx.fillText('RESULTADO', W/2, H/2 - 70);
+        ctx.font = '600 16px system-ui,Segoe UI,Roboto';
+        ctx.fillText(`Score ${this.score} | AVG ${avgQ.toFixed(2)} | Combo Máx ${this.maxCombo}`, W/2, H/2 - 40);
+        ctx.fillText(`P ${qc.Perfect}  B ${qc.Bien}  R ${qc.Regular}  M ${qc.Miss}`, W/2, H/2 - 16);
+        ctx.fillStyle = success ? TUNING.colors.p : TUNING.colors.m;
+        ctx.fillText(success ? 'Éxito' : 'Fallo', W/2, H/2 + 12);
+        ctx.fillStyle = bonus ? TUNING.colors.b : TUNING.colors.sub;
+        ctx.fillText(`Evasión: ${bonus ? 'BONUS' : '—'}`, W/2, H/2 + 36);
+      }
+    }
+  }
+
+  const game = new Game();
+
+  // API pública
+  window.GameAPI = {
+    start(blueprint){ game.start(blueprint); },
+    pause(){ game.pause(); },
+    resume(){ game.resume(); },
+    reset(){ game.reset(true); },
+    getResult(){ return game.getResult(); }
+  };
+
+  // Autostart suave para probar si no llaman a start()
+  setTimeout(()=>{ if (!game.running && !game.finished){ window.GameAPI.start({ name:'Demo', stitchSpeed:1, agility:0.15, precision:0.2 }); } }, 250);
+
+})();
+</script>
+</body>
+</html>
