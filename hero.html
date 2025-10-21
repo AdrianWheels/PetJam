@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Idle Side-Scroller — Primitivos</title>
+<style>
+  :root { color-scheme: dark; }
+  html,body { margin:0; height:100%; background:#0b0f17; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  #wrap { height:100%; display:grid; place-items:center; }
+  canvas { width:960px; height:540px; image-rendering:pixelated; border:1px solid #1f2937; background:#0b0f17; }
+  @media (max-width:980px){ canvas{ width:100vw; height:56.25vw; } }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c" width="960" height="540"></canvas></div>
+<script>
+(() => {
+  const CFG = {
+    w:960, h:540, ground:460,
+    heroSpeed: 120,
+    spawnDistance: 520,
+    camLerp: 0.12,
+    critParticles: 12,
+    pulseInterval: 2.5,
+    dpr: Math.max(1, Math.min(3, window.devicePixelRatio || 1)),
+    colors: ['#808080','#FFFFFF','#22C55E','#3B82F6','#A855F7','#F59E0B','#EF4444','#000000'],
+    heroBase: { baseHP: 60, baseDMG: 6, baseAPS: 1.0, STR:10, AGI:10, INT:8 },
+    enemyBase: { baseHP: 40, baseDMG: 5, baseAPS: 0.8 },
+    rngSeed: 1337
+  };
+
+  // RNG determinista simple
+  let seed = CFG.rngSeed;
+  const rand = () => (seed = (seed * 1664525 + 1013904223) >>> 0, (seed & 0xfffffff) / 0xfffffff);
+
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  class Entity {
+    constructor(kind, base, stats) {
+      this.kind = kind;
+      this.baseHP = base.baseHP; this.baseDMG = base.baseDMG; this.baseAPS = base.baseAPS;
+      this.STR = stats.STR; this.AGI = stats.AGI; this.INT = stats.INT;
+      this.maxHP = Math.floor(this.baseHP + this.STR * 10);
+      this.hp = this.maxHP;
+      this.dmg = this.baseDMG + this.STR * 1.5;
+      this.aps = clamp(this.baseAPS + this.AGI * 0.02, 0.3, 5);
+      this.critP = Math.min(0.5, this.AGI * 0.005);
+      this.critM = clamp(1.5 + this.INT * 0.01, 1.0, 2.0);
+      this.atkTimer = 1 / this.aps;
+      this.pulseTimer = CFG.pulseInterval;
+      this.alive = true;
+      this.x = 0; this.y = 0; this.w = 40; this.h = 60; this.r = 28;
+    }
+    expectedDPS(){
+      const hit = this.dmg * (1 + this.critP * (this.critM - 1));
+      const pulse = (this.INT * 3) / CFG.pulseInterval;
+      return +(this.aps * hit + pulse).toFixed(1);
+    }
+    bbox(){ return { x:this.x - this.w/2, y:this.y - this.h, w:this.w, h:this.h }; }
+    tick(dt, target, particles){
+      if(!this.alive) return;
+      this.atkTimer -= dt;
+      while(this.atkTimer <= 0 && target.alive){
+        this.atkTimer += 1/this.aps;
+        let dmg = this.dmg;
+        let crit = rand() < this.critP;
+        if(crit){ dmg *= this.critM; for(let i=0;i<CFG.critParticles;i++) particles.push(Particle.spark(target.x, target.y - target.h + 10)); }
+        target.take(Math.floor(dmg));
+        if(!target.alive) break;
+      }
+      this.pulseTimer -= dt;
+      if(this.pulseTimer <= 0 && target.alive){
+        this.pulseTimer += CFG.pulseInterval;
+        target.take(Math.floor(this.INT * 3), true);
+        particles.push(Particle.pulse(target.x, target.y - target.h/2));
+      }
+    }
+    take(dmg){
+      if(!this.alive) return;
+      this.hp -= dmg;
+      if(this.hp <= 0){ this.hp = 0; this.alive = false; }
+    }
+  }
+
+  class Hero extends Entity{
+    constructor(){
+      super('hero', CFG.heroBase, CFG.heroBase);
+      this.w = 42; this.h = 64;
+      this.color = '#38bdf8';
+      this.stripe = '#0ea5e9';
+    }
+    draw(ctx, camX){
+      const b = this.bbox();
+      const x = Math.floor(b.x - camX), y = Math.floor(b.y);
+      ctx.fillStyle = this.color; ctx.fillRect(x, y, this.w, this.h);
+      ctx.fillStyle = this.stripe; ctx.fillRect(x+8, y+8, this.w-16, this.h-16);
+    }
+  }
+
+  class Enemy extends Entity{
+    constructor(level){
+      const STR = 2 + level * 1.4;
+      const AGI = 1 + level * 0.8;
+      const INT = 1 + level * 0.6;
+      const base = {
+        baseHP: Math.floor(CFG.enemyBase.baseHP * (1 + (level-1)*0.15)),
+        baseDMG: CFG.enemyBase.baseDMG,
+        baseAPS: CFG.enemyBase.baseAPS
+      };
+      super('enemy', base, {STR,AGI,INT});
+      this.level = level;
+      this.color = CFG.colors[Math.min(7, level-1)];
+      this.shape = level % 2 ? 'circle' : 'rect';
+      this.w = 40 + Math.min(20, level*2);
+      this.h = 52 + Math.min(18, level*2);
+      this.r = 24 + Math.min(14, level*2);
+    }
+    draw(ctx, camX){
+      const b = this.bbox();
+      const x = Math.floor(this.x - camX), yTop = Math.floor(this.y - this.h);
+      ctx.fillStyle = this.color;
+      if(this.shape === 'rect'){
+        ctx.fillRect(x - this.w/2, yTop, this.w, this.h);
+      } else {
+        ctx.beginPath();
+        ctx.arc(x, this.y - this.h/2, this.r, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+    bbox(){
+      if(this.shape === 'rect') return super.bbox();
+      return { x:this.x - this.r, y:this.y - this.r*2, w:this.r*2, h:this.r*2 };
+    }
+  }
+
+  class Particle {
+    constructor(x,y,vx,vy,t,kind){ this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.t=t; this.T=t; this.kind=kind; }
+    static spark(x,y){ const a = rand()*Math.PI*2, s = 80+rand()*80; return new Particle(x,y,Math.cos(a)*s,Math.sin(a)*s,-0.35, 'spark'); }
+    static pulse(x,y){ return new Particle(x,y,0,0,0.35,'pulse'); }
+    update(dt){ if(this.kind==='spark'){ this.vy += 220*dt; this.x += this.vx*dt; this.y += this.vy*dt; this.t += dt; } else { this.t -= dt; } }
+    alive(){ return this.kind==='spark' ? this.t<0.35 : this.t>0; }
+    draw(ctx, camX){
+      if(this.kind==='spark'){
+        const a = 1 - (this.t/0.35);
+        ctx.globalAlpha = clamp(a,0,1);
+        ctx.fillStyle = '#fde047';
+        ctx.fillRect(Math.floor(this.x - camX), Math.floor(this.y), 3,3);
+        ctx.globalAlpha = 1;
+      } else {
+        const r = (1 - (this.t/0.35)) * 28;
+        ctx.globalAlpha = 0.35;
+        ctx.strokeStyle = '#eab308';
+        ctx.beginPath(); ctx.arc(this.x - camX, this.y, r, 0, Math.PI*2); ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+
+  let hero, enemy, state, level, camX, groundOffset, particles, deathTimer, distRef;
+  let paused = false, last = performance.now();
+
+  const STATE = { RUN:'RUN', FIGHT:'FIGHT', DEAD:'DEAD', PAUSED:'PAUSED' };
+
+  function init(){
+    resize();
+    resetRun();
+    loop(performance.now());
+  }
+
+  function resetRun(){
+    seed = CFG.rngSeed;
+    hero = new Hero();
+    hero.x = 100; hero.y = CFG.ground;
+    level = 1;
+    enemy = spawnEnemy(level, hero.x + CFG.spawnDistance);
+    state = STATE.RUN;
+    camX = 0; groundOffset = 0; particles = [];
+    deathTimer = 0;
+    distRef = enemy.x - hero.x;
+  }
+
+  function spawnEnemy(lv, x){
+    const e = new Enemy(lv);
+    e.x = x; e.y = CFG.ground;
+    return e;
+  }
+
+  function update(dt){
+    if(paused) return;
+    if(state === STATE.RUN) updateRun(dt);
+    else if(state === STATE.FIGHT) updateFight(dt);
+    else if(state === STATE.DEAD){ deathTimer -= dt; if(deathTimer<=0) resetRun(); }
+    camFollow(dt);
+    updateParticles(dt);
+  }
+
+  function updateRun(dt){
+    hero.x += CFG.heroSpeed * dt;
+    if(overlap(hero.bbox(), enemy.bbox())) state = STATE.FIGHT;
+    groundOffset += CFG.heroSpeed * dt;
+  }
+
+  function updateFight(dt){
+    hero.tick(dt, enemy, particles);
+    enemy.tick(dt, hero, particles);
+    if(!hero.alive){ state = STATE.DEAD; deathTimer = 1.0; }
+    else if(!enemy.alive){
+      level = Math.min(8, level+1);
+      enemy = spawnEnemy(level, hero.x + CFG.spawnDistance);
+      state = STATE.RUN;
+      distRef = enemy.x - hero.x;
+    }
+  }
+
+  function overlap(a,b){
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  function camFollow(dt){
+    const target = hero.x - CFG.w * 0.33;
+    camX += (target - camX) * (1 - Math.pow(1 - CFG.camLerp, Math.max(1, dt*60)));
+  }
+
+  function updateParticles(dt){
+    for(let i=particles.length-1;i>=0;i--){
+      particles[i].update(dt);
+      if(!particles[i].alive()) particles.splice(i,1);
+    }
+  }
+
+  function draw(){
+    const w = CFG.w, h = CFG.h;
+    // Parallax sky
+    ctx.fillStyle = '#0b0f17'; ctx.fillRect(0,0,w,h);
+    drawParallax(0.12, '#0e1726', 40, 0.6);
+    drawParallax(0.3, '#0a1a2f', 20, 0.8);
+    // Ground
+    ctx.fillStyle = '#111827'; ctx.fillRect(0, CFG.ground, w, h-CFG.ground);
+    drawGround();
+
+    // Entities
+    enemy.draw(ctx, camX);
+    hero.draw(ctx, camX);
+    particles.forEach(p=>p.draw(ctx, camX));
+
+    // HUD
+    drawHUD();
+  }
+
+  function drawParallax(factor, color, stripe, alpha){
+    const w = CFG.w, h = CFG.h;
+    const off = -((camX*factor) % stripe);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    for(let x=off - stripe; x<w+stripe; x+=stripe){
+      ctx.fillRect(Math.floor(x), 0, 2, CFG.ground-40);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawGround(){
+    const w = CFG.w;
+    const step = 32, speed = CFG.heroSpeed;
+    const off = -((groundOffset*0.8) % step);
+    ctx.strokeStyle = '#1f2937';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for(let x=off - step; x<w+step; x+=step){
+      const y = CFG.ground + ((x*0.15)&7);
+      ctx.moveTo(x, y); ctx.lineTo(x+step, y);
+    }
+    ctx.stroke();
+  }
+
+  function bar(x,y,w,h,ratio,fg,bg){
+    ctx.fillStyle = bg; ctx.fillRect(x,y,w,h);
+    ctx.fillStyle = fg; ctx.fillRect(x,y,Math.floor(w*ratio),h);
+  }
+
+  function drawHUD(){
+    const pad = 10, barH = 10;
+    ctx.fillStyle = 'rgba(17,24,39,0.9)'; ctx.fillRect(0,0,CFG.w,40);
+    const s = paused ? STATE.PAUSED : state;
+    ctx.fillStyle = '#e5e7eb'; ctx.font = '12px ui-monospace';
+    const dpsH = hero.expectedDPS(), dpsE = enemy.expectedDPS();
+    const txt = `ENEMY L${enemy.level}  |  HERO HP ${hero.hp}/${hero.maxHP} (DPS ${dpsH})  |  ENEMY HP ${enemy.hp}/${enemy.maxHP} (DPS ${dpsE})  |  STATE ${s}`;
+    ctx.fillText(txt, pad, 25);
+
+    // HP bars
+    bar(CFG.w-320, 8, 140, barH, hero.hp/hero.maxHP, '#22d3ee', '#0ea5e922');
+    bar(CFG.w-160, 8, 140, barH, enemy.hp/Math.max(1,enemy.maxHP), '#f87171', '#ef444422');
+
+    // Progress to next enemy
+    if(state===STATE.RUN){
+      const dist = clamp((enemy.x - hero.x)/distRef, 0, 1);
+      ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fillRect(pad, 8, 220, barH);
+      ctx.fillStyle = '#a3e635'; ctx.fillRect(pad, 8, 220*(1-dist), barH);
+      ctx.fillStyle = '#e5e7eb'; ctx.fillText('Next enemy', pad+230, 17);
+    }
+  }
+
+  function loop(t){
+    const now = t; let dt = (now - last) / 1000; last = now;
+    dt = Math.min(0.05, dt);
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function togglePause(){ paused = !paused; }
+  function resize(){
+    const r = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+    CFG.dpr = r;
+    canvas.width = Math.floor(CFG.w * r);
+    canvas.height = Math.floor(CFG.h * r);
+    ctx.setTransform(r,0,0,r,0,0);
+  }
+
+  window.addEventListener('resize', resize);
+  window.addEventListener('keydown', e => {
+    if(e.key==='p' || e.key==='P'){ togglePause(); }
+    if(e.key==='r' || e.key==='R'){ resetRun(); }
+  });
+  canvas.addEventListener('click', togglePause);
+
+  init();
+})();
+</script>
+</body>
+</html>
