@@ -1,10 +1,10 @@
 # GDD — BS + Hero en Timeline (Jam Scope)
-
+##REPO DE ARTE## --> Crear repo de arte reutilizable
 ## TL;DR
 
-Juego de **bucles continuos** con **corredor único estilo Darkest Dungeon**: el **Héroe** avanza por **salas en línea**, y en cada sala lucha contra **varios enemigos a la vez**. Mientras tanto, el **BS (jugador artesano)** craftea en paralelo con **4 minijuegos**. Morir es frecuente y parte del diseño. La **Humanidad** es un **pool amplio** que sube al avanzar y baja al morir; desbloquea **perks** en umbrales. **Progresión jam**: un **solo mundo/corredor**; completas **8 salas** y enfrentas al **Jefe final**. **No hay escalado de calidad por sala**; la calidad depende solo del crafteo del BS.
+Juego de **bucles continuos** con **corredor único estilo Darkest Dungeon**: el **Héroe** avanza por **salas en línea**, y en cada sala lucha contra enemigos. Mientras tanto, el **BS (jugador artesano)** craftea en paralelo con **4 minijuegos**. Morir es frecuente y parte del diseño del heroe. La **Humanidad** es un **pool amplio** que sube al avanzar y baja al morir; desbloquea **perks** en umbrales. **Progresión jam**: un **solo mundo/corredor**; completas **8 salas** con **8 enemigos** y enfrentas al **Jefe final**. **No hay escalado de calidad por sala, pero los enemigos son cada vez mas fuertes**; la calidad depende solo del crafteo del BS.
 
-Novedades clave del flujo: al morir, el Héroe **reaparece al inicio del corredor** para limpiar salas fáciles y **recolectar materiales** rápidamente. Además, el BS puede activar **Entrega de Material**: el Héroe **deja de pelear** 2 s para equiparse en campo.
+Novedades clave del flujo: al morir, el Héroe **reaparece al inicio del corredor** para limpiar salas fáciles y **recolectar materiales** rápidamente. Además, el BS puede activar **Entrega de Material**: el Héroe **deja de pelear** 2 s para equiparse en campo y se cura.
 
 **MVP jam (1–2 días):** 1 bioma, **corredor lineal** de 8 salas (+1 sala de jefe), combate continuo, 4 minijuegos, 2 tiers (N1/N2), 6 objetos, 3 enemigos, 1 jefe, **adaptación por 10 derrotas**. Partidas 8–12 min.
 
@@ -12,7 +12,7 @@ Novedades clave del flujo: al morir, el Héroe **reaparece al inicio del corredo
 
 ## 1) High Concept
 
-“**Timeline Forgemaster**”: no controlas al héroe; controlas la **producción** que condiciona su supervivencia mientras recorre un **corredor de salas en línea**. El mundo **aprende de builds repetidas**: **cada tipo de enemigo** se blinda contra lo que lo mata **tras 10 derrotas** del Héroe, forzando variedad.
+“**Timeline Forgemaster**”: no controlas al héroe; controlas la **producción** que condiciona su supervivencia mientras recorre un **corredor de salas en línea**. 
 
 ## 2) Fantasía y Fantasma de Diseño
 
@@ -21,8 +21,8 @@ Novedades clave del flujo: al morir, el Héroe **reaparece al inicio del corredo
 
 ## 3) Plataforma y Alcance Jam
 
-* **Plataforma**: PC navegador (WebGL/Canvas) o Godot/Unity desktop.
-* **Scope jam**: 1 nivel corto con combate continuo en **corredor lineal de salas**, sin "tercer loop" fijo. Un único layout. Arte estilizado low‑poly o 2D minimal.
+* **Plataforma**: PC navegador (WebGL/Canvas) o Godot desktop.
+* **Scope jam**: 1 nivel corto con combate continuo en **corredor lineal de salas**. Un único layout. Arte estilizado low‑poly o 2D minimal.
 * **Controles**: ratón/trackpad (teclas opcionales para accesibilidad).
 
 ## 4) Estructura de Partida
@@ -38,12 +38,12 @@ Novedades clave del flujo: al morir, el Héroe **reaparece al inicio del corredo
 
 ### 5.1 Héroe (IA ligera)
 
-* **Siempre en combate de sala**: prioridad a enemigos **frente a él** en la línea; si hay invocadores o curanderos, prioridad táctica.
-* **Multi‑objetivo**: ataques básicos golpean a un objetivo; algunas armas N2 añaden **cleave** ligero.
-* **Uso de consumibles**: poción a **HP ≤ 35%** si hay stock; tónica al entrar en sala con proyectiles.
-* **Slots**: arma, armadura, accesorio, 2 consumibles.
-* **Muerte frecuente**: al morir, respawnea **tras 3 s en la Sala 1**, con **−Humanidad** y **Resaca** 10 s (−5% ATQ/DEF). Completar 3 salas limpia la Resaca.
-* **Entrega de Material (campo)**: al activarla, el Héroe **deja de atacar** y entra en **Burbuja de Entrega** 2 s para equiparse. La Burbuja **bloquea daño** y evita nuevos spawns en esa sala. **CD**: 20 s.
+* **Siempre en combate de sala**: prioriza al úico enemigo que hay en la sala.
+* **Multi‑objetivo**: ataques básicos golpean a un objetivo; algunas armas N2 añaden efectos mejores.
+* **Uso de consumibles**:? poción a **HP ≤ 35%** si hay stock; tónica al entrar en sala con proyectiles.
+* **Slots**: arma, armadura, 2 accesorio, 1 consumibles.
+* **Muerte frecuente**: al morir, respawnea **tras 3 s en la Sala 1**, con **−Humanidad**.
+* **Entrega de Material (campo)**: al activarla, el Héroe **deja de atacar** y entra en **Burbuja de Entrega** 2 s para equiparse. La Burbuja **bloquea daño** y evita que los enemigos ataquen. **CD**: 20 s.
 
 ### 5.2 BS (Player)
 
@@ -66,7 +66,7 @@ Recompensas de maestría:
 
 * **Perfect Chains** en minijuegos → suben el **Medidor de Forjamagia** y pueden otorgar **Crit Craft** (calidad +1 nivel y **reembolso** de 1 material aleatorio).
 * **Entrega Perfecta** (click justo al cerrar el anillo de entrega) → reduce el **CD de Entrega** en −5 s.
-* **Predicción**: equipar justo antes de entrar a una sala con curanderos/élites ahorra pociones.
+* **Predicción**: equipar justo antes de entrar a una sala con mas dificultad.
 
 ### 5.3 Loop del BS (momento a momento, 60 s)
 
@@ -84,8 +84,8 @@ Recompensas de maestría:
 ### 6.1 Recursos y Planos
 
 * **Materiales base**: Hierro, Cuero, Tela, Agua destilada, Catalizadores (fuego/hielo/veneno).
-* **Fuentes**: drops por sala, cofres de mini‑evento, recompensa por superar nivel. **Salas 1–2**: +20% drop tras respawn.
-* **Blueprints por bajas**: cada **20 enemigos** derrotados ⇒ 1 **Blueprint** de **siguiente tier**. Pity si **3 minutos** sin plano.
+* **Fuentes**: drops por sala al eliminar enemigos. **Salas 1–2**: +20% drop tras respawn.
+* **Blueprints por bajas**: cada **5 enemigos** derrotados ⇒ 1 **Blueprint** de **siguiente tier**.
 * **Tier**: **N1 único**. Los **Blueprints** desbloquean **variantes** y **modificadores** dentro del mismo tier (ej. filo serrado, acolchado reforzado, infusión elemental básica).
 
 ### 6.2 Minijuegos (MVP)
@@ -97,18 +97,7 @@ Recompensas de maestría:
 
 > **Calidad final del ítem** = media ponderada de 2–3 minijuegos + modificadores.
 
-### 6.3 Adaptación de Enemigos (por derrotas)
-
-* **Contador por tipo de enemigo**: se cuenta cuántas veces el Héroe ha matado a **cada tipo** durante la run. Al alcanzar **10 derrotas** para un tipo, se marca como **ADAPTADO**.
-* **Efectos al adaptarse**:
-
-  * **+50%** resistencia al **tipo de daño dominante** usado en esas 10 muertes.
-  * Cambia patrón: añade **escudo/contraataque** específico del elemento dominante.
-  * **Drop decay**: −20% probabilidad de material del mismo tipo tras adaptación.
-* **Escalado posterior**: cada **+5** muertes extra del mismo tipo tras adaptarse ⇒ **+10%** resistencia adicional (tope +80%).
-* **Telemetría de UI**: icono “ADAPTADO” y tooltip “Resiste X”. Bestiario de sesión con contadores.
-
-### 6.4 Humanidad, Vidas y Reforzamiento
+### 6.3 Humanidad, Vidas y Reforzamiento
 
 * **Pool amplio**: Humanidad inicial **10**, máx **20**.
 * **Cambios**: Muerte = **−2**; completar **sala** = **+1**; **hito** (mini‑evento/élite) = **+2**; **jefe** = **+3**.
@@ -116,7 +105,7 @@ Recompensas de maestría:
 * **Rasgos Oscuros**: ≤4 activa **Furia** (+ATQ, mayor penalización por muerte) hasta volver a ≥8.
 * **Pociones**: minijuego de Agua; no consumen Humanidad.
 
-### 6.5 Sistemas del BS: combo, calor, cola y entrega+
+### 6.4 Sistemas del BS: combo, calor, cola y entrega+
 
 * **Medidor de Forjamagia**: sube con **Perfect** y **Bien** (2/1 puntos). A 10 puntos → **Overclock 5 s**: ventanas de minijuegos **+20%**, anillo OSU colapsa **+15% más lento**, partícula de “chispas” y **sideshake** 4 px.
 * **Calor de Forja**: cada acción sube **Calor (0–100)**. >60: la UI vibra levemente y las ventanas de precisión se estrechan **−10%**; >85: **−20%**. Bajar Calor: 1) esperar, 2) minijuego de **Agua** exitoso, 3) perk **Temple**.
@@ -133,7 +122,6 @@ Recompensas de maestría:
 ## 8) Enemigos y Jefe (MVP)
 
 * **Esbirro (Melee)**: daño físico, patrón simple.
-* **Chaman (Elemental)**: aplica debuff según build del héroe en salas previas.
 * **Arquero**: castiga builds lentas (proc de sangrado si el héroe va blindado).
 * **Jefe**: abre con **contramedida** contra el tipo de daño más usado. Fase 2 a 50% vida: cambia a segunda contramedida.
 
@@ -150,8 +138,8 @@ Recompensas de maestría:
 ## 10) UI/UX (1 Pantalla)
 
 * **Arriba**: **Corredor lineal** con 9 casillas (8 salas + jefe). Se muestran próximos 2 grupos enemigos y estado **ADAPTADO** por tipo.
-* **Centro**: vista lateral tipo **Darkest Dungeon** con el Héroe avanzando y luchando contra grupos de enemigos.
-* **Abajo**: panel de **Crafteo**, cola de fabricación e **Inventario**.
+* **En otra pantalla, puedes ir cuando quieras pero realmente no sabrás el estado de las cosas hasta llegar**: vista lateral tipo **Darkest Dungeon** con el Héroe avanzando y luchando contra enemigos.
+* **En la ventana principial del juego**: panel de **Crafteo**, cola de fabricación e **Inventario**.
 * **Acción de Entrega**: botón con **CD** y tooltip “El Héroe parará 2 s para equiparse”. Animación de **Burbuja** en la sala.
 * **Feedback**: colores C/B/A/S e indicadores rítmicos para el minijuego OSU.
 
