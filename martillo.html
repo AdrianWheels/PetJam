@@ -1,0 +1,328 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Martillo — Ritmo x5</title>
+<style>
+  html,body{margin:0;background:#0e0f13;color:#e6e7ea;font-family:system-ui,Segoe UI,Roboto,Arial}
+  #c{display:block;margin:0 auto;background:#0b0c10;box-shadow:0 0 0 2px #1e2230 inset}
+</style>
+</head>
+<body>
+<canvas id="c" width="640" height="360"></canvas>
+<script>
+/* TL;DR
+   5 golpes a ritmo. Pulsa ESPACIO o haz click cerca del beat.
+   Ventanas (ms): Perfect ≤40, Bien ≤90, Regular ≤140, Miss >140.
+   API: window.GameAPI.start(blueprint), pause(), resume(), reset(), getResult().
+   Dispara "minigame:end" con el resultado al terminar.
+*/
+(()=>{
+
+// ---------- TUNING ----------
+const CANVAS={W:640,H:360};
+const VIS={impactX:520,startX:60,trackY:210,approachMs:1200};
+const DEFAULTS={BPM:90,DRIFT_MS:25};
+const WINDOWS_BASE={perfect:40,bien:90,regular:140}; // se escalan por precision (solo Bien/Regular)
+const SCORE={Perfect:100,Bien:70,Regular:40,Miss:0};
+const COOLDOWN_MS=120; // anti-repeat input
+// ---------------------------
+
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+let state=null;
+
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function lerp(a,b,t){return a+(b-a)*t}
+function easeOutPow(t,p){return 1-Math.pow(1-t,p)}
+function nowMs(){return performance.now()}
+
+function makeWindows(precision){
+  // precision [0..1]: mayor -> más difícil (reduce Bien/Regular). Perfect permanece igual.
+  const scale = lerp(1.2,0.7,clamp(precision??0.5,0,1));
+  return {
+    perfect: WINDOWS_BASE.perfect,
+    bien: WINDOWS_BASE.bien*scale,
+    regular: WINDOWS_BASE.regular*scale,
+    miss: WINDOWS_BASE.regular // para auto-miss (umbral "tarde")
+  };
+}
+
+function scheduleNotes(t0, bpm, drift){
+  const iv = 60000/Math.max(30,Math.min(300,bpm));
+  const notes = [];
+  for(let i=0;i<5;i++){
+    const t = t0 + i*iv + (Math.random()*2-1)*drift;
+    notes.push({time:t, spawn:t-VIS.approachMs, judged:false, quality:null, delta:null});
+  }
+  return notes;
+}
+
+function judgeDelta(d, W){
+  const ad=Math.abs(d);
+  if(ad<=W.perfect) return "Perfect";
+  if(ad<=W.bien)    return "Bien";
+  if(ad<=W.regular) return "Regular";
+  return "Miss";
+}
+
+function resetWithBlueprint(bp){
+  const blueprint = bp || {name:"Default", tempoBPM:DEFAULTS.BPM, weight:0.5, precision:0.5};
+  const windows = makeWindows(blueprint.precision);
+  const weight = clamp(blueprint.weight??0.5,0,1);              // anima approach/impact
+  const easePow = lerp(1.0,3.0,weight);                          // más peso = approach más "perezoso"
+  const impactKick = lerp(6,18,weight);                          // splash de impacto
+  const tStart = nowMs()+800;                                    // pequeña cuenta atrás
+  const notes = scheduleNotes(tStart, blueprint.tempoBPM??DEFAULTS.BPM, DEFAULTS.DRIFT_MS);
+  state = {
+    blueprint, windows, easePow, impactKick,
+    notes, idx:0, playing:true, finished:false, accepting:true,
+    startedAt: nowMs(), pausedAt:0, pauseAccum:0,
+    lastInput: -1e9, lastFeedback:null, lastFeedbackUntil:0,
+    combo:0, comboMax:0, score:0,
+    qualityCounts:{Perfect:0,Bien:0,Regular:0,Miss:0},
+    impactFlash:0
+  };
+}
+
+function tryHit(tHit){
+  if(!state.playing || !state.accepting || state.finished) return;
+  if(tHit - state.lastInput < COOLDOWN_MS) return;
+  state.lastInput = tHit;
+
+  const i = state.idx;
+  if(i>=state.notes.length) return;
+
+  // autoadelantado: siempre se juzga contra la siguiente nota pendiente
+  const n = state.notes[i];
+  const d = tHit - n.time;
+  const q = judgeDelta(d, state.windows);
+
+  applyJudgement(n, q, d, true);
+}
+
+function applyJudgement(n, q, d, manual){
+  if(n.judged) return;
+  n.judged = true; n.quality=q; n.delta=d;
+
+  if(q==="Miss"){
+    state.combo=0;
+  }else{
+    state.combo++;
+    state.comboMax=Math.max(state.comboMax,state.combo);
+  }
+  state.qualityCounts[q]++;
+  state.score += SCORE[q] + (q!=="Miss" ? Math.floor(state.combo*10) : 0);
+
+  // feedback UI
+  state.lastFeedback = `${q}${d!==null?` (${Math.abs(Math.round(d))}ms)`:''}`;
+  state.lastFeedbackUntil = nowMs()+600;
+  state.impactFlash = q==="Miss"?0:1.0;
+
+  // avanzar a la siguiente nota
+  state.idx++;
+
+  // terminar
+  if(state.idx>=state.notes.length){
+    endGame();
+  }
+}
+
+function endGame(){
+  state.finished=true;
+  state.accepting=false;
+  state.playing=false;
+  const hits = state.qualityCounts.Perfect + state.qualityCounts.Bien + state.qualityCounts.Regular;
+  const result = {
+    finished:true,
+    success: hits>=3,
+    score: state.score,
+    qualityCounts: {...state.qualityCounts},
+    comboMax: state.comboMax,
+    timeMs: Math.max(0, Math.round(nowMs() - state.startedAt - state.pauseAccum)),
+    blueprintName: state.blueprint.name || "Unknown"
+  };
+  window.dispatchEvent(new CustomEvent('minigame:end',{detail:result}));
+}
+
+function autoMisses(tNow){
+  // si se pasa el tiempo de Miss de la nota activa sin pulsar: Miss
+  const i=state.idx;
+  if(i>=state.notes.length) return;
+  const n=state.notes[i];
+  if(!n.judged && tNow > n.time + state.windows.miss){
+    applyJudgement(n,"Miss",null,false);
+  }
+}
+
+function drawTrack(){
+  // pista
+  ctx.strokeStyle="#2a3145"; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(VIS.startX, VIS.trackY); ctx.lineTo(VIS.impactX, VIS.trackY); ctx.stroke();
+  // área de impacto
+  ctx.strokeStyle="#6b7280"; ctx.lineWidth=4;
+  ctx.beginPath(); ctx.moveTo(VIS.impactX, VIS.trackY-30); ctx.lineTo(VIS.impactX, VIS.trackY+30); ctx.stroke();
+}
+
+function drawNotes(t){
+  // dibuja indicadores en approach; el tamaño vibra cerca del impacto
+  for(let k=state.idx;k<state.notes.length;k++){
+    const n=state.notes[k];
+    const p = (t - n.spawn) / VIS.approachMs; // 0..1
+    if(p<=0) continue;
+    if(p>1.2) continue;
+    const pp = clamp(p,0,1);
+    const eased = easeOutPow(pp, state.easePow);
+    const x = lerp(VIS.startX, VIS.impactX, eased);
+    const y = VIS.trackY;
+
+    // "peso": más gordo hacia el final
+    const near = clamp(1 - Math.abs(n.time - t)/200, 0, 1);
+    const r = 10 + 8*near;
+
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle = `hsl(${lerp(200,160,pp)}, 70%, ${lerp(40,65,pp)}%)`;
+    ctx.fill();
+    ctx.strokeStyle = "#0a0c12"; ctx.lineWidth=1; ctx.stroke();
+  }
+}
+
+function drawHUD(t){
+  // combo
+  ctx.fillStyle="#a8b3cf";
+  ctx.font="bold 16px system-ui";
+  ctx.fillText(`Combo: ${state.combo}`, 16, 28);
+  ctx.fillText(`Score: ${state.score}`, 16, 50);
+
+  // feedback
+  if(t < state.lastFeedbackUntil && state.lastFeedback){
+    ctx.font="bold 22px system-ui";
+    let col="#86efac"; // greenish
+    if(state.lastFeedback.startsWith("Bien")) col="#fde047";
+    else if(state.lastFeedback.startsWith("Regular")) col="#f59e0b";
+    else if(state.lastFeedback.startsWith("Miss")) col="#f87171";
+    ctx.fillStyle=col;
+    ctx.textAlign="center";
+    ctx.fillText(state.lastFeedback, VIS.impactX, VIS.trackY-50);
+    ctx.textAlign="left";
+  }
+
+  // cuenta atrás
+  const first = state.notes[0];
+  if(!state.finished && nowMs() < first.spawn){
+    const ms = Math.max(0, first.spawn - nowMs());
+    const s = Math.ceil(ms/1000);
+    ctx.fillStyle="#94a3b8"; ctx.font="bold 24px system-ui";
+    ctx.fillText(`Prepárate: ${s}`, 16, CANVAS.H-16);
+  }
+}
+
+function drawImpactFlash(){
+  if(state.impactFlash<=0) return;
+  const a = state.impactFlash;
+  const y=VIS.trackY, x=VIS.impactX;
+  const r = 14 + state.impactKick*a*8;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.strokeStyle=`rgba(255,255,255,${0.35*a})`; ctx.lineWidth=3; ctx.stroke();
+  state.impactFlash = Math.max(0, state.impactFlash - 0.08);
+}
+
+function drawFinishOverlay(){
+  if(!state.finished) return;
+  ctx.fillStyle="rgba(10,12,18,0.8)";
+  ctx.fillRect(0,0,CANVAS.W,CANVAS.H);
+
+  const hits = state.qualityCounts.Perfect + state.qualityCounts.Bien + state.qualityCounts.Regular;
+  ctx.fillStyle="#e5e7eb"; ctx.font="bold 24px system-ui";
+  ctx.textAlign="center";
+  ctx.fillText("Resultado", CANVAS.W/2, 90);
+
+  ctx.font="16px system-ui"; ctx.fillStyle="#cbd5e1";
+  ctx.fillText(`${hits}/5 aciertos  •  Score ${state.score}  •  Max Combo ${state.comboMax}`, CANVAS.W/2, 120);
+
+  const y0=160;
+  ctx.fillText(`Perfect: ${state.qualityCounts.Perfect}`, CANVAS.W/2, y0);
+  ctx.fillText(`Bien: ${state.qualityCounts.Bien}`, CANVAS.W/2, y0+24);
+  ctx.fillText(`Regular: ${state.qualityCounts.Regular}`, CANVAS.W/2, y0+48);
+  ctx.fillText(`Miss: ${state.qualityCounts.Miss}`, CANVAS.W/2, y0+72);
+
+  ctx.textAlign="left";
+}
+
+function loop(){
+  if(!state) return requestAnimationFrame(loop);
+  const t = nowMs();
+
+  // auto misses
+  if(state.playing && !state.finished) autoMisses(t);
+
+  // draw
+  ctx.clearRect(0,0,CANVAS.W,CANVAS.H);
+  // background grid
+  ctx.fillStyle="#0b0c10"; ctx.fillRect(0,0,CANVAS.W,CANVAS.H);
+  ctx.strokeStyle="#121520"; ctx.lineWidth=1;
+  for(let x=0;x<CANVAS.W;x+=20){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,CANVAS.H);ctx.stroke()}
+  for(let y=0;y<CANVAS.H;y+=20){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(CANVAS.W,y);ctx.stroke()}
+
+  drawTrack();
+  drawNotes(t);
+  drawImpactFlash();
+  drawHUD(t);
+  drawFinishOverlay();
+
+  requestAnimationFrame(loop);
+}
+
+// Input handlers
+function onKey(e){
+  if(e.code==="Space"){ e.preventDefault(); tryHit(nowMs()); }
+}
+function onClick(){ tryHit(nowMs()); }
+
+window.addEventListener('keydown', onKey);
+cv.addEventListener('mousedown', onClick);
+
+// Pause/Resume shifting all scheduled times by pause delta
+function doPause(){
+  if(!state || state.finished || !state.playing) return;
+  state.playing=false; state.pausedAt=nowMs();
+  state.accepting=false;
+}
+function doResume(){
+  if(!state || state.finished || state.playing) return;
+  const dt = nowMs()-state.pausedAt;
+  state.pauseAccum += dt;
+  for(const n of state.notes){ n.time+=dt; n.spawn+=dt; }
+  state.playing=true; state.accepting=true;
+}
+
+function getResult(){
+  if(!state) return null;
+  const hits = state.qualityCounts.Perfect + state.qualityCounts.Bien + state.qualityCounts.Regular;
+  return {
+    finished: state.finished,
+    success: hits>=3,
+    score: state.score,
+    qualityCounts: {...state.qualityCounts},
+    comboMax: state.comboMax,
+    timeMs: Math.max(0, Math.round(nowMs() - state.startedAt - state.pauseAccum)),
+    blueprintName: state.blueprint?.name || "Unknown"
+  };
+}
+
+// Public API
+window.GameAPI = {
+  start(blueprint){ resetWithBlueprint(blueprint); },
+  pause(){ doPause(); },
+  resume(){ doResume(); },
+  reset(){ if(state){ resetWithBlueprint(state.blueprint); } },
+  getResult(){ return getResult(); }
+};
+
+// Auto-start for preview
+resetWithBlueprint({name:"Martillo Básico", tempoBPM:100, weight:0.6, precision:0.5});
+requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>
