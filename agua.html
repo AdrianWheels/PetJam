@@ -1,0 +1,286 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Minijuego — Agua (Temple)</title>
+<style>
+  html,body{margin:0;height:100%;background:#0f1115;color:#e5e7eb;font-family:system-ui,Segoe UI,Roboto,Ubuntu,Arial}
+  #wrap{display:grid;place-items:center;height:100%}
+  canvas{background:#0b0d12;border:1px solid #1f2937;box-shadow:0 0 0 2px #0b0d12,0 0 40px rgba(0,0,0,.4)}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="640" height="360"></canvas></div>
+<script>
+/* TL;DR
+Simula T(t)=Tamb+(Tini-Tamb)*exp(-k*t). Debes SOLTAR cuando T cae dentro del intervalo [Tlow,Thigh].
+Catalyst ensancha la ventana un 20% y fija el elemento si la calidad ≥ Bien. Espacio o click para soltar.
+GameAPI: start(blueprint), pause(), resume(), reset(), getResult().
+*/
+(()=>{
+
+// ---------- Config (tuning) ----------
+const CFG = {
+  dtMax: 1/60,              // s por frame
+  tSpan: 12,                // s horizontales del gráfico
+  margins: {l:56,r:16,t:24,b:64},
+  thresholds: {Perfect:5, Bien:12, Regular:20}, // |T - Tcenter| en °C
+  btn:{w:150,h:36},
+};
+
+// ---------- State ----------
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+let W=canvas.width,H=canvas.height, M=CFG.margins;
+
+let bp = null;
+let t=0, running=false, paused=false, finished=false, lastTS=0;
+let result=null;
+
+const btnRect = {
+  x: W - CFG.margins.r - CFG.btn.w,
+  y: H - CFG.margins.b/2 - CFG.btn.h/2,
+  w: CFG.btn.w, h: CFG.btn.h
+};
+
+// ---------- Helpers ----------
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const lerp=(a,b,u)=>a+(b-a)*u;
+function Tof(t){ return bp.Tamb + (bp.Tini - bp.Tamb)*Math.exp(-bp.k * t); }
+
+function effectiveWindow(){
+  const center = (bp.Tlow + bp.Thigh)/2;
+  let half = (bp.Thigh - bp.Tlow)/2;
+  if(bp.catalyst){ half *= 1.2; } // +20% ancho
+  return {center, low:center-half, high:center+half, half};
+}
+
+function qualityFromDelta(delta){
+  const {Perfect, Bien, Regular} = CFG.thresholds;
+  if(delta<=Perfect) return 'Perfect';
+  if(delta<=Bien)    return 'Bien';
+  if(delta<=Regular) return 'Regular';
+  return 'Miss';
+}
+
+function evalDrop(temp, timeSec){
+  const win = effectiveWindow();
+  // Penalización reducida por "anticipación" si suelta antes del inicio de ventana (temp > win.high)
+  let delta = Math.abs(temp - win.center);
+  if(temp > win.high){
+    const early = temp - win.high;
+    delta = Math.max(0, delta - bp.intelligence * Math.min(early, win.half));
+  }
+
+  const qual = qualityFromDelta(delta);
+  const success = qual !== 'Miss';
+  let scoreMap = {Perfect:100,Bien:85,Regular:65,Miss:0};
+  let score = scoreMap[qual];
+  let elementFixed = false;
+  if(bp.catalyst && (qual==='Perfect' || qual==='Bien')){
+    score = Math.min(100, score + 5);
+    elementFixed = true;
+  }
+  return {
+    finished:true,
+    success,
+    score,
+    quality:qual,
+    tempAtDrop: Number(temp.toFixed(1)),
+    elementFixed,
+    catalyst: !!bp.catalyst,
+    timeMs: Math.round(timeSec*1000),
+    blueprintName: bp.name || ''
+  };
+}
+
+// ---------- Graph mapping ----------
+function yForTemp(temp, tMin, tMax){
+  const gTop = M.t, gBot = H - M.b;
+  const y = gBot - (temp - tMin)/(tMax - tMin) * (gBot - gTop);
+  return y;
+}
+function xForTime(tt){ // 0..CFG.tSpan maps to [M.l, W-M.r]
+  return M.l + clamp(tt/CFG.tSpan,0,1) * (W - M.l - M.r);
+}
+
+// ---------- Drawing ----------
+function draw(){
+  ctx.clearRect(0,0,W,H);
+
+  const win = effectiveWindow();
+
+  // Determinar rango de temperatura para el eje Y
+  const Tmin = Math.min(bp.Tamb, bp.Tlow, win.low) - 10;
+  const Tmax = Math.max(bp.Tini, bp.Thigh, win.high) + 10;
+
+  // Área gráfica
+  ctx.fillStyle='#0d1219';
+  ctx.fillRect(M.l, M.t, W-M.l-M.r, H-M.t-M.b);
+
+  // Banda sombreada de ventana óptima
+  ctx.fillStyle='rgba(16,185,129,0.20)';
+  const yHigh = yForTemp(win.high, Tmin, Tmax);
+  const yLow  = yForTemp(win.low,  Tmin, Tmax);
+  ctx.fillRect(M.l, yHigh, W-M.l-M.r, yLow-yHigh);
+
+  // Ejes
+  ctx.strokeStyle='#374151'; ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(M.l, H-M.b); ctx.lineTo(W-M.r, H-M.b);
+  ctx.moveTo(M.l, M.t);   ctx.lineTo(M.l,   H-M.b);
+  ctx.stroke();
+
+  // Ticks y etiquetas
+  ctx.fillStyle='#9ca3af'; ctx.font='12px system-ui';
+  const yTicks=5;
+  for(let i=0;i<=yTicks;i++){
+    const u=i/yTicks, ty=lerp(H-M.b, M.t, u);
+    ctx.strokeStyle='#111827'; ctx.beginPath(); ctx.moveTo(M.l,ty); ctx.lineTo(W-M.r,ty); ctx.stroke();
+    const val = lerp(Tmin, Tmax, u);
+    ctx.fillText(val.toFixed(0)+'°C', 6, ty+4);
+  }
+  ctx.fillText('Tiempo (s)', W-M.r-62, H-M.b+38);
+  ctx.fillText('T (°C)', M.l-40, M.t-6);
+
+  // Curva T(t)
+  ctx.strokeStyle='#60a5fa'; ctx.lineWidth=2; ctx.beginPath();
+  let first=true;
+  const samples = 200;
+  for(let i=0;i<=samples;i++){
+    const tt = (i/samples)*Math.min(CFG.tSpan,t);
+    const x = xForTime(tt);
+    const y = yForTemp(Tof(tt), Tmin, Tmax);
+    if(first){ ctx.moveTo(x,y); first=false; } else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // Marcador de T(t)
+  const xNow=xForTime(Math.min(t,CFG.tSpan));
+  const yNow=yForTemp(Tof(t),Tmin,Tmax);
+  ctx.fillStyle='#fcd34d';
+  ctx.beginPath(); ctx.arc(xNow,yNow,4,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#e5e7eb';
+  ctx.fillText(`T=${Tof(t).toFixed(1)}°C  t=${t.toFixed(2)}s`, xNow+8, yNow-8);
+
+  // Límite de ventana (líneas punteadas)
+  ctx.setLineDash([5,4]); ctx.strokeStyle='#10b981'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(M.l,yHigh); ctx.lineTo(W-M.r,yHigh); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(M.l,yLow);  ctx.lineTo(W-M.r,yLow);  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Botón SOLTAR
+  const hovering = lastPointer && pointInRect(lastPointer.x,lastPointer.y,btnRect);
+  ctx.fillStyle = finished ? '#334155' : (hovering ? '#1f8bff' : '#2563eb');
+  ctx.fillRect(btnRect.x,btnRect.y,btnRect.w,btnRect.h);
+  ctx.fillStyle='#ffffff'; ctx.font='bold 14px system-ui';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('SOLTAR (Espacio)', btnRect.x+btnRect.w/2, btnRect.y+btnRect.h/2);
+  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+
+  // Footer info
+  ctx.fillStyle='#94a3b8';
+  ctx.fillText(`Plano: ${bp.name}  |  Catalizador: ${bp.catalyst?'Sí':'No'}  |  Ventana: [${win.low.toFixed(0)}..${win.high.toFixed(0)}]°C`, M.l, H-28);
+  ctx.fillText('Tip: suelta cerca del centro verde; con catalizador la ventana es +20%', M.l, H-10);
+
+  // Overlay de resultado
+  if(finished){
+    ctx.fillStyle='rgba(0,0,0,0.6)';
+    ctx.fillRect(0,0,W,H);
+    const boxW=420, boxH=180, bx=(W-boxW)/2, by=(H-boxH)/2;
+    ctx.fillStyle='#0b1220'; ctx.fillRect(bx,by,boxW,boxH);
+    ctx.strokeStyle='#1f6feb'; ctx.lineWidth=2; ctx.strokeRect(bx,by,boxW,boxH);
+    ctx.fillStyle='#e5e7eb'; ctx.font='bold 18px system-ui';
+    ctx.fillText('Resultado del Temple', bx+16, by+28);
+    ctx.font='14px system-ui';
+    const lines = [
+      `Plano: ${result.blueprintName}`,
+      `Temperatura al soltar: ${result.tempAtDrop.toFixed(1)}°C`,
+      `Tiempo: ${result.timeMs} ms`,
+      `Calidad: ${result.quality}${(bp.catalyst && (result.quality==='Perfect'||result.quality==='Bien')) ? ' — Elemento fijado' : ''}`,
+      `Catalizador: ${result.catalyst?'Sí':'No'}`,
+      `Score: ${result.score}  |  ${result.success?'Éxito':'Fallido'}`
+    ];
+    let yy=by+56;
+    for(const L of lines){ ctx.fillText(L, bx+16, yy); yy+=22; }
+    ctx.fillStyle='#94a3b8';
+    ctx.fillText('Llama GameAPI.reset() o start(...) para reintentar.', bx+16, by+boxH-12);
+  }
+}
+
+// ---------- Input ----------
+let lastPointer=null;
+function pointInRect(px,py,r){return px>=r.x&&px<=r.x+r.w&&py>=r.y&&py<=r.y+r.h;}
+canvas.addEventListener('mousemove', e=>{
+  const rect=canvas.getBoundingClientRect();
+  lastPointer={x:e.clientX-rect.left,y:e.clientY-rect.top};
+});
+canvas.addEventListener('mouseleave', ()=>{ lastPointer=null; });
+
+function tryDrop(){
+  if(!running || paused || finished) return;
+  const temp = Tof(t);
+  result = evalDrop(temp, t);
+  finished = true;
+  running = false;
+  window.dispatchEvent(new CustomEvent('minigame:end',{detail:result}));
+  draw();
+}
+
+canvas.addEventListener('mousedown', e=>{
+  tryDrop();
+});
+window.addEventListener('keydown', e=>{
+  if(e.code==='Space'){ e.preventDefault(); tryDrop(); }
+});
+
+// ---------- Loop ----------
+function frame(ts){
+  if(!running){ draw(); return; }
+  if(paused){ lastTS = ts; draw(); requestAnimationFrame(frame); return; }
+  if(!lastTS) lastTS = ts;
+  let dt = (ts - lastTS)/1000;
+  lastTS = ts;
+  dt = Math.min(dt, CFG.dtMax*3);
+  t += Math.min(dt, CFG.dtMax);
+  draw();
+  requestAnimationFrame(frame);
+}
+
+// ---------- API ----------
+window.GameAPI = {
+  start(blueprint){
+    // Blueprint defaults and validation
+    bp = {
+      name: blueprint?.name ?? 'Acero medio',
+      Tini: Number(blueprint?.Tini ?? 850),
+      Tamb: Number(blueprint?.Tamb ?? 25),
+      k:    Number(blueprint?.k ?? 0.35),
+      Tlow: Number(blueprint?.Tlow ?? 520),
+      Thigh:Number(blueprint?.Thigh?? 580),
+      catalyst: !!blueprint?.catalyst,
+      intelligence: clamp(Number(blueprint?.intelligence ?? 0), 0, 1)
+    };
+    if(bp.Thigh<bp.Tlow){ const tmp=bp.Tlow; bp.Tlow=bp.Thigh; bp.Thigh=tmp; }
+    // Reset state
+    t=0; finished=false; result=null; running=true; paused=false; lastTS=0;
+    requestAnimationFrame(frame);
+  },
+  pause(){ if(running){ paused=true; } },
+  resume(){ if(running && paused){ paused=false; lastTS=0; requestAnimationFrame(frame); } },
+  reset(){ if(bp){ this.start(bp); } },
+  getResult(){ return result ? {...result} : { finished:false }; }
+};
+
+// ---------- Boot with a sample blueprint ----------
+GameAPI.start({
+  name:'Temple A36',
+  Tini: 850, Tamb: 25, k: 0.30,
+  Tlow: 540, Thigh: 600,
+  catalyst: false, intelligence: 0.35
+});
+
+})();
+</script>
+</body>
+</html>
