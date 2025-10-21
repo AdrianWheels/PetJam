@@ -1,0 +1,336 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Forja — Minijuego Temperatura</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    html,body{height:100%;margin:0;background:#0e0f12;color:#e7e7e7;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+    .wrap{height:100%;display:flex;align-items:center;justify-content:center}
+    canvas{background:#111319;border:1px solid #272a33;box-shadow:0 6px 30px rgba(0,0,0,.35)}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="game" width="640" height="360"></canvas>
+</div>
+<script>
+/*
+TL;DR:
+Barra horizontal (0–100), cursor senoidal. Haz click o pulsa espacio para fijar lectura.
+Acumula 3 aciertos para ganar; con 5 fallos pierdes. Velocidad sube tras cada acierto.
+API global: GameAPI.start(blueprint), pause(), resume(), reset(), getResult().
+
+Tuning (ajusta libremente):
+*/
+const TUNE = {
+  BAR: { x:40, y:180, w:560, h:18, radius:9 },
+  CURSOR: { radius:9, glow:8 },
+  BASE_FREQ_HZ: 0.45,         // frecuencia inicial del oscilador
+  FREQ_STEP_HZ: 0.08,         // incremento por acierto
+  FREQ_MAX_HZ: 1.6,           // límite superior
+  AMP: 0.96,                  // amplitud relativa del recorrido (0..1)
+  HITS_TO_WIN: 3,
+  FAILS_TO_LOSE: 5,
+  SCORE: { Perfect:100, Bien:70, Regular:40, Miss:-15 },
+  THRESH_PX: { Perfect:6, Bien:14, Regular:24 }, // Distancia al centro
+  HUD: { font:"14px system-ui,Segoe UI,Roboto,Arial", line:18 }
+};
+
+(() => {
+  const canvas = document.getElementById('game');
+  const g = canvas.getContext('2d');
+
+  // State
+  let running = true, finished = false, success = false, paused = false;
+  let hits = 0, fails = 0, attempt = 0, score = 0;
+  let lastQuality = "-", startTime = 0, endTime = 0;
+  let qualityCounts = { Perfect:0, Bien:0, Regular:0, Miss:0 };
+
+  // Oscillator
+  let freqHz = TUNE.BASE_FREQ_HZ;
+  let phase = 0;
+
+  // Blueprint and zone
+  let blueprint = null;
+  let zoneW = 80, zoneCenterX = TUNE.BAR.x + TUNE.BAR.w/2;
+
+  // Input guard
+  let spaceHeld = false;
+
+  function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+  function now(){ return performance.now(); }
+
+  function applyBlueprint(bp){
+    blueprint = Object.assign({ name:"Acero templado", tempWindowBase:80, hardness:0.5, precision:0.3 }, bp||{});
+    const k = clamp(1 - 0.6*clamp(blueprint.hardness,0,1), 0.25, 1);
+    zoneW = clamp(blueprint.tempWindowBase * k, 20, TUNE.BAR.w*0.9);
+    zoneCenterX = TUNE.BAR.x + TUNE.BAR.w/2;
+  }
+
+  function resetCore(){
+    running = true; finished = false; success = false; paused = false;
+    hits = 0; fails = 0; attempt = 0; score = 0;
+    lastQuality = "-";
+    qualityCounts = { Perfect:0, Bien:0, Regular:0, Miss:0 };
+    freqHz = TUNE.BASE_FREQ_HZ;
+    phase = 0;
+    startTime = now(); endTime = 0;
+  }
+
+  function pxAtCursor(){
+    const t = phase;
+    const a = TUNE.AMP * 0.5 * TUNE.BAR.w;
+    const cx = TUNE.BAR.x + TUNE.BAR.w/2;
+    return cx + Math.sin(t)*a;
+  }
+
+  function evalQuality(){
+    const x = pxAtCursor();
+    const dist = Math.abs(x - zoneCenterX);
+    const half = zoneW/2;
+
+    // Blueprint precision solo mejora PERFECT
+    const perfectPx = TUNE.THRESH_PX.Perfect * (1 + clamp(blueprint.precision,0,1)*0.7);
+    const goodPx = TUNE.THRESH_PX.Bien;
+    const regPx = TUNE.THRESH_PX.Regular;
+
+    if(dist > half) return "Miss";
+    if(dist <= perfectPx) return "Perfect";
+    if(dist <= goodPx) return "Bien";
+    if(dist <= regPx) return "Regular";
+    return "Miss";
+  }
+
+  function lockAttempt(){
+    if(!running || finished || paused) return;
+    const q = evalQuality();
+    attempt++;
+    qualityCounts[q] = (qualityCounts[q]||0)+1;
+    lastQuality = q;
+
+    if(q === "Miss"){
+      fails++;
+      score = Math.max(0, score + TUNE.SCORE.Miss);
+    }else{
+      hits++;
+      score += TUNE.SCORE[q];
+      // dificultad: sube la frecuencia
+      freqHz = clamp(freqHz + TUNE.FREQ_STEP_HZ, TUNE.BASE_FREQ_HZ, TUNE.FREQ_MAX_HZ);
+    }
+
+    if(hits >= TUNE.HITS_TO_WIN){ finish(true); }
+    else if(fails >= TUNE.FAILS_TO_LOSE){ finish(false); }
+  }
+
+  function finish(ok){
+    finished = true; success = !!ok; running = false;
+    endTime = now();
+    // Emitir evento con resultado
+    window.dispatchEvent(new CustomEvent('minigame:end',{ detail: GameAPI.getResult() }));
+  }
+
+  function update(dt){
+    if(!running || paused) return;
+    const omega = 2*Math.PI*freqHz;
+    phase += omega*dt;
+  }
+
+  function drawBar(){
+    const {x,y,w,h,radius} = TUNE.BAR;
+    // barra bg
+    roundRect(g, x, y-h/2, w, h, radius, "#1a1e27");
+    // gradiente leve de escala 0–100
+    const grad = g.createLinearGradient(x,0,x+w,0);
+    grad.addColorStop(0,"#24303d");
+    grad.addColorStop(1,"#24303d");
+    g.fillStyle = grad;
+    roundRect(g, x+2, y-h/2+2, w-4, h-4, radius-3, "#24303d", true);
+
+    // zona dulce
+    const zx = zoneCenterX - zoneW/2;
+    g.fillStyle = "rgba(88,208,163,0.22)";
+    g.fillRect(zx, y-h/2-8, zoneW, h+16);
+    g.strokeStyle = "rgba(88,208,163,0.55)";
+    g.lineWidth = 2;
+    g.strokeRect(zx+0.5, y-h/2-8+0.5, zoneW-1, h+16-1);
+
+    // marcas de calidad desde centro
+    const marks = [
+      {px:TUNE.THRESH_PX.Regular, c:"rgba(255,184,76,0.35)"},
+      {px:TUNE.THRESH_PX.Bien,    c:"rgba(118,190,255,0.45)"},
+      {px:TUNE.THRESH_PX.Perfect*(1+clamp(blueprint.precision,0,1)*0.7), c:"rgba(128,255,212,0.8)"}
+    ];
+    marks.forEach(m=>{
+      g.strokeStyle = m.c;
+      g.lineWidth = m===marks[2]?2:1;
+      g.beginPath();
+      g.moveTo(zoneCenterX-m.px, y-18);
+      g.lineTo(zoneCenterX-m.px, y+18);
+      g.moveTo(zoneCenterX+m.px, y-18);
+      g.lineTo(zoneCenterX+m.px, y+18);
+      g.stroke();
+    });
+
+    // cursor
+    const cx = pxAtCursor();
+    g.shadowBlur = TUNE.CURSOR.glow;
+    g.shadowColor = "#8ad8ff";
+    g.fillStyle = "#cfefff";
+    g.beginPath();
+    g.arc(cx, y, TUNE.CURSOR.radius, 0, Math.PI*2);
+    g.fill();
+    g.shadowBlur = 0;
+
+    // escala 0–100
+    g.fillStyle = "#9aa6b2";
+    g.font = "12px system-ui,Segoe UI,Roboto,Arial";
+    g.textAlign = "left"; g.fillText("0", x, y+34);
+    g.textAlign = "right"; g.fillText("100", x+w, y+34);
+  }
+
+  function drawHUD(){
+    const pad = 16, line = TUNE.HUD.line;
+    g.font = TUNE.HUD.font;
+    g.fillStyle = "#cfd6df";
+    g.textAlign = "left";
+    const rows = [
+      `Blueprint: ${blueprint?.name||"-"}`,
+      `Aciertos: ${hits} / ${TUNE.HITS_TO_WIN}`,
+      `Fallos: ${fails} / ${TUNE.FAILS_TO_LOSE}`,
+      `Intento: ${attempt+1}`,
+      `Último: ${lastQuality}`,
+      `Velocidad: ${freqHz.toFixed(2)} Hz`,
+      `Pausa: ${paused ? "Sí" : "No"}`
+    ];
+    rows.forEach((t,i)=> g.fillText(t, TUNE.BAR.x, TUNE.BAR.y + 70 + i*line));
+
+    // título
+    g.textAlign="center";
+    g.font="bold 18px system-ui,Segoe UI,Roboto,Arial";
+    g.fillStyle="#e7eef7";
+    g.fillText("FORJA · Temperatura", canvas.width/2, 48);
+    g.font="12px system-ui,Segoe UI,Roboto,Arial";
+    g.fillStyle="#9aa6b2";
+    g.fillText("Click o ESPACIO para fijar. Pulsa P para pausar.", canvas.width/2, 66);
+  }
+
+  function drawOverlay(){
+    if(!paused && !finished) return;
+    g.fillStyle = "rgba(0,0,0,0.55)";
+    g.fillRect(0,0,canvas.width,canvas.height);
+
+    if(paused && !finished){
+      g.fillStyle="#e9f0ff";
+      g.font="bold 28px system-ui,Segoe UI,Roboto,Arial";
+      g.textAlign="center";
+      g.fillText("PAUSA", canvas.width/2, canvas.height/2);
+      return;
+    }
+
+    // Final
+    const title = success ? "Éxito" : "Fallo";
+    const color = success ? "#6cf7ba" : "#ff9aa7";
+    g.fillStyle=color;
+    g.font="bold 36px system-ui,Segoe UI,Roboto,Arial";
+    g.textAlign="center";
+    g.fillText(title, canvas.width/2, canvas.height/2 - 24);
+
+    const res = GameAPI.getResult();
+    g.fillStyle="#e7e7e7";
+    g.font="16px system-ui,Segoe UI,Roboto,Arial";
+    g.fillText(`Puntuación: ${res.score}  ·  Tiempo: ${(res.timeMs/1000).toFixed(2)}s`, canvas.width/2, canvas.height/2 + 6);
+    g.fillText(`Perfect ${res.qualityCounts.Perfect} · Bien ${res.qualityCounts.Bien} · Regular ${res.qualityCounts.Regular} · Miss ${res.qualityCounts.Miss}`, canvas.width/2, canvas.height/2 + 28);
+  }
+
+  function roundRect(ctx,x,y,w,h,r,fillStyle,borderOnly){
+    const rr = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr, y);
+    ctx.arcTo(x+w, y,   x+w, y+h, rr);
+    ctx.arcTo(x+w, y+h, x,   y+h, rr);
+    ctx.arcTo(x,   y+h, x,   y,   rr);
+    ctx.arcTo(x,   y,   x+w, y,   rr);
+    ctx.closePath();
+    if(borderOnly){ ctx.fillStyle = fillStyle; ctx.fill(); return; }
+    ctx.fillStyle = fillStyle || "#1a1e27";
+    ctx.fill();
+  }
+
+  function render(){
+    g.clearRect(0,0,canvas.width,canvas.height);
+    // fondo
+    const bg = g.createLinearGradient(0,0,0,canvas.height);
+    bg.addColorStop(0,"#0f1218"); bg.addColorStop(1,"#0b0d12");
+    g.fillStyle = bg; g.fillRect(0,0,canvas.width,canvas.height);
+
+    drawBar();
+    drawHUD();
+    drawOverlay();
+  }
+
+  let last = now();
+  function tick(){
+    const t = now();
+    const dt = (t - last)/1000;
+    last = t;
+    update(dt);
+    render();
+    requestAnimationFrame(tick);
+  }
+
+  // Input
+  canvas.addEventListener('mousedown', e => { if(!finished) lockAttempt(); });
+
+  window.addEventListener('keydown', e => {
+    if(e.code === 'Space'){
+      if(!spaceHeld){ lockAttempt(); }
+      spaceHeld = true;
+      e.preventDefault();
+    }else if(e.key.toLowerCase() === 'p'){
+      if(finished) return;
+      paused = !paused;
+    }
+  });
+  window.addEventListener('keyup', e => { if(e.code==='Space') spaceHeld=false; });
+
+  // API
+  const GameAPI = {
+    start(bp){
+      applyBlueprint(bp);
+      resetCore();
+      return true;
+    },
+    pause(){ if(!finished){ paused = true; } },
+    resume(){ if(!finished){ paused = false; } },
+    reset(){
+      // reinicia conservando el blueprint cargado
+      applyBlueprint(blueprint);
+      resetCore();
+    },
+    getResult(){
+      const tEnd = finished ? endTime : now();
+      return {
+        finished,
+        success,
+        score,
+        qualityCounts: Object.assign({}, qualityCounts),
+        hits, fails,
+        timeMs: Math.max(0, Math.round(tEnd - startTime)),
+        blueprintName: blueprint?.name || "-"
+      };
+    }
+  };
+  window.GameAPI = GameAPI;
+
+  // Boot
+  GameAPI.start({
+    name:"Acero templado",
+    tempWindowBase:80,
+    hardness:0.45,
+    precision:0.35
+  });
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
