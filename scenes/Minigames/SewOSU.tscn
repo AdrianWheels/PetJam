@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://dqgaeqqxbqus3"]
+
+[ext_resource type="Script" path="res://scripts/SewMinigame.gd" id="1"]
+
+[node name="SewOSU" type="Control"]
+script = ExtResource("1")
+text = "Minijuego Coser OSU (Placeholder)"

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://scripts/gameplay/Hero.gd" type="Script" id=1]
+
+[node name="Hero" type="CharacterBody2D"]
+script = ExtResource( 1 )

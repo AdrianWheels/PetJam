@@ -1,0 +1,28 @@
+[gd_scene load_steps=2 format=3]
+
+
+[node name="Room" type="Node2D"]
+
+# Placeholder visual para el héroe
+
+[node name="HeroPlaceholder" type="ColorRect" parent="."]
+rect_position = Vector2(80, 180)
+rect_size = Vector2(40, 40)
+modulate = Color(0.2, 0.6, 1.0, 1)
+
+
+[node name="HeroLabel" type="Label" parent="HeroPlaceholder"]
+text = "Héroe"
+position = Vector2(0, 0)
+
+# Placeholder visual para el enemigo
+
+[node name="EnemyPlaceholder" type="ColorRect" parent="."]
+rect_position = Vector2(320, 180)
+rect_size = Vector2(40, 40)
+modulate = Color(1.0, 0.3, 0.2, 1)
+
+
+[node name="EnemyLabel" type="Label" parent="EnemyPlaceholder"]
+text = "Enemigo"
+position = Vector2(0, 0)

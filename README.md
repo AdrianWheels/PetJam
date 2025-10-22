@@ -2,9 +2,9 @@
 ##REPO DE ARTE## --> Crear repo de arte reutilizable
 ## TL;DR
 
-Juego de **bucles continuos** con **corredor único estilo Darkest Dungeon**: el **Héroe** avanza por **salas en línea**, y en cada sala lucha contra enemigos. Mientras tanto, el **BS (jugador artesano)** craftea en paralelo con **4 minijuegos**. Morir es frecuente y parte del diseño del heroe. La **Humanidad** es un **pool amplio** que sube al avanzar y baja al morir; desbloquea **perks** en umbrales. **Progresión jam**: un **solo mundo/corredor**; completas **8 salas** con **8 enemigos** y enfrentas al **Jefe final**. **No hay escalado de calidad por sala, pero los enemigos son cada vez mas fuertes**; la calidad depende solo del crafteo del BS.
+Juego de **bucles continuos** con **corredor único estilo Darkest Dungeon**: el **Héroe** avanza por **salas en línea**, y en cada sala lucha contra enemigos. Mientras tanto, el **BS (jugador artesano)** craftea en paralelo con **4 minijuegos**. Morir es frecuente y parte del diseño del heroe. **Progresión jam**: un **solo mundo/corredor**; completas **8 salas** con **8 enemigos** y enfrentas al **Jefe final**. **No hay escalado de calidad por sala, pero los enemigos son mas fuertes conforme avanzas**; la calidad depende solo del crafteo del BS.
 
-Novedades clave del flujo: al morir, el Héroe **reaparece al inicio del corredor** para limpiar salas fáciles y **recolectar materiales** rápidamente. Además, el BS puede activar **Entrega de Material**: el Héroe **deja de pelear** 2 s para equiparse en campo y se cura.
+Al morir, el Héroe **reaparece al inicio del corredor** para limpiar salas fáciles y **recolectar materiales** rápidamente. El heroe recolectará automaticamente los materiales (Hierro, Cuero, Tela, Agua destilada, Catalizadores[Más raros, que le daran habilidades a los objetos que forjen]) Además, el BS puede activar **Entrega de Material**: el Héroe **deja de pelear** 2 s para equiparse en campo y se cura.
 
 **MVP jam (1–2 días):** 1 bioma, **corredor lineal** de 8 salas (+1 sala de jefe), combate continuo, 4 minijuegos, 2 tiers (N1/N2), 6 objetos, 3 enemigos, 1 jefe, **adaptación por 10 derrotas**. Partidas 8–12 min.
 
@@ -21,29 +21,29 @@ Novedades clave del flujo: al morir, el Héroe **reaparece al inicio del corredo
 
 ## 3) Plataforma y Alcance Jam
 
-* **Plataforma**: PC navegador (WebGL/Canvas) o Godot desktop.
+* **Plataforma**:Godot desktop.
 * **Scope jam**: 1 nivel corto con combate continuo en **corredor lineal de salas**. Un único layout. Arte estilizado low‑poly o 2D minimal.
 * **Controles**: ratón/trackpad (teclas opcionales para accesibilidad).
 
 ## 4) Estructura de Partida
 
-* **Corredor lineal**: una sola línea de **8 salas** comunes + **1 sala de jefe**. Cada sala es un combate contra **grupos** de 2–4 enemigos con formaciones simples.
-* **Combate continuo**: el Héroe entra en la sala, combate hasta que no queden enemigos y **avanza automáticamente** a la siguiente. No se pausa al abrir la forja ni al jugar minijuegos. **Excepción**: **Entrega de Material**.
-* **Respawn al inicio**: al morir, tras 3 s reaparece **en la Sala 1**. Las primeras 2 salas son **fáciles** y con **+20%** drop para acelerar recuperación de materiales.
+* **Corredor lineal**: una sola línea de **8 salas** comunes + **1 sala de jefe**. Cada sala es un combate contra 1 enemigo.
+* **Combate continuo**: el Héroe entra en la sala, combate hasta que no queden enemigos y **avanza automáticamente** a la siguiente. 
+* **Respawn al inicio**: al morir, tras 3 s reaparece **en la Sala 1**. 
 * **Progresión jam**: completas **8 salas** y aparece el **Jefe final** en la última. Al derrotarlo, **termina la run** con el mensaje: **“Habrá más mundos”**.
-* **Blueprints**: cada **20 bajas** conceden un **plano** del siguiente tier (pity si pasan **3 minutos** sin plano nuevo).
-* **Adaptación**: cada tipo de enemigo se **adapta** tras **10 derrotas** (resistencias y patrón anti‑build), reduciendo farmeo repetitivo.
+* **Blueprints**: cada vez que elimina un enemigo nuevo, recibirá un blueprint que le permitirá avanzar mas adelante.
+
 
 ## 5) Roles
 
 ### 5.1 Héroe (IA ligera)
 
 * **Siempre en combate de sala**: prioriza al úico enemigo que hay en la sala.
-* **Multi‑objetivo**: ataques básicos golpean a un objetivo; algunas armas N2 añaden efectos mejores.
-* **Uso de consumibles**:? poción a **HP ≤ 35%** si hay stock; tónica al entrar en sala con proyectiles.
+* **Multi‑objetivo**: ataques básicos golpean a un objetivo;
+* **Uso de consumibles**:? poción a **HP ≤ 35%** si hay stock;
 * **Slots**: arma, armadura, 2 accesorio, 1 consumibles.
-* **Muerte frecuente**: al morir, respawnea **tras 3 s en la Sala 1**, con **−Humanidad**.
-* **Entrega de Material (campo)**: al activarla, el Héroe **deja de atacar** y entra en **Burbuja de Entrega** 2 s para equiparse. La Burbuja **bloquea daño** y evita que los enemigos ataquen. **CD**: 20 s.
+* **Muerte frecuente**: al morir, respawnea **tras 3 s en la Sala 1**.
+* **Entrega de Material (campo)**: al activarla, el Héroe **deja de atacar** y entra en **Burbuja de Entrega** 5 s para equiparse. La Burbuja **bloquea daño** y evita que los enemigos ataquen. **CD**: 20 s.
 
 ### 5.2 BS (Player)
 
@@ -55,11 +55,11 @@ El rol protagonista. El Héroe es un crash test dummy glorificado; tú eres el j
 
 Acciones núcleo del BS:
 
-* Elegir **recetas** y **planos** en función de resistencias/adaptaciones.
+* Elegir **recetas** y **planos** en función de resistencias.
 * Jugar **minijuegos** para fijar **calidad** y activar **combos**.
 * Gestionar **cola de crafteo (3 slots)** con **prioridades** y **cancelación segura**.
 * Activar **Entrega** en el momento oportuno para equipar bajo burbuja.
-* Administrar **Catalizadores** para **Infusiones** según bestiario y estado ADAPTADO.
+* Administrar **Catalizadores** para **Infusiones**  con mejoras en los objetos como daño de fuego, hielo o veneno.
 * Activar Entrega cura al jugador. Importante gestionar cuando ir a curar y equiparlo.
 
 Recompensas de maestría:
@@ -70,22 +70,14 @@ Recompensas de maestría:
 
 ### 5.3 Loop del BS (momento a momento, 60 s)
 
-* **0–4 s**: vistazo al corredor, eliges receta (tooltip de resistencias/ADAPTADO).
-* **4–11 s**: minijuego principal (Forja/Martillo/Coser/Agua). Objetivo: 2–3 Perfects.
-* **11–13 s**: **Entrega** si el Héroe entra a grupo peligroso. Burbuja 2 s, micro‑QTE de “Entrega Perfecta”.
-* **13–25 s**: segundo minijuego o preparar **Infusión** con Agua.
-* **25–33 s**: ajustar cola; si el Héroe está cómodo, haces **Coser (OSU)** para bonus de Evasión.
-* **33–45 s**: vigilar **Calor** (ver §6.5). Si alto, templas con Agua o esperas 3 s para disipar.
-* **45–55 s**: si el Medidor de Forjamagia está lleno, activas **Overclock** (5 s, ventanas más amables).
-* **55–60 s**: craft rápido de consumible y pre‑equipar; preparar próxima sala.
 
 ## 6) Sistemas Clave
 
 ### 6.1 Recursos y Planos
 
 * **Materiales base**: Hierro, Cuero, Tela, Agua destilada, Catalizadores (fuego/hielo/veneno).
-* **Fuentes**: drops por sala al eliminar enemigos. **Salas 1–2**: +20% drop tras respawn.
-* **Blueprints por bajas**: cada **5 enemigos** derrotados ⇒ 1 **Blueprint** de **siguiente tier**.
+* **Fuentes**: drops por sala al eliminar enemigos.Los enemigos dropean materiales aleatorios, los catalizadores son mas raros de encontrar. Además dan un blueprint la primera vez que se derrotan
+* **Blueprints por bajas**: La primera vez que derrotas a un enemigo te da un blueprint, que te ayuda a avanzar mas adelante.
 * **Tier**: **N1 único**. Los **Blueprints** desbloquean **variantes** y **modificadores** dentro del mismo tier (ej. filo serrado, acolchado reforzado, infusión elemental básica).
 
 ### 6.2 Minijuegos (MVP)
@@ -97,13 +89,6 @@ Recompensas de maestría:
 
 > **Calidad final del ítem** = media ponderada de 2–3 minijuegos + modificadores.
 
-### 6.3 Humanidad, Vidas y Reforzamiento
-
-* **Pool amplio**: Humanidad inicial **10**, máx **20**.
-* **Cambios**: Muerte = **−2**; completar **sala** = **+1**; **hito** (mini‑evento/élite) = **+2**; **jefe** = **+3**.
-* **Perks por umbral**: 12/16/20 con bonificadores persistentes mientras mantengas el umbral.
-* **Rasgos Oscuros**: ≤4 activa **Furia** (+ATQ, mayor penalización por muerte) hasta volver a ≥8.
-* **Pociones**: minijuego de Agua; no consumen Humanidad.
 
 ### 6.4 Sistemas del BS: combo, calor, cola y entrega+
 
@@ -117,7 +102,7 @@ Recompensas de maestría:
 ## 7) Condiciones de Victoria y Derrota
 
 * **Ganas**: Derrotas al **Jefe** en la última sala. Pantalla final con **“Habrá más mundos”** y estadísticas.
-* **Pierdes**: Humanidad a **0** o el héroe muere 3 veces en < 30 s (soft fail para no alargar sin progreso).
+* **Pierdes**: Cuando el heroe muere 50 veces.
 
 ## 8) Enemigos y Jefe (MVP)
 
@@ -139,8 +124,8 @@ Recompensas de maestría:
 
 * **Arriba**: **Corredor lineal** con 9 casillas (8 salas + jefe). Se muestran próximos 2 grupos enemigos y estado **ADAPTADO** por tipo.
 * **En otra pantalla, puedes ir cuando quieras pero realmente no sabrás el estado de las cosas hasta llegar**: vista lateral tipo **Darkest Dungeon** con el Héroe avanzando y luchando contra enemigos.
-* **En la ventana principial del juego**: panel de **Crafteo**, cola de fabricación e **Inventario**.
-* **Acción de Entrega**: botón con **CD** y tooltip “El Héroe parará 2 s para equiparse”. Animación de **Burbuja** en la sala.
+* **En la ventana principial del juego**: panel de **Crafteo**, cola de fabricación e **Inventario** con los materiales conseguidos por el heroe y los blueprint que se puede fabricar.
+* **Acción de Entrega**: botón con **CD** y tooltip “El Héroe parará 5 s para equiparse”. Animación de **Burbuja** en la sala.
 * **Feedback**: colores C/B/A/S e indicadores rítmicos para el minijuego OSU.
 
 ## 10.1 Juice & Audio Bible (micro‑detalles que venden el golpe)
@@ -189,3 +174,27 @@ Recompensas de maestría:
 * Vida Héroe: 100. Daño esbirro: 8. Daño espada: 10.
 * **Salas**: 8 comunes + 1 jefe. Grupo 2–4 enemigos por sala.
 * **Respawn**:
+
+---
+
+## Godot 4.5 — Setup rápido y AutoLoad (recomendado)
+
+Este proyecto fue desarrollado inicialmente apuntando a Godot 4.5 (la metadata original del proyecto lo indicaba). Para evitar incompatibilidades te recomiendo abrir el proyecto con Godot 4.5. He limpiado las referencias rotas en las cachés del editor; ahora los autoloads deben registrarse manualmente desde el editor si lo deseas.
+
+Cómo registrar los singletons manualmente (recomendado en Godot 4.5):
+
+1. Abre Godot 4.5 y carga el proyecto `d:\Proyectos\PetJam`.
+2. Ve a Project → Project Settings → AutoLoad → Add.
+3. Añade cada script con el nombre del singleton:
+	- `GameManager` -> `res://scripts/autoload/GameManager.gd`
+	- `DataManager` -> `res://scripts/autoload/DataManager.gd`
+	- `CraftingManager` -> `res://scripts/autoload/CraftingManager.gd`
+	- `AudioManager` -> `res://scripts/autoload/AudioManager.gd`
+	- `TelemetryManager` -> `res://scripts/autoload/TelemetryManager.gd`
+
+Verificación rápida:
+
+1. Ejecuta `Main.tscn` desde el editor.
+2. Observa la consola para mensajes de inicialización como `AudioManager ready` y `TelemetryManager ready`.
+
+Si necesitas que registre los autoloads automáticamente en `project.godot`, lo puedo hacer, pero fue la causa de intentos de carga inválidos en entornos distintos (por ejemplo Godot 5 puede interpretar configuraciones distintas). Prefiero que los registres desde el editor si estás usando Godot 4.5.

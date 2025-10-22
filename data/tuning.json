@@ -1,0 +1,8 @@
+{
+  "hero": { "max_hp": 100, "respawn_delay": 3 },
+  "rooms": { "total": 9 },
+  "hero_damage": 10,
+  "esbirro_damage": 8,
+  "delivery": { "duration": 5, "cd": 20 },
+  "craft": { "max_slots": 3, "cancel_refund": 0.8 }
+}

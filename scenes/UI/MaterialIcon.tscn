@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://c8x8x8x8x8"]
+
+[ext_resource type="Script" path="res://scripts/MaterialIcon.gd" id="1"]
+
+[node name="MaterialIcon" type="Control"]
+custom_minimum_size = Vector2(20, 20)
+script = ExtResource("1")

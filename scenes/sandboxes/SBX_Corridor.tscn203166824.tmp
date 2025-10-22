@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://yv3pjqpysart"]
+
+[ext_resource type="PackedScene" uid="uid://s30bejfhqqmx" path="res://scenes/Main.tscn" id="1"]
+
+[node name="SBX_Corridor" type="Node2D"]
+
+[node name="Main" parent="." instance=ExtResource("1")]

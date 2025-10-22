@@ -1,0 +1,22 @@
+[gd_scene load_steps=6 format=3 uid="uid://cv4s8417uqw87"]
+
+[ext_resource type="Script" uid="uid://de4nv1v0nbui3" path="res://scripts/Hero.gd" id="1_cra4x"]
+[ext_resource type="Script" uid="uid://c0ydb1e5ss1xt" path="res://scripts/Enemy.gd" id="2_qg5t0"]
+[ext_resource type="Script" uid="uid://bn0qmhqsy867a" path="res://scripts/ParticleManager.gd" id="3_yinb5"]
+[ext_resource type="Script" uid="uid://dbxtuofxbjru6" path="res://scripts/CombatController.gd" id="4_l1hri"]
+[ext_resource type="Script" uid="uid://dlrybs4b40pot" path="res://scripts/Corridor.gd" id="5"]
+
+[node name="Corridor" type="Node2D"]
+script = ExtResource("5")
+
+[node name="Hero" type="Node" parent="."]
+script = ExtResource("1_cra4x")
+
+[node name="Enemy" type="Node" parent="."]
+script = ExtResource("2_qg5t0")
+
+[node name="ParticleManager" type="Node" parent="."]
+script = ExtResource("3_yinb5")
+
+[node name="CombatController" type="Node" parent="."]
+script = ExtResource("4_l1hri")
