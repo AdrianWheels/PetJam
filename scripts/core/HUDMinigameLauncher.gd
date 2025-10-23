@@ -1,31 +1,41 @@
 extends CanvasLayer
+func _find_node_any(candidates: Array) -> Node:
+	for p in candidates:
+		var n = get_node_or_null(str(p))
+		if n:
+			return n
+	return null
 
 func _ready():
-	var btn_forge = get_node_or_null("BtnForge")
+	var btn_forge = _find_node_any(["BtnForge", "MinigamesPanel/BtnForge", "MinigamesPanel/MinigamesHBox/BtnForge"])
 	if btn_forge:
 		btn_forge.pressed.connect(_on_btn_forge)
 		print("HUD: Forge button connected")
 	else:
 		print("HUD: Forge button not found")
-	var btn_hammer = get_node_or_null("BtnHammer")
+
+	var btn_hammer = _find_node_any(["BtnHammer", "MinigamesPanel/MinigamesHBox/BtnHammer", "MinigamesPanel/BtnHammer"])
 	if btn_hammer:
 		btn_hammer.pressed.connect(_on_btn_hammer)
 		print("HUD: Hammer button connected")
 	else:
 		print("HUD: Hammer button not found")
-	var btn_sew = get_node_or_null("BtnSewOSU")
+
+	var btn_sew = _find_node_any(["BtnSewOSU", "MinigamesPanel/MinigamesHBox/BtnSewOSU", "MinigamesPanel/BtnSewOSU"])
 	if btn_sew:
 		btn_sew.pressed.connect(_on_btn_sew_osu)
 		print("HUD: Sew button connected")
 	else:
 		print("HUD: Sew button not found")
-	var btn_quench = get_node_or_null("BtnQuench")
+
+	var btn_quench = _find_node_any(["BtnQuench", "MinigamesPanel/MinigamesHBox/BtnQuench", "MinigamesPanel/BtnQuench"])
 	if btn_quench:
 		btn_quench.pressed.connect(_on_btn_quench)
 		print("HUD: Quench button connected")
 	else:
 		print("HUD: Quench button not found")
-	var btn_temp = get_node_or_null("BtnTemp")
+
+	var btn_temp = _find_node_any(["BtnTemp", "MinigamesPanel/MinigamesHBox/BtnTemp", "MinigamesPanel/BtnTemp"])
 	if btn_temp:
 		btn_temp.pressed.connect(_on_btn_temp)
 		print("HUD: Temp button connected")
@@ -33,111 +43,152 @@ func _ready():
 		print("HUD: Temp button not found")
 
 	# Connect to CraftingManager
-	var cm = get_node("/root/CraftingManager")
+	var cm = get_node("/root/CraftingManager") if has_node("/root/CraftingManager") else null
 	if cm:
 		cm.connect("craft_enqueued", Callable(self, "_on_craft_enqueued"))
 		print("HUD: Connected to CraftingManager")
 	else:
 		print("HUD: CraftingManager not found")
 
-	update_queue_display()
-
-func _on_craft_enqueued(_slot_idx, _recipe_id):
-	update_queue_display()
-
-func update_queue_display():
-	var cm = get_node("/root/CraftingManager")
-	var dm = get_node("/root/DataManager")
-	if not cm or not dm:
-		return
-	var queue = cm.queue
-	
-	# Clear existing slots
-	var grid = get_node("BlueprintQueuePanel/BluePrint Grid")
-	for child in grid.get_children():
-		child.queue_free()
-	
-	for i in range(queue.size()):
-		var slot_scene = preload("res://scenes/UI/BlueprintQueueSlot.tscn")
-		var slot_panel = slot_scene.instantiate()
-		slot_panel.name = "Slot%d" % (i+1)
-		grid.add_child(slot_panel)
-		
-		var name_label = slot_panel.get_node("VBoxContainer/NameLabel")
-		var _mats_container = slot_panel.get_node("VBoxContainer/MaterialsContainer")
-		if queue[i] != null:
-			var recipe_id = queue[i].recipe_id
-			var blueprints = dm.get_blueprints()
-			if blueprints.has(recipe_id):
-				var bp = blueprints[recipe_id]
-				name_label.text = bp.name
-				# Set materials
-				var materials = bp.materials
-				slot_panel.set_materials(materials)
-			else:
-				name_label.text = "Unknown"
-				slot_panel.set_materials([])
+	# Connect to DataManager to update UI after data loads
+	if has_node('/root/DataManager'):
+		var dm = get_node('/root/DataManager')
+		# If data is already loaded, call immediately; otherwise wait for signal
+		if dm.blueprints.size() > 0:
+			update_queue_display()
+			populate_materials_list()
 		else:
-			name_label.text = "Empty"
-			slot_panel.set_materials([])
-
-func _on_btn_forge():
-	_toggle_minigame("res://scenes/Minigames/ForgeTemp.tscn", "ForgeTemp")
-
-func _on_btn_hammer():
-	print("HUD: Hammer button pressed")
-	_toggle_minigame("res://scenes/HammerMinigame.tscn", "HammerMinigame")
-
-func _on_btn_sew_osu():
-	_toggle_minigame("res://scenes/Minigames/SewOSU.tscn", "SewOSU")
-
-func _on_btn_quench():
-	_toggle_minigame("res://scenes/Minigames/QuenchWater.tscn", "QuenchWater")
-
-func _on_btn_temp():
-	_toggle_minigame("res://scenes/Minigames/TempMinigame.tscn", "TempMinigame")
-
-func _toggle_minigame(scene_path, node_name):
-	var existing = get_node_or_null(node_name)
-	if existing:
-		print("HUD: Removing existing minigame " + node_name)
-		get_parent().remove_child(existing)
-		existing.queue_free()
-		_set_forge_panels_visible(true)
+			dm.connect("data_ready", Callable(self, "update_queue_display"))
+			dm.connect("data_ready", Callable(self, "populate_materials_list"))
+			print("HUD: waiting for DataManager.data_ready to populate queue")
 	else:
-		print("HUD: Loading minigame " + scene_path + " as " + node_name)
-		_remove_minigames()
-		_set_forge_panels_visible(false)
-		var minigame_scene = load(scene_path).instantiate()
-		print("HUD: Instantiated minigame, adding to ", get_parent().name)
-		minigame_scene.name = node_name
-		get_parent().add_child(minigame_scene)
-		if minigame_scene is CanvasLayer:
-			minigame_scene.offset = Vector2(0, 0)
-		else:
-			minigame_scene.position = Vector2(0, 0)
-		print("HUD: Minigame " + node_name + " added at position " + str(minigame_scene.position if not minigame_scene is CanvasLayer else minigame_scene.offset) + ", size: " + str(minigame_scene.size if minigame_scene is Control else "N/A"))
-
-func _remove_minigames():
-	var main = get_parent()
-	print("HUD: Removing minigames from " + main.name)
-	for child in main.get_children():
-		if child is Control and child.name in ["ForgeTemp", "HammerMinigame", "SewOSU", "QuenchWater", "TempMinigame"]:
-			print("HUD: Removing " + child.name)
-			main.remove_child(child)
-			child.queue_free()
+		print("HUD: DataManager not found; queue will not populate until available")
 
 
-# Lógica para ocultar minijuegos si se cambia de área
-func hide_minigames():
-	_remove_minigames()
-	_set_forge_panels_visible(false)
+func _on_btn_forge() -> void:
+	print("HUD: Forge pressed")
+	# For debug, open forge minigame (if available)
+	if has_node('/root/GameManager'):
+		get_node('/root/GameManager').start_minigame("Forge")
 
-func show_forge_panels():
-	_set_forge_panels_visible(true)
 
-func _set_forge_panels_visible(panel_visible: bool):
-	var panels = ["CraftPanel", "InventoryPanel", "DeliveryButton", "BtnForge", "BtnHammer", "BtnSewOSU", "BtnQuench", "BtnTemp", "CraftLabel", "InventoryLabel", "BlueprintQueuePanel"]
-	for panel_name in panels:
-		if has_node(panel_name):
-			get_node(panel_name).visible = panel_visible
+func _on_btn_hammer() -> void:
+	print("HUD: Hammer pressed")
+	if has_node('/root/GameManager'):
+		get_node('/root/GameManager').start_minigame("Hammer")
+
+
+func _on_btn_sew_osu() -> void:
+	print("HUD: Sew OSU pressed")
+	if has_node('/root/GameManager'):
+		get_node('/root/GameManager').start_minigame("Sew")
+
+
+func _on_btn_quench() -> void:
+	print("HUD: Quench pressed")
+	if has_node('/root/GameManager'):
+		get_node('/root/GameManager').start_minigame("Quench")
+
+
+func _on_btn_temp() -> void:
+	print("HUD: Temp pressed")
+	if has_node('/root/GameManager'):
+		get_node('/root/GameManager').start_minigame("Temp")
+
+
+func _on_craft_enqueued(slot_idx:int, recipe_id:String) -> void:
+	print("HUD: Craft enqueued slot %d -> %s" % [slot_idx, recipe_id])
+	if has_node('/root/Logger'):
+		get_node('/root/Logger').info("HUD: craft_enqueued", {"slot": slot_idx, "recipe": recipe_id})
+	update_queue_display()
+	append_print("Craft enqueued: %s (slot %d)" % [recipe_id, slot_idx])
+
+
+func update_queue_display() -> void:
+	# Populate the QueueContainer with current crafting queue
+	var queue_container = get_node_or_null("BlueprintQueuePanel/QueueContainer")
+	if not queue_container:
+		# fallback to top-level QueueContainer
+		queue_container = get_node_or_null("QueueContainer")
+	if not queue_container:
+		print("HUD: QueueContainer not found; cannot update display")
+		return
+
+	# Clear existing children
+	for child in queue_container.get_children():
+		child.queue_free()
+
+	# Acquire crafting queue from CraftingManager
+	var cm = get_node("/root/CraftingManager") if has_node("/root/CraftingManager") else null
+	if cm == null:
+		print("HUD: CraftingManager not available for queue display")
+		return
+
+	for i in range(cm.queue.size()):
+		var slot = cm.queue[i]
+		var slot_scene = preload("res://scenes/UI/BlueprintQueueSlot.tscn")
+		var slot_node = slot_scene.instantiate()
+
+		# IMPORTANT: add to container first so the slot_node's onready variables are initialized
+		queue_container.add_child(slot_node)
+
+		if slot == null:
+			# empty slot
+			slot_node.set_blueprint_name("(vacío)")
+			continue
+
+		var recipe_id = slot.get("recipe_id") if typeof(slot) == TYPE_DICTIONARY else null
+		if recipe_id == null:
+			slot_node.set_blueprint_name("(desconocido)")
+			continue
+
+		# Lookup blueprint in DataManager
+		var bp = null
+		if has_node('/root/DataManager'):
+			bp = get_node('/root/DataManager').get_blueprint(str(recipe_id))
+		if bp == null:
+			slot_node.set_blueprint_name(str(recipe_id))
+			continue
+
+		# Set display name
+		var display_name = bp.get("name", str(recipe_id)) if typeof(bp) == TYPE_DICTIONARY else str(recipe_id)
+		slot_node.set_blueprint_name(display_name)
+
+		# Set materials (accepts Dictionary or Array)
+		var materials = bp.get("materials", {}) if typeof(bp) == TYPE_DICTIONARY else {}
+		slot_node.set_materials(materials)
+
+		# Persistent trace for debugging
+		if has_node('/root/Logger'):
+			get_node('/root/Logger').info("HUD: queue_slot_populated", {"slot": i, "recipe_id": recipe_id, "display_name": display_name, "materials": materials})
+		append_print("Slot %d: %s" % [i, display_name])
+
+
+func append_print(msg: String) -> void:
+	var ta = get_node_or_null("BlueprintQueuePanel/QueueVBox/PrintsArea")
+	if not ta:
+		ta = get_node_or_null("PrintsArea")
+	if ta:
+		ta.append_bbcode(str(msg) + "\n")
+
+
+func populate_materials_list() -> void:
+	var ml = get_node_or_null("InventoryPanel/InventoryVBox/MaterialsList")
+	if not ml:
+		ml = get_node_or_null("MaterialsList")
+	if not ml:
+		print("HUD: MaterialsList node not found")
+		return
+
+	# Clear existing
+	for child in ml.get_children():
+		child.queue_free()
+
+	if not has_node('/root/DataManager'):
+		return
+	var dm = get_node('/root/DataManager')
+	for key in dm.materials.keys():
+		var entry = dm.materials[key]
+		var label = Label.new()
+		label.text = "%s: %s" % [str(key), str(entry.get("stack", "?"))]
+		ml.add_child(label)

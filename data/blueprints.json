@@ -1,7 +1,8 @@
 {
+  "dagger_basic": { "name": "Basic Dagger", "materials": { "iron": 2 }, "result": "dagger_basic" },
+  "potion_heal": { "name": "Healing Potion", "materials": { "water": 1, "catalyst_fire": 1 }, "result": "potion_heal" },
   "sword_basic": { "name": "Basic Sword", "materials": { "iron": 3 }, "result": "sword_basic" },
   "armor_leather": { "name": "Leather Armor", "materials": { "leather": 4 }, "result": "leather_armor" },
-  "shield_wooden": { "name": "Wooden Shield", "materials": { "wood": 5, "iron": 2 }, "result": "shield_wooden" },
   "bow_simple": { "name": "Simple Bow", "materials": { "wood": 4, "string": 2 }, "result": "bow_simple" },
   "helmet_iron": { "name": "Iron Helmet", "materials": { "iron": 4 }, "result": "helmet_iron" }
 }

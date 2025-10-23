@@ -1,0 +1,22 @@
+# Godot
+.godot/
+*.import
+
+# Documentation
+doc/godotdocu/
+
+# Logs
+logs/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.swp
+*.bak

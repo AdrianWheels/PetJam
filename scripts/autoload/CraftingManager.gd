@@ -1,5 +1,7 @@
 extends Node
 
+class_name CraftingManager
+
 signal craft_enqueued(slot_idx, recipe_id)
 
 const MAX_SLOTS = 3
@@ -24,6 +26,8 @@ func enqueue(recipe_id) -> bool:
 		if queue[i] == null:
 			queue[i] = {"recipe_id": recipe_id, "progress": 0}
 			print("CraftingManager: Enqueued recipe '%s' in slot %d" % [recipe_id, i])
+			if has_node('/root/Logger'):
+				get_node('/root/Logger').info("CraftingManager: Enqueued", {"slot": i, "recipe": recipe_id})
 			emit_signal("craft_enqueued", i, recipe_id)
 			return true
 	print("CraftingManager: No free slots for recipe '%s'" % recipe_id)

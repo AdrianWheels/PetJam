@@ -1,0 +1,21 @@
+Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org
+
+GameManager: Ready
+CraftingManager: Enqueued recipe 'sword_basic' in slot 0
+CraftingManager: Enqueued recipe 'armor_leather' in slot 1
+CraftingManager: Enqueued recipe 'shield_wooden' in slot 2
+CraftingManager: Ready with 3 slots and default blueprints enqueued
+AudioManager ready
+TelemetryManager ready
+Main: Scene ready
+HUD: Forge button not found
+HUD: Hammer button connected
+HUD: Sew button connected
+HUD: Quench button connected
+HUD: Temp button connected
+HUD: Connected to CraftingManager
+GameManager: Starting new run at room 1
+Main: Cambiando a Dungeon
+Main: Scene ready. Área actual: Forja
+HUD: Removing minigames from ForgeUI
+Main: Cambiando a Dungeon

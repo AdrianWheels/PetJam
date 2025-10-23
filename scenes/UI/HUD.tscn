@@ -7,66 +7,112 @@
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1")
 
-[node name="CraftPanel#CraftLabel" type="Label" parent="."]
-offset_left = 10.0
-offset_top = 10.0
-offset_right = 10.0
-offset_bottom = 10.0
-text = "Crafting"
+; Minigames panel (background) with buttons grouped
+[node name="MinigamesPanel" type="ColorRect" parent="."]
+color = Color(0.15, 0.15, 0.18, 0.85)
+custom_minimum_size = Vector2(380, 80)
+offset_left = 340.0
+offset_top = 540.0
+offset_right = 760.0
+offset_bottom = 620.0
 
-[node name="InventoryPanel#InventoryLabel" type="Label" parent="."]
-offset_left = 420.0
-offset_top = 20.0
-offset_right = 520.0
-offset_bottom = 60.0
-text = "Inventario"
-
-[node name="BlueprintQueuePanel" type="ColorRect" parent="."]
-color = Color(0.5, 0.7, 1, 1)
-
-[node name="QueueLabel" type="Label" parent="BlueprintQueuePanel"]
+[node name="MinigamesHBox" type="HBoxContainer" parent="MinigamesPanel"]
 layout_mode = 0
-offset_top = 54.0
-offset_right = 142.0
-offset_bottom = 77.0
-text = "Cola de Blueprints"
+separation = 8.0
+anchors_preset = 4
+margin_left = 8.0
+margin_top = 8.0
+margin_right = 8.0
+margin_bottom = 8.0
 
-[node name="QueueContainer" type="VBoxContainer" parent="BlueprintQueuePanel"]
-layout_mode = 0
-
-[node name="BluePrint Grid" type="GridContainer" parent="BlueprintQueuePanel"]
-layout_mode = 0
-offset_top = 78.0
-offset_right = 180.0
-offset_bottom = 301.0
-
-[node name="BtnHammer" type="Button" parent="."]
-offset_left = 358.0
-offset_top = 572.0
-offset_right = 458.0
-offset_bottom = 612.0
+[node name="BtnHammer" type="Button" parent="MinigamesHBox"]
 text = "Martillo"
 
-[node name="BtnSewOSU" type="Button" parent="."]
-offset_left = 478.0
-offset_top = 572.0
-offset_right = 578.0
-offset_bottom = 612.0
+[node name="BtnSewOSU" type="Button" parent="MinigamesHBox"]
 text = "Coser OSU"
 
-[node name="BtnQuench" type="Button" parent="."]
-offset_left = 598.0
-offset_top = 572.0
-offset_right = 698.0
-offset_bottom = 612.0
+[node name="BtnQuench" type="Button" parent="MinigamesHBox"]
 text = "Agua"
 
-[node name="BtnTemp" type="Button" parent="."]
-offset_left = 718.0
-offset_top = 572.0
-offset_right = 828.0
-offset_bottom = 612.0
+[node name="BtnTemp" type="Button" parent="MinigamesHBox"]
 text = "Temperatura"
+
+; Blueprint queue panel with title and prints area
+[node name="BlueprintQueuePanel" type="ColorRect" parent="."]
+color = Color(0.5, 0.7, 1, 1)
+custom_minimum_size = Vector2(260, 300)
+offset_left = 10.0
+offset_top = 60.0
+offset_right = 270.0
+offset_bottom = 380.0
+
+[node name="QueueVBox" type="VBoxContainer" parent="BlueprintQueuePanel"]
+layout_mode = 0
+anchors_preset = 7
+margin_left = 8.0
+margin_top = 8.0
+margin_right = 8.0
+margin_bottom = 8.0
+
+[node name="QueueLabel" type="Label" parent="QueueVBox"]
+text = "Cola de blueprints"
+horizontal_alignment = 1
+
+[node name="QueueContainer" type="VBoxContainer" parent="QueueVBox"]
+name = "QueueContainer"
+size_flags_vertical = 2
+anchors_preset = 7
+margin_left = 4.0
+margin_top = 4.0
+margin_right = 4.0
+margin_bottom = 4.0
+
+[node name="PrintsLabel" type="Label" parent="QueueVBox"]
+text = "Debug prints:"
+margin_top = 8.0
+
+[node name="PrintsArea" type="TextEdit" parent="QueueVBox"]
+read_only = true
+custom_minimum_size = Vector2(240, 100)
+anchors_preset = 7
+margin_left = 4.0
+margin_top = 4.0
+margin_right = 4.0
+margin_bottom = 4.0
+
+; Inventory panel on the right with material list
+[node name="InventoryPanel" type="ColorRect" parent="."]
+color = Color(0.9, 0.9, 0.9, 0.9)
+custom_minimum_size = Vector2(220, 300)
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -240.0
+offset_top = 40.0
+offset_right = -20.0
+offset_bottom = 360.0
+
+[node name="InventoryVBox" type="VBoxContainer" parent="InventoryPanel"]
+layout_mode = 0
+anchors_preset = 7
+margin_left = 8.0
+margin_top = 8.0
+margin_right = 8.0
+margin_bottom = 8.0
+
+[node name="InventoryLabel" type="Label" parent="InventoryVBox"]
+text = "Inventario"
+horizontal_alignment = 1
+
+[node name="MaterialsList" type="VBoxContainer" parent="InventoryVBox"]
+name = "MaterialsList"
+separation = 4.0
+custom_minimum_size = Vector2(200, 260)
+size_flags_vertical = 2
+anchors_preset = 7
+margin_left = 4.0
+margin_top = 4.0
+margin_right = 4.0
+margin_bottom = 4.0
 
 [node name="Label" type="Label" parent="."]
 anchors_preset = 1
