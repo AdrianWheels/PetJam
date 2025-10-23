@@ -1,0 +1,36 @@
+[gd_resource type="Resource" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/resources/DropTable.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/gameplay/resources/DropEntry.gd" id="2"]
+
+[sub_resource type="Resource" id="1" script=ExtResource("2")]
+item_id = "iron"
+chance = 0.65
+min_quantity = 1
+max_quantity = 2
+rolls = 1
+
+[sub_resource type="Resource" id="2" script=ExtResource("2")]
+item_id = "leather"
+chance = 0.4
+min_quantity = 1
+max_quantity = 1
+rolls = 1
+
+[sub_resource type="Resource" id="3" script=ExtResource("2")]
+item_id = "cloth"
+chance = 0.35
+min_quantity = 1
+max_quantity = 2
+rolls = 1
+
+[sub_resource type="Resource" id="4" script=ExtResource("2")]
+item_id = "catalyst_fire"
+chance = 0.15
+min_quantity = 1
+max_quantity = 1
+rolls = 1
+
+[resource]
+script = ExtResource("1")
+entries = [SubResource("1"), SubResource("2"), SubResource("3"), SubResource("4")]
