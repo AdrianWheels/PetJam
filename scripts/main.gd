@@ -1,195 +1,193 @@
 extends Node2D
 
-@onready var hud_scene := preload("res://scenes/UI/HUD.tscn")
-@onready var corridor_scene := preload("res://scenes/Corridor.tscn")
+const HUD_SCENE := preload("res://scenes/UI/HUD.tscn")
+const CORRIDOR_SCENE := preload("res://scenes/Corridor.tscn")
+const DUNGEON_STATUS_SCENE := preload("res://scenes/HUD/DungeonStatus.tscn")
 
+@onready var camera: Camera2D = $Camera2D
+@onready var forge_ui: CanvasLayer = $ForgeUI
+@onready var dungeon_ui: CanvasLayer = $DungeonUI
+@onready var result_panel: Control = $ForgeUI/ResultPanel
+@onready var delivery_panel: Control = $ForgeUI/DeliveryPanel
+@onready var fade_overlay: ColorRect = $FadeLayer/FadeOverlay
+@onready var fade_layer: CanvasLayer = $FadeLayer
 
-@onready var camera := $Camera2D
-@onready var forge_area := $ForgeArea
-@onready var dungeon_area := $DungeonArea
-@onready var forge_ui := $ForgeUI
-@onready var dungeon_ui := $DungeonUI
+var hud: CanvasLayer
+var corridor: Node2D
+var dungeon_status: Control
 
-var hud: Node = null
-var corridor: Node = null
-var dungeon_hud: Node = null
-@onready var fade_overlay := $FadeLayer/FadeOverlay
-@onready var fade_layer := $FadeLayer
+var current_area: StringName = &"forge"
+var forge_camera_pos := Vector2.ZERO
+var dungeon_camera_pos := Vector2(2000, 270)
+var forge_zoom := Vector2(0.5, 0.5)
+var dungeon_zoom := Vector2(0.5, 0.5)
 
-var current_area := "forge" # "forge" o "dungeon"
-var forge_pos := Vector2.ZERO
-var dungeon_pos := Vector2(2000, 270) # Separated more
-
-# Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	print("Main: Scene ready")
-	# Instanciar HUD y Corridor
-	hud = hud_scene.instantiate()
-	forge_ui.add_child(hud)
-	corridor = corridor_scene.instantiate()
-	add_child(corridor)
-	# Instanciar HUD dungeon (puedes crear una escena DungeonHUD.tscn si lo deseas)
-	dungeon_hud = Control.new()
-	dungeon_hud.size = Vector2(960, 60)
-	dungeon_hud.position = Vector2(0, 0)
-	
-	var bg = ColorRect.new()
-	bg.color = Color(0x11 / 255.0, 0x18 / 255.0, 0x27 / 255.0, 0.9)
-	bg.size = Vector2(960, 40)
-	dungeon_hud.add_child(bg)
-	
-	var label = Label.new()
-	label.name = "InfoLabel"
-	label.position = Vector2(10, 5)
-	label.size = Vector2(940, 30)
-	dungeon_hud.add_child(label)
-	
-	dungeon_ui.add_child(dungeon_hud)
-	fade_overlay.size = get_viewport_rect().size
-	fade_layer.visible = false
-	corridor.visible = false  # Hide in forge
-	forge_ui.visible = true
-	dungeon_ui.visible = false
+        print("Main: Scene ready")
+        hud = HUD_SCENE.instantiate()
+        forge_ui.add_child(hud)
 
-	# Conectar señales de GameManager autoload
-	var gm = get_node("/root/GameManager")
-        if gm:
-                gm.connect("room_entered", Callable(self, "_on_room_entered"))
-                gm.connect("game_over", Callable(self, "_on_game_over"))
-                gm.connect("hero_died", Callable(self, "_on_hero_died"))
-                gm.connect("hero_respawned", Callable(self, "_on_hero_respawned"))
-                gm.connect("boss_defeated", Callable(self, "_on_boss_defeated"))
-                gm.start_run()
-	else:
-		push_error("Main: GameManager not found")
+        corridor = CORRIDOR_SCENE.instantiate()
+        corridor.visible = false
+        add_child(corridor)
 
-	camera.position = forge_pos
-	camera.zoom = Vector2(0.5, 0.5)
-	print("Main: Scene ready. Área actual: Forja")
+        dungeon_status = DUNGEON_STATUS_SCENE.instantiate()
+        dungeon_ui.add_child(dungeon_status)
 
-func change_area(area: String):
-	_fade_out_in(func():
-		if area == "forge":
-			camera.position = forge_pos
-			camera.zoom = Vector2(0.5, 0.5)
-			current_area = "forge"
-			if forge_ui:
-				forge_ui.visible = true
-				# Forzar visibilidad de todos los paneles y botones
-				var hud_panels = ["CraftPanel", "InventoryPanel", "DeliveryButton", "BtnForge", "BtnHammer", "BtnSewOSU", "BtnQuench"]
-				for panel_name in hud_panels:
-					if hud.has_node(panel_name):
-						hud.get_node(panel_name).visible = true
-			if dungeon_ui:
-				dungeon_ui.visible = false
-			if corridor:
-				corridor.visible = false
-			if hud and hud.has_method("show_forge_panels"):
-				hud.show_forge_panels()
-		elif area == "dungeon":
-			camera.position = dungeon_pos
-			camera.zoom = Vector2(0.5, 0.5)
-			current_area = "dungeon"
-			if forge_ui:
-				forge_ui.visible = false
-				# Forzar ocultar todos los paneles y botones, incluyendo labels
-				var hud_panels = ["CraftPanel", "InventoryPanel", "DeliveryButton", "BtnForge", "BtnHammer", "BtnSewOSU", "BtnQuench", "CraftLabel", "InventoryLabel"]
-				for panel_name in hud_panels:
-					if hud.has_node(panel_name):
-						hud.get_node(panel_name).visible = false
-			if dungeon_ui:
-				dungeon_ui.visible = true
-			if corridor:
-				corridor.visible = true
-			if hud and hud.has_method("hide_minigames"):
-				hud.hide_minigames()
-			if hud and hud.has_method("hide_forge_panels"):
-				hud.hide_forge_panels()
-		print("Main: Cambiando a %s" % area.capitalize())
-	)
+        fade_overlay.size = get_viewport_rect().size
+        fade_layer.visible = false
+        corridor.visible = false
+        forge_ui.visible = true
+        dungeon_ui.visible = false
 
-func _fade_out_in(callback):
-	fade_overlay.modulate.a = 0
-	fade_layer.visible = true
-	var tween := get_tree().create_tween()
-	tween.tween_property(fade_overlay, "modulate:a", 1.0, 1.0)
-	tween.tween_interval(0.5)
-	tween.tween_callback(callback)
-	tween.tween_property(fade_overlay, "modulate:a", 0.0, 1.0)
-	tween.tween_callback(func(): fade_layer.visible = false)
+        if Engine.has_singleton("UIManager"):
+                UIManager.register_camera(camera, forge_camera_pos, dungeon_camera_pos, forge_zoom, dungeon_zoom)
+                UIManager.register_nodes({
+                        "forge_ui": forge_ui,
+                        "dungeon_ui": dungeon_ui,
+                        "corridor": corridor,
+                        "hud": hud,
+                        "delivery_panel": delivery_panel,
+                        "dungeon_status": dungeon_status,
+                        "result_panel": result_panel,
+                        "fade_layer": fade_layer,
+                        "fade_overlay": fade_overlay,
+                        "camera": camera,
+                        "forge_position": forge_camera_pos,
+                        "dungeon_position": dungeon_camera_pos,
+                        "forge_zoom": forge_zoom,
+                        "dungeon_zoom": dungeon_zoom,
+                })
+                if not UIManager.is_connected("area_changed", Callable(self, "_on_area_changed")):
+                        UIManager.area_changed.connect(_on_area_changed)
+                UIManager.show_forge()
+        else:
+                _apply_area_locally(&"forge")
 
-func _input(event):
-	if forge_ui.get_child_count() > 1:
-		return
-	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
-			if current_area == "forge":
-				change_area("dungeon")
-			else:
-				change_area("forge")
+        _register_game_manager()
+        print("Main: Scene ready. Área actual: Forja")
 
-func _toggle_area():
-	if current_area == "forge":
-		current_area = "dungeon"
-		_move_camera_to(dungeon_pos)
-		print("Main: Cambiando a Dungeon")
-	else:
-		current_area = "forge"
-		_move_camera_to(forge_pos)
-		print("Main: Cambiando a Forja")
+func _register_game_manager() -> void:
+        if not Engine.has_singleton("GameManager"):
+                push_error("Main: GameManager not found")
+                return
+        var gm := GameManager
+        if not gm.is_connected("room_entered", Callable(self, "_on_room_entered")):
+                gm.room_entered.connect(_on_room_entered)
+        if not gm.is_connected("game_over", Callable(self, "_on_game_over")):
+                gm.game_over.connect(_on_game_over)
+        if not gm.is_connected("hero_died", Callable(self, "_on_hero_died")):
+                gm.hero_died.connect(_on_hero_died)
+        if not gm.is_connected("hero_respawned", Callable(self, "_on_hero_respawned")):
+                gm.hero_respawned.connect(_on_hero_respawned)
+        if not gm.is_connected("boss_defeated", Callable(self, "_on_boss_defeated")):
+                gm.boss_defeated.connect(_on_boss_defeated)
+        var hero := corridor.get_node_or_null("Hero")
+        if hero:
+                gm.register_hero(hero)
+        gm.start_run()
 
-func _move_camera_to(target_pos: Vector2):
-	var tween := get_tree().create_tween()
-	tween.tween_property(camera, "position", target_pos, 0.7).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+func change_area(area: StringName) -> void:
+        if Engine.has_singleton("UIManager") and UIManager.get_current_area() == area:
+                return
+        if not Engine.has_singleton("UIManager") and current_area == area:
+                return
+        _fade_out_in(func():
+                if Engine.has_singleton("UIManager"):
+                        if area == &"forge":
+                                UIManager.show_forge()
+                        else:
+                                UIManager.show_dungeon()
+                else:
+                        _apply_area_locally(area)
+        )
 
-func _on_room_entered(room_idx: int):
-	print("Main: Cambiando a Dungeon")
-	change_area("dungeon")
-	if hud and hud.has_node("Label"):
-		hud.get_node("Label").text = "HUD - Room: %d" % room_idx
+func _apply_area_locally(area: StringName) -> void:
+        current_area = area
+        var is_dungeon := area == &"dungeon"
+        forge_ui.visible = not is_dungeon
+        dungeon_ui.visible = is_dungeon
+        if corridor:
+                corridor.visible = is_dungeon
+                corridor.process_mode = Node.PROCESS_MODE_INHERIT if is_dungeon else Node.PROCESS_MODE_DISABLED
+        camera.position = dungeon_camera_pos if is_dungeon else forge_camera_pos
+        camera.zoom = dungeon_zoom if is_dungeon else forge_zoom
 
-func _on_game_over():
-	print("Main: Cambiando a Forja")
-	change_area("forge")
-	if hud and hud.has_node("Label"):
-		hud.get_node("Label").text = "GAME OVER"
+func _fade_out_in(callback: Callable) -> void:
+        fade_overlay.modulate.a = 0
+        fade_layer.visible = true
+        var tween := get_tree().create_tween()
+        tween.tween_property(fade_overlay, "modulate:a", 1.0, 1.0)
+        tween.tween_interval(0.5)
+        tween.tween_callback(callback)
+        tween.tween_property(fade_overlay, "modulate:a", 0.0, 1.0)
+        tween.tween_callback(func(): fade_layer.visible = false)
 
-func _on_hero_died(death_count: int):
-        print("Main: Hero died (%d)" % death_count)
-        if hud and hud.has_node("Label"):
-                hud.get_node("Label").text = "Hero died! (%d)" % death_count
+func _input(event: InputEvent) -> void:
+        if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+                if Engine.has_singleton("UIManager") and not UIManager.can_toggle_area():
+                        return
+                var target_area := &"dungeon" if _get_current_area() == &"forge" else &"forge"
+                change_area(target_area)
 
-func _on_hero_respawned(death_count: int):
-        print("Main: Hero respawned after %d deaths" % death_count)
-        if hud and hud.has_node("Label"):
-                hud.get_node("Label").text = "Hero ready (deaths %d)" % death_count
-
-func _on_boss_defeated():
-        print("Main: Boss defeated")
-        if hud and hud.has_node("Label"):
-                hud.get_node("Label").text = "Boss defeated!"
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
-	if current_area == "dungeon" and corridor and dungeon_hud:
-		var hero = corridor.get_node("Hero")
-		var enemy = corridor.get_node("Enemy")
-		if hero and enemy:
-                        var state_str := ""
-                        match corridor.state:
-                                corridor.State.RUN:
-                                        state_str = "RUN"
-                                corridor.State.FIGHT:
-                                        state_str = "FIGHT"
-                                corridor.State.DEAD:
-                                        state_str = "DEAD"
-                                corridor.State.COMPLETE:
-                                        state_str = "COMPLETE"
-                                _:
-                                        state_str = str(corridor.state)
-			var dps_h = hero.expected_dps()
-			var dps_e = enemy.expected_dps()
-			var label = dungeon_hud.get_node("InfoLabel")
-			label.text = "ENEMY L%d  |  HERO HP %d/%d (DPS %.1f)  |  ENEMY HP %d/%d (DPS %.1f)  |  STATE %s" % [
-				enemy.level, hero.hp, hero.max_hp, dps_h, enemy.hp, enemy.max_hp, dps_e, state_str
-			]
+        if _get_current_area() != &"dungeon" or corridor == null or dungeon_status == null:
+                return
+        var hero := corridor.get_node_or_null("Hero")
+        var enemy := corridor.get_node_or_null("Enemy")
+        if hero and enemy:
+                dungeon_status.call("update_combat_info", hero, enemy, _corridor_state_name())
+
+func _on_room_entered(room_idx: int) -> void:
+        print("Main: Cambiando a Dungeon")
+        change_area(&"dungeon")
+        _update_hud_label("HUD - Room: %d" % room_idx)
+
+func _on_game_over() -> void:
+        print("Main: Cambiando a Forja")
+        change_area(&"forge")
+        _update_hud_label("GAME OVER")
+
+func _on_hero_died(death_count: int) -> void:
+        print("Main: Hero died (%d)" % death_count)
+        _update_hud_label("Hero died! (%d)" % death_count)
+
+func _on_hero_respawned(death_count: int) -> void:
+        print("Main: Hero respawned after %d deaths" % death_count)
+        _update_hud_label("Hero ready (deaths %d)" % death_count)
+
+func _on_boss_defeated() -> void:
+        print("Main: Boss defeated")
+        _update_hud_label("Boss defeated!")
+
+func _on_area_changed(new_area: StringName) -> void:
+        current_area = new_area
+
+func _update_hud_label(text: String) -> void:
+        if hud:
+                var label: Label = hud.get_node_or_null("Label")
+                if label:
+                        label.text = text
+
+func _get_current_area() -> StringName:
+        if Engine.has_singleton("UIManager"):
+                return UIManager.get_current_area()
+        return current_area
+
+func _corridor_state_name() -> String:
+        if corridor == null:
+                return "IDLE"
+        var state_value = corridor.get("state") if corridor.has_method("get") else 0
+        if corridor.has_method("get_state_name"):
+                return corridor.get_state_name()
+        match state_value:
+                corridor.State.RUN:
+                        return "RUN"
+                corridor.State.FIGHT:
+                        return "FIGHT"
+                corridor.State.DEAD:
+                        return "DEAD"
+                corridor.State.COMPLETE:
+                        return "COMPLETE"
+                _:
+                        return str(state_value)

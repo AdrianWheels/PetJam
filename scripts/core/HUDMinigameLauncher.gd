@@ -214,12 +214,17 @@ func _launch_trial(task_id: int, config: TrialConfig) -> void:
                 instance.start_game()
 
 func _on_trial_completed(result: TrialResult, instance: Node, task_id: int, config: TrialConfig) -> void:
+        var outcome := {}
         if has_node("/root/CraftingManager"):
-                get_node("/root/CraftingManager").report_trial_result(task_id, result)
+                outcome = get_node("/root/CraftingManager").report_trial_result(task_id, result)
         if has_node("/root/TelemetryManager"):
                 get_node("/root/TelemetryManager").record_trial(config.blueprint_id, config.trial_id, result)
         if _active_minigame == instance:
                 _active_task_id = -1
+        if typeof(outcome) == TYPE_DICTIONARY:
+                var status := String(outcome.get("status", ""))
+                if status == "completed" and Engine.has_singleton("UIManager"):
+                        UIManager.present_delivery(outcome)
 
 func _fallback_scene_for(minigame_id: StringName) -> PackedScene:
         var key := StringName(minigame_id)

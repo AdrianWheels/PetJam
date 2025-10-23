@@ -27,17 +27,31 @@ var pulse_timer: float = PULSE_INTERVAL
 var alive: bool = true
 
 var size: Vector2 = Vector2(42, 64)
+var loadout_bonus: Dictionary = {}
 
 func _ready():
         respawn()
 
 func reset_stats():
-        max_hp = BASE_HP + STR * 10
+        var bonus_str := int(loadout_bonus.get("STR", 0))
+        var bonus_agi := int(loadout_bonus.get("AGI", 0))
+        var bonus_int := int(loadout_bonus.get("INT", 0))
+        STR = BASE_STR + bonus_str
+        AGI = BASE_AGI + bonus_agi
+        INT = BASE_INT + bonus_int
+
+        var bonus_hp := int(loadout_bonus.get("HP", 0))
+        var bonus_dmg := float(loadout_bonus.get("DMG", 0.0))
+        var bonus_aps := float(loadout_bonus.get("APS", 0.0))
+        var bonus_crit_p := float(loadout_bonus.get("CRIT_P", 0.0))
+        var bonus_crit_m := float(loadout_bonus.get("CRIT_M", 0.0))
+
+        max_hp = BASE_HP + STR * 10 + bonus_hp
         hp = max_hp
-        dmg = BASE_DMG + STR * 1.5
-        aps = clamp(BASE_APS + AGI * 0.02, 0.3, 5.0)
-        crit_p = min(0.5, AGI * 0.005)
-        crit_m = clamp(1.5 + INT * 0.01, 1.0, 2.0)
+        dmg = BASE_DMG + STR * 1.5 + bonus_dmg
+        aps = clamp(BASE_APS + AGI * 0.02 + bonus_aps, 0.3, 5.0)
+        crit_p = clamp(AGI * 0.005 + bonus_crit_p, 0.0, 0.75)
+        crit_m = clamp(1.5 + INT * 0.01 + bonus_crit_m, 1.0, 3.0)
         atk_timer = 1.0 / aps
         pulse_timer = PULSE_INTERVAL
         alive = true
@@ -89,6 +103,10 @@ func respawn(start_position: Vector2 = Vector2(2100, 460)) -> void:
         velocity = Vector2.ZERO
         alive = true
         emit_signal("respawned")
+
+func apply_loadout(loadout: Dictionary) -> void:
+        loadout_bonus = loadout.duplicate(true)
+        reset_stats()
 
 func _create_spark_particle(pos: Vector2) -> Dictionary:
         var angle := randf() * PI * 2.0

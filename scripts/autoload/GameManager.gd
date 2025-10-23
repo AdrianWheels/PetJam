@@ -7,10 +7,31 @@ signal hero_respawned(death_count)
 signal boss_defeated
 signal game_over
 signal dungeon_state_changed(new_state)
+signal hero_loadout_changed(loadout)
 
 const MAX_DEATHS := 50
 
 enum DungeonState { IDLE, RUNNING, HERO_DEAD, COMPLETED, FAILED }
+
+const ITEM_DEFAULT_SLOT := {
+        &"sword_basic": &"weapon",
+        &"dagger_basic": &"weapon",
+        &"bow_simple": &"weapon",
+        &"armor_leather": &"armor",
+        &"helmet_iron": &"armor",
+        &"shield_wooden": &"shield",
+        &"potion_heal": &"trinket",
+}
+
+const ITEM_BONUSES := {
+        &"sword_basic": {"STR": 4, "DMG": 2.0},
+        &"dagger_basic": {"AGI": 5, "APS": 0.2},
+        &"bow_simple": {"AGI": 3, "DMG": 1.5},
+        &"armor_leather": {"STR": 2, "HP": 30},
+        &"helmet_iron": {"INT": 3, "HP": 20},
+        &"shield_wooden": {"HP": 40},
+        &"potion_heal": {"HP": 25},
+}
 
 var current_room: int = 1
 var total_rooms: int = 9
@@ -28,9 +49,20 @@ var dungeon_state: int = DungeonState.IDLE:
 
 var death_count: int = 0
 var boss_defeated: bool = false
+var hero_loadout := {
+        &"weapon": StringName(),
+        &"armor": StringName(),
+        &"shield": StringName(),
+        &"trinket": StringName(),
+}
+var _hero: Node = null
 
 func _ready():
         print("GameManager: Ready")
+
+func register_hero(hero_node: Node) -> void:
+        _hero = hero_node
+        _apply_hero_loadout()
 
 func start_run():
         current_room = 1
@@ -100,3 +132,34 @@ func is_run_failed() -> bool:
 
 func is_run_active() -> bool:
         return dungeon_state == DungeonState.RUNNING
+
+func deliver_item_to_hero(item_id: StringName, slot: StringName = StringName()) -> void:
+        if item_id == StringName():
+                return
+        var resolved_slot := slot
+        if resolved_slot == StringName() and ITEM_DEFAULT_SLOT.has(item_id):
+                resolved_slot = ITEM_DEFAULT_SLOT[item_id]
+        if resolved_slot == StringName():
+                resolved_slot = &"trinket"
+        hero_loadout[resolved_slot] = item_id
+        _apply_hero_loadout()
+
+func get_hero_loadout() -> Dictionary:
+        return hero_loadout.duplicate(true)
+
+func _apply_hero_loadout() -> void:
+        if _hero and _hero.has_method("apply_loadout"):
+                _hero.apply_loadout(_build_loadout_bonus())
+        emit_signal("hero_loadout_changed", get_hero_loadout())
+
+func _build_loadout_bonus() -> Dictionary:
+        var totals := {}
+        for slot in hero_loadout.keys():
+                var item_id: StringName = hero_loadout[slot]
+                if item_id == StringName():
+                        continue
+                var bonus: Dictionary = ITEM_BONUSES.get(item_id, {})
+                for key in bonus.keys():
+                        var accum := totals.get(key, 0)
+                        totals[key] = accum + bonus[key]
+        return totals

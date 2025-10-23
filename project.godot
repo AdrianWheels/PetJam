@@ -23,6 +23,7 @@ CraftingManager="res://scripts/autoload/CraftingManager.gd"
 AudioManager="res://scripts/autoload/AudioManager.gd"
 TelemetryManager="res://scripts/autoload/TelemetryManager.gd"
 Logger="res://scripts/autoload/Logger.gd"
+UIManager="res://scripts/autoload/UIManager.gd"
 
 [display]
 
