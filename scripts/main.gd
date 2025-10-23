@@ -53,11 +53,13 @@ func _ready() -> void:
 
 	# Conectar señales de GameManager autoload
 	var gm = get_node("/root/GameManager")
-	if gm:
-		gm.connect("room_entered", Callable(self, "_on_room_entered"))
-		gm.connect("game_over", Callable(self, "_on_game_over"))
-		gm.connect("hero_died", Callable(self, "_on_hero_died"))
-		gm.start_run()
+        if gm:
+                gm.connect("room_entered", Callable(self, "_on_room_entered"))
+                gm.connect("game_over", Callable(self, "_on_game_over"))
+                gm.connect("hero_died", Callable(self, "_on_hero_died"))
+                gm.connect("hero_respawned", Callable(self, "_on_hero_respawned"))
+                gm.connect("boss_defeated", Callable(self, "_on_boss_defeated"))
+                gm.start_run()
 	else:
 		push_error("Main: GameManager not found")
 
@@ -152,10 +154,20 @@ func _on_game_over():
 	if hud and hud.has_node("Label"):
 		hud.get_node("Label").text = "GAME OVER"
 
-func _on_hero_died():
-	print("Main: Hero died")
-	if hud and hud.has_node("Label"):
-		hud.get_node("Label").text = "Hero died!"
+func _on_hero_died(death_count: int):
+        print("Main: Hero died (%d)" % death_count)
+        if hud and hud.has_node("Label"):
+                hud.get_node("Label").text = "Hero died! (%d)" % death_count
+
+func _on_hero_respawned(death_count: int):
+        print("Main: Hero respawned after %d deaths" % death_count)
+        if hud and hud.has_node("Label"):
+                hud.get_node("Label").text = "Hero ready (deaths %d)" % death_count
+
+func _on_boss_defeated():
+        print("Main: Boss defeated")
+        if hud and hud.has_node("Label"):
+                hud.get_node("Label").text = "Boss defeated!"
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
@@ -163,7 +175,18 @@ func _process(_delta: float) -> void:
 		var hero = corridor.get_node("Hero")
 		var enemy = corridor.get_node("Enemy")
 		if hero and enemy:
-			var state_str = "RUN" if corridor.state == 0 else "FIGHT" if corridor.state == 1 else "DEAD"
+                        var state_str := ""
+                        match corridor.state:
+                                corridor.State.RUN:
+                                        state_str = "RUN"
+                                corridor.State.FIGHT:
+                                        state_str = "FIGHT"
+                                corridor.State.DEAD:
+                                        state_str = "DEAD"
+                                corridor.State.COMPLETE:
+                                        state_str = "COMPLETE"
+                                _:
+                                        state_str = str(corridor.state)
 			var dps_h = hero.expected_dps()
 			var dps_e = enemy.expected_dps()
 			var label = dungeon_hud.get_node("InfoLabel")

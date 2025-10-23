@@ -18,6 +18,7 @@ config/features=PackedStringArray("4.5")
 
 GameManager="res://scripts/autoload/GameManager.gd"
 DataManager="res://scripts/autoload/DataManager.gd"
+InventoryManager="res://scripts/autoload/InventoryManager.gd"
 CraftingManager="res://scripts/autoload/CraftingManager.gd"
 AudioManager="res://scripts/autoload/AudioManager.gd"
 TelemetryManager="res://scripts/autoload/TelemetryManager.gd"
