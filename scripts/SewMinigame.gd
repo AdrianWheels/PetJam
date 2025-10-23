@@ -38,12 +38,14 @@ var running = false
 var paused = false
 var finished = false
 var bp = {"name": "Coser-Default", "stitchSpeed": 1, "agility": 0.15, "precision": 0.2}
+var _pending_blueprint := bp.duplicate(true)
+var _max_score := 2400.0
 
 func _ready():
-	print("SewMinigame: Ready")
-	var viewport_size = get_viewport_rect().size
-	size = viewport_size
-	position = Vector2(0,0)
+        print("SewMinigame: Ready")
+        var viewport_size = get_viewport_rect().size
+        size = viewport_size
+        position = Vector2(0,0)
 	scale_factor = viewport_size.x / CANVAS_W
 	CANVAS_W = int(CANVAS_W * scale_factor)
 	CANVAS_H = int(CANVAS_H * scale_factor)
@@ -53,12 +55,27 @@ func _ready():
 	cy = CANVAS_H / 2.0
 	ring_r = RING_R
 	r = START_R
-	setup_title_screen("SEW TIME")
-	queue_redraw()
+        setup_title_screen("SEW TIME")
+        queue_redraw()
+
+func start_trial(config: TrialConfig) -> void:
+        super.start_trial(config)
+        var stitch_speed := clamp(float(config.get_parameter(&"stitch_speed", 1.0)), 0.3, 2.0)
+        var agility := clamp(float(config.get_parameter(&"agility", 0.2)), 0.0, 1.0)
+        var precision := clamp(float(config.get_parameter(&"precision", 0.4)), 0.0, 1.0)
+        var label := String(config.get_parameter(&"label", "Coser"))
+        _pending_blueprint = {
+                "name": label,
+                "stitchSpeed": stitch_speed,
+                "agility": agility,
+                "precision": precision
+        }
+        _max_score = max(config.max_score, float(TOTAL_NOTES * 300))
+        queue_redraw()
 
 func start_game():
-	start({"name": "Coser Básico", "stitchSpeed": 1, "agility": 0.15, "precision": 0.2})
-	queue_redraw()
+        start(_pending_blueprint)
+        queue_redraw()
 
 func start(blueprint):
 	reset()
@@ -162,27 +179,30 @@ func _process(delta):
 	queue_redraw()
 
 func _finish():
-	finished = true
-	running = false
-	ended_at = Time.get_ticks_msec()
-	var avg_quality = ords.reduce(func(a, b): return a + b, 0) / float(TOTAL_NOTES)
-	var non_miss = quality_counts["Perfect"] + quality_counts["Bien"] + quality_counts["Regular"]
-	var success = non_miss >= 5
-	var bonus_evasion = avg_quality >= 2.0
-	var _result = {
-		"finished": true,
-		"success": success,
-		"score": score,
-		"quality_counts": quality_counts,
-		"avg_quality": avg_quality,
-		"bonus_evasion": bonus_evasion,
-		"time_ms": ended_at - started_at,
-		"blueprint_name": bp.name
-	}
-	var qualities = ["Perfect", "Bien", "Regular", "Miss"]
-	for i in range(ords.size()):
-		print("Trial %d = %s" % [i+1, qualities[ords[i]]])
-	show_end_screen()
+        finished = true
+        running = false
+        ended_at = Time.get_ticks_msec()
+        var avg_quality = ords.reduce(func(a, b): return a + b, 0) / float(TOTAL_NOTES)
+        var non_miss = quality_counts["Perfect"] + quality_counts["Bien"] + quality_counts["Regular"]
+        var success = non_miss >= 5
+        var bonus_evasion = avg_quality >= 2.0
+        var qualities = ["Perfect", "Bien", "Regular", "Miss"]
+        for i in range(ords.size()):
+                print("Trial %d = %s" % [i+1, qualities[ords[i]]])
+        var trial_result := TrialResult.new()
+        trial_result.score = score
+        trial_result.max_score = _max_score
+        trial_result.success = success
+        trial_result.duration_ms = ended_at - started_at
+        trial_result.details = {
+                "quality_counts": quality_counts.duplicate(),
+                "avg_quality": avg_quality,
+                "bonus_evasion": bonus_evasion,
+                "combo_max": max_combo
+        }
+        complete_trial(trial_result)
+        var summary := "Puntuación: %d\nPromedio: %.2f" % [score, avg_quality]
+        setup_end_screen(success and "Éxito" or "Fallo", summary + "\nPulsa para cerrar")
 
 func show_end_screen():
 	setup_end_screen("Prueba Completada", "Presiona cualquier tecla o clic para cerrar")

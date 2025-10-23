@@ -6,6 +6,7 @@ class_name TrialResource
 @export var trial_id: StringName = &""
 @export var display_name: String = ""
 @export var minigame_id: StringName = &""
+@export var minigame_scene: PackedScene
 @export var min_score: float = 0.0
 @export var config: TrialConfig
 @export var notes: String = ""

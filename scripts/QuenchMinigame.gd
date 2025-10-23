@@ -11,6 +11,8 @@ const CFG = {
 }
 
 var bp = null
+var _pending_blueprint := {}
+var _max_score := 100.0
 var t = 0.0
 var running = false
 var paused = false
@@ -20,19 +22,29 @@ var result = null
 var last_mouse_pos = null
 
 func _ready():
-	size = get_viewport_rect().size
-	position = Vector2(0,0)
-	set_process_input(false)
-	setup_title_screen("TEMPLE TIME")
+        size = get_viewport_rect().size
+        position = Vector2(0,0)
+        set_process_input(false)
+        setup_title_screen("TEMPLE TIME")
+
+func start_trial(config: TrialConfig) -> void:
+        super.start_trial(config)
+        var base := {
+                "name": String(config.get_parameter(&"label", "Temple")),
+                "Tini": float(config.get_parameter(&"t_initial", 850)),
+                "Tamb": float(config.get_parameter(&"t_ambient", 25)),
+                "k": float(config.get_parameter(&"cool_rate", 0.3)),
+                "Tlow": float(config.get_parameter(&"temp_low", 540)),
+                "Thigh": float(config.get_parameter(&"temp_high", 600)),
+                "catalyst": bool(config.get_parameter(&"catalyst", false)),
+                "intelligence": float(config.get_parameter(&"intelligence", 0.35))
+        }
+        _pending_blueprint = base
+        _max_score = max(config.max_score, 100.0)
 
 func start_game():
-	start({
-		"name": "Temple A36",
-		"Tini": 850, "Tamb": 25, "k": 0.30,
-		"Tlow": 540, "Thigh": 600,
-		"catalyst": false, "intelligence": 0.35
-	})
-	set_process_input(true)
+        start(_pending_blueprint)
+        set_process_input(true)
 
 func start(blueprint):
 	bp = {
@@ -72,14 +84,24 @@ func _input(event):
 		try_drop()
 
 func try_drop():
-	if not running or paused or finished:
-		return
-	var temp = Tof(t)
-	result = eval_drop(temp, t)
-	finished = true
-	running = false
-	print("Trial 1 = %s" % result.quality)
-	show_end_screen()
+        if not running or paused or finished:
+                return
+        var temp = Tof(t)
+        var outcome = eval_drop(temp, t)
+        result = outcome
+        finished = true
+        running = false
+        print("Trial 1 = %s" % outcome.quality)
+        var trial_result := TrialResult.new()
+        trial_result.score = outcome.score
+        trial_result.max_score = _max_score
+        trial_result.success = outcome.success
+        trial_result.duration_ms = outcome.time_ms
+        trial_result.details = outcome.duplicate()
+        complete_trial(trial_result)
+        var label := "Éxito" if outcome.success else "Fallo"
+        var summary := "Temperatura: %.1f°C\nCalidad: %s\nPuntuación: %d" % [outcome.temp_at_drop, outcome.quality, outcome.score]
+        setup_end_screen(label, summary + "\nPulsa para cerrar")
 
 func Tof(tt):
 	return bp.Tamb + (bp.Tini - bp.Tamb) * exp(-bp.k * tt)
@@ -203,9 +225,9 @@ func _draw():
 	draw_string(font, Vector2(CFG.margins.l, size.y - 28), "Plano: %s  |  Catalizador: %s  |  Ventana: [%.0f..%.0f]°C" % [bp.name, "Sí" if bp.catalyst else "No", win.low, win.high], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#94a3b8"))
 	draw_string(font, Vector2(CFG.margins.l, size.y - 10), "Tip: suelta cerca del centro verde; con catalizador la ventana es +20%", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#94a3b8"))
 	
-	# Result overlay
-	if finished and result:
-		draw_rect(Rect2(0, 0, size.x, size.y), Color(0, 0, 0, 0.6))
+        # Result overlay
+        if finished and result:
+                draw_rect(Rect2(0, 0, size.x, size.y), Color(0, 0, 0, 0.6))
 		var box_w = 420
 		var box_h = 180
 		var bx = (size.x - box_w) / 2
@@ -225,10 +247,18 @@ func _draw():
 		for line in lines:
 			draw_string(font, Vector2(bx + 16, yy), line, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#e5e7eb"))
 			yy += 22
-		draw_string(font, Vector2(bx + 16, by + box_h - 12), "Presiona cualquier tecla o clic para cerrar", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#94a3b8"))
+                draw_string(font, Vector2(bx + 16, by + box_h - 12), "Presiona cualquier tecla o clic para cerrar", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#94a3b8"))
 
-func show_end_screen():
-	setup_end_screen("Prueba Completada", "Presiona cualquier tecla o clic para cerrar")
+func get_result() -> TrialResult:
+        if typeof(result) == TYPE_DICTIONARY:
+                var out := TrialResult.new()
+                out.score = result.get("score", 0)
+                out.max_score = _max_score
+                out.success = result.get("success", false)
+                out.duration_ms = result.get("time_ms", 0)
+                out.details = result.duplicate()
+                return out
+        return super.get_result()
 
 func my_draw_dashed_line(from_pos: Vector2, to_pos: Vector2, color: Color, width: float, dash: Array):
 	var length = (to_pos - from_pos).length()

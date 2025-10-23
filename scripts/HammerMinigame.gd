@@ -18,38 +18,62 @@ var state = null
 var font = ThemeDB.get_default_theme().get_font("font", "Label")
 var scale_factor = 1.0
 var closing = false
+var _pending_blueprint := {"name": "Martillo", "tempoBPM": DEFAULT_BPM, "weight": 0.5, "precision": 0.5}
+var _note_count := 5
+var _max_score := 650.0
 
 func _ready():
-	print("HammerMinigame: Ready")
-	var viewport_size = get_viewport_rect().size
-	self.size = viewport_size
-	self.position = Vector2(0,0)
-	scale_factor = viewport_size.x / CANVAS_W
-	CANVAS_W = int(CANVAS_W * scale_factor)
-	CANVAS_H = int(CANVAS_H * scale_factor)
-	VIS_IMPACT_X = int(VIS_IMPACT_X * scale_factor)
-	VIS_START_X = int(VIS_START_X * scale_factor)
-	VIS_TRACK_Y = int(VIS_TRACK_Y * scale_factor)
-	setup_title_screen("HAMMER TIME")
-	queue_redraw()
+        print("HammerMinigame: Ready")
+        var viewport_size = get_viewport_rect().size
+        self.size = viewport_size
+        self.position = Vector2(0,0)
+        scale_factor = viewport_size.x / CANVAS_W
+        CANVAS_W = int(CANVAS_W * scale_factor)
+        CANVAS_H = int(CANVAS_H * scale_factor)
+        VIS_IMPACT_X = int(VIS_IMPACT_X * scale_factor)
+        VIS_START_X = int(VIS_START_X * scale_factor)
+        VIS_TRACK_Y = int(VIS_TRACK_Y * scale_factor)
+        setup_title_screen("HAMMER TIME")
+        queue_redraw()
+
+func start_trial(config: TrialConfig) -> void:
+        super.start_trial(config)
+        var tempo := clamp(float(config.get_parameter(&"tempo_bpm", DEFAULT_BPM)), 45.0, 220.0)
+        var precision := clamp(float(config.get_parameter(&"precision", 0.5)), 0.0, 1.0)
+        var weight := clamp(float(config.get_parameter(&"weight", 0.5)), 0.0, 1.0)
+        _note_count = int(clamp(config.get_parameter(&"notes", 5), 3, 10))
+        var name := String(config.get_parameter(&"label", "Martillo"))
+        _pending_blueprint = {
+                "name": name,
+                "tempoBPM": tempo,
+                "weight": weight,
+                "precision": precision
+        }
+        var base_score := _note_count * SCORE["Perfect"]
+        var combo_bonus := 10 * int(_note_count * (_note_count + 1) / 2)
+        _max_score = max(config.max_score, base_score + combo_bonus)
+        queue_redraw()
 
 func start_game():
-	start({"name": "Martillo Básico", "tempoBPM": 60, "weight": 0.6, "precision": 0.5})
-	queue_redraw()
+        start(_pending_blueprint)
+        queue_redraw()
 
-func show_end_screen():
-	setup_end_screen("Prueba Completada", "Presiona cualquier tecla o clic para cerrar")
-
-func get_result():
-	return {
-		"finished": true,
-		"success": state.quality_counts.Perfect + state.quality_counts.Bien + state.quality_counts.Regular >= 3,
-		"score": state.score,
-		"quality_counts": state.quality_counts.duplicate(),
-		"combo_max": state.combo_max,
-		"time_ms": max(0, round(Time.get_ticks_msec() - state.started_at - state.pause_accum)),
-		"blueprint_name": state.blueprint.name if state.blueprint.has("name") else "Unknown"
-	}
+func get_result() -> TrialResult:
+        if state == null:
+                return super.get_result()
+        var hits = state.quality_counts.Perfect + state.quality_counts.Bien + state.quality_counts.Regular
+        var duration := max(0, round(Time.get_ticks_msec() - state.started_at - state.pause_accum))
+        var result := TrialResult.new()
+        result.score = state.score
+        result.max_score = _max_score
+        result.success = hits >= int(ceil(_note_count * 0.6))
+        result.duration_ms = duration
+        result.details = {
+                "quality_counts": state.quality_counts.duplicate(),
+                "combo_max": state.combo_max,
+                "notes": _note_count
+        }
+        return result
 
 func start(blueprint):
 	reset_with_blueprint(blueprint)
@@ -95,12 +119,13 @@ func make_windows(precision):
 	}
 
 func schedule_notes(t0, bpm, drift):
-	var iv = 60000 / clamp(bpm, 30, 300)
-	var notes = []
-	for i in range(5):
-		var t = t0 + i * iv + (randf() * 2 - 1) * drift
-		notes.append({"time": t, "spawn": t - VIS_APPROACH_MS, "judged": false, "quality": null, "delta": null})
-	return notes
+        var iv = 60000 / clamp(bpm, 30, 300)
+        var notes = []
+        var count := max(1, _note_count)
+        for i in range(count):
+                var t = t0 + i * iv + (randf() * 2 - 1) * drift
+                notes.append({"time": t, "spawn": t - VIS_APPROACH_MS, "judged": false, "quality": null, "delta": null})
+        return notes
 
 func _input(event):
 	if event.is_action_pressed("ui_accept") or (event is InputEventMouseButton and event.pressed):
@@ -159,21 +184,24 @@ func apply_judgement(n, q, d, _manual):
 		end_game()
 
 func end_game():
-	state.finished = true
-	state.accepting = false
-	state.playing = false
-	var hits = state.quality_counts.Perfect + state.quality_counts.Bien + state.quality_counts.Regular
-	var _result = {
-		"finished": true,
-		"success": hits >= 3,
-		"score": state.score,
-		"quality_counts": state.quality_counts.duplicate(),
-		"combo_max": state.combo_max,
-		"time_ms": max(0, round(Time.get_ticks_msec() - state.started_at - state.pause_accum)),
-		"blueprint_name": state.blueprint.name if state.blueprint.has("name") else "Unknown"
-	}
-	# Show end screen
-	show_end_screen()
+        state.finished = true
+        state.accepting = false
+        state.playing = false
+        var hits = state.quality_counts.Perfect + state.quality_counts.Bien + state.quality_counts.Regular
+        var duration := max(0, round(Time.get_ticks_msec() - state.started_at - state.pause_accum))
+        var result := TrialResult.new()
+        result.score = state.score
+        result.max_score = _max_score
+        result.success = hits >= int(ceil(_note_count * 0.6))
+        result.duration_ms = duration
+        result.details = {
+                "quality_counts": state.quality_counts.duplicate(),
+                "combo_max": state.combo_max,
+                "notes": _note_count
+        }
+        complete_trial(result)
+        var label := "Éxito" if result.success else "Fallo"
+        setup_end_screen(label, "Puntuación: %d / %d\nPulsa para cerrar" % [state.score, int(_max_score)])
 
 func _process(_delta):
 	if not state:
