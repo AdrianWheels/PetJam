@@ -1,0 +1,32 @@
+[gd_resource type="Resource" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/BlueprintResource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/data/TrialResource.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/data/TrialConfig.gd" id="3"]
+
+[sub_resource type="Resource" id="1"]
+resource_name = "stitch_config"
+script = ExtResource("3")
+minigame_id = "Sew"
+parameters = {"pattern_complexity": 0.35}
+
+[sub_resource type="Resource" id="2"]
+resource_name = "stitch_trial"
+script = ExtResource("2")
+trial_id = "armor_leather_stitch"
+display_name = "Costura de cuero"
+minigame_id = "Sew"
+min_score = 0.5
+config = SubResource("1")
+
+[resource]
+resource_name = "armor_leather"
+script = ExtResource("1")
+blueprint_id = "armor_leather"
+display_name = "Armadura de cuero"
+description = "Protección flexible hecha a mano."
+icon_path = "res://art/placeholders/armor_leather.png"
+result_item = "leather_armor"
+materials = {"leather": 4}
+trial_sequence = [SubResource("2")]
+tags = ["armor"]

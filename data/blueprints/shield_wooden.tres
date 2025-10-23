@@ -1,0 +1,32 @@
+[gd_resource type="Resource" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/BlueprintResource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/data/TrialResource.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/data/TrialConfig.gd" id="3"]
+
+[sub_resource type="Resource" id="1"]
+resource_name = "quench_config"
+script = ExtResource("3")
+minigame_id = "Quench"
+parameters = {"cool_rate": 0.4}
+
+[sub_resource type="Resource" id="2"]
+resource_name = "quench_trial"
+script = ExtResource("2")
+trial_id = "shield_wooden_quench"
+display_name = "Templado del escudo"
+minigame_id = "Quench"
+min_score = 0.45
+config = SubResource("1")
+
+[resource]
+resource_name = "shield_wooden"
+script = ExtResource("1")
+blueprint_id = "shield_wooden"
+display_name = "Escudo de madera"
+description = "Defensa básica para aventureros novatos."
+icon_path = "res://art/placeholders/shield_wooden.png"
+result_item = "shield_wooden"
+materials = {"wood": 4, "iron": 1}
+trial_sequence = [SubResource("2")]
+tags = ["shield", "armor"]

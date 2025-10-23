@@ -6,7 +6,7 @@ data_dir = root / "data"
 logs_dir = root / "logs"
 logs_dir.mkdir(parents=True, exist_ok=True)
 
-files = ["materials.json", "blueprints.json", "tuning.json"]
+files = ["materials.json", "tuning.json"]
 
 for f in files:
     p = data_dir / f

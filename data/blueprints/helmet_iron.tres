@@ -1,0 +1,32 @@
+[gd_resource type="Resource" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/BlueprintResource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/data/TrialResource.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/data/TrialConfig.gd" id="3"]
+
+[sub_resource type="Resource" id="1"]
+resource_name = "hammer_config"
+script = ExtResource("3")
+minigame_id = "Hammer"
+parameters = {"timing": 0.5}
+
+[sub_resource type="Resource" id="2"]
+resource_name = "hammer_trial"
+script = ExtResource("2")
+trial_id = "helmet_iron_hammer"
+display_name = "Golpear el casco"
+minigame_id = "Hammer"
+min_score = 0.55
+config = SubResource("1")
+
+[resource]
+resource_name = "helmet_iron"
+script = ExtResource("1")
+blueprint_id = "helmet_iron"
+display_name = "Casco de hierro"
+description = "Un casco robusto con buen acabado."
+icon_path = "res://art/placeholders/helmet_iron.png"
+result_item = "helmet_iron"
+materials = {"iron": 3}
+trial_sequence = [SubResource("2")]
+tags = ["armor", "helmet"]

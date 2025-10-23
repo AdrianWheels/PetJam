@@ -1,4 +1,5 @@
 extends CanvasLayer
+
 func _find_node_any(candidates: Array) -> Node:
 	for p in candidates:
 		var n = get_node_or_null(str(p))
@@ -143,25 +144,32 @@ func update_queue_display() -> void:
 			continue
 
 		# Lookup blueprint in DataManager
-		var bp = null
-		if has_node('/root/DataManager'):
-			bp = get_node('/root/DataManager').get_blueprint(str(recipe_id))
-		if bp == null:
-			slot_node.set_blueprint_name(str(recipe_id))
-			continue
+                var bp = null
+                if has_node('/root/DataManager'):
+                        bp = get_node('/root/DataManager').get_blueprint(StringName(str(recipe_id)))
+                if bp == null:
+                        slot_node.set_blueprint_name(str(recipe_id))
+                        continue
 
-		# Set display name
-		var display_name = bp.get("name", str(recipe_id)) if typeof(bp) == TYPE_DICTIONARY else str(recipe_id)
-		slot_node.set_blueprint_name(display_name)
+                var display_name := str(recipe_id)
+                var materials := {}
+                if typeof(bp) == TYPE_DICTIONARY:
+                        display_name = bp.get("name", str(recipe_id))
+                        materials = bp.get("materials", {})
+                        slot_node.set_blueprint_name(display_name)
+                        slot_node.set_materials(materials)
+                elif bp is BlueprintResource:
+                        display_name = bp.display_name if bp.display_name != "" else str(recipe_id)
+                        materials = bp.materials
+                        slot_node.set_blueprint(bp)
+                else:
+                        slot_node.set_blueprint_name(str(recipe_id))
+                        continue
 
-		# Set materials (accepts Dictionary or Array)
-		var materials = bp.get("materials", {}) if typeof(bp) == TYPE_DICTIONARY else {}
-		slot_node.set_materials(materials)
-
-		# Persistent trace for debugging
-		if has_node('/root/Logger'):
-			get_node('/root/Logger').info("HUD: queue_slot_populated", {"slot": i, "recipe_id": recipe_id, "display_name": display_name, "materials": materials})
-		append_print("Slot %d: %s" % [i, display_name])
+                # Persistent trace for debugging
+                if has_node('/root/Logger'):
+                        get_node('/root/Logger').info("HUD: queue_slot_populated", {"slot": i, "recipe_id": recipe_id, "display_name": display_name, "materials": materials})
+                append_print("Slot %d: %s" % [i, display_name])
 
 
 func append_print(msg: String) -> void:
