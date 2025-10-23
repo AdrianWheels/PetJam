@@ -106,70 +106,54 @@ func _on_craft_enqueued(slot_idx:int, recipe_id:String) -> void:
 
 
 func update_queue_display() -> void:
-	# Populate the QueueContainer with current crafting queue
-	var queue_container = get_node_or_null("BlueprintQueuePanel/QueueContainer")
-	if not queue_container:
-		# fallback to top-level QueueContainer
-		queue_container = get_node_or_null("QueueContainer")
-	if not queue_container:
-		print("HUD: QueueContainer not found; cannot update display")
-		return
+        # Populate the QueueContainer with current crafting queue
+        var queue_container = get_node_or_null("BlueprintQueuePanel/QueueContainer")
+        if not queue_container:
+                # fallback to top-level QueueContainer
+                queue_container = get_node_or_null("QueueContainer")
+        if not queue_container:
+                print("HUD: QueueContainer not found; cannot update display")
+                return
 
-	# Clear existing children
-	for child in queue_container.get_children():
-		child.queue_free()
+        # Clear existing children
+        for child in queue_container.get_children():
+                child.queue_free()
 
-	# Acquire crafting queue from CraftingManager
-	var cm = get_node("/root/CraftingManager") if has_node("/root/CraftingManager") else null
-	if cm == null:
-		print("HUD: CraftingManager not available for queue display")
-		return
+        # Acquire crafting queue from CraftingManager
+        var cm = get_node("/root/CraftingManager") if has_node("/root/CraftingManager") else null
+        if cm == null:
+                print("HUD: CraftingManager not available for queue display")
+                return
 
-	for i in range(cm.queue.size()):
-		var slot = cm.queue[i]
-		var slot_scene = preload("res://scenes/UI/BlueprintQueueSlot.tscn")
-		var slot_node = slot_scene.instantiate()
+        var snapshot: Array = cm.get_queue_snapshot() if cm.has_method("get_queue_snapshot") else []
+        for entry in snapshot:
+                if typeof(entry) != TYPE_DICTIONARY:
+                        continue
+                var slot_idx: int = int(entry.get("slot_index", 0))
+                var slot_scene = preload("res://scenes/UI/BlueprintQueueSlot.tscn")
+                var slot_node = slot_scene.instantiate()
 
-		# IMPORTANT: add to container first so the slot_node's onready variables are initialized
-		queue_container.add_child(slot_node)
+                # IMPORTANT: add to container first so the slot_node's onready variables are initialized
+                queue_container.add_child(slot_node)
 
-		if slot == null:
-			# empty slot
-			slot_node.set_blueprint_name("(vacío)")
-			continue
-
-		var recipe_id = slot.get("recipe_id") if typeof(slot) == TYPE_DICTIONARY else null
-		if recipe_id == null:
-			slot_node.set_blueprint_name("(desconocido)")
-			continue
-
-		# Lookup blueprint in DataManager
-                var bp = null
-                if has_node('/root/DataManager'):
-                        bp = get_node('/root/DataManager').get_blueprint(StringName(str(recipe_id)))
-                if bp == null:
-                        slot_node.set_blueprint_name(str(recipe_id))
+                if entry.get("status", "") == "empty":
+                        # empty slot
+                        slot_node.set_blueprint_name("(vacío)")
                         continue
 
-                var display_name := str(recipe_id)
-                var materials := {}
-                if typeof(bp) == TYPE_DICTIONARY:
-                        display_name = bp.get("name", str(recipe_id))
-                        materials = bp.get("materials", {})
-                        slot_node.set_blueprint_name(display_name)
-                        slot_node.set_materials(materials)
-                elif bp is BlueprintResource:
-                        display_name = bp.display_name if bp.display_name != "" else str(recipe_id)
-                        materials = bp.materials
-                        slot_node.set_blueprint(bp)
+                var blueprint: BlueprintResource = entry.get("blueprint", null)
+                var recipe_id = entry.get("blueprint_id", "")
+                if blueprint and blueprint is BlueprintResource:
+                        slot_node.set_blueprint(blueprint)
                 else:
-                        slot_node.set_blueprint_name(str(recipe_id))
-                        continue
+                        var display_name: String = entry.get("display_name", str(recipe_id))
+                        slot_node.set_blueprint_name(display_name)
+                        slot_node.set_materials(entry.get("materials", {}))
 
                 # Persistent trace for debugging
                 if has_node('/root/Logger'):
-                        get_node('/root/Logger').info("HUD: queue_slot_populated", {"slot": i, "recipe_id": recipe_id, "display_name": display_name, "materials": materials})
-                append_print("Slot %d: %s" % [i, display_name])
+                        get_node('/root/Logger').info("HUD: queue_slot_populated", {"slot": slot_idx, "recipe_id": recipe_id, "status": entry.get("status", "unknown")})
+                append_print("Slot %d: %s" % [slot_idx, entry.get("display_name", str(recipe_id))])
 
 
 func append_print(msg: String) -> void:
