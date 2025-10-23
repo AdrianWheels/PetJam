@@ -1,58 +1,52 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://cbtmo3fs5xof7"]
 
-[ext_resource type="Script" path="res://scripts/ui/DungeonStatus.gd" id="1"]
+[ext_resource type="Script" uid="uid://fv15jme2hgts" path="res://scripts/ui/DungeonStatus.gd" id="1"]
 
 [node name="DungeonStatus" type="Control"]
 unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 10
 anchor_right = 1.0
-anchor_bottom = 0.0
 offset_left = 20.0
 offset_top = 20.0
-offset_right = 340.0
+offset_right = -504.0
 offset_bottom = 160.0
+grow_horizontal = 2
 script = ExtResource("1")
 
 [node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 
 [node name="Margin" type="MarginContainer" parent="Panel"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-margin_left = 8.0
-margin_top = 8.0
-margin_right = -8.0
-margin_bottom = -8.0
+layout_mode = 2
 
 [node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-separation = 4.0
+layout_mode = 2
 
 [node name="RoomLabel" type="Label" parent="Panel/Margin/VBox"]
 unique_name_in_owner = true
+layout_mode = 2
 text = "Sala: 0 / 0"
-horizontal_alignment = 0
 
 [node name="DeathLabel" type="Label" parent="Panel/Margin/VBox"]
 unique_name_in_owner = true
+layout_mode = 2
 text = "Muertes: 0 / 0"
 
 [node name="StateLabel" type="Label" parent="Panel/Margin/VBox"]
 unique_name_in_owner = true
+layout_mode = 2
 text = "Estado: Desconocido"
 
 [node name="ResultLabel" type="Label" parent="Panel/Margin/VBox"]
 unique_name_in_owner = true
-text = ""
 visible = false
+layout_mode = 2
 
 [node name="InfoLabel" type="Label" parent="Panel/Margin/VBox"]
 unique_name_in_owner = true
+layout_mode = 2
 text = "Sin datos"
-wrap_mode = 1
-size_flags_vertical = 4
-

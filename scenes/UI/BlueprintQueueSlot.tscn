@@ -1,27 +1,51 @@
-[gd_scene load_steps=2 format=3 uid="uid://cka0tg466h1e7"]
+[gd_scene load_steps=4 format=3 uid="uid://cka0tg466h1e7"]
 
-[ext_resource type="Script" uid="uid://d3775s4kjkab2" path="res://scripts/BlueprintQueueSlot.gd" id="1"]
+[ext_resource type="Script" uid="uid://c7t088ieyjib1" path="res://scripts/BlueprintQueueSlot.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://b76omfj8u1a44" path="res://art/placeholders/forge/blueprint_armor_leather.png" id="2_2p12a"]
+[ext_resource type="PackedScene" uid="uid://c8x8x8x8x8" path="res://scenes/UI/MaterialIcon.tscn" id="3_fpure"]
 
 [node name="BlueprintQueueSlot" type="Panel"]
 custom_minimum_size = Vector2(180, 100)
 script = ExtResource("1")
 
+[node name="Icon" type="TextureRect" parent="."]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 0
+offset_left = 4.0
+offset_top = 22.0
+offset_right = 52.0
+offset_bottom = 72.0
+texture = ExtResource("2_2p12a")
+expand_mode = 1
+stretch_mode = 5
+
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 0
-offset_right = 180.0
-offset_bottom = 100.0
+offset_left = 48.0
+offset_top = 22.0
+offset_right = 173.0
+offset_bottom = 76.0
 theme_override_constants/separation = 6
-
-[node name="Icon" type="TextureRect" parent="VBoxContainer"]
-layout_mode = 2
-custom_minimum_size = Vector2(48, 48)
-stretch_mode = 6
 
 [node name="NameLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
 text = "Blueprint Name"
 horizontal_alignment = 1
 
-[node name="MaterialsContainer" type="VBoxContainer" parent="VBoxContainer"]
+[node name="MaterialsContainer" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2
-alignment = 1
+
+[node name="MaterialIcon" parent="VBoxContainer/MaterialsContainer" instance=ExtResource("3_fpure")]
+layout_mode = 2
+
+[node name="MaterialIcon2" parent="VBoxContainer/MaterialsContainer" instance=ExtResource("3_fpure")]
+layout_mode = 2
+
+[node name="MaterialIcon3" parent="VBoxContainer/MaterialsContainer" instance=ExtResource("3_fpure")]
+layout_mode = 2
+
+[node name="MaterialIcon4" parent="VBoxContainer/MaterialsContainer" instance=ExtResource("3_fpure")]
+layout_mode = 2
+
+[node name="MaterialIcon5" parent="VBoxContainer/MaterialsContainer" instance=ExtResource("3_fpure")]
+layout_mode = 2

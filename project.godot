@@ -22,11 +22,11 @@ InventoryManager="res://scripts/autoload/InventoryManager.gd"
 CraftingManager="res://scripts/autoload/CraftingManager.gd"
 AudioManager="res://scripts/autoload/AudioManager.gd"
 TelemetryManager="res://scripts/autoload/TelemetryManager.gd"
-Logger="res://scripts/autoload/Logger.gd"
 UIManager="res://scripts/autoload/UIManager.gd"
+RequestManager="res://scripts/autoload/RequestsManager.gd"
 
 [display]
 
 window/stretch/mode="2d"
-window/size/width=1280
-window/size/height=720
+window/size/width=1504
+window/size/height=846

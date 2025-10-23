@@ -1,0 +1,29 @@
+[gd_scene load_steps=2 format=3 uid="uid://bprow8x3v7ia"]
+
+[ext_resource type="Script" path="res://scripts/ui/BlueprintRow.gd" id="1"]
+
+[node name="BlueprintRow" type="HBoxContainer"]
+script = ExtResource("1")
+theme_override_constants/separation = 8
+
+[node name="Icon" type="TextureRect" parent="."]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NameLabel" type="Label" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Blueprint Name"
+
+[node name="MaterialsLabel" type="Label" parent="."]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "Materials: ..."
+
+[node name="StatusLabel" type="Label" parent="."]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "Bloqueado"
+horizontal_alignment = 2

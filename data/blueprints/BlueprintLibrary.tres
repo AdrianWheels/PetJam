@@ -1,4 +1,4 @@
-[gd_resource type="Resource" load_steps=9 format=3]
+[gd_resource type="Resource" load_steps=17 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/BlueprintLibrary.gd" id="1"]
 [ext_resource type="Resource" path="res://data/blueprints/dagger_basic.tres" id="2"]
@@ -8,7 +8,15 @@
 [ext_resource type="Resource" path="res://data/blueprints/bow_simple.tres" id="6"]
 [ext_resource type="Resource" path="res://data/blueprints/helmet_iron.tres" id="7"]
 [ext_resource type="Resource" path="res://data/blueprints/shield_wooden.tres" id="8"]
+[ext_resource type="Resource" path="res://data/blueprints/axe_iron.tres" id="9"]
+[ext_resource type="Resource" path="res://data/blueprints/spear_wood.tres" id="10"]
+[ext_resource type="Resource" path="res://data/blueprints/mace_stone.tres" id="11"]
+[ext_resource type="Resource" path="res://data/blueprints/armor_iron.tres" id="12"]
+[ext_resource type="Resource" path="res://data/blueprints/boots_leather.tres" id="13"]
+[ext_resource type="Resource" path="res://data/blueprints/gloves_leather.tres" id="14"]
+[ext_resource type="Resource" path="res://data/blueprints/ring_gold.tres" id="15"]
+[ext_resource type="Resource" path="res://data/blueprints/amulet_silver.tres" id="16"]
 
 [resource]
 script = ExtResource("1")
-blueprints = [ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8")]
+blueprints = [ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8"), ExtResource("9"), ExtResource("10"), ExtResource("11"), ExtResource("12"), ExtResource("13"), ExtResource("14"), ExtResource("15"), ExtResource("16")]

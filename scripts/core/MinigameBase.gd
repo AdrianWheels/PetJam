@@ -1,8 +1,5 @@
 extends Control
 
-const TrialResult = preload("res://scripts/data/TrialResult.gd")
-const TrialConfig = preload("res://scripts/data/TrialConfig.gd")
-
 signal trial_completed(result: TrialResult)
 
 var title_screen = null

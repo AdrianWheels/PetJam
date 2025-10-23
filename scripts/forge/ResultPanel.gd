@@ -15,6 +15,15 @@ func _ready() -> void:
         _fill = get_node_or_null(fill_path)
         _percent_label = get_node_or_null(percent_label_path)
         _title_label = get_node_or_null(title_label_path)
+        
+        # Anclas fijas para permitir tamaño manual sin conflicto
+        if _fill:
+                _fill.set_anchors_preset(Control.PRESET_TOP_LEFT)
+                _fill.anchor_left = 0
+                _fill.anchor_top = 0
+                _fill.anchor_right = 0
+                _fill.anchor_bottom = 0
+        
         if has_node("/root/CraftingManager"):
                 get_node("/root/CraftingManager").connect("task_updated", Callable(self, "_on_task_updated"))
         update_display()
@@ -25,7 +34,7 @@ func _ready() -> void:
 func _on_task_updated(task_id: int, payload: Dictionary) -> void:
         if not payload.has("score") and payload.get("status", "") != "empty":
                 return
-        var status := String(payload.get("status", ""))
+        var status: String = String(payload.get("status", ""))
         if status == "in_progress":
                 _current_task_id = task_id
         elif status == "empty" and task_id == _current_task_id:
@@ -33,8 +42,8 @@ func _on_task_updated(task_id: int, payload: Dictionary) -> void:
         elif status == "completed" and task_id == _current_task_id:
                 _current_task_id = -1
 
-        var score := float(payload.get("score", 0.0))
-        var max_score := float(payload.get("max_score", 0.0))
+        var score: float = float(payload.get("score", 0.0))
+        var max_score: float = float(payload.get("max_score", 0.0))
         if max_score > 0.0:
                 _ratio = clamp(score / max_score, 0.0, 1.0)
         elif status == "completed":
@@ -60,7 +69,8 @@ func _update_fill_rect() -> void:
         var container := _fill.get_parent() if is_instance_valid(_fill) else null
         if container == null:
                 return
-        var height := container.size.y
-        var fill_height := height * clamp(_ratio, 0.0, 1.0)
-        _fill.position.y = height - fill_height
-        _fill.size = Vector2(container.size.x, fill_height)
+        var height: float = container.size.y
+        var fill_height: float = height * clamp(_ratio, 0.0, 1.0)
+        # Usar set_deferred para evitar conflictos con el layout
+        _fill.set_deferred("position", Vector2(0, height - fill_height))
+        _fill.set_deferred("size", Vector2(container.size.x, fill_height))

@@ -37,46 +37,23 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 separation = 6.0
 
-[node name="ItemIcon" type="TextureRect" parent="Panel/Margin/VBox"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(128, 128)
-expand_mode = 1
-stretch_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 4
-
-[node name="ItemName" type="Label" parent="Panel/Margin/VBox"]
-unique_name_in_owner = true
-text = "Objeto desconocido"
+[node name="TitleLabel" type="Label" parent="Panel/Margin/VBox"]
+text = "¿Qué hacer con el ítem?"
 horizontal_alignment = 1
 
-[node name="GradeLabel" type="Label" parent="Panel/Margin/VBox"]
-unique_name_in_owner = true
-text = "Sin calificar"
-horizontal_alignment = 1
-
-[node name="ScoreLabel" type="Label" parent="Panel/Margin/VBox"]
-unique_name_in_owner = true
-text = "Puntaje: 0%"
-horizontal_alignment = 1
-
-[node name="SlotLabel" type="Label" parent="Panel/Margin/VBox"]
-text = "Asignar a"
-horizontal_alignment = 1
-
-[node name="SlotSelector" type="OptionButton" parent="Panel/Margin/VBox"]
-unique_name_in_owner = true
-size_flags_horizontal = 4
-
-[node name="Buttons" type="HBoxContainer" parent="Panel/Margin/VBox"]
+[node name="Buttons" type="VBoxContainer" parent="Panel/Margin/VBox"]
 size_flags_vertical = 4
 alignment = 1
 separation = 12.0
 
-[node name="DeliverButton" type="Button" parent="Panel/Margin/VBox/Buttons"]
+[node name="ClientButton" type="Button" parent="Panel/Margin/VBox/Buttons"]
 unique_name_in_owner = true
-text = "Entregar"
+text = "Entregar a Cliente
+(Recibir oro)"
 
-[node name="CloseButton" type="Button" parent="Panel/Margin/VBox/Buttons"]
+[node name="HeroButton" type="Button" parent="Panel/Margin/VBox/Buttons"]
+unique_name_in_owner = true
+text = "Equipar en Héroe
+(Mejorar stats)"
 unique_name_in_owner = true
 text = "Cerrar"

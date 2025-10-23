@@ -1,0 +1,38 @@
+[gd_resource type="Resource" load_steps=6 format=3 uid="uid://spear_wood_bp"]
+
+[ext_resource type="Script" path="res://scripts/data/BlueprintResource.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/data/TrialResource.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/data/TrialConfig.gd" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/Minigames/ForgeTemp.tscn" id="4"]
+[ext_resource type="Texture2D" path="res://art/placeholders/forge/blueprint_sword_basic.png" id="5"]
+
+[sub_resource type="Resource" id="1"]
+resource_name = "forge_sequence"
+script = ExtResource("3")
+minigame_id = "Forge"
+minigame_scene = ExtResource("4")
+max_score = 100.0
+parameters = {"difficulty": 0.2, "target": 0.55}
+
+[sub_resource type="Resource" id="2"]
+resource_name = "forge_trial"
+script = ExtResource("2")
+trial_id = "spear_wood_forge"
+display_name = "Forja de lanza"
+minigame_id = "Forge"
+min_score = 0.5
+config = SubResource("1")
+minigame_scene = ExtResource("4")
+
+[resource]
+resource_name = "spear_wood"
+script = ExtResource("1")
+blueprint_id = "spear_wood"
+display_name = "Lanza de Madera"
+description = "Lanza ligera de largo alcance."
+icon = ExtResource("5")
+result_item = "spear_wood"
+min_score = 0.0
+materials = {"fiber": 2, "wood": 3}
+trial_sequence = [SubResource("2")]
+tags = ["weapon", "spear"]

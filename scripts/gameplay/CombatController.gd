@@ -8,10 +8,12 @@ signal combat_finished
 @onready var particles: Node = $"../ParticleManager"
 
 var combat_active := false
-var _game_manager := get_node_or_null("/root/GameManager")
-var _inventory_manager := get_node_or_null("/root/InventoryManager")
+var _game_manager: Node
+var _inventory_manager: Node
 
 func _ready():
+        _game_manager = get_node_or_null("/root/GameManager")
+        _inventory_manager = get_node_or_null("/root/InventoryManager")
         if hero and hero.has_signal("died") and not hero.is_connected("died", Callable(self, "_on_hero_died")):
                 hero.connect("died", Callable(self, "_on_hero_died"))
         if enemy and enemy.has_signal("died") and not enemy.is_connected("died", Callable(self, "_on_enemy_died")):
@@ -39,7 +41,7 @@ func _process(_delta: float):
         if not hero.alive or not enemy.alive:
                 stop_combat()
                 return
-        var particle_buffer := particles.particles if particles else []
+        var particle_buffer: Array = particles.particles if particles else []
         hero.attack(enemy, particle_buffer)
         hero.pulse(enemy, particle_buffer)
         enemy.attack(hero, particle_buffer)

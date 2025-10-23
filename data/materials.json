@@ -1,7 +1,0 @@
-{
-  "iron": { "name": "Iron", "stack": 99 },
-  "leather": { "name": "Leather", "stack": 99 },
-  "cloth": { "name": "Cloth", "stack": 99 },
-  "water": { "name": "Distilled Water", "stack": 99 },
-  "catalyst_fire": { "name": "Catalyst Fire", "stack": 10 }
-}

@@ -1,0 +1,27 @@
+[gd_scene load_steps=3 format=3 uid="uid://bw7yn5q8gk5h1"]
+
+[ext_resource type="Script" path="res://scripts/ui/MaterialRow.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://dxhjx5n1pc3ms" path="res://art/placeholders/forge/material_wood.png" id="2_placeholder"]
+
+[node name="MaterialRow" type="HBoxContainer"]
+custom_minimum_size = Vector2(200, 28)
+script = ExtResource("1")
+
+[node name="Icon" type="TextureRect" parent="."]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+texture = ExtResource("2_placeholder")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NameLabel" type="Label" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Madera"
+vertical_alignment = 1
+
+[node name="QuantityLabel" type="Label" parent="."]
+layout_mode = 2
+text = "x0"
+horizontal_alignment = 2
+vertical_alignment = 1

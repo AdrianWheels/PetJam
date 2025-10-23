@@ -5,6 +5,7 @@ extends Node2D
 @onready var combat_controller: Node = $CombatController
 @onready var particle_manager: Node = $ParticleManager
 @onready var camera: Camera2D = get_node_or_null("Camera2D")
+@onready var parallax_bg: Node2D = get_node_or_null("ParallaxBG")
 
 const HERO_SPEED := 120.0
 const SPAWN_DISTANCE := 520.0
@@ -23,9 +24,10 @@ var ground_offset := 0.0
 var dist_ref := 0.0
 
 var _respawn_timer: Timer
-var _game_manager := get_node_or_null("/root/GameManager")
+var _game_manager: Node
 
 func _ready():
+        _game_manager = get_node_or_null("/root/GameManager")
         _respawn_timer = Timer.new()
         _respawn_timer.one_shot = true
         _respawn_timer.wait_time = RESPAWN_DELAY
@@ -44,8 +46,10 @@ func _ready():
                         _game_manager.connect("hero_respawned", Callable(self, "_on_game_manager_hero_respawned"))
                 if _game_manager.has_signal("boss_defeated"):
                         _game_manager.connect("boss_defeated", Callable(self, "_on_boss_defeated"))
+                if _game_manager.has_signal("enemy_level_changed"):
+                        _game_manager.connect("enemy_level_changed", Callable(self, "_on_enemy_level_changed"))
 
-        reset_room(true)
+        reset_combat(true)
 
 func _process(delta: float):
         match state:
@@ -58,9 +62,14 @@ func _process(delta: float):
                 State.COMPLETE:
                         update_complete(delta)
         cam_follow(delta)
+        
+        # Actualizar parallax con el offset del suelo
+        if parallax_bg and parallax_bg.has_method("update_from_corridor"):
+                parallax_bg.update_from_corridor(ground_offset)
+        
         if particle_manager and particle_manager.has_method("update_particles"):
                 particle_manager.update_particles(delta)
-        queue_redraw()
+        # queue_redraw() comentado para no dibujar líneas de debug
 
 func update_run(delta: float):
         if hero and hero.alive:
@@ -99,10 +108,15 @@ func advance_enemy():
         if enemy and enemy.is_boss and not enemy.alive:
                 state = State.COMPLETE
                 return
-        level = min(BOSS_LEVEL, level + 1)
-        spawn_enemy(level, hero.position.x + SPAWN_DISTANCE)
-        state = State.RUN
-        dist_ref = enemy.position.x - hero.position.x
+        # Delegar al GameManager para avanzar nivel de enemigo
+        if _game_manager and _game_manager.has_method("advance_enemy_level"):
+                _game_manager.advance_enemy_level()
+        else:
+                # Fallback local si no hay GameManager
+                level = min(BOSS_LEVEL, level + 1)
+                spawn_enemy(level, hero.position.x + SPAWN_DISTANCE)
+                state = State.RUN
+                dist_ref = enemy.position.x - hero.position.x
 
 func spawn_enemy(lv: int, x: float):
         if enemy == null:
@@ -119,11 +133,16 @@ func spawn_enemy(lv: int, x: float):
         if combat_controller and combat_controller.has_method("stop_combat"):
                 combat_controller.stop_combat()
 
-func reset_room(full_reset: bool):
+func reset_combat(full_reset: bool):
         if hero:
                 hero.respawn(HERO_START)
         if full_reset:
                 level = 1
+        else:
+                # En respawn, sincronizar con GameManager
+                if _game_manager and "current_enemy_level" in _game_manager:
+                        level = _game_manager.current_enemy_level
+                        print("Corridor: Syncing enemy level from GameManager = %d" % level)
         spawn_enemy(level, HERO_START.x + SPAWN_DISTANCE)
         state = State.RUN
         cam_x = hero.position.x - 960.0 * 0.33 if hero else 0.0
@@ -131,7 +150,9 @@ func reset_room(full_reset: bool):
         dist_ref = enemy.position.x - hero.position.x if hero and enemy else 0.0
 
 func _draw():
-        draw_parallax(0.12, Color(0x0e / 255.0, 0x17 / 255.0, 0x26 / 255.0), 40, 0.6)
+        # Función de debug desactivada - usamos ParallaxBackground ahora
+        pass
+        # draw_parallax(0.12, Color(0x0e / 255.0, 0x17 / 255.0, 0x26 / 255.0), 40, 0.6)
         draw_parallax(0.3, Color(0x0a / 255.0, 0x1a / 255.0, 0x2f / 255.0), 20, 0.8)
         draw_rect(Rect2(-1000, GROUND_Y, 2000, 540 - GROUND_Y), Color(0x11 / 255.0, 0x18 / 255.0, 0x27 / 255.0))
         draw_ground()
@@ -158,18 +179,18 @@ func draw_ground():
 func draw_hero():
         if hero == null:
                 return
-        var pos := hero.position - Vector2(cam_x, 0)
-        var size := hero.size
+        var pos: Vector2 = hero.position - Vector2(cam_x, 0)
+        var size: Vector2 = hero.size
         draw_rect(Rect2(pos - size / 2.0, size), Color(0x38 / 255.0, 0xbf / 255.0, 0xf8 / 255.0))
-        var stripe_size := size - Vector2(16, 16)
+        var stripe_size: Vector2 = size - Vector2(16, 16)
         draw_rect(Rect2(pos - stripe_size / 2.0, stripe_size), Color(0x0e / 255.0, 0xa5 / 255.0, 0xe9 / 255.0))
 
 func draw_enemy():
         if enemy == null:
                 return
-        var pos := enemy.position - Vector2(cam_x, 0)
-        var size := enemy.size
-        var color := Color.from_hsv((enemy.level - 1) / 7.0, 1.0, 1.0)
+        var pos: Vector2 = enemy.position - Vector2(cam_x, 0)
+        var size: Vector2 = enemy.size
+        var color: Color = Color.from_hsv((enemy.level - 1) / 7.0, 1.0, 1.0)
         if enemy.shape == "rect":
                 draw_rect(Rect2(pos - size / 2.0, size), color)
         else:
@@ -205,10 +226,18 @@ func _on_game_manager_hero_respawned(_death_count):
 func _perform_respawn():
         if state == State.COMPLETE:
                 return
-        reset_room(false)
+        reset_combat(false)
 
 func _on_enemy_stats_reset():
         dist_ref = enemy.position.x - hero.position.x if hero and enemy else 0.0
 
 func _on_boss_defeated():
         state = State.COMPLETE
+
+func _on_enemy_level_changed(new_level: int):
+        print("Corridor: Enemy level changed to %d" % new_level)
+        level = new_level
+        # Si avanzamos (nuevo nivel > actual), spawneamos nuevo enemigo
+        if state == State.RUN or state == State.FIGHT:
+                spawn_enemy(level, hero.position.x + SPAWN_DISTANCE)
+                state = State.RUN

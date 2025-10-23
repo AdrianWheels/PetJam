@@ -22,12 +22,12 @@ func clear():
 	logs.clear()
 
 var metrics := {
-    "perfect": 0,
-    "good": 0,
-    "regular": 0,
-    "miss": 0,
-    "rooms_cleared": 0,
-    "hero_deaths": 0
+	"perfect": 0,
+	"good": 0,
+	"regular": 0,
+	"miss": 0,
+	"rooms_cleared": 0,
+	"hero_deaths": 0
 }
 
 func _ready() -> void:
@@ -49,37 +49,37 @@ func record_room_cleared() -> void:
 	print("TelemetryManager: Recorded room cleared (total: %d)" % metrics["rooms_cleared"])
 
 func record_hero_death() -> void:
-        metrics["hero_deaths"] += 1
-        print("TelemetryManager: Recorded hero death (total: %d)" % metrics["hero_deaths"])
+	metrics["hero_deaths"] += 1
+	print("TelemetryManager: Recorded hero death (total: %d)" % metrics["hero_deaths"])
 
 func record_trial(blueprint_id, trial_id, result: TrialResult) -> void:
-        var bp_id := StringName(str(blueprint_id))
-        var tr_id := StringName(str(trial_id))
-        var key := "%s::%s" % [String(bp_id), String(tr_id)]
-        if not trial_aggregates.has(key):
-                trial_aggregates[key] = {
-                        "blueprint_id": bp_id,
-                        "trial_id": tr_id,
-                        "attempts": 0,
-                        "successes": 0,
-                        "best_score": -INF,
-                        "last_result": null
-                }
-        var entry: Dictionary = trial_aggregates[key]
-        entry["attempts"] += 1
-        if result and result.success:
-                entry["successes"] += 1
-        if result:
-                entry["best_score"] = max(entry["best_score"], result.score)
-                entry["last_result"] = result
-        trial_aggregates[key] = entry
-        log_event("trial_recorded", {
-                "blueprint_id": String(bp_id),
-                "trial_id": String(tr_id),
-                "score": result.score if result else 0,
-                "max_score": result.max_score if result else 0,
-                "success": result.success if result else false
-        })
+	var bp_id := StringName(str(blueprint_id))
+	var tr_id := StringName(str(trial_id))
+	var key := "%s::%s" % [String(bp_id), String(tr_id)]
+	if not trial_aggregates.has(key):
+		trial_aggregates[key] = {
+			"blueprint_id": bp_id,
+			"trial_id": tr_id,
+			"attempts": 0,
+			"successes": 0,
+			"best_score": -INF,
+			"last_result": null
+		}
+	var entry: Dictionary = trial_aggregates[key]
+	entry["attempts"] += 1
+	if result and result.success:
+		entry["successes"] += 1
+	if result:
+		entry["best_score"] = max(entry["best_score"], result.score)
+		entry["last_result"] = result
+	trial_aggregates[key] = entry
+	log_event("trial_recorded", {
+		"blueprint_id": String(bp_id),
+		"trial_id": String(tr_id),
+		"score": result.score if result else 0.0,
+		"max_score": result.max_score if result else 0.0,
+		"success": result.success if result else false
+	})
 
 func export_metrics(path: String = "user://run_metrics.json") -> bool:
 	# Ensure path is under user:// to avoid writing into res://

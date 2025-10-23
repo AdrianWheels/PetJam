@@ -10,7 +10,7 @@ class_name TrialConfig
 @export var max_score: float = 100.0
 @export var parameters: Dictionary = {}
 
-func get_parameter(key: StringName, default_value := null) -> Variant:
+func get_parameter(key: StringName, default_value: Variant = null) -> Variant:
     return parameters.get(key, default_value)
 
 func duplicate_config() -> TrialConfig:

@@ -3,7 +3,7 @@ extends Resource
 ## Aggregates multiple blueprint resources for easy loading.
 class_name BlueprintLibrary
 
-@export var blueprints: Array[BlueprintResource] = []
+@export var blueprints: Array = []
 
 func get_blueprint_ids() -> PackedStringArray:
     var ids: PackedStringArray = []

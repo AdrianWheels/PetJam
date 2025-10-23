@@ -1,13 +1,9 @@
 extends Node
 
-class_name CraftingManager
-
-const TrialResult = preload("res://scripts/data/TrialResult.gd")
-const TrialConfig = preload("res://scripts/data/TrialConfig.gd")
-
 signal craft_enqueued(slot_idx, recipe_id)
 signal task_started(task_id, config)
 signal task_updated(task_id, payload)
+signal task_completed(slot_idx: int, crafted_item: Dictionary)
 
 const MAX_SLOTS := 3
 const STATUS_QUEUED := &"queued"
@@ -48,12 +44,26 @@ func _ready():
     for i in range(MAX_SLOTS):
         queue.append(null)
 
-    # Enqueue default blueprints
+    # Wait for DataManager to load blueprints before enqueuing defaults
+    if has_node("/root/DataManager"):
+        var dm = get_node("/root/DataManager")
+        if dm.has_signal("data_ready"):
+            dm.connect("data_ready", Callable(self, "_on_data_ready"))
+        else:
+            _enqueue_defaults()
+    else:
+        _enqueue_defaults()
+
+    print("CraftingManager: Ready with %d slots" % MAX_SLOTS)
+
+func _on_data_ready() -> void:
+    _enqueue_defaults()
+
+func _enqueue_defaults() -> void:
     var default_blueprints = ["sword_basic", "armor_leather", "shield_wooden"]
     for recipe_id in default_blueprints:
         enqueue(recipe_id)
-
-    print("CraftingManager: Ready with %d slots and default blueprints enqueued" % MAX_SLOTS)
+    print("CraftingManager: Default blueprints enqueued")
 
 func enqueue(recipe_id) -> bool:
     var blueprint := _resolve_blueprint(StringName(str(recipe_id)))
@@ -65,19 +75,55 @@ func enqueue(recipe_id) -> bool:
         if queue[i] == null:
             var task := CraftingTask.new(_generate_task_id(), blueprint, i)
             queue[i] = task
+            task.status = STATUS_QUEUED  # Wait for player click
             emit_signal("craft_enqueued", i, recipe_id)
-            print("CraftingManager: Enqueued recipe '%s' in slot %d" % [recipe_id, i])
-            if has_node('/root/Logger'):
-                get_node('/root/Logger').info("CraftingManager: Enqueued", {"slot": i, "recipe": recipe_id, "task_id": task.id})
+            print("CraftingManager: Enqueued recipe '%s' in slot %d (waiting for player)" % [recipe_id, i])
             _emit_task_update(task)
-            if task.blueprint.has_trials():
-                _start_next_trial(task)
-            else:
-                _finalize_task(task)
+            # Do NOT auto-start trials - wait for player to click blueprint
             return true
 
     print("CraftingManager: No free slots for recipe '%s'" % recipe_id)
     return false
+
+
+## Encola un blueprint aleatorio de los desbloqueados
+func enqueue_random() -> bool:
+    var dm = get_node_or_null("/root/DataManager")
+    if dm == null or not dm.has_method("get_unlocked_blueprints"):
+        # Fallback: usar defaults si DataManager no está disponible
+        var defaults = ["sword_basic", "armor_leather", "shield_wooden"]
+        var fallback_bp = defaults[randi() % defaults.size()]
+        return enqueue(fallback_bp)
+    
+    var unlocked = dm.get_unlocked_blueprints()
+    if unlocked.is_empty():
+        print("CraftingManager: No unlocked blueprints available")
+        return false
+    
+    var random_bp = unlocked[randi() % unlocked.size()]
+    print("CraftingManager: Auto-enqueuing random unlocked blueprint: %s" % random_bp)
+    return enqueue(random_bp)
+
+func start_task(slot_idx: int) -> bool:
+    """Manually start a queued task when player clicks on blueprint"""
+    if slot_idx < 0 or slot_idx >= MAX_SLOTS:
+        return false
+    
+    var task: CraftingTask = queue[slot_idx]
+    if task == null:
+        return false
+    
+    if task.status != STATUS_QUEUED:
+        print("CraftingManager: Task %d already started (status: %s)" % [task.id, task.status])
+        return false
+    
+    if task.blueprint.has_trials():
+        print("CraftingManager: Player starting task %d (slot %d)" % [task.id, slot_idx])
+        _start_next_trial(task)
+        return true
+    else:
+        _finalize_task(task)
+        return true
 
 func cancel(slot_idx: int) -> Dictionary:
     if slot_idx < 0 or slot_idx >= MAX_SLOTS:
@@ -91,8 +137,6 @@ func cancel(slot_idx: int) -> Dictionary:
 
     queue[slot_idx] = null
     print("CraftingManager: Cancelled recipe in slot %d" % slot_idx)
-    if has_node('/root/Logger'):
-        get_node('/root/Logger').info("CraftingManager: Cancelled", {"slot": slot_idx, "task_id": task.id})
     _emit_slot_cleared(slot_idx)
     _compress_queue()
     # Return 80% of materials (stub)
@@ -209,8 +253,6 @@ func _start_next_trial(task: CraftingTask) -> void:
     task.current_trial_id = trial.trial_id
     var config := _resolve_trial_config(trial, task.blueprint)
     print("CraftingManager: Starting trial %s for task %d" % [String(trial.trial_id), task.id])
-    if has_node('/root/Logger'):
-        get_node('/root/Logger').info("CraftingManager: Task started", {"task_id": task.id, "trial_id": trial.trial_id, "slot": task.slot_index})
     _emit_task_update(task)
     task.current_trial_config = config
     emit_signal("task_started", task.id, config.duplicate_config())
@@ -259,9 +301,19 @@ func _finalize_task(task: CraftingTask) -> Dictionary:
     }
 
     var slot := task.slot_index
+    
+    # Emitir señal antes de limpiar el slot para que HUD sepa qué ítem mostrar
+    emit_signal("task_completed", slot, result)
+    
+    print("CraftingManager: Task %d completed in slot %d, clearing slot..." % [task.id, slot])
     queue[slot] = null
     _emit_slot_cleared(slot)
     _compress_queue()
+    
+    # AUTO-RELLENAR: Encolar un nuevo pedido aleatorio para mantener 3 slots llenos
+    print("CraftingManager: Auto-refilling slot after completion...")
+    enqueue_random()
+    
     return result
 
 func _determine_grade(ratio: float) -> String:

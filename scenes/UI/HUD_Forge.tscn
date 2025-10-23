@@ -1,0 +1,220 @@
+[gd_scene load_steps=4 format=3 uid="uid://c2yqv7h8mxb8w"]
+
+[ext_resource type="Script" uid="uid://cro5doma8kkx6" path="res://scripts/core/HUDMinigameLauncher.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://bplib8x3v7ia" path="res://scenes/UI/BlueprintLibraryPanel.tscn" id="2_blueprint_lib"]
+[ext_resource type="Script" uid="uid://dp8gqnisiuoue" path="res://scripts/ui/RequestsPanel.gd" id="3_a5nox"]
+
+[node name="HUD_Forge" type="CanvasLayer"]
+layer = 5
+script = ExtResource("1")
+
+[node name="MinigamesPanel" type="ColorRect" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -90.0
+offset_right = 200.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
+color = Color(0.15, 0.15, 0.18, 0.85)
+
+[node name="MinigamesHBox" type="HBoxContainer" parent="MinigamesPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="BtnHammer" type="Button" parent="MinigamesPanel/MinigamesHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Martillo"
+
+[node name="BtnSewOSU" type="Button" parent="MinigamesPanel/MinigamesHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Coser"
+
+[node name="BtnQuench" type="Button" parent="MinigamesPanel/MinigamesHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Agua"
+
+[node name="BtnTemp" type="Button" parent="MinigamesPanel/MinigamesHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Temp"
+
+[node name="BlueprintQueuePanel" type="ColorRect" parent="."]
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 10.0
+offset_top = -180.0
+offset_right = 280.0
+offset_bottom = 180.0
+grow_vertical = 2
+color = Color(0.2, 0.2, 0.25, 0.9)
+
+[node name="QueueVBox" type="VBoxContainer" parent="BlueprintQueuePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 4
+
+[node name="QueueLabel" type="Label" parent="BlueprintQueuePanel/QueueVBox"]
+layout_mode = 2
+text = "Pedidos"
+horizontal_alignment = 1
+
+[node name="ViewBlueprintsBtn" type="Button" parent="BlueprintQueuePanel/QueueVBox"]
+layout_mode = 2
+text = "📋 Ver Blueprints"
+
+[node name="QueueContainer" type="VBoxContainer" parent="BlueprintQueuePanel/QueueVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 4
+
+[node name="InventoryPanel" type="ColorRect" parent="."]
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -241.0
+offset_top = -297.0
+offset_right = -11.0
+offset_bottom = 63.0
+grow_horizontal = 0
+grow_vertical = 2
+color = Color(0.25, 0.25, 0.3, 0.9)
+
+[node name="InventoryVBox" type="VBoxContainer" parent="InventoryPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 4
+
+[node name="InventoryLabel" type="Label" parent="InventoryPanel/InventoryVBox"]
+layout_mode = 2
+text = "Inventario"
+horizontal_alignment = 1
+
+[node name="MaterialsList" type="VBoxContainer" parent="InventoryPanel/InventoryVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 4
+
+[node name="RoomLabel" type="Label" parent="."]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 10.0
+offset_right = 100.0
+offset_bottom = 40.0
+grow_horizontal = 2
+text = "FORJA"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DeliveryPanel" type="ColorRect" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 250.0
+offset_top = -78.0
+offset_right = 549.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
+color = Color(0.15, 0.15, 0.18, 0.5)
+
+[node name="DeliveryVBox" type="VBoxContainer" parent="DeliveryPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="DeliverHBox" type="HBoxContainer" parent="DeliveryPanel/DeliveryVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Client" type="Button" parent="DeliveryPanel/DeliveryVBox/DeliverHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Entregar a Cliente
+(Recibir oro)"
+
+[node name="Hero" type="Button" parent="DeliveryPanel/DeliveryVBox/DeliverHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Equipar en Héroe
+(Mejorar stats)"
+
+[node name="PrintsLabel" type="Label" parent="."]
+offset_left = 17.0
+offset_top = 511.0
+offset_right = 271.0
+offset_bottom = 534.0
+text = "Debug:"
+
+[node name="PrintsArea" type="TextEdit" parent="."]
+custom_minimum_size = Vector2(0, 100)
+offset_left = 17.0
+offset_top = 538.0
+offset_right = 271.0
+offset_bottom = 641.0
+size_flags_vertical = 3
+editable = false
+wrap_mode = 1
+
+[node name="BlueprintLibraryPanel" parent="." instance=ExtResource("2_blueprint_lib")]
+
+[node name="ColorRect" type="ColorRect" parent="."]
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("3_a5nox")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ColorRect"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="RefreshBtn" type="Button" parent="ColorRect/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2

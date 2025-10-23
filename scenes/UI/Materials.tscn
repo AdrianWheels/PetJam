@@ -1,0 +1,35 @@
+[gd_scene load_steps=3 format=3 uid="uid://cfv6s0fpeu77"]
+
+[ext_resource type="PackedScene" uid="uid://c8x8x8x8x8" path="res://scenes/UI/MaterialIcon.tscn" id="1_4xs3q"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_13d5u"]
+font_size = 36
+
+[node name="Control" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MaterialsPanel" type="Panel" parent="."]
+layout_mode = 0
+offset_right = 1153.0
+offset_bottom = 59.0
+
+[node name="MaterialsHBoxContainer" type="HBoxContainer" parent="MaterialsPanel"]
+layout_mode = 0
+offset_right = 1152.0
+offset_bottom = 58.0
+
+[node name="MaterialType" type="HBoxContainer" parent="MaterialsPanel/MaterialsHBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MaterialsPanel/MaterialsHBoxContainer/MaterialType"]
+layout_mode = 2
+text = "METAL"
+label_settings = SubResource("LabelSettings_13d5u")
+
+[node name="MaterialIcon" parent="MaterialsPanel/MaterialsHBoxContainer/MaterialType" instance=ExtResource("1_4xs3q")]
+layout_mode = 2

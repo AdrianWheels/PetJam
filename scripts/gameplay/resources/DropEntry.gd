@@ -10,8 +10,8 @@ class_name DropEntry
 func roll(rng: RandomNumberGenerator) -> Dictionary:
         if item_id == StringName():
                 return {}
-        var total := 0
-        var attempts := max(1, rolls)
+        var total: int = 0
+        var attempts: int = max(1, rolls)
         for i in range(attempts):
                 if rng.randf() <= chance:
                         total += rng.randi_range(min_quantity, max_quantity)

@@ -11,7 +11,7 @@ class_name BlueprintResource
 @export var result_item: StringName = &""
 @export var min_score: float = 0.0
 @export var materials: Dictionary = {}
-@export var trial_sequence: Array[TrialResource] = []
+@export var trial_sequence: Array = []
 @export var tags: PackedStringArray = []
 
 var _icon_cache: Texture2D

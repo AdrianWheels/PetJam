@@ -1,128 +1,185 @@
-[gd_scene load_steps=3 format=3 uid="uid://8trhy2a1ramn"]
+[gd_scene load_steps=2 format=3 uid="uid://ojqlpaungqpg"]
 
 [ext_resource type="Script" uid="uid://cro5doma8kkx6" path="res://scripts/core/HUDMinigameLauncher.gd" id="1"]
-
-[ext_resource type="PackedScene" path="res://scenes/UI/BlueprintQueueSlot.tscn" id="2"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1")
 
-; Minigames panel (background) with buttons grouped
 [node name="MinigamesPanel" type="ColorRect" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -90.0
+offset_right = 200.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
 color = Color(0.15, 0.15, 0.18, 0.85)
-custom_minimum_size = Vector2(380, 80)
-offset_left = 340.0
-offset_top = 540.0
-offset_right = 760.0
-offset_bottom = 620.0
 
 [node name="MinigamesHBox" type="HBoxContainer" parent="MinigamesPanel"]
-layout_mode = 0
-separation = 8.0
-anchors_preset = 4
-margin_left = 8.0
-margin_top = 8.0
-margin_right = 8.0
-margin_bottom = 8.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
 
-[node name="BtnHammer" type="Button" parent="MinigamesHBox"]
+[node name="BtnHammer" type="Button" parent="MinigamesPanel/MinigamesHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "Martillo"
 
-[node name="BtnSewOSU" type="Button" parent="MinigamesHBox"]
-text = "Coser OSU"
+[node name="BtnSewOSU" type="Button" parent="MinigamesPanel/MinigamesHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Coser"
 
-[node name="BtnQuench" type="Button" parent="MinigamesHBox"]
+[node name="BtnQuench" type="Button" parent="MinigamesPanel/MinigamesHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "Agua"
 
-[node name="BtnTemp" type="Button" parent="MinigamesHBox"]
-text = "Temperatura"
+[node name="BtnTemp" type="Button" parent="MinigamesPanel/MinigamesHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Temp"
 
-; Blueprint queue panel with title and prints area
 [node name="BlueprintQueuePanel" type="ColorRect" parent="."]
-color = Color(0.5, 0.7, 1, 1)
-custom_minimum_size = Vector2(260, 300)
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
 offset_left = 10.0
-offset_top = 60.0
-offset_right = 270.0
-offset_bottom = 380.0
+offset_top = -180.0
+offset_right = 280.0
+offset_bottom = 180.0
+grow_vertical = 2
+color = Color(0.2, 0.2, 0.25, 0.9)
 
 [node name="QueueVBox" type="VBoxContainer" parent="BlueprintQueuePanel"]
-layout_mode = 0
-anchors_preset = 7
-margin_left = 8.0
-margin_top = 8.0
-margin_right = 8.0
-margin_bottom = 8.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 4
 
-[node name="QueueLabel" type="Label" parent="QueueVBox"]
-text = "Cola de blueprints"
+[node name="QueueLabel" type="Label" parent="BlueprintQueuePanel/QueueVBox"]
+layout_mode = 2
+text = "Cola de Crafteo"
 horizontal_alignment = 1
 
-[node name="QueueContainer" type="VBoxContainer" parent="QueueVBox"]
-name = "QueueContainer"
-size_flags_vertical = 2
-anchors_preset = 7
-margin_left = 4.0
-margin_top = 4.0
-margin_right = 4.0
-margin_bottom = 4.0
+[node name="QueueContainer" type="VBoxContainer" parent="BlueprintQueuePanel/QueueVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 4
 
-[node name="PrintsLabel" type="Label" parent="QueueVBox"]
-text = "Debug prints:"
-margin_top = 8.0
+[node name="PrintsLabel" type="Label" parent="BlueprintQueuePanel/QueueVBox"]
+layout_mode = 2
+text = "Debug:"
 
-[node name="PrintsArea" type="TextEdit" parent="QueueVBox"]
-read_only = true
-custom_minimum_size = Vector2(240, 100)
-anchors_preset = 7
-margin_left = 4.0
-margin_top = 4.0
-margin_right = 4.0
-margin_bottom = 4.0
+[node name="PrintsArea" type="TextEdit" parent="BlueprintQueuePanel/QueueVBox"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+size_flags_vertical = 3
+editable = false
+wrap_mode = 1
 
-; Inventory panel on the right with material list
 [node name="InventoryPanel" type="ColorRect" parent="."]
-color = Color(0.9, 0.9, 0.9, 0.9)
-custom_minimum_size = Vector2(220, 300)
+anchors_preset = 6
 anchor_left = 1.0
+anchor_top = 0.5
 anchor_right = 1.0
+anchor_bottom = 0.5
 offset_left = -240.0
-offset_top = 40.0
-offset_right = -20.0
-offset_bottom = 360.0
+offset_top = -180.0
+offset_right = -10.0
+offset_bottom = 180.0
+grow_horizontal = 0
+grow_vertical = 2
+color = Color(0.25, 0.25, 0.3, 0.9)
 
 [node name="InventoryVBox" type="VBoxContainer" parent="InventoryPanel"]
-layout_mode = 0
-anchors_preset = 7
-margin_left = 8.0
-margin_top = 8.0
-margin_right = 8.0
-margin_bottom = 8.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 4
 
-[node name="InventoryLabel" type="Label" parent="InventoryVBox"]
+[node name="InventoryLabel" type="Label" parent="InventoryPanel/InventoryVBox"]
+layout_mode = 2
 text = "Inventario"
 horizontal_alignment = 1
 
-[node name="MaterialsList" type="VBoxContainer" parent="InventoryVBox"]
-name = "MaterialsList"
-separation = 4.0
-custom_minimum_size = Vector2(200, 260)
-size_flags_vertical = 2
-anchors_preset = 7
-margin_left = 4.0
-margin_top = 4.0
-margin_right = 4.0
-margin_bottom = 4.0
+[node name="MaterialsList" type="VBoxContainer" parent="InventoryPanel/InventoryVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 4
 
-[node name="Label" type="Label" parent="."]
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -676.0
-offset_top = 299.0
-offset_right = -476.0
-offset_bottom = 349.0
-grow_horizontal = 0
-text = "HUD - Room: 1"
+[node name="RoomLabel" type="Label" parent="."]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 10.0
+offset_right = 100.0
+offset_bottom = 40.0
+grow_horizontal = 2
+text = "Sala: 1"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="DeliverPanel" type="ColorRect" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 368.32
+offset_top = -90.0
+offset_right = 560.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
+color = Color(0.15, 0.15, 0.18, 0.85)
+
+[node name="DeliverHBox" type="HBoxContainer" parent="DeliverPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="Client" type="Button" parent="DeliverPanel/DeliverHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Entregar a Cliente"
+
+[node name="Hero" type="Button" parent="DeliverPanel/DeliverHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Equipar en Héroe"
