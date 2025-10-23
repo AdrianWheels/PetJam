@@ -2,6 +2,9 @@ extends Node
 
 class_name CraftingManager
 
+const TrialResult = preload("res://scripts/data/TrialResult.gd")
+const TrialConfig = preload("res://scripts/data/TrialConfig.gd")
+
 signal craft_enqueued(slot_idx, recipe_id)
 signal task_started(task_id, config)
 signal task_updated(task_id, payload)
@@ -24,6 +27,7 @@ class CraftingTask:
     var slot_index: int = -1
     var current_trial_index: int = 0
     var current_trial_id: StringName = &""
+    var current_trial_config: TrialConfig
     var score_accumulated: float = 0.0
     var max_score_accumulated: float = 0.0
     var trial_results: Array = []
@@ -111,26 +115,28 @@ func promote(slot_idx: int) -> bool:
     print("CraftingManager: Promoted slot %d to front, heat now %d" % [slot_idx, heat])
     return true
 
-func report_trial_result(task_id: int, trial_id: StringName, score: float, max_score: float) -> Dictionary:
+func report_trial_result(task_id: int, result: TrialResult) -> Dictionary:
     var task := _find_task(task_id)
     if task == null:
         push_warning("CraftingManager: Unknown task_id %d in report_trial_result" % task_id)
         return {}
 
+    if result == null:
+        push_warning("CraftingManager: Null result for task %d" % task_id)
+        return {}
+
+    var trial_id := result.trial_id
     if task.current_trial_id != StringName(trial_id):
         push_warning("CraftingManager: Trial mismatch for task %d (expected %s, got %s)" % [task_id, String(task.current_trial_id), String(trial_id)])
 
-    task.score_accumulated += score
-    task.max_score_accumulated += max_score
-    task.trial_results.append({
-        "trial_id": trial_id,
-        "score": score,
-        "max_score": max_score,
-    })
+    task.score_accumulated += result.score
+    task.max_score_accumulated += result.max_score
+    task.trial_results.append(result)
     _emit_task_update(task)
 
     task.current_trial_index += 1
     task.current_trial_id = StringName()
+    task.current_trial_config = null
 
     if task.blueprint != null and task.current_trial_index < task.blueprint.trial_sequence.size():
         _start_next_trial(task)
@@ -201,21 +207,34 @@ func _start_next_trial(task: CraftingTask) -> void:
 
     task.status = STATUS_IN_PROGRESS
     task.current_trial_id = trial.trial_id
-    var config := _resolve_trial_config(trial)
+    var config := _resolve_trial_config(trial, task.blueprint)
     print("CraftingManager: Starting trial %s for task %d" % [String(trial.trial_id), task.id])
     if has_node('/root/Logger'):
         get_node('/root/Logger').info("CraftingManager: Task started", {"task_id": task.id, "trial_id": trial.trial_id, "slot": task.slot_index})
     _emit_task_update(task)
-    emit_signal("task_started", task.id, config)
+    task.current_trial_config = config
+    emit_signal("task_started", task.id, config.duplicate_config())
 
-func _resolve_trial_config(trial: TrialResource) -> TrialConfig:
+func _resolve_trial_config(trial: TrialResource, blueprint: BlueprintResource) -> TrialConfig:
     if trial == null:
         return null
-    var config: TrialConfig = trial.config
-    if config == null:
+    var config: TrialConfig = null
+    if trial.config != null:
+        config = trial.config.duplicate_config()
+    else:
         config = TrialConfig.new()
+    if config.minigame_id == StringName():
         config.minigame_id = trial.get_effective_minigame()
+    if config.trial_id == StringName():
+        config.trial_id = trial.trial_id
+    if config.blueprint_id == StringName() and blueprint != null:
+        config.blueprint_id = blueprint.blueprint_id
+    if config.minigame_scene == null:
+        config.minigame_scene = trial.minigame_scene
+    if config.parameters == null:
         config.parameters = {}
+    if config.max_score <= 0.0:
+        config.max_score = 100.0
     return config
 
 func _finalize_task(task: CraftingTask) -> Dictionary:

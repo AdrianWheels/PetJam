@@ -38,13 +38,16 @@ var blueprint = null
 var zone_w = 80
 var zone_center_x = TUNE.BAR.x + TUNE.BAR.w / 2.0
 
+var _pending_blueprint := {}
+var _max_score := 300.0
+
 var ignore_input_timer = 0.0
 
 func _ready():
-	# Scale constants to fit viewport
-	var viewport_size = get_viewport_rect().size
-	self.size = viewport_size
-	self.position = Vector2(0, 0)
+        # Scale constants to fit viewport
+        var viewport_size = get_viewport_rect().size
+        self.size = viewport_size
+        self.position = Vector2(0, 0)
 	var scale_factor = min(viewport_size.x / 640.0, viewport_size.y / 360.0)
 	TUNE.BAR.x = int(TUNE.BAR.x * scale_factor)
 	TUNE.BAR.y = int(TUNE.BAR.y * scale_factor)
@@ -62,14 +65,24 @@ func _ready():
 	
 	# Apply default blueprint
 	
-	print("TempMinigame _ready, size: ", size, " viewport: ", get_viewport_rect().size, " parent: ", get_parent().name)
-	queue_redraw()
+        print("TempMinigame _ready, size: ", size, " viewport: ", get_viewport_rect().size, " parent: ", get_parent().name)
+        queue_redraw()
+
+func start_trial(config: TrialConfig) -> void:
+        super.start_trial(config)
+        _pending_blueprint = {
+                "name": String(config.get_parameter(&"label", "Forja")),
+                "hardness": clamp(float(config.get_parameter(&"hardness", 0.5)), 0.0, 1.0),
+                "temp_window_base": float(config.get_parameter(&"temp_window_base", 80)),
+                "precision": clamp(float(config.get_parameter(&"precision", 0.0)), 0.0, 1.0)
+        }
+        _max_score = max(config.max_score, float(TUNE.SCORE.Perfect * TUNE.HITS_TO_WIN))
 
 func apply_blueprint(bp):
-	blueprint = bp.duplicate()
-	var hardness = blueprint.get("hardness", 0.5)
-	var k = clamp(1 - 0.6 * clamp(hardness, 0, 1), 0.25, 1)
-	var temp_window_base = blueprint.get("temp_window_base", 80)
+        blueprint = bp.duplicate()
+        var hardness = blueprint.get("hardness", 0.5)
+        var k = clamp(1 - 0.6 * clamp(hardness, 0, 1), 0.25, 1)
+        var temp_window_base = blueprint.get("temp_window_base", 80)
 	zone_w = clamp(temp_window_base * k, 20, TUNE.BAR.w * 0.9)
 	zone_center_x = TUNE.BAR.x + TUNE.BAR.w / 2.0
 
@@ -140,17 +153,18 @@ func lock_attempt():
 		finish(false)
 
 func finish(ok):
-	finished = true
-	success = ok
-	running = false
-	end_time = Time.get_ticks_msec()
-	
-	var res = get_result()
-	var result_text = "Puntuación: %d  ·  Tiempo: %.2fs\nPerfect %d · Bien %d · Regular %d · Miss %d\nPresiona cualquier tecla o clic para cerrar" % [
-		res.score, res.time_ms / 1000.0, res.quality_counts.Perfect, res.quality_counts.Bien, 
-		res.quality_counts.Regular, res.quality_counts.Miss
-	]
-	setup_end_screen("Éxito" if success else "Fallo", result_text)
+        finished = true
+        success = ok
+        running = false
+        end_time = Time.get_ticks_msec()
+
+        var res: TrialResult = get_result()
+        complete_trial(res)
+        var qc := res.details.get("quality_counts", {"Perfect":0, "Bien":0, "Regular":0, "Miss":0})
+        var result_text = "Puntuación: %d / %d  ·  Tiempo: %.2fs\nPerfect %d · Bien %d · Regular %d · Miss %d\nPresiona cualquier tecla o clic para cerrar" % [
+                int(res.score), int(res.max_score), res.duration_ms / 1000.0, qc.get("Perfect", 0), qc.get("Bien", 0), qc.get("Regular", 0), qc.get("Miss", 0)
+        ]
+        setup_end_screen(success and "Éxito" or "Fallo", result_text)
 
 func _process(delta):
 	if ignore_input_timer > 0:
@@ -260,25 +274,23 @@ func _input(event):
 			accept_event()
 
 func start_game():
-	start({})
-	ignore_input_timer = 0.2  # Ignore input for 0.2 seconds
-	queue_redraw()
+        if _pending_blueprint.is_empty():
+                _pending_blueprint = {"name": "Forja", "hardness": 0.5, "temp_window_base": 80, "precision": 0.2}
+        start(_pending_blueprint)
+        ignore_input_timer = 0.2  # Ignore input for 0.2 seconds
+        queue_redraw()
 
-func _on_end_continue():
-	# Emit end signal and remove self
-	emit_signal("minigame_end", get_result())
-	get_node("/root/Main/ForgeUI/HUD")._set_forge_panels_visible(true)
-	queue_free()
-
-func get_result():
-	var t_end = end_time if finished else Time.get_ticks_msec()
-	return {
-		"finished": finished,
-		"success": success,
-		"score": score,
-		"quality_counts": quality_counts.duplicate(),
-		"hits": hits,
-		"fails": fails,
-		"time_ms": max(0, t_end - start_time),
-		"blueprint_name": blueprint.name if blueprint else "-"
-	}
+func get_result() -> TrialResult:
+        var t_end = end_time if finished else Time.get_ticks_msec()
+        var res := TrialResult.new()
+        res.score = score
+        res.max_score = _max_score
+        res.success = success
+        res.duration_ms = max(0, t_end - start_time)
+        res.details = {
+                "quality_counts": quality_counts.duplicate(),
+                "hits": hits,
+                "fails": fails,
+                "blueprint_name": blueprint.name if blueprint else "-"
+        }
+        return res
