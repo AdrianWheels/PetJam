@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://s30bejfhqqmx"]
+[gd_scene load_steps=4 format=3 uid="uid://s30bejfhqqmx"]
 
 [ext_resource type="Script" uid="uid://coe4keclrj4gt" path="res://scripts/main.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/ForgeUI/ResultPanel.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/ForgeUI/DeliveryPanel.tscn" id="3"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1")
@@ -14,6 +15,8 @@ offset_left = 720.0
 offset_top = 40.0
 offset_right = 900.0
 offset_bottom = 300.0
+
+[node name="DeliveryPanel" parent="ForgeUI" instance=ExtResource("3")]
 
 [node name="DungeonUI" type="CanvasLayer" parent="."]
 

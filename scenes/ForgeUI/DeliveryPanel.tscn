@@ -1,0 +1,82 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/forge/DeliveryPanel.gd" id="1"]
+
+[node name="DeliveryPanel" type="Control"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(220, 320)
+anchor_left = 1.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 0.0
+offset_left = -240.0
+offset_top = 40.0
+offset_right = -20.0
+offset_bottom = 360.0
+script = ExtResource("1")
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 8.0
+margin_top = 8.0
+margin_right = -8.0
+margin_bottom = -8.0
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+separation = 6.0
+
+[node name="ItemIcon" type="TextureRect" parent="Panel/Margin/VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(128, 128)
+expand_mode = 1
+stretch_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="ItemName" type="Label" parent="Panel/Margin/VBox"]
+unique_name_in_owner = true
+text = "Objeto desconocido"
+horizontal_alignment = 1
+
+[node name="GradeLabel" type="Label" parent="Panel/Margin/VBox"]
+unique_name_in_owner = true
+text = "Sin calificar"
+horizontal_alignment = 1
+
+[node name="ScoreLabel" type="Label" parent="Panel/Margin/VBox"]
+unique_name_in_owner = true
+text = "Puntaje: 0%"
+horizontal_alignment = 1
+
+[node name="SlotLabel" type="Label" parent="Panel/Margin/VBox"]
+text = "Asignar a"
+horizontal_alignment = 1
+
+[node name="SlotSelector" type="OptionButton" parent="Panel/Margin/VBox"]
+unique_name_in_owner = true
+size_flags_horizontal = 4
+
+[node name="Buttons" type="HBoxContainer" parent="Panel/Margin/VBox"]
+size_flags_vertical = 4
+alignment = 1
+separation = 12.0
+
+[node name="DeliverButton" type="Button" parent="Panel/Margin/VBox/Buttons"]
+unique_name_in_owner = true
+text = "Entregar"
+
+[node name="CloseButton" type="Button" parent="Panel/Margin/VBox/Buttons"]
+unique_name_in_owner = true
+text = "Cerrar"
