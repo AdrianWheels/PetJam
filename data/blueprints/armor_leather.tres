@@ -1,9 +1,11 @@
-[gd_resource type="Resource" load_steps=5 format=3]
+[gd_resource type="Resource" load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/BlueprintResource.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/data/TrialResource.gd" id="2"]
 [ext_resource type="Script" path="res://scripts/data/TrialConfig.gd" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/Minigames/SewOSU.tscn" id="4"]
+[ext_resource type="Texture2D" path="res://art/placeholders/forge/blueprint_armor_leather.png" id="5"]
+[ext_resource type="Texture2D" path="res://art/placeholders/forge/background_default.png" id="6"]
 
 [sub_resource type="Resource" id="1"]
 resource_name = "stitch_config"
@@ -22,6 +24,7 @@ minigame_id = "Sew"
 min_score = 0.5
 config = SubResource("1")
 minigame_scene = ExtResource("4")
+background = ExtResource("6")
 
 [resource]
 resource_name = "armor_leather"
@@ -29,7 +32,8 @@ script = ExtResource("1")
 blueprint_id = "armor_leather"
 display_name = "Armadura de cuero"
 description = "Protección flexible hecha a mano."
-icon_path = "res://art/placeholders/armor_leather.png"
+icon_path = "res://art/placeholders/forge/blueprint_armor_leather.png"
+icon = ExtResource("5")
 result_item = "leather_armor"
 materials = {"leather": 4}
 trial_sequence = [SubResource("2")]

@@ -4,6 +4,7 @@ extends Panel
 # This script handles the display and interaction for a single blueprint slot in the queue
 
 const MATERIAL_ICON_SCENE := preload("res://scenes/UI/MaterialIcon.tscn")
+const DEFAULT_BLUEPRINT_ICON := preload("res://art/placeholders/forge/blueprint_default.png")
 
 @onready var icon_rect: TextureRect = $VBoxContainer/Icon
 @onready var name_label: Label = $VBoxContainer/NameLabel
@@ -24,7 +25,7 @@ func set_blueprint_name(blueprint_name: String) -> void:
     name_label.text = blueprint_name
 
 func set_icon(texture: Texture2D) -> void:
-    icon_rect.texture = texture
+    icon_rect.texture = texture if texture else DEFAULT_BLUEPRINT_ICON
 
 func set_materials(materials) -> void:
     # Clear existing materials
