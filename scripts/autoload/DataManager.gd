@@ -5,8 +5,10 @@ class_name DataManager
 signal data_ready
 
 var materials: Dictionary = {}
-var blueprints: Dictionary = {}
+var blueprints: Dictionary[StringName, BlueprintResource] = {}
 var tuning: Dictionary = {}
+
+const BLUEPRINT_LIBRARY_PATH := "res://data/blueprints/BlueprintLibrary.tres"
 
 func _load_json_file(path: String) -> Dictionary:
     var out := {"ok": false, "result": null, "error": null}
@@ -128,10 +130,9 @@ func _ready() -> void:
 func _load_data() -> void:
     print("DataManager: Loading data from JSON files...")
     var mat_file := "res://data/materials.json"
-    var bp_file := "res://data/blueprints.json"
     var tune_file := "res://data/tuning.json"
 
-    print("DataManager: will try res paths: %s, %s, %s" % [mat_file, bp_file, tune_file])
+    print("DataManager: will try res paths: %s, %s" % [mat_file, tune_file])
 
     var mat_load := _load_json_file(mat_file)
     if mat_load.ok:
@@ -147,19 +148,7 @@ func _load_data() -> void:
         if has_node('/root/Logger'):
             get_node('/root/Logger').error("Failed to load materials.json", {"err": mat_load.error})
 
-    var bp_load := _load_json_file(bp_file)
-    if bp_load.ok:
-        if typeof(bp_load.result) == TYPE_DICTIONARY:
-            blueprints = bp_load.result
-            print("DataManager: Loaded blueprints.json successfully (%d items)" % blueprints.size())
-            if has_node('/root/Logger'):
-                get_node('/root/Logger').info("Loaded blueprints.json", {"items": blueprints.size()})
-        else:
-            push_error("DataManager: blueprints.json parsed but root is not a Dictionary")
-    else:
-        push_error("DataManager: failed to load blueprints.json (err=%s)" % str(bp_load.error))
-        if has_node('/root/Logger'):
-            get_node('/root/Logger').error("Failed to load blueprints.json", {"err": bp_load.error})
+    _load_blueprint_library()
 
     var tune_load := _load_json_file(tune_file)
     if tune_load.ok:
@@ -188,13 +177,43 @@ func get_material(id: String):
         print("DataManager: Retrieved material '%s'" % id)
     return result
 
-func get_blueprint(id: String):
-    var result = blueprints.get(id, null)
+func _load_blueprint_library() -> void:
+    var res := ResourceLoader.load(BLUEPRINT_LIBRARY_PATH)
+    if res == null:
+        push_error("DataManager: failed to load blueprint library at %s" % BLUEPRINT_LIBRARY_PATH)
+        if has_node('/root/Logger'):
+            get_node('/root/Logger').error("Failed to load blueprint library", {"path": BLUEPRINT_LIBRARY_PATH})
+        return
+
+    if not (res is BlueprintLibrary):
+        push_error("DataManager: resource at %s is not a BlueprintLibrary" % BLUEPRINT_LIBRARY_PATH)
+        return
+
+    blueprints.clear()
+    for blueprint in res.blueprints:
+        if blueprint == null:
+            continue
+        if not (blueprint is BlueprintResource):
+            push_error("DataManager: blueprint entry %s is not BlueprintResource" % str(blueprint))
+            continue
+        var key: StringName = blueprint.blueprint_id if blueprint.blueprint_id != StringName() else StringName(blueprint.resource_name)
+        if key == StringName():
+            push_error("DataManager: blueprint without id %s" % blueprint)
+            continue
+        blueprints[key] = blueprint
+
+    print("DataManager: Loaded blueprint library successfully (%d items)" % blueprints.size())
+    if has_node('/root/Logger'):
+        get_node('/root/Logger').info("Loaded blueprint library", {"items": blueprints.size(), "path": BLUEPRINT_LIBRARY_PATH})
+
+
+func get_blueprint(id: StringName) -> BlueprintResource:
+    var result: BlueprintResource = blueprints.get(id, null)
     if result == null:
-        print("DataManager: Blueprint '%s' not found" % id)
+        print("DataManager: Blueprint '%s' not found" % String(id))
     else:
-        print("DataManager: Retrieved blueprint '%s'" % id)
+        print("DataManager: Retrieved blueprint '%s'" % String(id))
     return result
 
-func get_blueprints() -> Dictionary:
+func get_blueprints() -> Dictionary[StringName, BlueprintResource]:
     return blueprints

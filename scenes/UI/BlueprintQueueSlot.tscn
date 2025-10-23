@@ -1,9 +1,6 @@
-[gd_scene load_steps=5 format=3 uid="uid://cka0tg466h1e7"]
+[gd_scene load_steps=2 format=3 uid="uid://cka0tg466h1e7"]
 
 [ext_resource type="Script" uid="uid://d3775s4kjkab2" path="res://scripts/BlueprintQueueSlot.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://csddayo13wi68" path="res://doc/godotdocu/about/img/eol.png" id="2_fpure"]
-[ext_resource type="Texture2D" uid="uid://bhc6582idhsfr" path="res://doc/godotdocu/about/img/supported.png" id="3_dep4t"]
-[ext_resource type="Texture2D" uid="uid://bftawai5k4keg" path="res://doc/godotdocu/about/img/partial.png" id="4_gnq8k"]
 
 [node name="BlueprintQueueSlot" type="Panel"]
 custom_minimum_size = Vector2(180, 100)
@@ -13,6 +10,12 @@ script = ExtResource("1")
 layout_mode = 0
 offset_right = 180.0
 offset_bottom = 100.0
+theme_override_constants/separation = 6
+
+[node name="Icon" type="TextureRect" parent="VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(48, 48)
+stretch_mode = 6
 
 [node name="NameLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2

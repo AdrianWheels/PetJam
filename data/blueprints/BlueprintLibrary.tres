@@ -1,0 +1,14 @@
+[gd_resource type="Resource" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/BlueprintLibrary.gd" id="1"]
+[ext_resource type="Resource" path="res://data/blueprints/dagger_basic.tres" id="2"]
+[ext_resource type="Resource" path="res://data/blueprints/potion_heal.tres" id="3"]
+[ext_resource type="Resource" path="res://data/blueprints/sword_basic.tres" id="4"]
+[ext_resource type="Resource" path="res://data/blueprints/armor_leather.tres" id="5"]
+[ext_resource type="Resource" path="res://data/blueprints/bow_simple.tres" id="6"]
+[ext_resource type="Resource" path="res://data/blueprints/helmet_iron.tres" id="7"]
+[ext_resource type="Resource" path="res://data/blueprints/shield_wooden.tres" id="8"]
+
+[resource]
+script = ExtResource("1")
+blueprints = [ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8")]
