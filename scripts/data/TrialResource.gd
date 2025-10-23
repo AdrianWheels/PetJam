@@ -10,6 +10,7 @@ class_name TrialResource
 @export var min_score: float = 0.0
 @export var config: TrialConfig
 @export var notes: String = ""
+@export var background: Texture2D
 
 func get_effective_minigame() -> StringName:
     if config and config.minigame_id != StringName():

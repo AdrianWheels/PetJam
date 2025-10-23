@@ -1,18 +1,37 @@
 extends Control
 
-@export var material_name: String = "iron"
+const MATERIAL_TEXTURES := {
+    "iron": preload("res://art/placeholders/forge/material_iron.png"),
+    "leather": preload("res://art/placeholders/forge/material_leather.png"),
+    "cloth": preload("res://art/placeholders/forge/material_cloth.png"),
+    "water": preload("res://art/placeholders/forge/material_water.png"),
+    "catalyst_fire": preload("res://art/placeholders/forge/material_catalyst_fire.png"),
+    "default": preload("res://art/placeholders/forge/material_default.png"),
+}
 
-func _draw():
-	var icon_size = size
-	if material_name == "iron":
-		draw_rect(Rect2(2, 2, icon_size.x-4, icon_size.y-4), Color.GRAY)
-	elif material_name == "leather":
-		draw_circle(icon_size/2, icon_size.x/2 - 2, Color.SADDLE_BROWN)
-	elif material_name == "cloth":
-		draw_rect(Rect2(2, 2, icon_size.x-4, icon_size.y-4), Color.LIGHT_BLUE)
-	elif material_name == "water":
-		draw_circle(icon_size/2, icon_size.x/2 - 2, Color.BLUE)
-	elif material_name == "catalyst_fire":
-		draw_circle(icon_size/2, icon_size.x/2 - 2, Color.RED)
-	else:
-		draw_rect(Rect2(2, 2, icon_size.x-4, icon_size.y-4), Color.WHITE)
+@export var material_name: String = "iron":
+    set = set_material_name
+
+@onready var _texture_rect: TextureRect = $TextureRect
+
+func _ready() -> void:
+    _update_texture()
+
+func set_material_name(value: String) -> void:
+    material_name = value
+    if is_inside_tree():
+        _update_texture()
+
+func _update_texture() -> void:
+    if _texture_rect == null:
+        return
+    var texture := MATERIAL_TEXTURES.get(material_name, null)
+    if texture == null:
+        var candidate_path := "res://art/placeholders/forge/material_%s.png" % material_name
+        if ResourceLoader.exists(candidate_path, "Texture2D"):
+            var loaded = ResourceLoader.load(candidate_path)
+            if loaded is Texture2D:
+                texture = loaded
+    if texture == null:
+        texture = MATERIAL_TEXTURES.get("default")
+    _texture_rect.texture = texture
