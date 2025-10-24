@@ -8,6 +8,15 @@ var trial_config: TrialConfig
 var _final_result: TrialResult
 var _result_emitted := false
 
+# Sistema anti-spam (FASE 1)
+const INPUT_COOLDOWN_MS := 150
+const BURST_WINDOW_MS := 500
+const BURST_THRESHOLD := 3
+var _last_input_time := 0
+var _input_burst_count := 0
+var _spam_penalty_active := false
+var _spam_penalty_until := 0
+
 func setup_title_screen(game_title: String, instructions: String = "", continue_text: String = ""):
         title_screen = preload("res://scenes/UI/TitleScreen.tscn").instantiate()
         title_screen.title = game_title
@@ -72,3 +81,42 @@ func get_result() -> TrialResult:
                 result.blueprint_id = trial_config.blueprint_id
                 result.max_score = trial_config.max_score
         return result
+
+## Sistema anti-spam: validar inputs
+## Retorna true si el input es válido, false si debe ser ignorado
+func _validate_input() -> bool:
+        var now := Time.get_ticks_msec()
+        
+        # Cooldown mínimo entre inputs
+        if now - _last_input_time < INPUT_COOLDOWN_MS:
+                return false
+        
+        # Detección de ráfaga (spam)
+        if now - _last_input_time < BURST_WINDOW_MS:
+                _input_burst_count += 1
+                if _input_burst_count > BURST_THRESHOLD:
+                        # Activar penalización temporal
+                        _spam_penalty_active = true
+                        _spam_penalty_until = now + 2000  # 2s de penalización
+                        print("[MinigameBase] Spam detectado - penalización activa")
+                        return false
+        else:
+                _input_burst_count = 0
+        
+        # Verificar si la penalización sigue activa
+        if _spam_penalty_active:
+                if now > _spam_penalty_until:
+                        _spam_penalty_active = false
+                        _input_burst_count = 0
+                else:
+                        return false
+        
+        _last_input_time = now
+        return true
+
+## Obtener multiplicador de precisión (usado en subclases)
+## Retorna valores < 1.0 si hay penalización activa
+func get_precision_multiplier() -> float:
+        if _spam_penalty_active:
+                return 0.7  # -30% precisión durante penalización
+        return 1.0

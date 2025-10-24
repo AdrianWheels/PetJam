@@ -10,6 +10,16 @@ const BASE_SPEED = 120
 const INTER_NOTE_MS = 420
 const TOTAL_NOTES = 8
 
+# Guardarraíles de seguridad (FASE 1)
+const SAFETY_LIMITS = {
+		"max_speed": 1.8,           # StitchSpeed máximo viable (< 0.2s reacción)
+		"min_window_px": 2.0,       # Ventana mínima absoluta
+		"min_agility": 0.0,
+		"max_agility": 1.0,
+		"min_precision": 0.0,
+		"max_precision": 1.0
+}
+
 var state = null
 var font = ThemeDB.get_default_theme().get_font("font", "Label")
 var scale_factor = 1.0
@@ -60,9 +70,9 @@ func _ready():
 
 func start_trial(config: TrialConfig) -> void:
 		super.start_trial(config)
-		var stitch_speed: float = clamp(float(config.get_parameter(&"stitch_speed", 1.0)), 0.3, 2.0)
-		var agility: float = clamp(float(config.get_parameter(&"agility", 0.2)), 0.0, 1.0)
-		var precision: float = clamp(float(config.get_parameter(&"precision", 0.4)), 0.0, 1.0)
+		var stitch_speed: float = clamp(float(config.get_parameter(&"stitch_speed", 1.0)), 0.3, SAFETY_LIMITS.max_speed)
+		var agility: float = clamp(float(config.get_parameter(&"agility", 0.2)), SAFETY_LIMITS.min_agility, SAFETY_LIMITS.max_agility)
+		var precision: float = clamp(float(config.get_parameter(&"precision", 0.4)), SAFETY_LIMITS.min_precision, SAFETY_LIMITS.max_precision)
 		var label: String = String(config.get_parameter(&"label", "Coser"))
 		_pending_blueprint = {
 				"name": label,
@@ -106,15 +116,22 @@ func reset():
 
 func compute_windows(precision):
 		var p = clamp(precision, 0, 1)
+		
+		# Escalado por área visual (FASE 1)
+		# Ventanas más grandes cuando el círculo está lejos
+		var radius_factor = 1.0
+		if r > 0:
+				radius_factor = sqrt(r / ring_r)
+		
 		return {
-				"perfect": 3 * (1 + 0.5 * p),
-				"bien": 8 * (1 + 0.35 * p),
-				"regular": 14 * (1 + 0.20 * p)
+				"perfect": max(3 * (1 + 0.5 * p) * radius_factor, SAFETY_LIMITS.min_window_px),
+				"bien": max(8 * (1 + 0.35 * p) * radius_factor, SAFETY_LIMITS.min_window_px),
+				"regular": max(14 * (1 + 0.20 * p) * radius_factor, SAFETY_LIMITS.min_window_px)
 		}
 
 func _input(event):
 		if event is InputEventMouseButton or event is InputEventKey:
-				if event.pressed:
+				if event.pressed and _validate_input():
 						_on_hit()
 
 func _on_hit():
@@ -162,7 +179,13 @@ func _schedule_next_note():
 func _process(delta):
 		if running and not paused and not finished:
 				if note_active and not note_judged:
-						r -= speed * delta
+						# Pre-freeze cerca del anillo en velocidades altas (FASE 1)
+						var freeze_threshold = ring_r + 15
+						var current_speed = speed
+						if r <= freeze_threshold and bp.stitchSpeed >= 1.5:
+								current_speed *= 0.3  # 70% más lento en últimos px
+						
+						r -= current_speed * delta
 						if r < 0:
 								r = 0
 						if r == 0:

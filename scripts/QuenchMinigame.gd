@@ -10,6 +10,15 @@ const CFG = {
 	"btn":{"w":150.0,"h":36.0}
 }
 
+# Guardarraíles de seguridad (FASE 1)
+const SAFETY_LIMITS = {
+	"min_window_c": 12.0,       # Ventana mínima viable (°C)
+	"max_cool_rate": 0.95,      # k máximo práctico
+	"min_cool_rate": 0.1,
+	"min_intelligence": 0.0,
+	"max_intelligence": 1.0
+}
+
 var bp = null
 var _pending_blueprint := {}
 var _max_score := 100.0
@@ -33,11 +42,11 @@ func start_trial(config: TrialConfig) -> void:
                 "name": String(config.get_parameter(&"label", "Temple")),
                 "Tini": float(config.get_parameter(&"t_initial", 850)),
                 "Tamb": float(config.get_parameter(&"t_ambient", 25)),
-                "k": float(config.get_parameter(&"cool_rate", 0.3)),
+                "k": clamp(float(config.get_parameter(&"cool_rate", 0.3)), SAFETY_LIMITS.min_cool_rate, SAFETY_LIMITS.max_cool_rate),
                 "Tlow": float(config.get_parameter(&"temp_low", 540)),
                 "Thigh": float(config.get_parameter(&"temp_high", 600)),
                 "catalyst": bool(config.get_parameter(&"catalyst", false)),
-                "intelligence": float(config.get_parameter(&"intelligence", 0.35))
+                "intelligence": clamp(float(config.get_parameter(&"intelligence", 0.35)), SAFETY_LIMITS.min_intelligence, SAFETY_LIMITS.max_intelligence)
         }
         _pending_blueprint = base
         _max_score = max(config.max_score, 100.0)
@@ -51,16 +60,22 @@ func start(blueprint):
                 "name": blueprint.get("name", "Acero medio"),
                 "Tini": float(blueprint.get("Tini", 850)),
                 "Tamb": float(blueprint.get("Tamb", 25)),
-                "k": float(blueprint.get("k", 0.35)),
+                "k": clamp(float(blueprint.get("k", 0.35)), SAFETY_LIMITS.min_cool_rate, SAFETY_LIMITS.max_cool_rate),
                 "Tlow": float(blueprint.get("Tlow", 520)),
                 "Thigh": float(blueprint.get("Thigh", 580)),
                 "catalyst": bool(blueprint.get("catalyst", false)),
-                "intelligence": clamp(float(blueprint.get("intelligence", 0)), 0, 1)
+                "intelligence": clamp(float(blueprint.get("intelligence", 0)), SAFETY_LIMITS.min_intelligence, SAFETY_LIMITS.max_intelligence)
         }
         if bp.Thigh < bp.Tlow:
                 var tmp = bp.Tlow
                 bp.Tlow = bp.Thigh
                 bp.Thigh = tmp
+        # Garantizar ventana mínima
+        var window_size = bp.Thigh - bp.Tlow
+        if window_size < SAFETY_LIMITS.min_window_c:
+                var center = (bp.Tlow + bp.Thigh) / 2.0
+                bp.Tlow = center - SAFETY_LIMITS.min_window_c / 2.0
+                bp.Thigh = center + SAFETY_LIMITS.min_window_c / 2.0
         # Reset state
         t = 0.0
         finished = false
@@ -79,9 +94,11 @@ func _input(event):
         if event is InputEventMouseMotion:
                 last_mouse_pos = event.position
         elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-                try_drop()
+                if _validate_input():
+                        try_drop()
         elif event is InputEventKey and event.pressed and event.keycode == KEY_SPACE:
-                try_drop()
+                if _validate_input():
+                        try_drop()
 
 func try_drop():
         if not running or paused or finished:

@@ -82,6 +82,15 @@ func _ready():
 		print("HUD: Connected to CraftingManager")
 	else:
 		print("HUD: CraftingManager not found")
+	
+	# Conectar señal de UIManager para reactivar blueprints cuando se entrega el ítem
+	var ui_mgr = get_node("/root/UIManager") if has_node("/root/UIManager") else null
+	if ui_mgr:
+		if ui_mgr.has_signal("delivery_closed") and not ui_mgr.is_connected("delivery_closed", Callable(self, "_on_delivery_closed")):
+			ui_mgr.connect("delivery_closed", Callable(self, "_on_delivery_closed"))
+			print("HUD: Connected to UIManager.delivery_closed")
+	else:
+		print("HUD: UIManager not found")
 
 	if has_node('/root/DataManager'):
 		var dm = get_node('/root/DataManager')
@@ -119,9 +128,12 @@ func _on_craft_enqueued(slot_idx:int, recipe_id:String) -> void:
 		append_print("Craft enqueued: %s (slot %d)" % [recipe_id, slot_idx])
 
 func _on_task_started(task_id: int, config: TrialConfig) -> void:
+		print("HUD: _on_task_started() called with task_id=%d, config=%s" % [task_id, config])
 		if config == null:
+				print("HUD: ERROR - config is NULL in _on_task_started!")
 				return
 		var runtime_config := config.duplicate_config() if config.has_method("duplicate_config") else config
+		print("HUD: Launching trial for task %d..." % task_id)
 		_launch_trial(task_id, runtime_config)
 
 func _on_task_updated(task_id: int, payload: Dictionary) -> void:
@@ -232,8 +244,21 @@ func populate_materials_list() -> void:
 func _launch_trial(task_id: int, config: TrialConfig) -> void:
 		if config == null:
 				return
+		
+		# Limpiar minijuego anterior si existe
 		if _active_minigame and is_instance_valid(_active_minigame):
+				if _active_minigame.get_parent():
+					_active_minigame.get_parent().remove_child(_active_minigame)
 				_active_minigame.queue_free()
+				_active_minigame = null
+		
+		# Limpiar container de cualquier hijo residual
+		var minigame_container = get_node_or_null("%MinigameContainer")
+		if minigame_container:
+			for child in minigame_container.get_children():
+				minigame_container.remove_child(child)
+				child.queue_free()
+		
 		var scene: PackedScene = config.minigame_scene if config.minigame_scene else _fallback_scene_for(config.minigame_id)
 		if scene == null:
 				push_warning("HUD: No scene for minigame %s" % String(config.minigame_id))
@@ -242,12 +267,19 @@ func _launch_trial(task_id: int, config: TrialConfig) -> void:
 		_active_minigame = instance
 		_active_task_id = task_id
 		_active_config = config
-		_set_forge_panels_visible(false)
-		var parent_layer := get_parent()
-		if parent_layer:
-				parent_layer.add_child(instance)
+		
+		# Renderizar minijuego en el contenedor central de la forja (NO ocultar paneles)
+		if minigame_container:
+				minigame_container.add_child(instance)
+				print("HUD: Minigame rendered in MinigameContainer (800x500 center area)")
 		else:
+				# Fallback: añadir como hijo directo
 				add_child(instance)
+				print("HUD: WARNING - MinigameContainer not found, using fallback")
+		
+		# Bloquear interacción con blueprints mientras minijuego activo
+		_set_queue_interaction_enabled(false)
+		
 		if instance.has_signal("trial_completed"):
 				instance.connect("trial_completed", Callable(self, "_on_trial_completed").bind(instance, task_id, config))
 		if instance.has_method("start_trial"):
@@ -257,25 +289,45 @@ func _launch_trial(task_id: int, config: TrialConfig) -> void:
 
 func _on_trial_completed(result: TrialResult, instance: Node, task_id: int, config: TrialConfig) -> void:
 		print("HUD: Trial completed, task_id=%d" % task_id)
+		
+		# Limpiar minijuego anterior INMEDIATAMENTE (no esperar a queue_free)
+		if instance and is_instance_valid(instance):
+			# Desconectar del árbol de escenas primero
+			if instance.get_parent():
+				instance.get_parent().remove_child(instance)
+			instance.queue_free()
+		if _active_minigame == instance:
+			_active_minigame = null
+			_active_task_id = -1
+		
+		# Reportar resultado a CraftingManager (esto puede disparar task_started sincrónicamente)
 		var outcome := {}
 		if has_node("/root/CraftingManager"):
 				outcome = get_node("/root/CraftingManager").report_trial_result(task_id, result)
 				print("HUD: CraftingManager outcome = %s" % outcome)
 		if has_node("/root/TelemetryManager"):
 				get_node("/root/TelemetryManager").record_trial(config.blueprint_id, config.trial_id, result)
-		if _active_minigame == instance:
-				_active_task_id = -1
+		
 		if typeof(outcome) == TYPE_DICTIONARY:
 				var status := String(outcome.get("status", ""))
 				print("HUD: Outcome status = '%s'" % status)
 				if status == "completed":
 					print("HUD: All trials completed! Calling UIManager.present_delivery()")
+					update_queue_display()
+					# Desbloquear interacción con blueprints al finalizar todas las pruebas
+					_set_queue_interaction_enabled(true)
 					if has_node("/root/UIManager"):
 						get_node("/root/UIManager").present_delivery(outcome)
 					else:
 						print("HUD: ERROR - UIManager not found!")
+				elif status == "in_progress":
+					print("HUD: More trials remain, next trial will auto-start via task_started signal")
+					update_queue_display()
+					# NO desbloquear blueprints - el siguiente trial iniciará automáticamente
+					# CraftingManager ya llamó _start_next_trial() que emitirá task_started
 				else:
-					print("HUD: More trials remain, status = %s" % status)
+					print("HUD: Unexpected status '%s', re-enabling blueprint interaction" % status)
+					_set_queue_interaction_enabled(true)
 
 func _fallback_scene_for(minigame_id: StringName) -> PackedScene:
 		var key := StringName(minigame_id)
@@ -283,29 +335,41 @@ func _fallback_scene_for(minigame_id: StringName) -> PackedScene:
 				return FALLBACK_MINIGAMES[key]
 		return null
 
-func _set_forge_panels_visible(show_panels: bool) -> void:
-		print("HUD: _set_forge_panels_visible(%s)" % show_panels)
-		var nodes := [
-				"MinigamesPanel",
-				"BlueprintQueuePanel",
-				"InventoryPanel",
-                "Label"
-		]
-		for node_name in nodes:
-				var node = get_node_or_null(node_name)
-				if node:
-						node.visible = show_panels
-						print("  - %s.visible = %s" % [node_name, show_panels])
+func _set_queue_interaction_enabled(enabled: bool) -> void:
+		"""Habilita/deshabilita la interacción con los blueprints de la cola"""
+		print("HUD: _set_queue_interaction_enabled(%s)" % enabled)
+		var queue_container = get_node_or_null("BlueprintQueuePanel/QueueVBox/QueueContainer")
+		if not queue_container:
+				queue_container = get_node_or_null("BlueprintQueuePanel/QueueContainer")
+		if not queue_container:
+				queue_container = get_node_or_null("QueueContainer")
+		if queue_container:
+				for slot in queue_container.get_children():
+						if slot.has_method("set_interaction_enabled"):
+								slot.set_interaction_enabled(enabled)
+						elif slot is Control:
+								slot.mouse_filter = Control.MOUSE_FILTER_STOP if enabled else Control.MOUSE_FILTER_IGNORE
+				print("  - Blueprint slots interaction = %s" % ("enabled" if enabled else "disabled"))
+		else:
+				print("  - WARNING: QueueContainer not found")
 
 func _on_blueprint_clicked(slot_idx: int) -> void:
+		# Prevenir clicks si hay un minijuego activo
+		if _active_minigame != null and is_instance_valid(_active_minigame):
+				print("HUD: Blueprint click ignored - minigame in progress")
+				return
+		
 		print("HUD: Blueprint slot %d clicked, starting task..." % slot_idx)
 		var cm = get_node("/root/CraftingManager") if has_node("/root/CraftingManager") else null
 		if cm and cm.has_method("start_task"):
 				var success: bool = cm.start_task(slot_idx)
 				if success:
-						print("HUD: Task %d started successfully" % slot_idx)
+						# Obtener el task.id real desde el CraftingManager para logging preciso
+						var queue_snapshot = cm.get_queue_snapshot() if cm.has_method("get_queue_snapshot") else []
+						var task_id = queue_snapshot[slot_idx].get("task_id", -1) if slot_idx < queue_snapshot.size() else -1
+						print("HUD: Task started successfully (slot=%d, task_id=%d)" % [slot_idx, task_id])
 				else:
-						print("HUD: Failed to start task %d" % slot_idx)
+						print("HUD: Failed to start task in slot %d" % slot_idx)
 		else:
 				print("HUD: CraftingManager.start_task() not available")
 
@@ -324,3 +388,14 @@ func _on_view_blueprints_pressed() -> void:
 
 	# TODO: Implementar UI de equipamiento en dungeon
 	# Cuando el jugador vaya a la dungeon, mostrar panel para equipar ítems
+
+func _on_delivery_closed() -> void:
+	"""Llamado cuando UIManager cierra el DeliveryPanel tras entregar al cliente o héroe"""
+	print("HUD: Delivery closed, returning to IDLE state (re-enabling blueprint interaction)")
+	# Ya no hay minijuego activo ni panel de entrega - volver a estado IDLE
+	_active_minigame = null
+	_active_task_id = -1
+	_active_config = null
+	# Permitir seleccionar otro blueprint
+	_set_queue_interaction_enabled(true)
+	update_queue_display()

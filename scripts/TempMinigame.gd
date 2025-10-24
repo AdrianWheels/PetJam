@@ -16,6 +16,15 @@ const TUNE_BASE = {
         "HUD": { "font":"14px system-ui,Segoe UI,Roboto,Arial", "line":18 }
 }
 
+# Guardarraíles de seguridad (FASE 1)
+const SAFETY_LIMITS = {
+        "min_zone_px": 30,          # Zona mínima viable
+        "max_hardness": 0.875,      # hardness que garantiza zona ≥30px
+        "max_freq_hz": 1.6,         # Frecuencia máxima
+        "min_precision": 0.0,
+        "max_precision": 1.0
+}
+
 var TUNE = TUNE_BASE.duplicate(true)
 
 var running = true
@@ -84,10 +93,10 @@ func start_trial(config: TrialConfig) -> void:
 
 func apply_blueprint(bp):
         blueprint = bp.duplicate()
-        var hardness = blueprint.get("hardness", 0.5)
-        var k = clamp(1 - 0.6 * clamp(hardness, 0, 1), 0.25, 1)
+        var hardness = clamp(blueprint.get("hardness", 0.5), 0.0, SAFETY_LIMITS.max_hardness)
+        var k = clamp(1 - 0.6 * hardness, 0.25, 1)
         var temp_window_base = blueprint.get("temp_window_base", 80)
-        zone_w = clamp(temp_window_base * k, 20, TUNE.BAR.w * 0.9)
+        zone_w = max(temp_window_base * k, SAFETY_LIMITS.min_zone_px)
         zone_center_x = TUNE.BAR.x + TUNE.BAR.w / 2.0
 
 func start(bp):
@@ -149,7 +158,7 @@ func lock_attempt():
         else:
                 hits += 1
                 score += TUNE.SCORE[q]
-                freq_hz = clamp(freq_hz + TUNE.FREQ_STEP_HZ, TUNE.BASE_FREQ_HZ, TUNE.FREQ_MAX_HZ)
+                freq_hz = clamp(freq_hz + TUNE.FREQ_STEP_HZ, TUNE.BASE_FREQ_HZ, SAFETY_LIMITS.max_freq_hz)
         
         if hits >= TUNE.HITS_TO_WIN:
                 finish(true)
@@ -265,15 +274,15 @@ func _input(event):
                 return
         if event is InputEventKey and event.pressed:
                 if event.keycode == KEY_SPACE:
-                        if not finished:
+                        if not finished and _validate_input():
                                 lock_attempt()
                                 accept_event()
-                elif event.keycode == KEY_P:
-                        if not finished:
-                                paused = not paused
-                                accept_event()
+                        elif event.keycode == KEY_P:
+                                if not finished:
+                                        paused = not paused
+                                        accept_event()
         elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-                if not finished:
+                if not finished and _validate_input():
                         lock_attempt()
                         accept_event()
 

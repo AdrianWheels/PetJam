@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://scripts/data/TrialResource.gd" id="2"]
 [ext_resource type="Script" path="res://scripts/data/TrialConfig.gd" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/Minigames/ForgeTemp.tscn" id="4"]
-[ext_resource type="PackedScene" path="res://scenes/Minigames/HammerTiming.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/HammerMinigame.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://scenes/Minigames/QuenchWater.tscn" id="6"]
 [ext_resource type="Texture2D" path="res://art/placeholders/forge/blueprint_sword_basic.png" id="7"]
 

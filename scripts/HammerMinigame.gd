@@ -14,6 +14,15 @@ const WINDOWS_BASE = {"perfect": 40, "bien": 90, "regular": 140}
 const SCORE = {"Perfect": 100, "Bien": 70, "Regular": 40, "Miss": 0}
 const COOLDOWN_MS = 120
 
+# Guardarraíles de seguridad (FASE 1)
+const SAFETY_LIMITS = {
+        "min_bpm": 60,              # BPM mínimo viable (1s entre notas)
+        "max_bpm": 200,             # BPM máximo práctico
+        "min_window_ms": 30,        # Ventana mínima absoluta
+        "min_notes": 3,
+        "max_notes": 10
+}
+
 var state = null
 var font = ThemeDB.get_default_theme().get_font("font", "Label")
 var scale_factor = 1.0
@@ -38,10 +47,10 @@ func _ready():
 
 func start_trial(config: TrialConfig) -> void:
 		super.start_trial(config)
-		var tempo: float = clamp(float(config.get_parameter(&"tempo_bpm", DEFAULT_BPM)), 45.0, 220.0)
+		var tempo: float = clamp(float(config.get_parameter(&"tempo_bpm", DEFAULT_BPM)), float(SAFETY_LIMITS.min_bpm), float(SAFETY_LIMITS.max_bpm))
 		var precision: float = clamp(float(config.get_parameter(&"precision", 0.5)), 0.0, 1.0)
 		var weight: float = clamp(float(config.get_parameter(&"weight", 0.5)), 0.0, 1.0)
-		_note_count = int(clamp(config.get_parameter(&"notes", 5), 3, 10))
+		_note_count = int(clamp(config.get_parameter(&"notes", 5), SAFETY_LIMITS.min_notes, SAFETY_LIMITS.max_notes))
 		var item_name: String = String(config.get_parameter(&"label", "Martillo"))
 		_pending_blueprint = {
 				"name": item_name,
@@ -80,12 +89,13 @@ func start(blueprint):
 
 func reset_with_blueprint(bp):
 		var blueprint = bp if bp else {"name": "Default", "tempoBPM": DEFAULT_BPM, "weight": 0.5, "precision": 0.5}
-		var windows = make_windows(blueprint.precision)
+		var bpm = blueprint.get("tempoBPM", DEFAULT_BPM)
+		var windows = make_windows(blueprint.precision, bpm)
 		var weight = clamp(blueprint.weight if blueprint.has("weight") else 0.5, 0, 1)
 		var ease_pow = lerp(1.0, 3.0, weight)
 		var impact_kick = lerp(6, 18, weight)
 		var t_start = Time.get_ticks_msec() + 800
-		var notes = schedule_notes(t_start, blueprint.tempoBPM if blueprint.has("tempoBPM") else DEFAULT_BPM, DEFAULT_DRIFT_MS)
+		var notes = schedule_notes(t_start, bpm, DEFAULT_DRIFT_MS)
 		state = {
 				"blueprint": blueprint,
 				"windows": windows,
@@ -109,17 +119,24 @@ func reset_with_blueprint(bp):
 				"impact_flash": 0
 		}
 
-func make_windows(precision):
+func make_windows(precision, bpm: float = DEFAULT_BPM):
 		var scl = lerp(1.2, 0.7, clamp(precision if precision != null else 0.5, 0, 1))
+		
+		# Ventanas más generosas en BPMs altos (FASE 1)
+		# A partir de 140 BPM, escalar hasta +25% en 200 BPM
+		var bpm_scaling = 1.0
+		if bpm > 140:
+				bpm_scaling = lerp(1.0, 1.25, clamp((bpm - 140) / 60.0, 0, 1))
+		
 		return {
-				"perfect": WINDOWS_BASE.perfect,
-				"bien": WINDOWS_BASE.bien * scl,
-				"regular": WINDOWS_BASE.regular * scl,
+				"perfect": WINDOWS_BASE.perfect,  # Perfect no escala con BPM
+				"bien": max(WINDOWS_BASE.bien * scl * bpm_scaling, SAFETY_LIMITS.min_window_ms),
+				"regular": max(WINDOWS_BASE.regular * scl * bpm_scaling, SAFETY_LIMITS.min_window_ms),
 				"miss": WINDOWS_BASE.regular
 		}
 
 func schedule_notes(t0, bpm, drift):
-		var iv: float = 60000 / clamp(bpm, 30, 300)
+		var iv: float = 60000 / clamp(bpm, SAFETY_LIMITS.min_bpm, SAFETY_LIMITS.max_bpm)
 		var notes: Array = []
 		var count: int = max(1, _note_count)
 		for i in range(count):
@@ -129,7 +146,8 @@ func schedule_notes(t0, bpm, drift):
 
 func _input(event):
 		if event.is_action_pressed("ui_accept") or (event is InputEventMouseButton and event.pressed):
-				try_hit(Time.get_ticks_msec())
+				if _validate_input():
+						try_hit(Time.get_ticks_msec())
 
 func try_hit(t_hit):
 		if not state or not state.playing or not state.accepting or state.finished:
