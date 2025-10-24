@@ -87,12 +87,13 @@ func attack(target, particles: Array) -> void:
 			for i in range(12):
 				particles.append(_create_spark_particle(target.position))
 		
-		# Reproducir sonido de ataque UNA SOLA VEZ por golpe (volumen 20%)
+		# Reproducir sonido de ataque UNA SOLA VEZ por golpe (volumen reducido -20dB)
 		if has_node("/root/AudioManager"):
 			var am = get_node("/root/AudioManager")
 			if am.has_method("play_sfx"):
 				var hit_sfx = load("res://art/sounds/atk_sword_flesh_hit_01.wav")
-				am.play_sfx(hit_sfx, 0.1)  # Volumen al 20%
+				# Contexto DUNGEON: se silencia al desactivar "Dungeon Audio" en DebugPanel
+				am.play_sfx(hit_sfx, -20.0, am.AudioContext.DUNGEON)
 		
 		# Debug: mostrar cadencia de ataque
 		print("Hero: Attack at %.2f s, dmg=%.1f, crit=%s, aps=%.2f" % [Time.get_ticks_msec()/1000.0, damage, crit, aps])

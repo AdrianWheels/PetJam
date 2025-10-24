@@ -44,6 +44,17 @@ func _ready() -> void:
 	dungeon_status = DUNGEON_STATUS_SCENE.instantiate()
 	dungeon_ui.add_child(dungeon_status)
 	
+	# Instanciar DebugPanel (siempre visible en capa superior)
+	var debug_panel_scene = load("res://scenes/UI/DebugPanel.tscn")
+	if debug_panel_scene:
+		var debug_panel = debug_panel_scene.instantiate()
+		var debug_layer = CanvasLayer.new()
+		debug_layer.name = "DebugLayer"
+		debug_layer.layer = 100  # Siempre encima
+		add_child(debug_layer)
+		debug_layer.add_child(debug_panel)
+		print("Main: DebugPanel instantiated")
+	
 	# Obtener referencia al DeliveryPanel que YA EXISTE dentro de HUD_Forge
 	delivery_panel = hud_forge.get_node_or_null("DeliveryPanel")
 	if delivery_panel:
@@ -195,7 +206,7 @@ func _on_enemy_spawned(enemy_level: int) -> void:
 		_update_hud_label("Enemy Level: %d" % enemy_level)
 
 func _on_game_over() -> void:
-		print("Main: Cambiando a Forja")
+		print("Main: GAME OVER - Cambiando a Forja")
 		change_area(&"forge")
 		_update_hud_label("GAME OVER")
 
@@ -208,7 +219,7 @@ func _on_hero_respawned(death_count: int) -> void:
 		_update_hud_label("Hero ready (deaths %d)" % death_count)
 
 func _on_boss_defeated() -> void:
-		print("Main: Boss defeated")
+		print("Main: Boss defeated!")
 		_update_hud_label("Boss defeated!")
 
 func _on_area_changed(new_area: StringName) -> void:
