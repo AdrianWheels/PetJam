@@ -34,6 +34,7 @@ var loadout_bonus: Dictionary = {}
 func _ready():
 		respawn()
 		_update_health_bar()
+		print("Hero: Ready at position %v, z_index=%d, visible=%s" % [position, z_index, visible])
 
 func reset_stats():
 		var bonus_str: int = int(loadout_bonus.get("STR", 0))

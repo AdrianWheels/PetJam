@@ -46,11 +46,11 @@ func _setup_context(context: AudioContext, name_prefix: String) -> void:
 	_contexts[context] = {
 		"music_player": music_player,
 		"sfx_player": sfx_player,
-		"enabled": true,
+		"enabled": false,  # Por defecto desactivado, se activa al entrar en su área
 		"name": name_prefix
 	}
 	
-	print("AudioManager: Context '%s' initialized" % name_prefix)
+	print("AudioManager: Context '%s' initialized (disabled by default)" % name_prefix)
 
 ## Reproduce SFX en el contexto especificado
 func play_sfx(stream: AudioStream, volume_db: float = 0.0, context: AudioContext = AudioContext.GLOBAL):

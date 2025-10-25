@@ -1,0 +1,393 @@
+[gd_scene load_steps=3 format=3 uid="uid://ltoqpqw6qnv1"]
+
+[ext_resource type="Script" uid="uid://bp0e8h4e6nnul" path="res://scripts/gameplay/DungeonLayout.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://d3pbtxequ8bkp" path="res://art/placeholders/dungeon/background_default_seamless.png" id="2"]
+
+[node name="DungeonLayout" type="Node2D"]
+z_index = -5
+script = ExtResource("1")
+
+[node name="ParallaxBackground" type="Node2D" parent="."]
+z_index = -10
+
+[node name="BackLayer" type="Sprite2D" parent="ParallaxBackground"]
+modulate = Color(0.6, 0.6, 0.7, 1)
+position = Vector2(913, 69.99997)
+scale = Vector2(1.1840326, 1.1835938)
+texture = ExtResource("2")
+
+[node name="BackLayer5" type="Sprite2D" parent="ParallaxBackground"]
+modulate = Color(0.6, 0.6, 0.7, 1)
+position = Vector2(-905, 70)
+scale = Vector2(1.1840326, 1.1835938)
+texture = ExtResource("2")
+
+[node name="BackLayer3" type="Sprite2D" parent="ParallaxBackground"]
+modulate = Color(0.6, 0.6, 0.7, 1)
+position = Vector2(4549, 70.00001)
+scale = Vector2(1.1840326, 1.1835938)
+texture = ExtResource("2")
+
+[node name="BackLayer4" type="Sprite2D" parent="ParallaxBackground"]
+modulate = Color(0.6, 0.6, 0.7, 1)
+position = Vector2(6366.9995, 70.00001)
+scale = Vector2(1.1840326, 1.1835938)
+texture = ExtResource("2")
+
+[node name="BackLayer2" type="Sprite2D" parent="ParallaxBackground"]
+modulate = Color(0.6, 0.6, 0.7, 1)
+position = Vector2(2731, 70.00001)
+scale = Vector2(1.1840326, 1.1835938)
+texture = ExtResource("2")
+
+[node name="TileMap" type="Node2D" parent="."]
+
+[node name="FloorLine" type="Line2D" parent="TileMap"]
+points = PackedVector2Array(0, 490, 6000, 490)
+width = 4.0
+default_color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="CeilingLine" type="Line2D" parent="TileMap"]
+points = PackedVector2Array(0, 100, 6000, 100)
+width = 3.0
+default_color = Color(0.3, 0.25, 0.2, 0.6)
+
+[node name="Decorations" type="Node2D" parent="."]
+
+[node name="Torch_01" type="Label" parent="Decorations"]
+offset_left = 400.0
+offset_top = 200.0
+offset_right = 440.0
+offset_bottom = 223.0
+text = "🔥"
+
+[node name="Torch_02" type="Label" parent="Decorations"]
+offset_left = 1000.0
+offset_top = 200.0
+offset_right = 1040.0
+offset_bottom = 223.0
+text = "🔥"
+
+[node name="Torch_03" type="Label" parent="Decorations"]
+offset_left = 1600.0
+offset_top = 200.0
+offset_right = 1640.0
+offset_bottom = 223.0
+text = "🔥"
+
+[node name="Torch_04" type="Label" parent="Decorations"]
+offset_left = 2200.0
+offset_top = 200.0
+offset_right = 2240.0
+offset_bottom = 223.0
+text = "🔥"
+
+[node name="Torch_05" type="Label" parent="Decorations"]
+offset_left = 2800.0
+offset_top = 200.0
+offset_right = 2840.0
+offset_bottom = 223.0
+text = "🔥"
+
+[node name="Torch_06" type="Label" parent="Decorations"]
+offset_left = 3400.0
+offset_top = 200.0
+offset_right = 3440.0
+offset_bottom = 223.0
+text = "🔥"
+
+[node name="Torch_07" type="Label" parent="Decorations"]
+offset_left = 4000.0
+offset_top = 200.0
+offset_right = 4040.0
+offset_bottom = 223.0
+text = "🔥"
+
+[node name="Torch_08" type="Label" parent="Decorations"]
+offset_left = 4600.0
+offset_top = 200.0
+offset_right = 4640.0
+offset_bottom = 223.0
+text = "🔥"
+
+[node name="Torch_Boss" type="Label" parent="Decorations"]
+offset_left = 5200.0
+offset_top = 200.0
+offset_right = 5240.0
+offset_bottom = 223.0
+text = "🔥"
+
+[node name="HeroSpawn" type="Marker2D" parent="."]
+position = Vector2(100, 460)
+gizmo_extents = 32.0
+
+[node name="SpawnLabel" type="Label" parent="HeroSpawn"]
+offset_left = -30.0
+offset_top = -50.0
+offset_right = 30.0
+offset_bottom = -27.0
+text = "HERO"
+horizontal_alignment = 1
+
+[node name="RoomZones" type="Node2D" parent="."]
+
+[node name="Room_01" type="Area2D" parent="RoomZones"]
+position = Vector2(620, 460)
+
+[node name="ZoneRect" type="ColorRect" parent="RoomZones/Room_01"]
+offset_left = -280.0
+offset_top = -200.0
+offset_right = 280.0
+offset_bottom = 60.0
+color = Color(0.2, 0.4, 0.6, 0.1)
+
+[node name="RoomLabel" type="Label" parent="RoomZones/Room_01"]
+offset_left = -30.0
+offset_top = -220.0
+offset_right = 30.0
+offset_bottom = -197.0
+text = "Sala 1"
+horizontal_alignment = 1
+
+[node name="EnemySpawn" type="Marker2D" parent="RoomZones/Room_01"]
+gizmo_extents = 24.0
+
+[node name="SpawnMarker" type="ColorRect" parent="RoomZones/Room_01/EnemySpawn"]
+offset_left = -20.0
+offset_top = -26.0
+offset_right = 20.0
+offset_bottom = 26.0
+color = Color(1, 0.3, 0.2, 0.3)
+
+[node name="Room_02" type="Area2D" parent="RoomZones"]
+position = Vector2(1220, 460)
+
+[node name="ZoneRect" type="ColorRect" parent="RoomZones/Room_02"]
+offset_left = -280.0
+offset_top = -200.0
+offset_right = 280.0
+offset_bottom = 60.0
+color = Color(0.2, 0.4, 0.6, 0.1)
+
+[node name="RoomLabel" type="Label" parent="RoomZones/Room_02"]
+offset_left = -30.0
+offset_top = -220.0
+offset_right = 30.0
+offset_bottom = -197.0
+text = "Sala 2"
+horizontal_alignment = 1
+
+[node name="EnemySpawn" type="Marker2D" parent="RoomZones/Room_02"]
+gizmo_extents = 24.0
+
+[node name="SpawnMarker" type="ColorRect" parent="RoomZones/Room_02/EnemySpawn"]
+offset_left = -20.0
+offset_top = -26.0
+offset_right = 20.0
+offset_bottom = 26.0
+color = Color(1, 0.3, 0.2, 0.3)
+
+[node name="Room_03" type="Area2D" parent="RoomZones"]
+position = Vector2(1820, 460)
+
+[node name="ZoneRect" type="ColorRect" parent="RoomZones/Room_03"]
+offset_left = -280.0
+offset_top = -200.0
+offset_right = 280.0
+offset_bottom = 60.0
+color = Color(0.2, 0.4, 0.6, 0.1)
+
+[node name="RoomLabel" type="Label" parent="RoomZones/Room_03"]
+offset_left = -30.0
+offset_top = -220.0
+offset_right = 30.0
+offset_bottom = -197.0
+text = "Sala 3"
+horizontal_alignment = 1
+
+[node name="EnemySpawn" type="Marker2D" parent="RoomZones/Room_03"]
+gizmo_extents = 24.0
+
+[node name="SpawnMarker" type="ColorRect" parent="RoomZones/Room_03/EnemySpawn"]
+offset_left = -20.0
+offset_top = -26.0
+offset_right = 20.0
+offset_bottom = 26.0
+color = Color(1, 0.3, 0.2, 0.3)
+
+[node name="Room_04" type="Area2D" parent="RoomZones"]
+position = Vector2(2420, 460)
+
+[node name="ZoneRect" type="ColorRect" parent="RoomZones/Room_04"]
+offset_left = -280.0
+offset_top = -200.0
+offset_right = 280.0
+offset_bottom = 60.0
+color = Color(0.2, 0.4, 0.6, 0.1)
+
+[node name="RoomLabel" type="Label" parent="RoomZones/Room_04"]
+offset_left = -30.0
+offset_top = -220.0
+offset_right = 30.0
+offset_bottom = -197.0
+text = "Sala 4"
+horizontal_alignment = 1
+
+[node name="EnemySpawn" type="Marker2D" parent="RoomZones/Room_04"]
+gizmo_extents = 24.0
+
+[node name="SpawnMarker" type="ColorRect" parent="RoomZones/Room_04/EnemySpawn"]
+offset_left = -20.0
+offset_top = -26.0
+offset_right = 20.0
+offset_bottom = 26.0
+color = Color(1, 0.3, 0.2, 0.3)
+
+[node name="Room_05" type="Area2D" parent="RoomZones"]
+position = Vector2(3020, 460)
+
+[node name="ZoneRect" type="ColorRect" parent="RoomZones/Room_05"]
+offset_left = -280.0
+offset_top = -200.0
+offset_right = 280.0
+offset_bottom = 60.0
+color = Color(0.2, 0.4, 0.6, 0.1)
+
+[node name="RoomLabel" type="Label" parent="RoomZones/Room_05"]
+offset_left = -30.0
+offset_top = -220.0
+offset_right = 30.0
+offset_bottom = -197.0
+text = "Sala 5"
+horizontal_alignment = 1
+
+[node name="EnemySpawn" type="Marker2D" parent="RoomZones/Room_05"]
+gizmo_extents = 24.0
+
+[node name="SpawnMarker" type="ColorRect" parent="RoomZones/Room_05/EnemySpawn"]
+offset_left = -20.0
+offset_top = -26.0
+offset_right = 20.0
+offset_bottom = 26.0
+color = Color(1, 0.3, 0.2, 0.3)
+
+[node name="Room_06" type="Area2D" parent="RoomZones"]
+position = Vector2(3620, 460)
+
+[node name="ZoneRect" type="ColorRect" parent="RoomZones/Room_06"]
+offset_left = -280.0
+offset_top = -200.0
+offset_right = 280.0
+offset_bottom = 60.0
+color = Color(0.2, 0.4, 0.6, 0.1)
+
+[node name="RoomLabel" type="Label" parent="RoomZones/Room_06"]
+offset_left = -30.0
+offset_top = -220.0
+offset_right = 30.0
+offset_bottom = -197.0
+text = "Sala 6"
+horizontal_alignment = 1
+
+[node name="EnemySpawn" type="Marker2D" parent="RoomZones/Room_06"]
+gizmo_extents = 24.0
+
+[node name="SpawnMarker" type="ColorRect" parent="RoomZones/Room_06/EnemySpawn"]
+offset_left = -20.0
+offset_top = -26.0
+offset_right = 20.0
+offset_bottom = 26.0
+color = Color(1, 0.3, 0.2, 0.3)
+
+[node name="Room_07" type="Area2D" parent="RoomZones"]
+position = Vector2(4220, 460)
+
+[node name="ZoneRect" type="ColorRect" parent="RoomZones/Room_07"]
+offset_left = -280.0
+offset_top = -200.0
+offset_right = 280.0
+offset_bottom = 60.0
+color = Color(0.2, 0.4, 0.6, 0.1)
+
+[node name="RoomLabel" type="Label" parent="RoomZones/Room_07"]
+offset_left = -30.0
+offset_top = -220.0
+offset_right = 30.0
+offset_bottom = -197.0
+text = "Sala 7"
+horizontal_alignment = 1
+
+[node name="EnemySpawn" type="Marker2D" parent="RoomZones/Room_07"]
+gizmo_extents = 24.0
+
+[node name="SpawnMarker" type="ColorRect" parent="RoomZones/Room_07/EnemySpawn"]
+offset_left = -20.0
+offset_top = -26.0
+offset_right = 20.0
+offset_bottom = 26.0
+color = Color(1, 0.3, 0.2, 0.3)
+
+[node name="Room_08" type="Area2D" parent="RoomZones"]
+position = Vector2(4820, 460)
+
+[node name="ZoneRect" type="ColorRect" parent="RoomZones/Room_08"]
+offset_left = -280.0
+offset_top = -200.0
+offset_right = 280.0
+offset_bottom = 60.0
+color = Color(0.2, 0.4, 0.6, 0.1)
+
+[node name="RoomLabel" type="Label" parent="RoomZones/Room_08"]
+offset_left = -30.0
+offset_top = -220.0
+offset_right = 30.0
+offset_bottom = -197.0
+text = "Sala 8"
+horizontal_alignment = 1
+
+[node name="EnemySpawn" type="Marker2D" parent="RoomZones/Room_08"]
+gizmo_extents = 24.0
+
+[node name="SpawnMarker" type="ColorRect" parent="RoomZones/Room_08/EnemySpawn"]
+offset_left = -20.0
+offset_top = -26.0
+offset_right = 20.0
+offset_bottom = 26.0
+color = Color(1, 0.3, 0.2, 0.3)
+
+[node name="Room_09" type="Area2D" parent="RoomZones"]
+position = Vector2(5420, 460)
+
+[node name="ZoneRect" type="ColorRect" parent="RoomZones/Room_09"]
+offset_left = -280.0
+offset_top = -200.0
+offset_right = 280.0
+offset_bottom = 60.0
+color = Color(0.6, 0.2, 0.2, 0.15)
+
+[node name="RoomLabel" type="Label" parent="RoomZones/Room_09"]
+modulate = Color(1, 0.3, 0.3, 1)
+offset_left = -50.0
+offset_top = -220.0
+offset_right = 50.0
+offset_bottom = -197.0
+text = "SALA BOSS"
+horizontal_alignment = 1
+
+[node name="BossIcon" type="Label" parent="RoomZones/Room_09"]
+offset_left = -20.0
+offset_top = -180.0
+offset_right = 20.0
+offset_bottom = -157.0
+text = "👑"
+horizontal_alignment = 1
+
+[node name="EnemySpawn" type="Marker2D" parent="RoomZones/Room_09"]
+gizmo_extents = 24.0
+
+[node name="SpawnMarker" type="ColorRect" parent="RoomZones/Room_09/EnemySpawn"]
+offset_left = -20.0
+offset_top = -26.0
+offset_right = 20.0
+offset_bottom = 26.0
+color = Color(1, 0.1, 0.1, 0.4)

@@ -1,0 +1,23 @@
+═══════════════════════════════════════════════════════════════
+🔧 SOLUCIÓN A ERRORES DE GODOT - ARCHIVOS RENOMBRADOS
+═══════════════════════════════════════════════════════════════
+
+✅ PROBLEMA RESUELTO EN CÓDIGO:
+- RequestsManager.gd línea 58 → tipo explícito (int)
+- Todas las escenas .tscn → referencias correctas a archivos finales
+- Cache de Godot limpiado
+
+🎯 ACCIÓN REQUERIDA:
+1. CIERRA Godot completamente (si está abierto)
+2. Abre Godot de nuevo
+3. Godot reimportará los recursos automáticamente
+
+═══════════════════════════════════════════════════════════════
+
+📝 CAMBIOS REALIZADOS:
+✅ ForgeMinigame.gd → Loop x3 (ida-vuelta-ida) + velocidad x3
+✅ Archivos consolidados → Solo 1 versión por minijuego
+✅ RequestsManager.gd → Delay progresivo (2 iniciales, luego 3-8s)
+✅ InventoryManager.gd → Verificación de materiales
+
+═══════════════════════════════════════════════════════════════

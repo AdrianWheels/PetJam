@@ -107,6 +107,9 @@ func show_forge() -> void:
 				# Corridor sigue procesando en background (auto-farm)
 				corridor.process_mode = Node.PROCESS_MODE_INHERIT
 				corridor.visible = false
+		# Reactivar cámara de Main para forge
+		if camera:
+				camera.enabled = true
 		_apply_camera_target(forge_position, forge_zoom)
 		emit_signal("area_changed", _current_area)
 
@@ -123,6 +126,9 @@ func show_dungeon() -> void:
 		if corridor:
 				corridor.visible = true
 				corridor.process_mode = Node.PROCESS_MODE_INHERIT
+		# Desactivar cámara de Main, Corridor usa la suya
+		if camera:
+				camera.enabled = false
 		_apply_camera_target(dungeon_position, dungeon_zoom)
 		emit_signal("area_changed", _current_area)
 

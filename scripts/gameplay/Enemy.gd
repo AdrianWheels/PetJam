@@ -44,6 +44,7 @@ func _ready():
         _rng.randomize()
         reset_stats()
         _update_visuals()
+        print("Enemy: Ready at position %v, z_index=%d, visible=%s, level=%d" % [position, z_index, visible, level])
 
 func configure_for_level(lv: int, boss: bool) -> void:
         level = lv
@@ -123,7 +124,7 @@ func generate_drops() -> Array:
         return drop_table.roll_drops(_rng)
 
 func _drop_random_materials() -> void:
-        """Dropea 5 unidades de un material aleatorio de los disponibles en blueprints"""
+        """Dropea 15 unidades de un material aleatorio de los disponibles en blueprints"""
         var dm := get_node_or_null("/root/DataManager")
         if not dm or not dm.has_method("get_all_blueprints"):
                 return
@@ -143,9 +144,9 @@ func _drop_random_materials() -> void:
                 print("Enemy: No materials found in blueprints")
                 return
         
-        # Elegir material aleatorio y dar 5 unidades
+        # Elegir material aleatorio y dar 15 unidades (aumentado desde 5 para evitar softlocks)
         var random_material: StringName = all_materials[_rng.randi() % all_materials.size()]
-        var drop_amount := 5
+        var drop_amount := 15
         
         var im := get_node_or_null("/root/InventoryManager")
         if im and im.has_method("add_item"):

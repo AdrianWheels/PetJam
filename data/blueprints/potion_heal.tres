@@ -1,40 +1,51 @@
-[gd_resource type="Resource" load_steps=6 format=3]
+[gd_resource type="Resource" script_class="BlueprintResource" load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/BlueprintResource.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/data/TrialResource.gd" id="2"]
-[ext_resource type="Script" path="res://scripts/data/TrialConfig.gd" id="3"]
-[ext_resource type="PackedScene" path="res://scenes/Minigames/TempMinigame.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/Minigames/ForgeTemp.tscn" id="4"]
 [ext_resource type="Texture2D" path="res://art/placeholders/forge/blueprint_potion_heal.png" id="5"]
+[ext_resource type="Script" path="res://scripts/data/ForgeTrialConfig.gd" id="5_s5le1"]
 [ext_resource type="Texture2D" path="res://art/placeholders/forge/background_default.png" id="6"]
 
-[sub_resource type="Resource" id="1"]
-resource_name = "brew_config"
-script = ExtResource("3")
-minigame_id = "Temp"
+[sub_resource type="Resource" id="Resource_xmm58"]
+script = ExtResource("5_s5le1")
+forge_speed = 0.9
+precision = 0.4
+label = "Poción"
+minigame_id = &"Forge"
 minigame_scene = ExtResource("4")
-max_score = 300.0
-parameters = {"target_temp": 0.6, "hardness": 0.45, "temp_window_base": 90, "precision": 0.5, "label": "Poción"}
+max_score = 900.0
+parameters = {
+"forge_speed": 0.9,
+"hardness": 0.3,
+"label": "Poción",
+"precision": 0.4,
+"trials": 3
+}
 
 [sub_resource type="Resource" id="2"]
 resource_name = "brew_trial"
 script = ExtResource("2")
-trial_id = "potion_heal_brew"
+trial_id = &"potion_heal_brew"
 display_name = "Preparar la poción"
-minigame_id = "Temp"
-min_score = 0.5
-config = SubResource("1")
+minigame_id = &"Forge"
 minigame_scene = ExtResource("4")
+min_score = 0.5
+config = SubResource("Resource_xmm58")
 background = ExtResource("6")
 
 [resource]
 resource_name = "potion_heal"
 script = ExtResource("1")
-blueprint_id = "potion_heal"
+blueprint_id = &"potion_heal"
 display_name = "Poción de curación"
 description = "Recupera vitalidad rápidamente."
 icon_path = "res://art/placeholders/forge/blueprint_potion_heal.png"
 icon = ExtResource("5")
-result_item = "potion_heal"
-materials = {"herb": 2, "bottle": 1}
+result_item = &"potion_heal"
+materials = {
+"bottle": 1,
+"herb": 2
+}
 trial_sequence = [SubResource("2")]
-tags = ["potion"]
+tags = PackedStringArray()

@@ -1,0 +1,35 @@
+[gd_scene load_steps=4 format=3 uid="uid://jo0oa5a50pp7"]
+
+[ext_resource type="PackedScene" uid="uid://cj5b2mfsvqaos" path="res://scenes/Minigames/SewOSU.tscn" id="1_kp2of"]
+[ext_resource type="Script" uid="uid://dpedargmucqcr" path="res://scripts/SewSandbox.gd" id="1_xlwwf"]
+[ext_resource type="Script" uid="uid://cbcdol56q80e8" path="res://scripts/SewDebugOverlay.gd" id="3_qkx4b"]
+
+[node name="SewSandbox" type="Node2D"]
+script = ExtResource("1_xlwwf")
+
+[node name="SewOSU" parent="." instance=ExtResource("1_kp2of")]
+
+[node name="DebugOverlay" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 622.0
+offset_bottom = 268.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("3_qkx4b")
+
+[node name="Instructions" type="Label" parent="."]
+offset_left = 680.0
+offset_top = 20.0
+offset_right = 1100.0
+offset_bottom = 160.0
+theme_override_colors/font_color = Color(1, 1, 0, 1)
+theme_override_font_sizes/font_size = 14
+text = "🧪 SEW SANDBOX - Test de 20 puntos
+V = Toggle visualización puntos
+T = Test FÁCIL (6 eventos, lento)
+Y = Test DIFÍCIL (10 eventos, rápido)
+ESPACIO = Iniciar"

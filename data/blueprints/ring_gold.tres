@@ -1,38 +1,48 @@
-[gd_resource type="Resource" load_steps=6 format=3 uid="uid://ring_gold_bp"]
+[gd_resource type="Resource" script_class="BlueprintResource" load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/BlueprintResource.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/data/TrialResource.gd" id="2"]
-[ext_resource type="Script" path="res://scripts/data/TrialConfig.gd" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/Minigames/ForgeTemp.tscn" id="4"]
+[ext_resource type="Script" path="res://scripts/data/ForgeTrialConfig.gd" id="4_ondeo"]
 [ext_resource type="Texture2D" path="res://art/placeholders/forge/blueprint_sword_basic.png" id="5"]
 
-[sub_resource type="Resource" id="1"]
-resource_name = "forge_sequence"
-script = ExtResource("3")
-minigame_id = "Forge"
+[sub_resource type="Resource" id="Resource_u1lt4"]
+script = ExtResource("4_ondeo")
+trials = 5
+forge_speed = 1.4
+precision = 0.7
+minigame_id = &"Forge"
 minigame_scene = ExtResource("4")
-max_score = 100.0
-parameters = {"difficulty": 0.35, "target": 0.7}
+max_score = 1500.0
+parameters = {
+"forge_speed": 1.4,
+"hardness": 0.3,
+"label": "Forja",
+"precision": 0.7,
+"trials": 5
+}
 
 [sub_resource type="Resource" id="2"]
 resource_name = "forge_trial"
 script = ExtResource("2")
-trial_id = "ring_gold_forge"
+trial_id = &"ring_gold_forge"
 display_name = "Forja de anillo"
-minigame_id = "Forge"
-min_score = 0.6
-config = SubResource("1")
+minigame_id = &"Forge"
 minigame_scene = ExtResource("4")
+min_score = 0.6
+config = SubResource("Resource_u1lt4")
 
 [resource]
 resource_name = "ring_gold"
 script = ExtResource("1")
-blueprint_id = "ring_gold"
+blueprint_id = &"ring_gold"
 display_name = "Anillo de Oro"
 description = "Anillo mágico reforzado."
 icon = ExtResource("5")
-result_item = "ring_gold"
-min_score = 0.0
-materials = {"gold": 2, "iron": 1}
+result_item = &"ring_gold"
+materials = {
+"gold": 2,
+"iron": 1
+}
 trial_sequence = [SubResource("2")]
-tags = ["accessory", "ring"]
+tags = PackedStringArray()

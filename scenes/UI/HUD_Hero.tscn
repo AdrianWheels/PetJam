@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://bk8x3v7iaqp2m"]
 
-[ext_resource type="Script" path="res://scripts/ui/HUDHero.gd" id="1"]
+[ext_resource type="Script" uid="uid://bm5dpaedmhdju" path="res://scripts/ui/HUDHero.gd" id="1"]
 
 [node name="HUD_Hero" type="CanvasLayer"]
 script = ExtResource("1")
@@ -67,10 +67,10 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -200.0
-offset_top = -90.0
-offset_right = 200.0
-offset_bottom = -10.0
+offset_left = -153.0
+offset_top = -1216.0
+offset_right = 247.0
+offset_bottom = -1136.0
 grow_horizontal = 2
 grow_vertical = 0
 color = Color(0.15, 0.15, 0.18, 0.85)
@@ -120,9 +120,9 @@ vertical_alignment = 1
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = 10.0
-offset_top = -50.0
-offset_right = 110.0
-offset_bottom = -10.0
+offset_left = 924.0
+offset_top = -1154.0
+offset_right = 1056.0
+offset_bottom = -1114.0
 grow_vertical = 0
 text = "← Volver a Forja"

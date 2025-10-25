@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="MinigameSoundSet" load_steps=7 format=3 uid="uid://dwfpr13ry15af"]
+
+[ext_resource type="Script" uid="uid://csyo0dmcxxpnn" path="res://scripts/data/MinigameSoundSet.gd" id="1_default"]
+[ext_resource type="AudioStream" uid="uid://dhmexaqlxjsxt" path="res://art/sounds/good.mp3" id="2_yu67u"]
+[ext_resource type="AudioStream" uid="uid://cndpl3rid06si" path="res://art/sounds/miss.mp3" id="3_g1ywr"]
+[ext_resource type="AudioStream" uid="uid://cuqsjr4qpjod5" path="res://art/sounds/perfect.mp3" id="4_qym04"]
+[ext_resource type="AudioStream" uid="uid://dladq83kopaa5" path="res://art/sounds/regular.mp3" id="5_k1ha2"]
+[ext_resource type="AudioStream" uid="uid://dq44utnnp4ubd" path="res://art/sounds/amb_corridor_tension_arcade_loop_01.wav" id="6_g1ywr"]
+
+[resource]
+script = ExtResource("1_default")
+sound_perfect = ExtResource("4_qym04")
+sound_bien = ExtResource("2_yu67u")
+sound_regular = ExtResource("5_k1ha2")
+sound_miss = ExtResource("3_g1ywr")
+sound_whoosh = ExtResource("6_g1ywr")

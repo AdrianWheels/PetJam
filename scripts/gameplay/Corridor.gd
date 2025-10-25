@@ -25,9 +25,21 @@ var dist_ref := 0.0
 
 var _respawn_timer: Timer
 var _game_manager: Node
+var _dungeon_layout: Node2D
 
 func _ready():
         _game_manager = get_node_or_null("/root/GameManager")
+        # Buscar DungeonLayout en el árbol
+        _dungeon_layout = get_node_or_null("../DungeonLayout")
+        if _dungeon_layout == null:
+                _dungeon_layout = get_tree().root.find_child("DungeonLayout", true, false)
+        if _dungeon_layout:
+                print("Corridor: DungeonLayout found at %s" % _dungeon_layout.get_path())
+        
+        # Activar cámara de Corridor cuando está visible
+        if camera:
+                camera.enabled = visible
+        
         _respawn_timer = Timer.new()
         _respawn_timer.one_shot = true
         _respawn_timer.wait_time = RESPAWN_DELAY
@@ -51,6 +63,16 @@ func _ready():
 
         reset_combat(true)
 
+func _notification(what: int) -> void:
+        # Detectar cuando Corridor se hace visible/invisible
+        if what == NOTIFICATION_VISIBILITY_CHANGED:
+                if camera:
+                        camera.enabled = visible
+                        if visible:
+                                print("Corridor: Camera enabled")
+                        else:
+                                print("Corridor: Camera disabled")
+
 func _process(delta: float):
         match state:
                 State.RUN:
@@ -69,7 +91,7 @@ func _process(delta: float):
         
         if particle_manager and particle_manager.has_method("update_particles"):
                 particle_manager.update_particles(delta)
-        # queue_redraw() comentado para no dibujar líneas de debug
+        # queue_redraw() desactivado - DungeonLayout maneja los visuales ahora
 
 func update_run(delta: float):
         if hero and hero.alive:
@@ -121,6 +143,16 @@ func advance_enemy():
 func spawn_enemy(lv: int, x: float):
         if enemy == null:
                 return
+        
+        # Obtener posición desde DungeonLayout si está disponible
+        var spawn_pos := Vector2(x, GROUND_Y)
+        if _dungeon_layout and _dungeon_layout.has_method("get_enemy_spawn_for_level"):
+                spawn_pos = _dungeon_layout.get_enemy_spawn_for_level(lv)
+                print("Corridor: Using DungeonLayout spawn position for level %d: %v" % [lv, spawn_pos])
+        else:
+                # Fallback a posición calculada
+                spawn_pos = Vector2(x, GROUND_Y)
+        
         var boss := lv >= BOSS_LEVEL
         if enemy.has_method("configure_for_level"):
                 enemy.configure_for_level(lv, boss)
@@ -128,14 +160,20 @@ func spawn_enemy(lv: int, x: float):
                 enemy.level = lv
                 enemy.is_boss = boss
                 enemy.reset_stats()
-        enemy.position = Vector2(x, GROUND_Y)
+        enemy.position = spawn_pos
         enemy.velocity = Vector2.ZERO
         if combat_controller and combat_controller.has_method("stop_combat"):
                 combat_controller.stop_combat()
 
 func reset_combat(full_reset: bool):
+        # Obtener posición inicial del héroe desde DungeonLayout
+        var hero_spawn_pos := HERO_START
+        if _dungeon_layout and _dungeon_layout.has_method("get_hero_spawn"):
+                hero_spawn_pos = _dungeon_layout.get_hero_spawn()
+                print("Corridor: Using DungeonLayout hero spawn: %v" % hero_spawn_pos)
+        
         if hero:
-                hero.respawn(HERO_START)
+                hero.respawn(hero_spawn_pos)
         if full_reset:
                 level = 1
         else:
@@ -143,58 +181,22 @@ func reset_combat(full_reset: bool):
                 if _game_manager and "current_enemy_level" in _game_manager:
                         level = _game_manager.current_enemy_level
                         print("Corridor: Syncing enemy level from GameManager = %d" % level)
-        spawn_enemy(level, HERO_START.x + SPAWN_DISTANCE)
+        spawn_enemy(level, hero_spawn_pos.x + SPAWN_DISTANCE)
         state = State.RUN
         cam_x = hero.position.x - 960.0 * 0.33 if hero else 0.0
         ground_offset = 0.0
         dist_ref = enemy.position.x - hero.position.x if hero and enemy else 0.0
 
 func _draw():
-        # Función de debug desactivada - usamos ParallaxBackground ahora
+        # Sistema de dibujo legacy DESACTIVADO - DungeonLayout maneja los visuales
         pass
-        # draw_parallax(0.12, Color(0x0e / 255.0, 0x17 / 255.0, 0x26 / 255.0), 40, 0.6)
-        draw_parallax(0.3, Color(0x0a / 255.0, 0x1a / 255.0, 0x2f / 255.0), 20, 0.8)
-        draw_rect(Rect2(-1000, GROUND_Y, 2000, 540 - GROUND_Y), Color(0x11 / 255.0, 0x18 / 255.0, 0x27 / 255.0))
-        draw_ground()
-        draw_hero()
-        draw_enemy()
-        if particle_manager and particle_manager.has_method("draw_particles"):
-                particle_manager.draw_particles(self, cam_x)
 
-func draw_parallax(factor: float, color: Color, stripe: int, alpha: float):
-        var w := 960
-        var off := -int(fmod(cam_x * factor, float(stripe)))
-        color.a = alpha
-        for x in range(off - stripe, w + stripe, stripe):
-                draw_rect(Rect2(x, 0, 2, GROUND_Y - 40), color)
-
-func draw_ground():
-        var w := 960
-        var step := 32
-        var off := -int(fmod(ground_offset * 0.8, float(step)))
-        for x in range(off - step, w + step, step):
-                var y := GROUND_Y + ((x * 0.15) as int & 7)
-                draw_line(Vector2(x, y), Vector2(x + step, y), Color(0x1f / 255.0, 0x29 / 255.0, 0x37 / 255.0), 2)
-
-func draw_hero():
-        if hero == null:
-                return
-        var pos: Vector2 = hero.position - Vector2(cam_x, 0)
-        var size: Vector2 = hero.size
-        draw_rect(Rect2(pos - size / 2.0, size), Color(0x38 / 255.0, 0xbf / 255.0, 0xf8 / 255.0))
-        var stripe_size: Vector2 = size - Vector2(16, 16)
-        draw_rect(Rect2(pos - stripe_size / 2.0, stripe_size), Color(0x0e / 255.0, 0xa5 / 255.0, 0xe9 / 255.0))
-
-func draw_enemy():
-        if enemy == null:
-                return
-        var pos: Vector2 = enemy.position - Vector2(cam_x, 0)
-        var size: Vector2 = enemy.size
-        var color: Color = Color.from_hsv((enemy.level - 1) / 7.0, 1.0, 1.0)
-        if enemy.shape == "rect":
-                draw_rect(Rect2(pos - size / 2.0, size), color)
-        else:
-                draw_circle(pos, size.x / 2.0, color)
+# Las siguientes funciones están desactivadas (legacy):
+# - draw_parallax() 
+# - draw_ground()
+# - draw_hero()
+# - draw_enemy()
+# Hero y Enemy ahora usan sus propios nodos visuales en las escenas .tscn
 
 func _start_respawn_timer():
         if _respawn_timer.is_stopped():

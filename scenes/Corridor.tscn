@@ -1,21 +1,18 @@
-[gd_scene load_steps=10 format=3 uid="uid://dnldhcl8qe2km"]
+[gd_scene load_steps=8 format=3 uid="uid://dnldhcl8qe2km"]
 
-[ext_resource type="Script" uid="uid://cr7o1t5d4sk6h" path="res://scripts/gameplay/Hero.gd" id="1"]
-[ext_resource type="Script" uid="uid://cvgr3m4tkhg2q" path="res://scripts/gameplay/Enemy.gd" id="2"]
+[ext_resource type="PackedScene" uid="uid://cd4h4viipy23w" path="res://scenes/Hero.tscn" id="1"]
+[ext_resource type="PackedScene" uid="uid://dhg2hgguh26ss" path="res://scenes/Enemy.tscn" id="2"]
 [ext_resource type="Script" uid="uid://ddng5wktn1bvq" path="res://scripts/gameplay/CorridorParallax.gd" id="2_l1hri"]
 [ext_resource type="Script" uid="uid://bn0qmhqsy867a" path="res://scripts/ParticleManager.gd" id="3"]
 [ext_resource type="Script" uid="uid://b50fptv7tmni6" path="res://scripts/gameplay/CombatController.gd" id="4"]
 [ext_resource type="Script" uid="uid://bpfywmrx7aei1" path="res://scripts/gameplay/Corridor.gd" id="5"]
 [ext_resource type="Texture2D" uid="uid://d3pbtxequ8bkp" path="res://art/placeholders/dungeon/background_default_seamless.png" id="6"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_yinb5"]
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_l1hri"]
-
 [node name="Corridor" type="Node2D"]
 script = ExtResource("5")
 
 [node name="ParallaxBG" type="Node2D" parent="."]
+visible = false
 script = ExtResource("2_l1hri")
 
 [node name="BackgroundWalls" type="Node2D" parent="."]
@@ -39,17 +36,9 @@ texture = ExtResource("6")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 
-[node name="Hero" type="CharacterBody2D" parent="."]
-script = ExtResource("1")
+[node name="Hero" parent="." instance=ExtResource("1")]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Hero"]
-shape = SubResource("RectangleShape2D_yinb5")
-
-[node name="Enemy" type="CharacterBody2D" parent="."]
-script = ExtResource("2")
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Enemy"]
-shape = SubResource("RectangleShape2D_l1hri")
+[node name="Enemy" parent="." instance=ExtResource("2")]
 
 [node name="ParticleManager" type="Node" parent="."]
 script = ExtResource("3")

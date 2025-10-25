@@ -1,336 +1,258 @@
 extends "res://scripts/core/MinigameBase.gd"
 
-# Port of martillo.html rhythm game
+## 🔨 HAMMER - Minijuego de timing rítmico (refactorizado a nodos)
+## Sistema: Notas que se acercan, golpear en momento preciso a tempo BPM
 
-var CANVAS_W = 640
-var CANVAS_H = 360
-var VIS_IMPACT_X = 520
-var VIS_START_X = 60
-var VIS_TRACK_Y = 210
-const VIS_APPROACH_MS = 1200
-const DEFAULT_BPM = 90
-const DEFAULT_DRIFT_MS = 25
-const WINDOWS_BASE = {"perfect": 40, "bien": 90, "regular": 140}
-const SCORE = {"Perfect": 100, "Bien": 70, "Regular": 40, "Miss": 0}
-const COOLDOWN_MS = 120
+# 🎨 Sistemas de feedback
+const MinigameFX = preload("res://scripts/ui/MinigameFX.gd")
+const MinigameAudio = preload("res://scripts/ui/MinigameAudio.gd")
 
-# Guardarraíles de seguridad (FASE 1)
-const SAFETY_LIMITS = {
-        "min_bpm": 60,              # BPM mínimo viable (1s entre notas)
-        "max_bpm": 200,             # BPM máximo práctico
-        "min_window_ms": 30,        # Ventana mínima absoluta
-        "min_notes": 3,
-        "max_notes": 10
-}
+# Referencias a nodos
+@onready var _background: ColorRect = %Background
+@onready var _track_line: ColorRect = %TrackLine
+@onready var _impact_zone: ColorRect = %ImpactZone
+@onready var _note_container: Control = %NoteContainer
+@onready var _score_label: Label = %ScoreLabel
+@onready var _progress_label: Label = %ProgressLabel
 
-var state = null
-var font = ThemeDB.get_default_theme().get_font("font", "Label")
-var scale_factor = 1.0
-var closing = false
-var _pending_blueprint := {"name": "Martillo", "tempoBPM": DEFAULT_BPM, "weight": 0.5, "precision": 0.5}
-var _note_count := 5
+# Constantes
+const TRACK_START_X := -280.0
+const TRACK_END_X := 260.0
+const IMPACT_X := 260.0
+const APPROACH_TIME := 1.2  # segundos que tarda nota en llegar
+const DEFAULT_BPM := 90
+const TOTAL_HITS := 5
+
+# Estado del juego
+var _running := false
+var _bpm := DEFAULT_BPM
+var _precision := 0.5
+var _hit_index := 0
+var _score := 0
+var _combo := 0
+var _max_combo := 0
+var _quality_counts := {"Perfect": 0, "Bien": 0, "Regular": 0, "Miss": 0}
+var _windows := {"perfect": 40.0, "bien": 90.0, "regular": 140.0}  # ms
+var _next_hit_time := 0.0
+var _current_note: ColorRect = null
+var _note_spawn_time := 0.0
+var _can_hit := false
+
+# Config
 var _max_score := 650.0
 
 func _ready():
-		print("HammerMinigame: Ready")
-		var viewport_size = get_viewport_rect().size
-		self.size = viewport_size
-		self.position = Vector2(0,0)
-		scale_factor = viewport_size.x / CANVAS_W
-		CANVAS_W = int(CANVAS_W * scale_factor)
-		CANVAS_H = int(CANVAS_H * scale_factor)
-		VIS_IMPACT_X = int(VIS_IMPACT_X * scale_factor)
-		VIS_START_X = int(VIS_START_X * scale_factor)
-		VIS_TRACK_Y = int(VIS_TRACK_Y * scale_factor)
-		setup_title_screen("HAMMER TIME")
-		queue_redraw()
+	# Ocultar elementos del juego
+	_track_line.visible = false
+	_impact_zone.visible = false
+	_note_container.visible = false
+	_score_label.visible = false
+	_progress_label.visible = false
+	
+	# Crear pantalla de título
+	setup_title_screen(
+		"🔨 HAMMER - Timing",
+		"Golpea al ritmo con precisión",
+		"Pulsa ESPACIO o CLIC cuando la nota llegue"
+	)
 
 func start_trial(config: TrialConfig) -> void:
-		super.start_trial(config)
-		var tempo: float = clamp(float(config.get_parameter(&"tempo_bpm", DEFAULT_BPM)), float(SAFETY_LIMITS.min_bpm), float(SAFETY_LIMITS.max_bpm))
-		var precision: float = clamp(float(config.get_parameter(&"precision", 0.5)), 0.0, 1.0)
-		var weight: float = clamp(float(config.get_parameter(&"weight", 0.5)), 0.0, 1.0)
-		_note_count = int(clamp(config.get_parameter(&"notes", 5), SAFETY_LIMITS.min_notes, SAFETY_LIMITS.max_notes))
-		var item_name: String = String(config.get_parameter(&"label", "Martillo"))
-		_pending_blueprint = {
-				"name": item_name,
-				"tempoBPM": tempo,
-				"weight": weight,
-				"precision": precision
-		}
-		var base_score := _note_count * SCORE["Perfect"]
-		var combo_bonus := 10 * int(_note_count * (_note_count + 1) / 2)
-		_max_score = max(config.max_score, base_score + combo_bonus)
-		queue_redraw()
+	super.start_trial(config)
+	
+	# Leer hammer_speed (alias de tempo_bpm)
+	var hammer_speed: float = clamp(float(config.get_parameter(&"hammer_speed", 1.0)), 0.3, 2.5)
+	_bpm = DEFAULT_BPM * hammer_speed  # Aplicar multiplicador de velocidad
+	
+	_precision = clamp(float(config.get_parameter(&"precision", 0.5)), 0.0, 1.0)
+	_max_score = config.max_score if config.max_score > 0 else 650.0
+	
+	# Calcular ventanas de timing
+	_compute_windows()
 
 func start_game():
-		start(_pending_blueprint)
-		queue_redraw()
+	"""Inicia el minijuego. Override de MinigameBase."""
+	super.start_game()
+	
+	# Mostrar elementos del juego
+	_track_line.visible = true
+	_impact_zone.visible = true
+	_note_container.visible = true
+	_score_label.visible = true
+	_progress_label.visible = true
+	
+	_running = true
+	_hit_index = 0
+	_score = 0
+	_combo = 0
+	_max_combo = 0
+	_quality_counts = {"Perfect": 0, "Bien": 0, "Regular": 0, "Miss": 0}
+	
+	_update_ui()
+	_spawn_next_note()
 
-func get_result() -> TrialResult:
-		if state == null:
-				return super.get_result()
-		var hits: int = state.quality_counts.Perfect + state.quality_counts.Bien + state.quality_counts.Regular
-		var duration: int = max(0, round(Time.get_ticks_msec() - state.started_at - state.pause_accum))
-		var result: TrialResult = TrialResult.new()
-		result.score = state.score
-		result.max_score = _max_score
-		result.success = hits >= int(ceil(_note_count * 0.6))
-		result.duration_ms = duration
-		result.details = {
-				"quality_counts": state.quality_counts.duplicate(),
-				"combo_max": state.combo_max,
-				"notes": _note_count
-		}
-		return result
+func _compute_windows() -> void:
+	# Ventanas más estrechas = más difícil
+	var scl: float = lerp(1.2, 0.7, _precision)
+	_windows = {
+		"perfect": 40.0,
+		"bien": max(90.0 * scl, 30.0),
+		"regular": max(140.0 * scl, 30.0)
+	}
 
-func start(blueprint):
-		reset_with_blueprint(blueprint)
+func _spawn_next_note() -> void:
+	if _hit_index >= TOTAL_HITS:
+		return
+	
+	# Crear nota visual
+	_current_note = ColorRect.new()
+	_current_note.size = Vector2(30, 30)
+	_current_note.position = Vector2(TRACK_START_X, -15)
+	_current_note.color = Color.CYAN
+	_note_container.add_child(_current_note)
+	
+	_note_spawn_time = Time.get_ticks_msec() / 1000.0
+	_can_hit = false
+	
+	# Calcular cuándo debería golpearse (en segundos desde ahora)
+	var beat_interval := 60.0 / _bpm
+	_next_hit_time = _note_spawn_time + APPROACH_TIME
 
-func reset_with_blueprint(bp):
-		var blueprint = bp if bp else {"name": "Default", "tempoBPM": DEFAULT_BPM, "weight": 0.5, "precision": 0.5}
-		var bpm = blueprint.get("tempoBPM", DEFAULT_BPM)
-		var windows = make_windows(blueprint.precision, bpm)
-		var weight = clamp(blueprint.weight if blueprint.has("weight") else 0.5, 0, 1)
-		var ease_pow = lerp(1.0, 3.0, weight)
-		var impact_kick = lerp(6, 18, weight)
-		var t_start = Time.get_ticks_msec() + 800
-		var notes = schedule_notes(t_start, bpm, DEFAULT_DRIFT_MS)
-		state = {
-				"blueprint": blueprint,
-				"windows": windows,
-				"ease_pow": ease_pow,
-				"impact_kick": impact_kick,
-				"notes": notes,
-				"idx": 0,
-				"playing": true,
-				"finished": false,
-				"accepting": true,
-				"started_at": Time.get_ticks_msec(),
-				"paused_at": 0,
-				"pause_accum": 0,
-				"last_input": -1e9,
-				"last_feedback": null,
-				"last_feedback_until": 0,
-				"combo": 0,
-				"combo_max": 0,
-				"score": 0,
-				"quality_counts": {"Perfect": 0, "Bien": 0, "Regular": 0, "Miss": 0},
-				"impact_flash": 0
-		}
-
-func make_windows(precision, bpm: float = DEFAULT_BPM):
-		var scl = lerp(1.2, 0.7, clamp(precision if precision != null else 0.5, 0, 1))
+func _process(delta):
+	if not _running or _current_note == null:
+		return
+	
+	var current_time := Time.get_ticks_msec() / 1000.0
+	var elapsed := current_time - _note_spawn_time
+	var progress := elapsed / APPROACH_TIME
+	
+	# Mover nota hacia impact zone
+	if _current_note:
+		var x_pos: float = lerp(TRACK_START_X, IMPACT_X, progress)
+		_current_note.position.x = x_pos
 		
-		# Ventanas más generosas en BPMs altos (FASE 1)
-		# A partir de 140 BPM, escalar hasta +25% en 200 BPM
-		var bpm_scaling = 1.0
-		if bpm > 140:
-				bpm_scaling = lerp(1.0, 1.25, clamp((bpm - 140) / 60.0, 0, 1))
+		# Cambiar color según proximidad
+		var time_to_hit: float = _next_hit_time - current_time
+		var time_to_hit_ms: float = time_to_hit * 1000.0
 		
-		return {
-				"perfect": WINDOWS_BASE.perfect,  # Perfect no escala con BPM
-				"bien": max(WINDOWS_BASE.bien * scl * bpm_scaling, SAFETY_LIMITS.min_window_ms),
-				"regular": max(WINDOWS_BASE.regular * scl * bpm_scaling, SAFETY_LIMITS.min_window_ms),
-				"miss": WINDOWS_BASE.regular
-		}
-
-func schedule_notes(t0, bpm, drift):
-		var iv: float = 60000 / clamp(bpm, SAFETY_LIMITS.min_bpm, SAFETY_LIMITS.max_bpm)
-		var notes: Array = []
-		var count: int = max(1, _note_count)
-		for i in range(count):
-				var t: float = t0 + i * iv + (randf() * 2 - 1) * drift
-				notes.append({"time": t, "spawn": t - VIS_APPROACH_MS, "judged": false, "quality": null, "delta": null})
-		return notes
+		if abs(time_to_hit_ms) <= _windows.perfect:
+			_current_note.color = MinigameFX.COLORS["Perfect"]
+			_can_hit = true
+		elif abs(time_to_hit_ms) <= _windows.bien:
+			_current_note.color = MinigameFX.COLORS["Success"]
+			_can_hit = true
+		elif abs(time_to_hit_ms) <= _windows.regular:
+			_current_note.color = MinigameFX.COLORS["Warning"]
+			_can_hit = true
+		else:
+			_current_note.color = Color.CYAN
+			_can_hit = true  # Siempre permitir golpear
+		
+		# Auto-miss si pasa la zona
+		if progress > 1.15:
+			_judge_hit(9999.0)  # Miss automático
 
 func _input(event):
-		if event.is_action_pressed("ui_accept") or (event is InputEventMouseButton and event.pressed):
-				if _validate_input():
-						try_hit(Time.get_ticks_msec())
+	if not _running or _current_note == null:
+		return
+	
+	if (event is InputEventMouseButton and event.pressed) or \
+	   (event is InputEventKey and event.pressed and event.keycode == KEY_SPACE):
+		var current_time: float = Time.get_ticks_msec() / 1000.0
+		var time_diff_ms: float = abs(_next_hit_time - current_time) * 1000.0
+		_judge_hit(time_diff_ms)
+		accept_event()
 
-func try_hit(t_hit):
-		if not state or not state.playing or not state.accepting or state.finished:
-				return
-		if t_hit - state.last_input < COOLDOWN_MS:
-				return
-		state.last_input = t_hit
+func _judge_hit(time_diff_ms: float) -> void:
+	if _current_note == null:
+		return
+	
+	# 🎯 Determinar calidad
+	var quality := "Miss"
+	var points := 0
+	
+	if time_diff_ms <= _windows.perfect:
+		quality = "Perfect"
+		points = 100
+		_combo += 1
+	elif time_diff_ms <= _windows.bien:
+		quality = "Bien"
+		points = 70
+		_combo += 1
+	elif time_diff_ms <= _windows.regular:
+		quality = "Regular"
+		points = 40
+		_combo += 1
+	else:
+		quality = "Miss"
+		points = 0
+		_combo = 0
+	
+	_quality_counts[quality] += 1
+	_score += points + (_combo * 2)  # Bonus por combo
+	_max_combo = max(_max_combo, _combo)
+	
+	# 🎨 Efectos
+	var feedback_pos := _impact_zone.global_position + _impact_zone.size / 2
+	MinigameFX.full_feedback(feedback_pos, quality, self)
+	MinigameFX.create_floating_label(feedback_pos, quality, quality, self)
+	MinigameAudio.play_feedback(quality)
+	
+	# Limpiar nota actual
+	if _current_note:
+		_current_note.queue_free()
+		_current_note = null
+	
+	# Avanzar
+	_hit_index += 1
+	_update_ui()
+	
+	if _hit_index >= TOTAL_HITS:
+		await get_tree().create_timer(0.6).timeout
+		_finish_minigame()
+	else:
+		# Esperar hasta siguiente beat
+		var beat_interval := 60.0 / _bpm
+		await get_tree().create_timer(beat_interval * 0.3).timeout
+		_spawn_next_note()
 
-		var i = state.idx
-		if i >= state.notes.size():
-				return
+func _update_ui() -> void:
+	_score_label.text = "Puntos: %d" % _score
+	_progress_label.text = "Progreso: %d/%d" % [_hit_index, TOTAL_HITS]
 
-		var n = state.notes[i]
-		var d = t_hit - n.time
-		var q = judge_delta(d, state.windows)
-
-		apply_judgement(n, q, d, true)
-
-func judge_delta(d, W):
-		var ad = abs(d)
-		if ad <= W.perfect:
-				return "Perfect"
-		if ad <= W.bien:
-				return "Bien"
-		if ad <= W.regular:
-				return "Regular"
-		return "Miss"
-
-func apply_judgement(n, q, d, _manual):
-		if n.judged:
-				return
-		n.judged = true
-		n.quality = q
-		n.delta = d
-		print("Trial %d = %s" % [state.idx + 1, q])
-
-		if q == "Miss":
-				state.combo = 0
-		else:
-				state.combo += 1
-				state.combo_max = max(state.combo_max, state.combo)
-		state.quality_counts[q] += 1
-		state.score += SCORE[q] + (0 if q == "Miss" else floor(state.combo * 10))
-
-		state.last_feedback = q + (" (" + str(round(abs(d))) + "ms)" if d != null else "")
-		state.last_feedback_until = Time.get_ticks_msec() + 600
-		state.impact_flash = 0.0 if q == "Miss" else 1.0
-
-		state.idx += 1
-
-		if state.idx >= state.notes.size():
-				end_game()
-
-func end_game():
-		state.finished = true
-		state.accepting = false
-		state.playing = false
-		var hits: int = state.quality_counts.Perfect + state.quality_counts.Bien + state.quality_counts.Regular
-		var duration: int = max(0, round(Time.get_ticks_msec() - state.started_at - state.pause_accum))
-		var result: TrialResult = TrialResult.new()
-		result.score = state.score
-		result.max_score = _max_score
-		result.success = hits >= int(ceil(_note_count * 0.6))
-		result.duration_ms = duration
-		result.details = {
-				"quality_counts": state.quality_counts.duplicate(),
-				"combo_max": state.combo_max,
-				"notes": _note_count
-		}
-		complete_trial(result)
-		var label := "Éxito" if result.success else "Fallo"
-		setup_end_screen(label, "Puntuación: %d / %d\nPulsa para cerrar" % [state.score, int(_max_score)])
-
-func _process(_delta):
-		if not state:
-				return
-		var t = Time.get_ticks_msec()
-
-		if state.playing and not state.finished:
-				auto_misses(t)
-
-		queue_redraw()
-
-func auto_misses(t_now):
-		var i = state.idx
-		if i >= state.notes.size():
-				return
-		var n = state.notes[i]
-		if not n.judged and t_now > n.time + state.windows.miss:
-				apply_judgement(n, "Miss", null, false)
-
-func _draw():
-		if not state:
-				return
-		var t = Time.get_ticks_msec()
-
-		# Background
-		draw_rect(Rect2(0, 0, size.x, size.y), Color("#0b0c10"))
-		# Grid
-		for x in range(0, int(size.x), 20):
-				draw_line(Vector2(x, 0), Vector2(x, size.y), Color("#121520"), 1)
-		for y in range(0, int(size.y), 20):
-				draw_line(Vector2(0, y), Vector2(size.x, y), Color("#121520"), 1)
-
-		draw_track()
-		draw_notes(t)
-		draw_impact_flash()
-		draw_hud(t)
-		draw_finish_overlay()
-
-func draw_track():
-		# Track
-		draw_line(Vector2(VIS_START_X, VIS_TRACK_Y), Vector2(VIS_IMPACT_X, VIS_TRACK_Y), Color("#2a3145"), 2)
-		# Impact area
-		draw_line(Vector2(VIS_IMPACT_X, VIS_TRACK_Y - 30), Vector2(VIS_IMPACT_X, VIS_TRACK_Y + 30), Color("#6b7280"), 4)
-
-func draw_notes(t):
-		for k in range(state.idx, state.notes.size()):
-				var n = state.notes[k]
-				var p = (t - n.spawn) / float(VIS_APPROACH_MS)
-				if p <= 0:
-						continue
-				if p > 1.2:
-						continue
-				var pp = clamp(p, 0, 1)
-				var eased = ease_out_pow(pp, state.ease_pow)
-				var x = lerp(VIS_START_X, VIS_IMPACT_X, eased)
-				var y = VIS_TRACK_Y
-
-				var near = clamp(1 - abs(n.time - t) / 200.0, 0, 1)
-				var r = 10 + 8 * near
-
-				draw_circle(Vector2(x, y), r, Color.from_hsv(lerp(200.0/360, 160.0/360, pp), 0.7, lerp(0.4, 0.65, pp)))
-
-func ease_out_pow(t, p):
-		return 1 - pow(1 - t, p)
-
-func draw_impact_flash():
-		if state.impact_flash <= 0:
-				return
-		var a = state.impact_flash
-		var y = VIS_TRACK_Y
-		var x = VIS_IMPACT_X
-		var r = 14 + state.impact_kick * a * 8
-		var color = Color(1, 1, 1, 0.35 * a)
-		draw_arc(Vector2(x, y), r, 0, TAU, 32, color, 3)
-
-func draw_hud(t):
-		# Combo
-		draw_string(font, Vector2(16, 28), "Combo: " + str(state.combo), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#a8b3cf"))
-		draw_string(font, Vector2(16, 50), "Score: " + str(state.score), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#a8b3cf"))
-
-		# Feedback
-		if t < state.last_feedback_until and state.last_feedback:
-				var col = Color("#86efac")
-				if state.last_feedback.begins_with("Bien"):
-						col = Color("#fde047")
-				elif state.last_feedback.begins_with("Regular"):
-						col = Color("#f59e0b")
-				elif state.last_feedback.begins_with("Miss"):
-						col = Color("#f87171")
-				draw_string(font, Vector2(VIS_IMPACT_X, VIS_TRACK_Y - 50), state.last_feedback, HORIZONTAL_ALIGNMENT_CENTER, -1, 22, col)
-
-		# Countdown
-		var first = state.notes[0]
-		if not state.finished and Time.get_ticks_msec() < first.spawn:
-				var ms = max(0, first.spawn - Time.get_ticks_msec())
-				var s = ceil(ms / 1000)
-				draw_string(font, Vector2(16, CANVAS_H - 16), "Prepárate: " + str(s), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color("#94a3b8"))
-
-func draw_finish_overlay():
-		if not state.finished:
-				return
-		draw_rect(Rect2(0, 0, CANVAS_W, CANVAS_H), Color(10/255.0, 12/255.0, 18/255.0, 0.8))
-
-		var hits = state.quality_counts.Perfect + state.quality_counts.Bien + state.quality_counts.Regular
-		draw_string(font, Vector2(CANVAS_W / 2.0, 90), "Resultado", HORIZONTAL_ALIGNMENT_CENTER, -1, 24, Color("#e5e7eb"))
-
-		var text = str(hits) + "/5 aciertos  •  Score " + str(state.score) + "  •  Max Combo " + str(state.combo_max)
-		draw_string(font, Vector2(CANVAS_W / 2.0, 120), text, HORIZONTAL_ALIGNMENT_CENTER, -1, 16, Color("#cbd5e1"))
-
-		var y0 = 160
-		draw_string(font, Vector2(CANVAS_W / 2.0, y0), "Perfect: " + str(state.quality_counts.Perfect), HORIZONTAL_ALIGNMENT_CENTER, -1, 16, Color("#cbd5e1"))
-		draw_string(font, Vector2(CANVAS_W / 2.0, y0 + 24), "Bien: " + str(state.quality_counts.Bien), HORIZONTAL_ALIGNMENT_CENTER, -1, 16, Color("#cbd5e1"))
-		draw_string(font, Vector2(CANVAS_W / 2.0, y0 + 48), "Regular: " + str(state.quality_counts.Regular), HORIZONTAL_ALIGNMENT_CENTER, -1, 16, Color("#cbd5e1"))
-		draw_string(font, Vector2(CANVAS_W / 2.0, y0 + 72), "Miss: " + str(state.quality_counts.Miss), HORIZONTAL_ALIGNMENT_CENTER, -1, 16, Color("#cbd5e1"))
+func _finish_minigame() -> void:
+	_running = false
+	
+	# Ocultar elementos del juego
+	_track_line.visible = false
+	_impact_zone.visible = false
+	_note_container.visible = false
+	_score_label.visible = false
+	_progress_label.visible = false
+	
+	# Calcular éxito
+	var perfect_count: int = _quality_counts["Perfect"]
+	var bien_count: int = _quality_counts["Bien"]
+	var hits: int = perfect_count + bien_count + _quality_counts["Regular"]
+	var success: bool = hits >= int(ceil(TOTAL_HITS * 0.6))
+	
+	# Crear resultado
+	var result := TrialResult.new()
+	result.score = _score
+	result.max_score = _max_score
+	result.success = success
+	result.duration_ms = Time.get_ticks_msec()
+	result.details = {
+		"perfect": perfect_count,
+		"bien": bien_count,
+		"regular": _quality_counts["Regular"],
+		"miss": _quality_counts["Miss"],
+		"max_combo": _max_combo
+	}
+	complete_trial(result)
+	
+	# Pantalla final
+	var outcome := "🎉 ÉXITO" if success else "❌ FALLO"
+	var stats := "Perfect: %d | Bien: %d | Regular: %d | Miss: %d\nMáx Combo: %d" % \
+		[perfect_count, bien_count, _quality_counts["Regular"], _quality_counts["Miss"], _max_combo]
+	
+	setup_end_screen(outcome, stats + "\n\nPulsa para cerrar")

@@ -1,40 +1,51 @@
-[gd_resource type="Resource" load_steps=6 format=3]
+[gd_resource type="Resource" script_class="BlueprintResource" load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/BlueprintResource.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/data/TrialResource.gd" id="2"]
-[ext_resource type="Script" path="res://scripts/data/TrialConfig.gd" id="3"]
-[ext_resource type="PackedScene" path="res://scenes/HammerMinigame.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/Minigames/HammerMinigame.tscn" id="4"]
 [ext_resource type="Texture2D" path="res://art/placeholders/forge/blueprint_helmet_iron.png" id="5"]
+[ext_resource type="Script" path="res://scripts/data/HammerTrialConfig.gd" id="5_accye"]
 [ext_resource type="Texture2D" path="res://art/placeholders/forge/background_default.png" id="6"]
 
-[sub_resource type="Resource" id="1"]
-resource_name = "hammer_config"
-script = ExtResource("3")
-minigame_id = "Hammer"
+[sub_resource type="Resource" id="Resource_yg3e4"]
+script = ExtResource("5_accye")
+precision = 0.5
+weight = 0.6
+label = "Casco"
+minigame_id = &"Hammer"
 minigame_scene = ExtResource("4")
 max_score = 650.0
-parameters = {"tempo_bpm": 108.0, "precision": 0.65, "weight": 0.6, "notes": 5, "label": "Casco"}
+parameters = {
+"hammer_speed": 85,
+"label": "Casco",
+"notes": 5,
+"precision": 0.5,
+"tempo_bpm": 85,
+"weight": 0.6
+}
 
 [sub_resource type="Resource" id="2"]
 resource_name = "hammer_trial"
 script = ExtResource("2")
-trial_id = "helmet_iron_hammer"
+trial_id = &"helmet_iron_hammer"
 display_name = "Golpear el casco"
-minigame_id = "Hammer"
-min_score = 0.55
-config = SubResource("1")
+minigame_id = &"Hammer"
 minigame_scene = ExtResource("4")
+min_score = 0.55
+config = SubResource("Resource_yg3e4")
 background = ExtResource("6")
 
 [resource]
 resource_name = "helmet_iron"
 script = ExtResource("1")
-blueprint_id = "helmet_iron"
+blueprint_id = &"helmet_iron"
 display_name = "Casco de hierro"
 description = "Un casco robusto con buen acabado."
 icon_path = "res://art/placeholders/forge/blueprint_helmet_iron.png"
 icon = ExtResource("5")
-result_item = "helmet_iron"
-materials = {"iron": 3}
+result_item = &"helmet_iron"
+materials = {
+"iron": 3
+}
 trial_sequence = [SubResource("2")]
-tags = ["armor", "helmet"]
+tags = PackedStringArray("armor", "helmet")

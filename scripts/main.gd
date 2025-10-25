@@ -11,6 +11,7 @@ const ITEM_INFO_PANEL_SCENE := preload("res://scenes/ForgeUI/ItemInfoPanel.tscn"
 @onready var dungeon_ui: CanvasLayer = $DungeonUI
 @onready var fade_overlay: ColorRect = $FadeLayer/FadeOverlay
 @onready var fade_layer: CanvasLayer = $FadeLayer
+@onready var dungeon_area: Node2D = $DungeonArea
 
 var hud_forge: CanvasLayer
 var hud_hero: CanvasLayer
@@ -107,6 +108,14 @@ func _ready() -> void:
 		_apply_area_locally(&"forge")
 
 	_register_game_manager()
+	
+	# Activar contexto inicial (FORGE por defecto)
+	if has_node("/root/AudioManager"):
+		var am = get_node("/root/AudioManager")
+		am.set_context_enabled(am.AudioContext.FORGE, true)
+		am.set_context_enabled(am.AudioContext.DUNGEON, false)
+		print("Main: Initial audio context FORGE activated")
+	
 	print("Main: Scene ready. Área actual: Forja")
 
 func _register_game_manager() -> void:
@@ -227,6 +236,18 @@ func _on_area_changed(new_area: StringName) -> void:
 	var is_dungeon := new_area == &"dungeon"
 	var area_name := "DUNGEON" if is_dungeon else "FORJA"
 	_update_hud_label("%s (Clic derecho para cambiar)" % area_name)
+	
+	# Activar contexto de audio correspondiente
+	if has_node("/root/AudioManager"):
+		var am = get_node("/root/AudioManager")
+		if is_dungeon:
+			am.set_context_enabled(am.AudioContext.FORGE, false)
+			am.set_context_enabled(am.AudioContext.DUNGEON, true)
+			print("Main: Audio context DUNGEON activated")
+		else:
+			am.set_context_enabled(am.AudioContext.DUNGEON, false)
+			am.set_context_enabled(am.AudioContext.FORGE, true)
+			print("Main: Audio context FORGE activated")
 	
 	# Si cambiamos a dungeon, actualizar stats del héroe
 	if is_dungeon and hud_hero and hud_hero.has_method("update_stats"):

@@ -1,6 +1,6 @@
-[gd_scene load_steps=4 format=3 uid="uid://cka0tg466h1e7"]
+[gd_scene load_steps=4 format=3 uid="uid://c502wey3roub3"]
 
-[ext_resource type="Script" uid="uid://c7t088ieyjib1" path="res://scripts/BlueprintQueueSlot.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/BlueprintQueueSlot.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://b76omfj8u1a44" path="res://art/placeholders/forge/blueprint_armor_leather.png" id="2_2p12a"]
 [ext_resource type="PackedScene" uid="uid://c8x8x8x8x8" path="res://scenes/UI/MaterialIcon.tscn" id="3_fpure"]
 

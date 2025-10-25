@@ -198,3 +198,21 @@ Verificación rápida:
 2. Observa la consola para mensajes de inicialización como `AudioManager ready` y `TelemetryManager ready`.
 
 Si necesitas que registre los autoloads automáticamente en `project.godot`, lo puedo hacer, pero fue la causa de intentos de carga inválidos en entornos distintos (por ejemplo Godot 5 puede interpretar configuraciones distintas). Prefiero que los registres desde el editor si estás usando Godot 4.5.
+
+---
+
+## 🔧 Herramientas de desarrollo
+
+### Conversor de Blueprints (Configuración de Dificultad)
+
+Convierte blueprints al nuevo sistema que permite editar dificultad desde el Inspector con sliders.
+
+**Cómo usar:**
+1. En Godot, abre `res://scenes/sandboxes/BlueprintConverter.tscn`
+2. Presiona **F6** (Run Current Scene)
+3. Clic en "▶ Convertir Blueprints"
+4. Listo — ahora puedes editar parámetros de dificultad visualmente
+
+**Documentación completa:** `doc/BLUEPRINT_DIFICULTAD_EDITOR.md`  
+**Guía rápida:** `scenes/sandboxes/README_CONVERTER.md`
+

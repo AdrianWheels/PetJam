@@ -6,6 +6,7 @@
 size = Vector2(42, 64)
 
 [node name="Hero" type="CharacterBody2D"]
+z_index = 10
 script = ExtResource("1")
 
 [node name="Sprite" type="ColorRect" parent="."]

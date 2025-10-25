@@ -1,294 +1,227 @@
 extends "res://scripts/core/MinigameBase.gd"
 
-# Port of agua.html tempering minigame
+## 💧 QUENCH - Minijuego de temple con ventana óptima (refactorizado)
+## Sistema: Temperatura baja, soltar en ventana óptima
 
-const CFG = {
-	"dtMax": 1.0/60.0,
-	"tSpan": 12.0,
-	"margins": {"l":56.0,"r":16.0,"t":24.0,"b":64.0},
-	"thresholds": {"Perfect":5.0, "Bien":12.0, "Regular":20.0},
-	"btn":{"w":150.0,"h":36.0}
-}
+# 🎨 Sistemas de feedback
+const MinigameFX = preload("res://scripts/ui/MinigameFX.gd")
+const MinigameAudio = preload("res://scripts/ui/MinigameAudio.gd")
 
-# Guardarraíles de seguridad (FASE 1)
-const SAFETY_LIMITS = {
-	"min_window_c": 12.0,       # Ventana mínima viable (°C)
-	"max_cool_rate": 0.95,      # k máximo práctico
-	"min_cool_rate": 0.1,
-	"min_intelligence": 0.0,
-	"max_intelligence": 1.0
-}
+# Referencias a nodos
+@onready var _background: ColorRect = %Background
+@onready var _temperature_bar: Panel = %TemperatureBar
+@onready var _optimal_zone: ColorRect = %OptimalZone
+@onready var _current_temp: ColorRect = %CurrentTemp
+@onready var _temp_label: Label = %TempLabel
+@onready var _instruction_hint: Label = %InstructionHint
 
-var bp = null
-var _pending_blueprint := {}
+# Constantes
+const MAX_TEMP := 900.0
+const MIN_TEMP := 200.0
+const COOLING_SPEED := 120.0  # °C por segundo
+const OPTIMAL_CENTER := 400.0
+const BASE_WINDOW := 80.0
+
+# Estado
+var _running := false
+var _holding := false
+var _current_temperature := MAX_TEMP
+var _optimal_min := 350.0
+var _optimal_max := 450.0
+var _catalyst_bonus := false
+var _result_quality := ""
+
+# Config
 var _max_score := 100.0
-var t = 0.0
-var running = false
-var paused = false
-var finished = false
-var result = null
-
-var last_mouse_pos = null
+var _quench_speed := 1.0
 
 func _ready():
-        size = get_viewport_rect().size
-        position = Vector2(0,0)
-        set_process_input(false)
-        setup_title_screen("TEMPLE TIME")
+	# Ocultar elementos del juego
+	_temperature_bar.visible = false
+	_temp_label.visible = false
+	_instruction_hint.visible = false
+	
+	# Crear pantalla de título
+	setup_title_screen(
+		"💧 QUENCH - Temple",
+		"Suelta en el momento óptimo para el temple",
+		"Mantén pulsado ESPACIO o CLIC, suelta en la zona verde"
+	)
 
 func start_trial(config: TrialConfig) -> void:
-        super.start_trial(config)
-        var base := {
-                "name": String(config.get_parameter(&"label", "Temple")),
-                "Tini": float(config.get_parameter(&"t_initial", 850)),
-                "Tamb": float(config.get_parameter(&"t_ambient", 25)),
-                "k": clamp(float(config.get_parameter(&"cool_rate", 0.3)), SAFETY_LIMITS.min_cool_rate, SAFETY_LIMITS.max_cool_rate),
-                "Tlow": float(config.get_parameter(&"temp_low", 540)),
-                "Thigh": float(config.get_parameter(&"temp_high", 600)),
-                "catalyst": bool(config.get_parameter(&"catalyst", false)),
-                "intelligence": clamp(float(config.get_parameter(&"intelligence", 0.35)), SAFETY_LIMITS.min_intelligence, SAFETY_LIMITS.max_intelligence)
-        }
-        _pending_blueprint = base
-        _max_score = max(config.max_score, 100.0)
+	super.start_trial(config)
+	_quench_speed = clamp(float(config.get_parameter(&"quench_speed", 1.0)), 0.5, 2.0)
+	var window_size: float = clamp(float(config.get_parameter(&"window", 1.0)), 0.5, 2.0)
+	_catalyst_bonus = bool(config.get_parameter(&"catalyst", false))
+	_max_score = config.max_score if config.max_score > 0 else 100.0
+	
+	# Calcular ventana óptima
+	var window: float = BASE_WINDOW * window_size
+	if _catalyst_bonus:
+		window *= 1.2  # +20% más grande con catalizador
+	
+	_optimal_min = OPTIMAL_CENTER - window / 2
+	_optimal_max = OPTIMAL_CENTER + window / 2
+	
+	_update_optimal_zone_position()
 
 func start_game():
-        start(_pending_blueprint)
-        set_process_input(true)
+	"""Inicia el minijuego. Override de MinigameBase."""
+	super.start_game()
+	
+	# Mostrar elementos del juego
+	_temperature_bar.visible = true
+	_temp_label.visible = true
+	_instruction_hint.visible = true
+	
+	_running = true
+	_holding = false
+	_current_temperature = MAX_TEMP
+	_result_quality = ""
+	
+	_update_temp_display()
 
-func start(blueprint):
-        bp = {
-                "name": blueprint.get("name", "Acero medio"),
-                "Tini": float(blueprint.get("Tini", 850)),
-                "Tamb": float(blueprint.get("Tamb", 25)),
-                "k": clamp(float(blueprint.get("k", 0.35)), SAFETY_LIMITS.min_cool_rate, SAFETY_LIMITS.max_cool_rate),
-                "Tlow": float(blueprint.get("Tlow", 520)),
-                "Thigh": float(blueprint.get("Thigh", 580)),
-                "catalyst": bool(blueprint.get("catalyst", false)),
-                "intelligence": clamp(float(blueprint.get("intelligence", 0)), SAFETY_LIMITS.min_intelligence, SAFETY_LIMITS.max_intelligence)
-        }
-        if bp.Thigh < bp.Tlow:
-                var tmp = bp.Tlow
-                bp.Tlow = bp.Thigh
-                bp.Thigh = tmp
-        # Garantizar ventana mínima
-        var window_size = bp.Thigh - bp.Tlow
-        if window_size < SAFETY_LIMITS.min_window_c:
-                var center = (bp.Tlow + bp.Thigh) / 2.0
-                bp.Tlow = center - SAFETY_LIMITS.min_window_c / 2.0
-                bp.Thigh = center + SAFETY_LIMITS.min_window_c / 2.0
-        # Reset state
-        t = 0.0
-        finished = false
-        result = null
-        running = true
-        paused = false
-        queue_redraw()
+func _update_optimal_zone_position() -> void:
+	# Posicionar zona verde según temperatura óptima
+	var bar_width := _temperature_bar.size.x - 20.0
+	var temp_range := MAX_TEMP - MIN_TEMP
+	
+	var min_pos := (_optimal_min - MIN_TEMP) / temp_range * bar_width + 10.0
+	var max_pos := (_optimal_max - MIN_TEMP) / temp_range * bar_width + 10.0
+	
+	_optimal_zone.position.x = min_pos
+	_optimal_zone.size.x = max_pos - min_pos
 
 func _process(delta):
-        if not running or paused or finished:
-                return
-        t += min(delta, CFG.dtMax)
-        queue_redraw()
+	if not _running:
+		return
+	
+	# Enfriar gradualmente cuando se mantiene pulsado (aplicar quench_speed)
+	if _holding:
+		_current_temperature -= COOLING_SPEED * _quench_speed * delta
+		_current_temperature -= COOLING_SPEED * _quench_speed * delta
+		_current_temperature = max(_current_temperature, MIN_TEMP)
+		_update_temp_display()
+		
+		# Auto-finish si llega al mínimo
+		if _current_temperature <= MIN_TEMP:
+			_judge_release()
 
 func _input(event):
-        if event is InputEventMouseMotion:
-                last_mouse_pos = event.position
-        elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-                if _validate_input():
-                        try_drop()
-        elif event is InputEventKey and event.pressed and event.keycode == KEY_SPACE:
-                if _validate_input():
-                        try_drop()
+	if not _running:
+		return
+	
+	# Detectar presionar
+	if (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed) or \
+	   (event is InputEventKey and event.keycode == KEY_SPACE and event.pressed):
+		if not _holding:
+			_holding = true
+			_instruction_hint.text = "Enfriando... Suelta en la zona verde!"
+		accept_event()
+	
+	# Detectar soltar
+	elif (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed) or \
+	     (event is InputEventKey and event.keycode == KEY_SPACE and not event.pressed):
+		if _holding:
+			_judge_release()
+		accept_event()
 
-func try_drop():
-        if not running or paused or finished:
-                return
-        var temp = Tof(t)
-        var outcome = eval_drop(temp, t)
-        result = outcome
-        finished = true
-        running = false
-        print("Trial 1 = %s" % outcome.quality)
-        var trial_result := TrialResult.new()
-        trial_result.score = outcome.score
-        trial_result.max_score = _max_score
-        trial_result.success = outcome.success
-        trial_result.duration_ms = outcome.time_ms
-        trial_result.details = outcome.duplicate()
-        complete_trial(trial_result)
-        var label := "Éxito" if outcome.success else "Fallo"
-        var summary := "Temperatura: %.1f°C\nCalidad: %s\nPuntuación: %d" % [outcome.temp_at_drop, outcome.quality, outcome.score]
-        setup_end_screen(label, summary + "\nPulsa para cerrar")
+func _update_temp_display() -> void:
+	_temp_label.text = "%d°C" % int(_current_temperature)
+	
+	# Mover indicador visual
+	var bar_width := _temperature_bar.size.x - 20.0
+	var temp_range := MAX_TEMP - MIN_TEMP
+	var pos_x := (_current_temperature - MIN_TEMP) / temp_range * bar_width + 10.0
+	_current_temp.position.x = pos_x
+	
+	# Cambiar color según proximidad a ventana óptima
+	if _current_temperature >= _optimal_min and _current_temperature <= _optimal_max:
+		_current_temp.color = MinigameFX.COLORS["Perfect"]
+	elif _current_temperature >= _optimal_min - 30.0 and _current_temperature <= _optimal_max + 30.0:
+		_current_temp.color = MinigameFX.COLORS["Success"]
+	else:
+		_current_temp.color = Color(1, 0.5, 0, 1)
 
-func Tof(tt):
-        return bp.Tamb + (bp.Tini - bp.Tamb) * exp(-bp.k * tt)
+func _judge_release() -> void:
+	if not _running:
+		return
+	
+	_running = false
+	_holding = false
+	
+	# 🎯 Evaluar calidad del temple
+	var quality := "Miss"
+	var score := 0.0
+	var success := false
+	
+	var dist_from_center: float = abs(_current_temperature - OPTIMAL_CENTER)
+	var window_half: float = (_optimal_max - _optimal_min) / 2.0
+	
+	if _current_temperature >= _optimal_min and _current_temperature <= _optimal_max:
+		# Dentro de la ventana óptima
+		var precision_ratio: float = 1.0 - (dist_from_center / window_half)
+		
+		if precision_ratio >= 0.85:
+			quality = "Perfect"
+			score = _max_score
+		elif precision_ratio >= 0.6:
+			quality = "Bien"
+			score = _max_score * 0.8
+		else:
+			quality = "Regular"
+			score = _max_score * 0.5
+		
+		success = true
+	else:
+		# Fuera de la ventana
+		if dist_from_center < window_half * 1.5:
+			quality = "Regular"
+			score = _max_score * 0.3
+			success = false
+		else:
+			quality = "Miss"
+			score = 0
+			success = false
+	
+	_result_quality = quality
+	
+	# 🎨 Efectos
+	var feedback_pos := _current_temp.global_position + Vector2(_current_temp.size.x / 2, 0)
+	MinigameFX.full_feedback(feedback_pos, quality, self)
+	MinigameFX.create_floating_label(feedback_pos, "%d°C" % int(_current_temperature), quality, self)
+	MinigameAudio.play_feedback(quality)
+	
+	await get_tree().create_timer(1.0).timeout
+	_finish_minigame(quality, score, success)
 
-func effective_window():
-        var center = (bp.Tlow + bp.Thigh) / 2.0
-        var half = (bp.Thigh - bp.Tlow) / 2.0
-        if bp.catalyst:
-                half *= 1.2
-        return {"center": center, "low": center - half, "high": center + half, "half": half}
-
-func quality_from_delta(delta):
-        if delta <= CFG.thresholds.Perfect:
-                return "Perfect"
-        elif delta <= CFG.thresholds.Bien:
-                return "Bien"
-        elif delta <= CFG.thresholds.Regular:
-                return "Regular"
-        else:
-                return "Miss"
-
-func eval_drop(temp, time_sec):
-        var win = effective_window()
-        var delta = abs(temp - win.center)
-        if temp > win.high:
-                var early = temp - win.high
-                delta = max(0, delta - bp.intelligence * min(early, win.half))
-        
-        var qual = quality_from_delta(delta)
-        var success = qual != "Miss"
-        var score_map = {"Perfect":100, "Bien":85, "Regular":65, "Miss":0}
-        var score = score_map[qual]
-        var element_fixed = false
-        if bp.catalyst and (qual == "Perfect" or qual == "Bien"):
-                score = min(100, score + 5)
-                element_fixed = true
-        return {
-                "finished": true,
-                "success": success,
-                "score": score,
-                "quality": qual,
-                "temp_at_drop": snapped(temp, 0.1),
-                "element_fixed": element_fixed,
-                "catalyst": bp.catalyst,
-                "time_ms": round(time_sec * 1000),
-                "blueprint_name": bp.name
-        }
-
-func y_for_temp(temp, t_min, t_max):
-        var g_top = CFG.margins.t
-        var g_bot = size.y - CFG.margins.b
-        var ratio = (temp - t_min) / (t_max - t_min)
-        return g_bot - ratio * (g_bot - g_top)
-
-func x_for_time(tt):
-        var span = min(CFG.tSpan, t)
-        return CFG.margins.l + clamp(tt / span, 0, 1) * (size.x - CFG.margins.l - CFG.margins.r)
-
-func _draw():
-        if not bp:
-                return
-        
-        var win = effective_window()
-        var t_min = min(bp.Tamb, bp.Tlow, win.low) - 10
-        var t_max = max(bp.Tini, bp.Thigh, win.high) + 10
-        
-        # Graph area
-        draw_rect(Rect2(CFG.margins.l, CFG.margins.t, size.x - CFG.margins.l - CFG.margins.r, size.y - CFG.margins.t - CFG.margins.b), Color("#0d1219"))
-        
-        # Window band
-        var y_high = y_for_temp(win.high, t_min, t_max)
-        var y_low = y_for_temp(win.low, t_min, t_max)
-        draw_rect(Rect2(CFG.margins.l, y_high, size.x - CFG.margins.l - CFG.margins.r, y_low - y_high), Color(0.062, 0.725, 0.506, 0.2))
-        
-        # Axes
-        draw_line(Vector2(CFG.margins.l, size.y - CFG.margins.b), Vector2(size.x - CFG.margins.r, size.y - CFG.margins.b), Color("#374151"), 1)
-        draw_line(Vector2(CFG.margins.l, CFG.margins.t), Vector2(CFG.margins.l, size.y - CFG.margins.b), Color("#374151"), 1)
-        
-        # Y ticks
-        var font = ThemeDB.get_default_theme().get_font("font", "Label")
-        for i in range(6):
-                var u = i / 5.0
-                var ty = lerp(size.y - CFG.margins.b, CFG.margins.t, u)
-                draw_line(Vector2(CFG.margins.l, ty), Vector2(size.x - CFG.margins.r, ty), Color("#111827"), 1)
-                var val = lerp(t_min, t_max, u)
-                draw_string(font, Vector2(6, ty + 4), str(snapped(val, 1)) + "°C", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#9ca3af"))
-        
-        # Labels
-        draw_string(font, Vector2(size.x - CFG.margins.r - 62, size.y - CFG.margins.b + 38), "Tiempo (s)", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#9ca3af"))
-        draw_string(font, Vector2(CFG.margins.l - 40, CFG.margins.t - 6), "T (°C)", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#9ca3af"))
-        
-        # Temperature curve
-        var points = []
-        var samples = 200
-        for i in range(samples + 1):
-                var tt = (i / float(samples)) * min(CFG.tSpan, t)
-                var x = x_for_time(tt)
-                var y = y_for_temp(Tof(tt), t_min, t_max)
-                points.append(Vector2(x, y))
-        draw_polyline(points, Color("#60a5fa"), 2)
-        
-        # Current marker
-        var x_now = x_for_time(min(t, CFG.tSpan))
-        var y_now = y_for_temp(Tof(t), t_min, t_max)
-        draw_circle(Vector2(x_now, y_now), 4, Color("#fcd34d"))
-        draw_string(font, Vector2(x_now + 8, y_now - 8), "T=%.1f°C  t=%.2fs" % [Tof(t), t], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#e5e7eb"))
-        
-        # Window lines
-        var dash = [5, 4]
-        my_draw_dashed_line(Vector2(CFG.margins.l, y_high), Vector2(size.x - CFG.margins.r, y_high), Color("#10b981"), 1.5, dash)
-        my_draw_dashed_line(Vector2(CFG.margins.l, y_low), Vector2(size.x - CFG.margins.r, y_low), Color("#10b981"), 1.5, dash)
-        
-        # Button
-        var btn_rect = Rect2(size.x - CFG.margins.r - CFG.btn.w, size.y - CFG.margins.b / 2.0 - CFG.btn.h / 2.0, CFG.btn.w, CFG.btn.h)
-        var hovering = last_mouse_pos and btn_rect.has_point(last_mouse_pos)
-        var btn_color = Color("#334155") if finished else (Color("#1f8bff") if hovering else Color("#2563eb"))
-        draw_rect(btn_rect, btn_color)
-        draw_string(font, Vector2(btn_rect.position.x + btn_rect.size.x / 2, btn_rect.position.y + btn_rect.size.y / 2), "SOLTAR (Espacio)", HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color.WHITE)
-        
-        # Footer
-        draw_string(font, Vector2(CFG.margins.l, size.y - 28), "Plano: %s  |  Catalizador: %s  |  Ventana: [%.0f..%.0f]°C" % [bp.name, "Sí" if bp.catalyst else "No", win.low, win.high], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#94a3b8"))
-        draw_string(font, Vector2(CFG.margins.l, size.y - 10), "Tip: suelta cerca del centro verde; con catalizador la ventana es +20%", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#94a3b8"))
-        
-        # Result overlay
-        if finished and result:
-                draw_rect(Rect2(0, 0, size.x, size.y), Color(0, 0, 0, 0.6))
-                var box_w = 420
-                var box_h = 180
-                var bx = (size.x - box_w) / 2
-                var by = (size.y - box_h) / 2
-                draw_rect(Rect2(bx, by, box_w, box_h), Color("#0b1220"))
-                draw_rect(Rect2(bx, by, box_w, box_h), Color("#1f6feb"), false, 2)
-                draw_string(font, Vector2(bx + 16, by + 28), "Resultado del Temple", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#e5e7eb"))
-                var lines = [
-                        "Plano: %s" % result.blueprint_name,
-                        "Temperatura al soltar: %.1f°C" % result.temp_at_drop,
-                        "Tiempo: %d ms" % result.time_ms,
-                        "Calidad: %s%s" % [result.quality, " — Elemento fijado" if bp.catalyst and (result.quality == "Perfect" or result.quality == "Bien") else ""],
-                        "Catalizador: %s" % ("Sí" if result.catalyst else "No"),
-                        "Score: %d  |  %s" % [result.score, "Éxito" if result.success else "Fallido"]
-                ]
-                var yy = by + 56
-                for line in lines:
-                        draw_string(font, Vector2(bx + 16, yy), line, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("#e5e7eb"))
-                        yy += 22
-                draw_string(font, Vector2(bx + 16, by + box_h - 12), "Presiona cualquier tecla o clic para cerrar", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#94a3b8"))
-
-func get_result() -> TrialResult:
-        if typeof(result) == TYPE_DICTIONARY:
-                var out := TrialResult.new()
-                out.score = result.get("score", 0)
-                out.max_score = _max_score
-                out.success = result.get("success", false)
-                out.duration_ms = result.get("time_ms", 0)
-                out.details = result.duplicate()
-                return out
-        return super.get_result()
-
-func my_draw_dashed_line(from_pos: Vector2, to_pos: Vector2, color: Color, width: float, dash: Array):
-        var length = (to_pos - from_pos).length()
-        var dir = (to_pos - from_pos).normalized()
-        var dash_length = dash[0] + dash[1]
-        var num_dashes = ceil(length / dash_length)
-        var current_pos = from_pos
-        for i in range(num_dashes):
-                var start_pos = current_pos
-                var end_pos = start_pos + dir * dash[0]
-                if (end_pos - from_pos).length() > length:
-                        end_pos = to_pos
-                draw_line(start_pos, end_pos, color, width)
-                current_pos = end_pos + dir * dash[1]
-                if (current_pos - from_pos).length() >= length:
-                        break
+func _finish_minigame(quality: String, score: float, success: bool) -> void:
+	# Ocultar elementos del juego
+	_temperature_bar.visible = false
+	_temp_label.visible = false
+	_instruction_hint.visible = false
+	
+	# Crear resultado
+	var result := TrialResult.new()
+	result.score = score
+	result.max_score = _max_score
+	result.success = success
+	result.duration_ms = Time.get_ticks_msec()
+	result.details = {
+		"temperature": int(_current_temperature),
+		"optimal_min": int(_optimal_min),
+		"optimal_max": int(_optimal_max),
+		"quality": quality,
+		"catalyst": _catalyst_bonus
+	}
+	complete_trial(result)
+	
+	# Pantalla final
+	var outcome := "🎉 ÉXITO" if success else "❌ FALLO"
+	var temp_text := "Temperatura: %d°C\nÓptimo: %d-%d°C\nCalidad: %s" % \
+		[int(_current_temperature), int(_optimal_min), int(_optimal_max), quality]
+	
+	if _catalyst_bonus:
+		temp_text += "\n✨ Catalizador activo (+20% ventana)"
+	
+	setup_end_screen(outcome, temp_text + "\n\nPulsa para cerrar")

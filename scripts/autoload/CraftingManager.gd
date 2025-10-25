@@ -5,7 +5,7 @@ signal task_started(task_id, config)
 signal task_updated(task_id, payload)
 signal task_completed(slot_idx: int, crafted_item: Dictionary)
 
-const MAX_SLOTS := 3
+const MAX_SLOTS := 5
 const STATUS_QUEUED := &"queued"
 const STATUS_IN_PROGRESS := &"in_progress"
 const STATUS_COMPLETED := &"completed"
@@ -65,19 +65,31 @@ func _ready():
 	print("CraftingManager: Ready with %d slots" % MAX_SLOTS)
 
 func _on_data_ready() -> void:
-	_enqueue_defaults()
+	# Ya no encolamos blueprints por defecto - ahora vienen de RequestsManager
+	pass
 
 func _enqueue_defaults() -> void:
-	var default_blueprints = ["sword_basic", "armor_leather", "shield_wooden"]
-	for recipe_id in default_blueprints:
-		enqueue(recipe_id)
-	print("CraftingManager: Default blueprints enqueued")
+	# LEGACY: Ya no se usa - los pedidos vienen de RequestsManager
+	# var default_blueprints = ["sword_basic", "armor_leather", "shield_wooden"]
+	# for recipe_id in default_blueprints:
+	# 	enqueue(recipe_id)
+	# print("CraftingManager: Default blueprints enqueued")
+	pass
 
 func enqueue(recipe_id) -> bool:
 	var blueprint := _resolve_blueprint(StringName(str(recipe_id)))
 	if blueprint == null:
 		push_warning("CraftingManager: Cannot enqueue recipe '%s' without blueprint" % recipe_id)
 		return false
+
+	# 🔍 DEBUG: Mostrar estado de cola antes de encolar
+	print("CraftingManager: 📋 Estado de cola antes de encolar:")
+	for i in range(MAX_SLOTS):
+		if queue[i] == null:
+			print("  Slot %d: VACÍO" % i)
+		else:
+			var task = queue[i]
+			print("  Slot %d: %s (status: %s)" % [i, task.blueprint.display_name if task.blueprint else "???", task.status])
 
 	for i in range(MAX_SLOTS):
 		if queue[i] == null:
@@ -271,6 +283,9 @@ func _resolve_trial_config(trial: TrialResource, blueprint: BlueprintResource) -
 		return null
 	var config: TrialConfig = null
 	if trial.config != null:
+		# Preparar config para sincronizar parámetros desde propiedades @export
+		if trial.config.has_method("prepare"):
+			trial.config.prepare()
 		config = trial.config.duplicate_config()
 	else:
 		config = TrialConfig.new()
@@ -319,9 +334,10 @@ func _finalize_task(task: CraftingTask) -> Dictionary:
 	_emit_slot_cleared(slot)
 	_compress_queue()
 	
-	# AUTO-RELLENAR: Encolar un nuevo pedido aleatorio para mantener 3 slots llenos
-	print("CraftingManager: Auto-refilling slot after completion...")
-	enqueue_random()
+	# ❌ AUTO-RELLENAR DESHABILITADO: Ahora RequestsManager gestiona los pedidos
+	# Ya no auto-rellenamos porque los pedidos vienen del sistema de requests
+	# print("CraftingManager: Auto-refilling slot after completion...")
+	# enqueue_random()
 	
 	return result
 

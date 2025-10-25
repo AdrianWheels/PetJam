@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://s30bejfhqqmx"]
+[gd_scene load_steps=4 format=3 uid="uid://s30bejfhqqmx"]
 
 [ext_resource type="Script" uid="uid://coe4keclrj4gt" path="res://scripts/main.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://c8yqv7h8forge" path="res://art/placeholders/forge_background.png" id="5"]
+[ext_resource type="Script" uid="uid://bu2c8oyt1samg" path="res://scripts/forge/AnimatedForgeBackground.gd" id="2_forge_bg"]
+[ext_resource type="PackedScene" uid="uid://ltoqpqw6qnv1" path="res://scenes/DungeonLayout.tscn" id="3_dungeon"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1")
@@ -20,9 +21,11 @@ color = Color(0, 0, 0, 1)
 
 [node name="ForgeArea" type="Node2D" parent="."]
 
-[node name="ForgeBackground" type="Sprite2D" parent="ForgeArea"]
+[node name="AnimatedForgeBackground" type="AnimatedSprite2D" parent="ForgeArea"]
 position = Vector2(640, 360)
-texture = ExtResource("5")
+scale = Vector2(2, 2)
+script = ExtResource("2_forge_bg")
+frame_skip = 3
 
 [node name="ForgeLabel" type="Label" parent="ForgeArea"]
 offset_left = 200.0
@@ -34,9 +37,4 @@ text = "FORJA"
 [node name="DungeonArea" type="Node2D" parent="."]
 position = Vector2(0, 3000)
 
-[node name="DungeonLabel" type="Label" parent="DungeonArea"]
-offset_left = 200.0
-offset_top = 200.0
-offset_right = 200.0
-offset_bottom = 200.0
-text = "DUNGEON"
+[node name="DungeonLayout" parent="DungeonArea" instance=ExtResource("3_dungeon")]

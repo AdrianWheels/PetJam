@@ -4,8 +4,9 @@
 [ext_resource type="Texture2D" uid="uid://dxhjx5n1pc3ms" path="res://art/placeholders/forge/material_wood.png" id="2_placeholder"]
 
 [node name="MaterialRow" type="HBoxContainer"]
-custom_minimum_size = Vector2(200, 28)
+custom_minimum_size = Vector2(120, 28)
 script = ExtResource("1")
+theme_override_constants/separation = 4
 
 [node name="Icon" type="TextureRect" parent="."]
 custom_minimum_size = Vector2(24, 24)
@@ -15,6 +16,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="NameLabel" type="Label" parent="."]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Madera"

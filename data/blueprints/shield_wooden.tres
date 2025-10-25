@@ -1,86 +1,119 @@
-[gd_resource type="Resource" load_steps=10 format=3]
+[gd_resource type="Resource" script_class="BlueprintResource" load_steps=17 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/BlueprintResource.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/data/TrialResource.gd" id="2"]
-[ext_resource type="Script" path="res://scripts/data/TrialConfig.gd" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/Minigames/ForgeTemp.tscn" id="4"]
-[ext_resource type="PackedScene" path="res://scenes/HammerMinigame.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/Minigames/HammerMinigame.tscn" id="5"]
+[ext_resource type="Script" path="res://scripts/data/ForgeTrialConfig.gd" id="5_oh74c"]
 [ext_resource type="PackedScene" path="res://scenes/Minigames/QuenchWater.tscn" id="6"]
 [ext_resource type="Texture2D" path="res://art/placeholders/forge/blueprint_shield_wooden.png" id="7"]
 [ext_resource type="Texture2D" path="res://art/placeholders/forge/background_default.png" id="8"]
+[ext_resource type="Script" path="res://scripts/data/HammerTrialConfig.gd" id="8_7b6j8"]
+[ext_resource type="Script" path="res://scripts/data/QuenchTrialConfig.gd" id="10_w5oip"]
 
-[sub_resource type="Resource" id="1"]
-resource_name = "temp_config"
-script = ExtResource("3")
-minigame_id = "temp"
-trial_id = "shield_wooden_temp"
-blueprint_id = "shield_wooden"
+[sub_resource type="Resource" id="Resource_1ldtf"]
+script = ExtResource("5_oh74c")
+forge_speed = 0.7
+precision = 0.4
+label = "Escudo madera"
+minigame_id = &"Forge"
+trial_id = &"shield_wooden_temp"
+blueprint_id = &"shield_wooden"
 minigame_scene = ExtResource("4")
-max_score = 300.0
-parameters = {"label": "Escudo madera", "hardness": 0.25, "precision": 0.6, "temp_window_base": 95}
+max_score = 900.0
+parameters = {
+"forge_speed": 0.7,
+"hardness": 0.3,
+"label": "Escudo madera",
+"precision": 0.4,
+"trials": 3
+}
 
 [sub_resource type="Resource" id="2"]
 resource_name = "temp_trial"
 script = ExtResource("2")
-trial_id = "shield_wooden_temp"
+trial_id = &"shield_wooden_temp"
 display_name = "Calentar refuerzos"
-minigame_id = "temp"
-min_score = 0.4
-config = SubResource("1")
+minigame_id = &"Forge"
 minigame_scene = ExtResource("4")
+min_score = 0.4
+config = SubResource("Resource_1ldtf")
 background = ExtResource("8")
 
-[sub_resource type="Resource" id="3"]
-resource_name = "hammer_config"
-script = ExtResource("3")
-minigame_id = "hammer"
-trial_id = "shield_wooden_hammer"
-blueprint_id = "shield_wooden"
+[sub_resource type="Resource" id="Resource_tx5y2"]
+script = ExtResource("8_7b6j8")
+notes = 4
+hammer_speed = 59
+tempo_bpm = 59
+weight = 0.6
+label = "Escudo madera"
+minigame_id = &"hammer"
+trial_id = &"shield_wooden_hammer"
+blueprint_id = &"shield_wooden"
 minigame_scene = ExtResource("5")
 max_score = 650.0
-parameters = {"label": "Escudo madera", "tempo_bpm": 80, "precision": 0.35, "weight": 0.6, "notes": 4}
+parameters = {
+"hammer_speed": 59,
+"label": "Escudo madera",
+"notes": 4,
+"precision": 0.4,
+"tempo_bpm": 59,
+"weight": 0.6
+}
 
 [sub_resource type="Resource" id="4"]
 resource_name = "hammer_trial"
 script = ExtResource("2")
-trial_id = "shield_wooden_hammer"
+trial_id = &"shield_wooden_hammer"
 display_name = "Clavar herrajes"
-minigame_id = "hammer"
-min_score = 0.5
-config = SubResource("3")
+minigame_id = &"hammer"
 minigame_scene = ExtResource("5")
+min_score = 0.5
+config = SubResource("Resource_tx5y2")
 background = ExtResource("8")
 
-[sub_resource type="Resource" id="5"]
-resource_name = "quench_config"
-script = ExtResource("3")
-minigame_id = "quench"
-trial_id = "shield_wooden_quench"
-blueprint_id = "shield_wooden"
+[sub_resource type="Resource" id="Resource_mkkjf"]
+script = ExtResource("10_w5oip")
+quench_speed = 0.7
+time_window = 0.35000000000000003
+catalyst_bonus = 1.0
+label = "Escudo madera"
+minigame_id = &"quench"
+trial_id = &"shield_wooden_quench"
+blueprint_id = &"shield_wooden"
 minigame_scene = ExtResource("6")
-max_score = 100.0
-parameters = {"label": "Escudo madera", "cool_rate": 0.3, "t_initial": 800, "t_ambient": 25, "temp_low": 550, "temp_high": 620, "catalyst": true, "intelligence": 0.45}
+parameters = {
+"catalyst_bonus": 1.0,
+"element": "",
+"label": "Escudo madera",
+"optimal_time": 1.5,
+"quench_speed": 0.7,
+"time_window": 0.35000000000000003
+}
 
 [sub_resource type="Resource" id="6"]
 resource_name = "quench_trial"
 script = ExtResource("2")
-trial_id = "shield_wooden_quench"
+trial_id = &"shield_wooden_quench"
 display_name = "Tratamiento final"
-minigame_id = "quench"
-min_score = 0.4
-config = SubResource("5")
+minigame_id = &"quench"
 minigame_scene = ExtResource("6")
+min_score = 0.4
+config = SubResource("Resource_mkkjf")
 background = ExtResource("8")
 
 [resource]
 resource_name = "shield_wooden"
 script = ExtResource("1")
-blueprint_id = "shield_wooden"
+blueprint_id = &"shield_wooden"
 display_name = "Escudo de madera"
 description = "Defensa básica para aventureros novatos."
 icon_path = "res://art/placeholders/forge/blueprint_shield_wooden.png"
 icon = ExtResource("7")
-result_item = "shield_wooden"
-materials = {"wood": 4, "iron": 1}
+result_item = &"shield_wooden"
+materials = {
+"iron": 1,
+"wood": 4
+}
 trial_sequence = [SubResource("2"), SubResource("4"), SubResource("6")]
-tags = ["shield", "armor"]
+tags = PackedStringArray()

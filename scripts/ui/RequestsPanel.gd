@@ -36,6 +36,8 @@ func _ready() -> void:
 	if _requests_manager:
 		if _requests_manager.has_signal("requests_refreshed"):
 			_requests_manager.requests_refreshed.connect(_on_requests_refreshed)
+		if _requests_manager.has_signal("request_rejected_no_materials"):
+			_requests_manager.request_rejected_no_materials.connect(_on_request_rejected_no_materials)
 	else:
 		print("RequestsPanel: RequestsManager no encontrado como AutoLoad")
 
@@ -229,7 +231,22 @@ func _on_request_row_clicked(index: int) -> void:
 			print("RequestsPanel: Request accepted and enqueued")
 			close()
 		else:
-			print("RequestsPanel: Failed to accept request (queue full?)")
+			print("RequestsPanel: Failed to accept request (no materials or queue full)")
+			# El feedback visual se maneja en _on_request_rejected_no_materials
+
+func _on_request_rejected_no_materials(blueprint_name: String, required_materials: Dictionary) -> void:
+	"""Muestra feedback visual cuando faltan materiales"""
+	print("RequestsPanel: ❌ Faltan materiales para '%s'" % blueprint_name)
+	
+	# 🔴 Cambiar fondo a rojo temporalmente
+	var original_color := color
+	color = Color(0.8, 0.1, 0.1, 0.95)  # Rojo intenso
+	
+	# Restaurar tras 1.5 segundos
+	await get_tree().create_timer(1.5).timeout
+	color = original_color
+	
+	# TODO: Mostrar Label con mensaje específico de materiales faltantes
 
 func _on_requests_refreshed(_requests: Array) -> void:
 	if visible:

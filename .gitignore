@@ -8,6 +8,12 @@ doc/godotdocu/
 # Logs
 logs/
 
+# Builds
+builds/
+*.exe
+*.pck
+*.zip
+
 # OS
 Thumbs.db
 .DS_Store

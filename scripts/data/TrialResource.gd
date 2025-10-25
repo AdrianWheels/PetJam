@@ -16,3 +16,9 @@ func get_effective_minigame() -> StringName:
     if config and config.minigame_id != StringName():
         return config.minigame_id
     return minigame_id
+
+## Prepara el config sincronizando parámetros si es necesario.
+func get_prepared_config() -> TrialConfig:
+    if config and config.has_method("prepare"):
+        config.prepare()
+    return config
