@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="BlueprintResource" load_steps=9 format=3 uid="uid://c28g2xsjpue4r"]
+
+[ext_resource type="Script" uid="uid://c8d1uaeb55e1" path="res://scripts/data/BlueprintResource.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://cuxij6wwfw1vo" path="res://art/assets/Imagenes Raw/Blueprints/boots_basic_bp_raw.png" id="1_uw3w7"]
+[ext_resource type="Script" uid="uid://dtkp3d357pf8g" path="res://scripts/data/TrialResource.gd" id="2"]
+[ext_resource type="Script" uid="uid://csfs6pe4ark4v" path="res://scripts/data/TrialConfig.gd" id="3"]
+[ext_resource type="PackedScene" uid="uid://cj5b2mfsvqaos" path="res://scenes/Minigames/SewOSU.tscn" id="4"]
+[ext_resource type="Resource" uid="uid://d3qyxsplvo3xr" path="res://data/items/boots_basic.tres" id="5"]
+
+[sub_resource type="Resource" id="1"]
+resource_name = "sew_sequence"
+script = ExtResource("3")
+minigame_id = "SewOSU"
+minigame_scene = ExtResource("4")
+parameters = {
+"circles": 6,
+"difficulty": 0.2
+}
+
+[sub_resource type="Resource" id="2"]
+resource_name = "sew_trial"
+script = ExtResource("2")
+trial_id = "boots_leather_sew"
+display_name = "Coser botas"
+minigame_id = "SewOSU"
+minigame_scene = ExtResource("4")
+min_score = 0.5
+config = SubResource("1")
+
+[resource]
+resource_name = "boots_basic"
+script = ExtResource("1")
+display_name = "Botas Básicas"
+description = "Botas ligeras y cómodas."
+icon_path = "res://data/items/boots_basic.tres"
+icon = ExtResource("5")
+blueprint_icon = ExtResource("1_uw3w7")
+materials = {
+"cloth": 2,
+"leather": 4
+}
+trial_sequence = [SubResource("2")]

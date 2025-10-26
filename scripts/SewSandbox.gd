@@ -24,7 +24,7 @@ func _ready():
 	print("  V = Toggle visualización de puntos")
 	print("  T = Test con config fácil")
 	print("  Y = Test con config difícil")
-	print("  ESPACIO = Iniciar trial actual")
+	print("  SPACE = Start current trial")
 	
 	# Conectar señal de completado
 	_sew_minigame.trial_completed.connect(_on_trial_completed)
@@ -70,8 +70,8 @@ func _test_hard_config():
 	_sew_minigame.start_trial(config)
 
 func _on_trial_completed(result: TrialResult):
-	print("\n✅ Trial completado:")
+	print("\n✅ Trial completed:")
 	print("  Score: %.0f / %.0f" % [result.score, result.max_score])
-	print("  Éxito: %s" % result.success)
-	print("  Detalles: %s" % result.details)
-	print("\n  Presiona T/Y para nuevo test")
+	print("  Success: %s" % result.success)
+	print("  Details: %s" % result.details)
+	print("\n  Press T/Y for new test")

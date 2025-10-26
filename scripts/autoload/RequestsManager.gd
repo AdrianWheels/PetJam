@@ -11,8 +11,8 @@ signal requests_refreshed(active_requests: Array)
 signal request_accepted(blueprint_id: StringName)
 signal request_rejected_no_materials(blueprint_name: String, required_materials: Dictionary)
 
-const MAX_ACTIVE_REQUESTS := 5
-const MIN_ACTIVE_REQUESTS := 3
+const MAX_ACTIVE_REQUESTS := 4
+const MIN_ACTIVE_REQUESTS := 2
 const REQUEST_DELAY_MIN := 3.0  # Segundos mínimos entre pedidos
 const REQUEST_DELAY_MAX := 8.0  # Segundos máximos entre pedidos
 const FREE_REQUESTS_COUNT := 2  # Primeros X pedidos son gratis
@@ -75,7 +75,7 @@ func _generate_initial_requests() -> void:
 	print("RequestsManager: Generados %d pedidos iniciales (2 inmediatos)" % active_requests.size())
 	for i in range(active_requests.size()):
 		var req = active_requests[i]
-		print("  [%d] %s - %d oro - Cliente: %s" % [i, req.blueprint.display_name, req.gold_reward, req.client_name])
+		print("  [%d] %s - %d gold - Client: %s" % [i, req.blueprint.display_name, req.gold_reward, req.client_name])
 	requests_refreshed.emit(active_requests)
 	
 	# 🕐 Programar llegada del siguiente pedido (3-8 segundos después)
@@ -180,7 +180,7 @@ func _add_new_request() -> void:
 			"client_name": client_name
 		})
 		
-		print("RequestsManager: ✨ Nuevo pedido añadido: %s - %d oro - Cliente: %s" % [blueprint.display_name, reward, client_name])
+		print("RequestsManager: ✨ New request added: %s - %d gold - Client: %s" % [blueprint.display_name, reward, client_name])
 		requests_refreshed.emit(active_requests)
 
 func refresh_all_requests() -> void:
@@ -194,23 +194,23 @@ func get_free_requests_remaining() -> int:
 	return free_requests_remaining
 
 func _calculate_reward(blueprint: BlueprintResource) -> int:
-	"""Calcula recompensa base en oro según dificultad del blueprint"""
+	"""Calculates base gold reward based on blueprint difficulty"""
 	var base_reward := 50
 	
-	# Aumentar según número de materiales
+	# Increase based on number of materials
 	var num_materials := blueprint.materials.size()
 	base_reward += num_materials * 10
 	
-	# Aumentar según número de trials
+	# Increase based on number of trials
 	var num_trials := blueprint.trial_sequence.size() if blueprint.has_method("has_trials") and blueprint.has_trials() else 1
 	base_reward += num_trials * 15
 	
 	return base_reward
 
 func _generate_client_name() -> String:
-	"""Genera nombre aleatorio de cliente para inmersión"""
+	"""Generates random client name for immersion"""
 	var first_names := ["Aldric", "Brenna", "Cedric", "Dara", "Eldon", "Fiona", "Gareth", "Hilda"]
-	var titles := ["el Guerrero", "la Maga", "el Explorador", "la Cazadora", "el Herrero", "la Comerciante"]
+	var titles := ["the Warrior", "the Mage", "the Explorer", "the Hunter", "the Blacksmith", "the Merchant"]
 	
 	return first_names[randi() % first_names.size()] + " " + titles[randi() % titles.size()]
 

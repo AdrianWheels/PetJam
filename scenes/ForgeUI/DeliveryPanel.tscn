@@ -38,7 +38,7 @@ anchor_bottom = 1.0
 separation = 6.0
 
 [node name="TitleLabel" type="Label" parent="Panel/Margin/VBox"]
-text = "¿Qué hacer con el ítem?"
+text = "What to do with the item?"
 horizontal_alignment = 1
 
 [node name="Buttons" type="VBoxContainer" parent="Panel/Margin/VBox"]
@@ -48,12 +48,12 @@ separation = 12.0
 
 [node name="ClientButton" type="Button" parent="Panel/Margin/VBox/Buttons"]
 unique_name_in_owner = true
-text = "Entregar a Cliente
-(Recibir oro)"
+text = "Deliver to Client
+(Receive gold)"
 
 [node name="HeroButton" type="Button" parent="Panel/Margin/VBox/Buttons"]
 unique_name_in_owner = true
-text = "Equipar en Héroe
-(Mejorar stats)"
+text = "Equip on Hero
+(Improve stats)"
 unique_name_in_owner = true
 text = "Cerrar"

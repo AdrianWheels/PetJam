@@ -12,7 +12,7 @@ modulate = Color(0.2, 0.6, 1.0, 1)
 
 
 [node name="HeroLabel" type="Label" parent="HeroPlaceholder"]
-text = "Héroe"
+text = "Hero"
 position = Vector2(0, 0)
 
 # Placeholder visual para el enemigo

@@ -62,8 +62,8 @@ func get_hero_spawn() -> Vector2:
 	if hero_spawn and hero_spawn is Marker2D:
 		# Convertir de global a local respecto a DungeonLayout
 		return to_local(hero_spawn.global_position)
-	# Fallback a posición predeterminada
-	return Vector2(100, 460)
+	# Fallback: Y=1120 para layout 1080x1920 (60% superior = 1152px)
+	return Vector2(100, 1120)
 
 func is_boss_level(level: int) -> bool:
 	"""Verifica si el nivel corresponde al jefe."""

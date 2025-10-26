@@ -1,0 +1,118 @@
+[gd_scene load_steps=2 format=3 uid="uid://8trhy2a1ramn"]
+
+[ext_resource type="Script" uid="uid://cro5doma8kkx6" path="res://scripts/core/HUDMinigameLauncher.gd" id="1"]
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1")
+
+[node name="Label" type="Label" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -1104.0
+offset_top = 563.0
+offset_right = -904.0
+offset_bottom = 613.0
+grow_horizontal = 0
+text = "HUD - Room: 1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ForgePanel" type="ColorRect" parent="."]
+custom_minimum_size = Vector2(380, 80)
+offset_left = -2.0
+offset_top = 3.0
+offset_right = 1152.0
+offset_bottom = 643.0
+color = Color(0.19246289, 0.14488226, 0.037627935, 0.8509804)
+
+[node name="MinigamesPanel" type="ColorRect" parent="ForgePanel"]
+custom_minimum_size = Vector2(380, 80)
+layout_mode = 0
+offset_left = 390.0
+offset_top = 536.0
+offset_right = 810.0
+offset_bottom = 616.0
+color = Color(0.15, 0.15, 0.18, 0.85)
+
+[node name="MinigamesHBox" type="HBoxContainer" parent="ForgePanel/MinigamesPanel"]
+layout_mode = 0
+
+[node name="MinigamesHBox#BtnHammer" type="Button" parent="ForgePanel/MinigamesPanel/MinigamesHBox"]
+layout_mode = 2
+text = "Martillo"
+
+[node name="MinigamesHBox#BtnSewOSU" type="Button" parent="ForgePanel/MinigamesPanel/MinigamesHBox"]
+layout_mode = 2
+text = "Coser OSU"
+
+[node name="MinigamesHBox#BtnQuench" type="Button" parent="ForgePanel/MinigamesPanel/MinigamesHBox"]
+layout_mode = 2
+text = "Agua"
+
+[node name="MinigamesHBox#BtnTemp" type="Button" parent="ForgePanel/MinigamesPanel/MinigamesHBox"]
+layout_mode = 2
+text = "Temperatura"
+
+[node name="BlueprintQueuePanel" type="ColorRect" parent="ForgePanel"]
+custom_minimum_size = Vector2(260, 300)
+layout_mode = 0
+offset_left = 28.0
+offset_top = 77.0
+offset_right = 288.0
+offset_bottom = 397.0
+color = Color(0.5, 0.7, 1, 1)
+
+[node name="QueueVBox" type="VBoxContainer" parent="ForgePanel/BlueprintQueuePanel"]
+layout_mode = 0
+
+[node name="QueueVBox#QueueLabel" type="Label" parent="ForgePanel/BlueprintQueuePanel/QueueVBox"]
+layout_mode = 2
+text = "Cola de blueprints"
+horizontal_alignment = 1
+
+[node name="QueueVBox#QueueContainer" type="VBoxContainer" parent="ForgePanel/BlueprintQueuePanel/QueueVBox"]
+layout_mode = 2
+size_flags_vertical = 2
+
+[node name="QueueVBox#PrintsLabel" type="Label" parent="ForgePanel/BlueprintQueuePanel"]
+layout_mode = 0
+offset_left = 5.0
+offset_top = 359.0
+offset_right = 245.0
+offset_bottom = 382.0
+text = "Debug prints:"
+
+[node name="QueueVBox#PrintsArea" type="TextEdit" parent="ForgePanel/BlueprintQueuePanel"]
+custom_minimum_size = Vector2(240, 100)
+layout_mode = 0
+offset_left = 5.0
+offset_top = 386.0
+offset_right = 245.0
+offset_bottom = 486.0
+
+[node name="InventoryPanel" type="ColorRect" parent="ForgePanel"]
+custom_minimum_size = Vector2(220, 10)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -251.0
+offset_top = 19.0
+offset_right = -31.0
+offset_bottom = 303.0
+grow_horizontal = 0
+color = Color(0.9, 0.9, 0.9, 0.9)
+
+[node name="InventoryVBox" type="VBoxContainer" parent="ForgePanel/InventoryPanel"]
+layout_mode = 0
+
+[node name="InventoryVBox#InventoryLabel" type="Label" parent="ForgePanel/InventoryPanel/InventoryVBox"]
+layout_mode = 2
+text = "Inventario"
+horizontal_alignment = 1
+
+[node name="InventoryVBox#MaterialsList" type="VBoxContainer" parent="ForgePanel/InventoryPanel/InventoryVBox"]
+custom_minimum_size = Vector2(200, 260)
+layout_mode = 2
+size_flags_vertical = 2

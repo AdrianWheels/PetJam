@@ -6,6 +6,14 @@ extends "res://scripts/core/MinigameBase.gd"
 # 🎨 Sistemas de feedback
 const MinigameFX = preload("res://scripts/ui/MinigameFX.gd")
 const MinigameAudio = preload("res://scripts/ui/MinigameAudio.gd")
+const ThreadSpringScript = preload("res://scripts/ui/ThreadSpring.gd")
+const StitchVisualScript = preload("res://scripts/ui/StitchVisual.gd")
+
+# 🖱️ Cursor custom
+const CUSTOM_CURSOR_PATH := "res://art/assets/Imagenes/Cursor/staff_with_cloth_sin_fondo.png"
+var _custom_cursor: Texture2D = null
+var _original_cursor_shape: int = Input.CURSOR_ARROW
+var _cursor_active := false
 
 # Referencias a nodos de la escena
 @onready var _background: ColorRect = %Background
@@ -13,6 +21,10 @@ const MinigameAudio = preload("res://scripts/ui/MinigameAudio.gd")
 @onready var _collapsing_circle: Control = %CollapsingCircle
 @onready var _score_label: Label = %ScoreLabel
 @onready var _combo_label: Label = %ComboLabel
+
+# 🧵 Sistemas visuales de hilo y costura
+var _thread_spring: Node2D = null
+var _stitch_visual: Node2D = null
 
 # Constantes de juego
 const RING_R := 42.0
@@ -33,7 +45,6 @@ const SPAWN_POINTS: Array[Vector2] = [
 ]
 const MARGIN_SIZE := 80.0  # Margen desde los bordes (adaptable)
 var _current_spawn_pos := Vector2.ZERO
-var _margin := Vector2(MARGIN_SIZE, MARGIN_SIZE)
 
 # Estado del juego
 var _running := false
@@ -56,17 +67,41 @@ var _stitch_speed := 1.0
 var _spawn_indices: Array[int] = []  # Índices personalizados (vacío = random)
 
 func _ready():
+	# 🎶 Configurar SoundSet específico para Sew
+	var sew_soundset := MinigameSoundSet.new()
+	sew_soundset.sound_perfect = load("res://art/sounds/sfx/minigames/sew/stitch_pierce_leather_perfect.wav")
+	sew_soundset.sound_bien = load("res://art/sounds/sfx/minigames/sew/stitch_pierce_leather_good.wav")
+	sew_soundset.sound_regular = load("res://art/sounds/sfx/minigames/sew/stitch_pierce_leather_good.wav")
+	sew_soundset.sound_miss = load("res://art/sounds/miss.mp3")  # Mantener miss genérico
+	sew_soundset.sound_whoosh = load("res://art/sounds/sfx/minigames/sew/stitch_pullthrough.wav")  # Sonido de pull
+	MinigameAudio.set_sound_set(sew_soundset)
+	
+	# 🎵 OPCIONAL: Reproducir tempo click como background (descomentar si quieres metrónomo)
+	# MinigameAudio.play_background("res://art/sounds/sfx/minigames/sew/stitch_tempo_click.wav", self, -10.0)
+	
 	# Ocultar elementos del juego hasta que inicie
 	_target_ring.visible = false
 	_collapsing_circle.visible = false
 	_score_label.visible = false
 	_combo_label.visible = false
 	
+	# 🧵 Crear sistemas visuales
+	_thread_spring = ThreadSpringScript.new()
+	_thread_spring.z_index = 10  # Encima del background
+	add_child(_thread_spring)
+	
+	_stitch_visual = StitchVisualScript.new()
+	_stitch_visual.z_index = 5  # Detrás del hilo pero encima del background
+	add_child(_stitch_visual)
+	
+	# 🖱️ Cargar cursor custom con fallback
+	_load_custom_cursor()
+	
 	# Crear pantalla de título
 	setup_title_screen(
 		"🧵 SEW - Precisión rítmica",
 		"Haz clic cuando los círculos coincidan",
-		"Pulsa ESPACIO o CLIC en el momento justo"
+		"Press SPACE or CLICK at the right moment"
 	)
 
 func start_trial(config: TrialConfig) -> void:
@@ -103,6 +138,19 @@ func start_game():
 	_collapsing_circle.pivot_offset = _collapsing_circle.size / 2.0
 	_target_ring.pivot_offset = _target_ring.size / 2.0
 	
+	# 🧵 Activar sistemas visuales
+	_activate_custom_cursor()
+	_thread_spring.enable(get_viewport().get_mouse_position())
+	
+	# Configurar offset del hilo: desde la punta (hotspot) hacia el ojo de la aguja (sup. derecha)
+	if _custom_cursor:
+		var cursor_size := _custom_cursor.get_size()
+		var thread_offset := Vector2(cursor_size.x - 15, -cursor_size.y)
+		_thread_spring.cursor_offset = thread_offset
+		print("   • Offset del hilo: %v (ojo de la aguja)" % thread_offset)
+	
+	_stitch_visual.enable()
+	
 	_running = true
 	_current_radius = START_R
 	_note_index = 0
@@ -138,6 +186,10 @@ func _compute_windows() -> void:
 func _process(delta):
 	if not _running:
 		return
+	
+	# 🧵 Actualizar posición del hilo con el cursor
+	if _thread_spring:
+		_thread_spring.update_target(get_viewport().get_mouse_position())
 	
 	# Colapsar círculo hacia el anillo central
 	if _note_active and not _note_judged:
@@ -194,7 +246,7 @@ func _input(event):
 		else:
 			print("  ❌ Click outside circle, ignored")
 
-func _judge_hit(diff: float, late: bool) -> void:
+func _judge_hit(diff: float, _late: bool) -> void:
 	if _note_judged:
 		return
 	
@@ -202,29 +254,29 @@ func _judge_hit(diff: float, late: bool) -> void:
 	
 	# 🎯 Determinar calidad
 	var quality := "Miss"
-	var score_value := 0
 	
 	if diff <= _windows.perfect:
 		quality = "Perfect"
-		score_value = 300
 		_combo += 1
 	elif diff <= _windows.bien:
 		quality = "Bien"
-		score_value = 200
 		_combo += 1
 	elif diff <= _windows.regular:
 		quality = "Regular"
-		score_value = 100
 		_combo += 1
 	else:
 		quality = "Miss"
-		score_value = 0
 		_combo = 0
 	
 	_quality_counts[quality] += 1
 	_max_combo = max(_max_combo, _combo)
 	_last_quality = quality
 	_feedback_timer = 0.6
+	
+	# 🧵 Añadir punto de costura en el centro del círculo target
+	if _stitch_visual and quality != "Miss":
+		var stitch_point := _target_ring.position + _target_ring.size / 2.0
+		_stitch_visual.add_point(stitch_point)
 	
 	# 🎨 Efectos visuales y sonoros
 	var feedback_pos := _target_ring.global_position + _target_ring.size / 2
@@ -274,6 +326,13 @@ func _update_circles() -> void:
 
 func _finish_minigame() -> void:
 	_running = false
+	
+	# 🧵 Desactivar sistemas visuales
+	_deactivate_custom_cursor()
+	if _thread_spring:
+		_thread_spring.disable()
+	if _stitch_visual:
+		_stitch_visual.disable()
 	
 	# Calcular puntuación final
 	var perfect_count: int = _quality_counts["Perfect"]
@@ -356,3 +415,94 @@ func _position_at_random_spawn() -> void:
 	print("    • Spawn position (px): %v" % _current_spawn_pos)
 	print("    • Target ring pos: %v" % _target_ring.position)
 	print("    • Collapsing circle pos: %v" % _collapsing_circle.position)
+
+# 🖱️ Sistema de cursor custom
+
+func _load_custom_cursor() -> void:
+	"""Carga el cursor custom con fallback."""
+	if ResourceLoader.exists(CUSTOM_CURSOR_PATH):
+		var original_texture := load(CUSTOM_CURSOR_PATH) as Texture2D
+		if original_texture:
+			print("✅ [SEW] Cursor custom cargado: %s" % CUSTOM_CURSOR_PATH)
+			var original_size := original_texture.get_size()
+			print("   • Tamaño original: %v" % original_size)
+			
+			# Escalar la imagen a 1/5 del tamaño
+			var scale_factor := 5.0
+			var new_size := Vector2i(
+				int(original_size.x / scale_factor),
+				int(original_size.y / scale_factor)
+			)
+			
+			var original_image := original_texture.get_image()
+			original_image.resize(new_size.x, new_size.y, Image.INTERPOLATE_LANCZOS)
+			
+			# 🎨 Añadir sombra sutil
+			var shadow_image := _create_cursor_with_shadow(original_image)
+			
+			_custom_cursor = ImageTexture.create_from_image(shadow_image)
+			print("   • Cursor escalado a: %v (factor 1/%d)" % [new_size, scale_factor])
+			print("   • Sombra añadida para profundidad")
+		else:
+			push_warning("⚠️ [SEW] No se pudo cargar el cursor: %s" % CUSTOM_CURSOR_PATH)
+	else:
+		push_warning("⚠️ [SEW] Cursor no encontrado: %s" % CUSTOM_CURSOR_PATH)
+
+func _activate_custom_cursor() -> void:
+	"""Activa el cursor custom durante el minijuego."""
+	if _custom_cursor:
+		_original_cursor_shape = Input.get_current_cursor_shape()
+		
+		# Obtener tamaño del cursor YA ESCALADO
+		var cursor_size := _custom_cursor.get_size()
+		
+		# Hotspot: esquina INFERIOR IZQUIERDA (la punta, punto de click)
+		var hotspot := Vector2(0, cursor_size.y)
+		
+		Input.set_custom_mouse_cursor(_custom_cursor, Input.CURSOR_ARROW, hotspot)
+		_cursor_active = true
+		print("🖱️ [SEW] Cursor custom activado")
+		print("   • Tamaño: %v" % cursor_size)
+		print("   • Hotspot: %v (esquina inferior izquierda = punta)" % hotspot)
+	else:
+		# Fallback: cursor normal
+		Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+		print("🖱️ [SEW] Usando cursor por defecto (fallback)")
+
+func _deactivate_custom_cursor() -> void:
+	"""Restaura el cursor original."""
+	if _cursor_active:
+		Input.set_custom_mouse_cursor(null)
+		Input.set_default_cursor_shape(_original_cursor_shape)
+		_cursor_active = false
+		print("🖱️ [SEW] Cursor restaurado")
+
+func _create_cursor_with_shadow(base_image: Image) -> Image:
+	"""Añade una sombra sutil al cursor para dar sensación de profundidad."""
+	var img_size := base_image.get_size()
+	var shadow_offset := Vector2i(3, 3)  # Offset de la sombra (abajo-derecha)
+	
+	# Crear imagen con espacio para la sombra
+	var result := Image.create(img_size.x + shadow_offset.x, img_size.y + shadow_offset.y, false, Image.FORMAT_RGBA8)
+	result.fill(Color(0, 0, 0, 0))  # Transparente
+	
+	# Dibujar sombra (versión semi-transparente oscura)
+	for y in range(img_size.y):
+		for x in range(img_size.x):
+			var pixel := base_image.get_pixel(x, y)
+			if pixel.a > 0.1:  # Si el pixel no es transparente
+				var shadow_color := Color(0, 0, 0, pixel.a * 0.3)  # Sombra negra al 30% de opacidad
+				result.set_pixel(x + shadow_offset.x, y + shadow_offset.y, shadow_color)
+	
+	# Dibujar imagen original encima
+	for y in range(img_size.y):
+		for x in range(img_size.x):
+			var pixel := base_image.get_pixel(x, y)
+			if pixel.a > 0.0:
+				result.set_pixel(x, y, pixel)
+	
+	return result
+
+func _exit_tree():
+	"""Detener background audio al salir"""
+	MinigameAudio.stop_background()

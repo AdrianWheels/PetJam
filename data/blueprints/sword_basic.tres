@@ -1,13 +1,14 @@
-[gd_resource type="Resource" script_class="BlueprintResource" load_steps=13 format=3]
+[gd_resource type="Resource" script_class="BlueprintResource" load_steps=14 format=3 uid="uid://bjyefkmgqj040"]
 
-[ext_resource type="Script" path="res://scripts/data/BlueprintResource.gd" id="1"]
-[ext_resource type="Script" path="res://scripts/data/TrialResource.gd" id="2"]
-[ext_resource type="Script" path="res://scripts/data/ForgeTrialConfig.gd" id="3"]
-[ext_resource type="Script" path="res://scripts/data/HammerTrialConfig.gd" id="3_hammer"]
-[ext_resource type="PackedScene" path="res://scenes/Minigames/ForgeTemp.tscn" id="4"]
-[ext_resource type="PackedScene" path="res://scenes/Minigames/HammerMinigame.tscn" id="5"]
-[ext_resource type="Texture2D" path="res://art/placeholders/forge/blueprint_sword_basic.png" id="6"]
-[ext_resource type="Texture2D" path="res://art/placeholders/forge/background_default.png" id="7"]
+[ext_resource type="Script" uid="uid://c8d1uaeb55e1" path="res://scripts/data/BlueprintResource.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://bjhqrqxx3jv7v" path="res://art/assets/Imagenes Raw/Blueprints/sword_basic_bp_raw.png" id="1_m6iyt"]
+[ext_resource type="Script" uid="uid://dtkp3d357pf8g" path="res://scripts/data/TrialResource.gd" id="2"]
+[ext_resource type="Script" uid="uid://c2uan22a3ifma" path="res://scripts/data/ForgeTrialConfig.gd" id="3"]
+[ext_resource type="Script" uid="uid://cya7b64jx7qe" path="res://scripts/data/HammerTrialConfig.gd" id="3_hammer"]
+[ext_resource type="PackedScene" uid="uid://d3nicie70bayo" path="res://scenes/Minigames/ForgeTemp.tscn" id="4"]
+[ext_resource type="PackedScene" uid="uid://bius0ofgpw8m5" path="res://scenes/Minigames/HammerMinigame.tscn" id="5"]
+[ext_resource type="Resource" uid="uid://dslmar1xsr6o8" path="res://data/items/sword_basic.tres" id="6"]
+[ext_resource type="Texture2D" uid="uid://4n00t3n7gs4x" path="res://art/placeholders/forge/background_default.png" id="7"]
 
 [sub_resource type="Resource" id="1"]
 resource_name = "temp_config"
@@ -68,13 +69,13 @@ background = ExtResource("7")
 resource_name = "sword_basic"
 script = ExtResource("1")
 blueprint_id = &"sword_basic"
-display_name = "SUPER MEGA SWORD"
+display_name = "Espada Básica"
 description = "Una espada sencilla pero fiable."
-icon_path = "res://art/placeholders/forge/blueprint_sword_basic.png"
+icon_path = "res://data/items/sword_basic.tres"
 icon = ExtResource("6")
+blueprint_icon = ExtResource("1_m6iyt")
 result_item = &"sword_basic"
 materials = {
 "iron": 3
 }
 trial_sequence = [SubResource("2"), SubResource("4")]
-tags = PackedStringArray("weapon", "sword")

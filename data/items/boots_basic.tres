@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ItemResource" load_steps=3 format=3 uid="uid://d3qyxsplvo3xr"]
+
+[ext_resource type="Script" uid="uid://clwxwng7r6vh2" path="res://scripts/data/ItemResource.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://c87k8umo3qpfi" path="res://art/assets/Imagenes/Items/boots_basic.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+item_id = &"boots_basic"
+display_name = "Botas Básicas"
+description = "Unas botas simples de cuero"
+icon = ExtResource("2")
+item_type = "armor"
+equipment_slot = "feet"
+rarity = "basic"
+base_hp_min = 8
+base_hp_max = 18
+base_armor_min = 1
+base_armor_max = 2

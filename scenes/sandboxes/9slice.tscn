@@ -1,0 +1,23 @@
+[gd_scene load_steps=3 format=3 uid="uid://bbk07jxonro4m"]
+
+[ext_resource type="Texture2D" uid="uid://c050b8yp0u3m0" path="res://art/placeholders/panel_madera.png" id="1_qt8ww"]
+[ext_resource type="Script" uid="uid://chtj6v430f7li" path="res://scenes/sandboxes/nine_patch_rect.gd" id="2_m0vv6"]
+
+[node name="Control" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="NinePatchRect" type="NinePatchRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_qt8ww")
+region_rect = Rect2(169.62573, 163.14172, 689.93567, 705.49817)
+script = ExtResource("2_m0vv6")

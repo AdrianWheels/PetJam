@@ -195,7 +195,7 @@ func _create_fallback_row() -> PanelContainer:
 	
 	var accept_btn := Button.new()
 	accept_btn.name = "AcceptBtn"
-	accept_btn.text = "Aceptar"
+	accept_btn.text = "Accept"
 	accept_btn.custom_minimum_size = Vector2(100, 40)
 	hbox.add_child(accept_btn)
 	
@@ -235,8 +235,8 @@ func _on_request_row_clicked(index: int) -> void:
 			# El feedback visual se maneja en _on_request_rejected_no_materials
 
 func _on_request_rejected_no_materials(blueprint_name: String, required_materials: Dictionary) -> void:
-	"""Muestra feedback visual cuando faltan materiales"""
-	print("RequestsPanel: ❌ Faltan materiales para '%s'" % blueprint_name)
+	"""Shows visual feedback when materials are missing"""
+	print("RequestsPanel: ❌ Missing materials for '%s'" % blueprint_name)
 	
 	# 🔴 Cambiar fondo a rojo temporalmente
 	var original_color := color
@@ -246,7 +246,7 @@ func _on_request_rejected_no_materials(blueprint_name: String, required_material
 	await get_tree().create_timer(1.5).timeout
 	color = original_color
 	
-	# TODO: Mostrar Label con mensaje específico de materiales faltantes
+	# TODO: Show Label with specific message about missing materials
 
 func _on_requests_refreshed(_requests: Array) -> void:
 	if visible:

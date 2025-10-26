@@ -1,0 +1,53 @@
+[gd_scene load_steps=4 format=3 uid="uid://cf4o8n4qjkua0"]
+
+[ext_resource type="Script" uid="uid://cdq5iokt1yhlc" path="res://scripts/ui/ThreadSpring.gd" id="1"]
+[ext_resource type="Script" uid="uid://cqyfsbessemsa" path="res://scripts/ui/StitchVisual.gd" id="2"]
+[ext_resource type="Script" uid="uid://f6cmoqkmub0n" path="res://scripts/ui/SewingTestController.gd" id="3"]
+
+[node name="SewingSystemTest" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="ColorRect" parent="."]
+z_index = -10
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.04, 0.05, 0.07, 1)
+
+[node name="StitchVisual" type="Node2D" parent="."]
+z_index = 1
+script = ExtResource("2")
+show_guides = true
+
+[node name="ThreadSpring" type="Node2D" parent="."]
+z_index = 2
+script = ExtResource("1")
+show_debug = true
+
+[node name="Instructions" type="RichTextLabel" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 20.0
+offset_bottom = 140.0
+grow_horizontal = 2
+theme_override_colors/default_color = Color(0.58, 0.64, 0.72, 1)
+theme_override_font_sizes/normal_font_size = 16
+bbcode_enabled = true
+text = "[center]🧵 [b]Sistema de Costura + Hilo Test[/b]
+
+[color=#6ee7ff]Click izquierdo[/color]: Añadir punto de costura
+[color=#6ee7ff]Click derecho[/color]: Activar/desactivar hilo spring
+[color=#6ee7ff]Z[/color]: Deshacer último punto
+[color=#6ee7ff]C[/color]: Limpiar todo[/center]"
+
+[node name="TestController" type="Node" parent="."]
+script = ExtResource("3")

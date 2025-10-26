@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ItemResource" load_steps=3 format=3 uid="uid://ch16ra6cgrvyo"]
+
+[ext_resource type="Script" uid="uid://clwxwng7r6vh2" path="res://scripts/data/ItemResource.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://deaq71pxx2qvv" path="res://art/assets/Imagenes/sword_masterwork_sin_fondo.png" id="1_lukbc"]
+
+[resource]
+script = ExtResource("1")
+item_id = &"sword_masterwork"
+display_name = "Espada Maestra"
+description = "Una obra maestra de la forja"
+icon = ExtResource("1_lukbc")
+item_type = "weapon"
+equipment_slot = "main_hand"
+rarity = "master"
+base_damage_min = 18
+base_damage_max = 35
+base_crit_min = 0.20
+base_crit_max = 0.45
+base_aps_min = 0.35
+base_aps_max = 0.70

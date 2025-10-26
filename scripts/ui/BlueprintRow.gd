@@ -40,7 +40,12 @@ func set_blueprint_data(bp_id: String, blueprint, is_unlocked: bool) -> void:
 		name_label.modulate = Color(0.5, 0.5, 0.5)
 		materials_label.modulate = Color(0.5, 0.5, 0.5)
 	
-	# TODO: Cargar ícono del blueprint
-	# var icon_path = "res://art/placeholders/blueprint_%s.png" % bp_id
-	# if ResourceLoader.exists(icon_path):
-	#     icon.texture = load(icon_path)
+	# Icono del blueprint
+	if blueprint is BlueprintResource:
+		var bp_icon = blueprint.get_blueprint_icon()
+		if bp_icon:
+			icon.texture = bp_icon
+		else:
+			icon.texture = null
+	else:
+		icon.texture = null

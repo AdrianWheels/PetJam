@@ -9,6 +9,12 @@ class_name MinigameAudio
 # 🔊 SoundSet por defecto (cargar desde .tres)
 static var _sound_set: MinigameSoundSet = null
 
+# 🎵 Caché de sonidos hammer (precargados)
+static var _hammer_sounds_cache: Dictionary = {}
+
+# 🎶 Background audio player (one per minigame instance)
+static var _background_player: AudioStreamPlayer = null
+
 # Paths de sonidos esperados (DEPRECATED - usar SoundSet)
 const SOUND_PATHS := {
 	"Perfect": "res://art/sounds/minigame_perfect.wav",
@@ -67,9 +73,12 @@ static func play_feedback(quality: String, position: Vector2 = Vector2.ZERO) -> 
 	
 	if sound_set:
 		sound = sound_set.get_feedback_sound(quality)
+		if sound:
+			print("[MinigameAudio] 🎵 Using SoundSet sound: %s -> %s" % [quality, sound.resource_path if sound.resource_path else "embedded"])
 	
 	# Fallback a placeholder si no hay sound en SoundSet
 	if not sound:
+		print("[MinigameAudio] 🔍 SoundSet returned null, trying placeholder...")
 		sound = load_placeholder_sound(quality)
 	
 	if sound:
@@ -77,7 +86,7 @@ static func play_feedback(quality: String, position: Vector2 = Vector2.ZERO) -> 
 		am.play_sfx(sound, volume, am.AudioContext.FORGE)
 		print("[MinigameAudio] Played feedback: %s" % quality)
 	else:
-		print("[MinigameAudio] No sound loaded for: %s" % quality)
+		print("[MinigameAudio] ❌ No sound loaded for: %s" % quality)
 
 ## Reproduce sonido de golpe/hit genérico
 static func play_hit() -> void:
@@ -97,6 +106,40 @@ static func play_start() -> void:
 	
 	# TODO: Cargar sonido de start cuando exista
 	print("[MinigameAudio] Start sound (pending asset)")
+
+## Reproduce background audio en loop para el minijuego
+## @param background_path: Path al AudioStream de background
+## @param parent: Nodo padre donde añadir el player
+## @param volume_db: Volumen en decibelios (default -6.0)
+static func play_background(background_path: String, parent: Node, volume_db: float = -6.0) -> void:
+	stop_background()  # Detener cualquier background previo
+	
+	if not ResourceLoader.exists(background_path):
+		print("[MinigameAudio] ❌ Background not found: %s" % background_path)
+		return
+	
+	var stream: AudioStream = ResourceLoader.load(background_path)
+	if not stream:
+		print("[MinigameAudio] ❌ Failed to load background: %s" % background_path)
+		return
+	
+	_background_player = AudioStreamPlayer.new()
+	_background_player.stream = stream
+	_background_player.volume_db = volume_db
+	_background_player.bus = "Music"  # Usar bus Music para backgrounds
+	_background_player.autoplay = false
+	parent.add_child(_background_player)
+	_background_player.play()
+	
+	print("[MinigameAudio] 🎶 Playing background: %s" % background_path)
+
+## Detiene el background audio del minijuego
+static func stop_background() -> void:
+	if _background_player:
+		_background_player.stop()
+		_background_player.queue_free()
+		_background_player = null
+		print("[MinigameAudio] 🎶 Stopped background")
 
 ## Reproduce sonido de finalización de minijuego
 static func play_finish(success: bool) -> void:
@@ -135,9 +178,54 @@ static func play_tick() -> void:
 ## @param quality: "Perfect", "Bien", "Regular", "Miss"
 ## @return AudioStream o null
 static func load_placeholder_sound(quality: String) -> AudioStream:
-	# Por ahora, usar el sonido existente de hit como placeholder
-	# Cuando haya assets específicos, cargar desde SOUND_PATHS
-	var hit_sound := load("res://art/sounds/atk_sword_flesh_hit_01.wav")
+	# 🔨 HAMMER-SPECIFIC: Intentar usar caché primero
+	if _hammer_sounds_cache.has(quality):
+		var cached_sound = _hammer_sounds_cache[quality]
+		if cached_sound:
+			print("[MinigameAudio] Using cached hammer sound: %s" % quality)
+			return cached_sound
+	
+	# 🔨 HAMMER-SPECIFIC: Intentar cargar sonidos de hammer
+	var hammer_paths := {
+		"Perfect": "res://art/sounds/sfx/minigames/hammer/hammer_perfect.wav",
+		"Bien": "res://art/sounds/sfx/minigames/hammer/hammer_good.wav",
+		"Regular": "res://art/sounds/sfx/minigames/hammer/hammer_good.wav",  # Reutilizar good para regular
+		"Miss": "res://art/sounds/sfx/minigames/hammer/hammer_miss.wav",
+	}
+	
+	# Intentar cargar sonido específico de hammer si existe
+	if hammer_paths.has(quality):
+		var path = hammer_paths[quality]
+		if ResourceLoader.exists(path):
+			var hammer_sound = ResourceLoader.load(path)
+			if hammer_sound:
+				print("[MinigameAudio] Loaded hammer sound: %s from %s" % [quality, path])
+				_hammer_sounds_cache[quality] = hammer_sound  # Cachear para próxima vez
+				return hammer_sound
+			else:
+				print("[MinigameAudio] FAILED to load hammer sound: %s" % path)
+		else:
+			print("[MinigameAudio] Hammer sound path does NOT exist: %s" % path)
+	
+	# Fallback: sonidos genéricos (mp3)
+	var generic_paths := {
+		"Perfect": "res://art/sounds/perfect.mp3",
+		"Bien": "res://art/sounds/good.mp3",
+		"Regular": "res://art/sounds/regular.mp3",
+		"Miss": "res://art/sounds/miss.mp3",
+	}
+	
+	if generic_paths.has(quality):
+		var path = generic_paths[quality]
+		if ResourceLoader.exists(path):
+			var generic_sound = ResourceLoader.load(path)
+			if generic_sound:
+				print("[MinigameAudio] Using generic sound fallback: %s" % quality)
+				return generic_sound
+	
+	# Último fallback: hit genérico
+	print("[MinigameAudio] Using hit sound as last fallback")
+	var hit_sound := load("res://art/sounds/amb_corridor_tension_arcade_loop_01.wav")
 	return hit_sound
 
 ## Versión avanzada: play_feedback con pitch control

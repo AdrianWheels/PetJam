@@ -87,3 +87,26 @@ unique_name_in_owner = true
 layout_mode = 2
 button_pressed = true
 text = "Dungeon Audio"
+
+[node name="HSeparator4" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="GameplayLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Gameplay Cheats:"
+theme_override_font_sizes/font_size = 12
+
+[node name="ChkHeroInvincible" type="CheckBox" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Hero Invincible"
+
+[node name="HSeparator5" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="BtnTriggerGameOver" type="Button" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Trigger Game Over"
+
+[connection signal="pressed" from="MarginContainer/VBoxContainer/BtnTriggerGameOver" to="." method="_on_trigger_game_over_pressed"]

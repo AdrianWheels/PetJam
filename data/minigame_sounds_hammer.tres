@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="MinigameSoundSet" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/MinigameSoundSet.gd" id="1_hammer"]
+
+[resource]
+script = ExtResource("1_hammer")
+sound_perfect = null
+sound_bien = null
+sound_regular = null
+sound_miss = null
+sound_hit = null
+sound_start = null
+sound_finish_success = null
+sound_finish_fail = null
+sound_combo = null
+sound_tick = null
+sound_whoosh = null

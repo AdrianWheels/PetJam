@@ -1,16 +1,15 @@
-[gd_resource type="Resource" script_class="BlueprintResource" load_steps=9 format=3]
+[gd_resource type="Resource" script_class="BlueprintResource" load_steps=10 format=3 uid="uid://dk8f7wqoe5vbc"]
 
-[ext_resource type="Script" path="res://scripts/data/BlueprintResource.gd" id="1"]
-[ext_resource type="Script" path="res://scripts/data/TrialResource.gd" id="2"]
-[ext_resource type="PackedScene" path="res://scenes/Minigames/HammerMinigame.tscn" id="4"]
-[ext_resource type="Texture2D" path="res://art/placeholders/forge/blueprint_helmet_iron.png" id="5"]
-[ext_resource type="Script" path="res://scripts/data/HammerTrialConfig.gd" id="5_accye"]
-[ext_resource type="Texture2D" path="res://art/placeholders/forge/background_default.png" id="6"]
+[ext_resource type="Script" uid="uid://c8d1uaeb55e1" path="res://scripts/data/BlueprintResource.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://m74cr4m4blpm" path="res://art/assets/Imagenes Raw/Blueprints/helmet_basic_bp_raw.png" id="1_ew7rg"]
+[ext_resource type="Script" uid="uid://dtkp3d357pf8g" path="res://scripts/data/TrialResource.gd" id="2"]
+[ext_resource type="PackedScene" uid="uid://bius0ofgpw8m5" path="res://scenes/Minigames/HammerMinigame.tscn" id="4"]
+[ext_resource type="Resource" uid="uid://cb3oy7puti61q" path="res://data/items/helmet_basic.tres" id="5"]
+[ext_resource type="Script" uid="uid://dumvodck0w3no" path="res://scripts/data/SewTrialConfig.gd" id="5_accye"]
+[ext_resource type="Texture2D" uid="uid://4n00t3n7gs4x" path="res://art/placeholders/forge/background_default.png" id="6"]
 
 [sub_resource type="Resource" id="Resource_yg3e4"]
 script = ExtResource("5_accye")
-precision = 0.5
-weight = 0.6
 label = "Casco"
 minigame_id = &"Hammer"
 minigame_scene = ExtResource("4")
@@ -36,16 +35,16 @@ config = SubResource("Resource_yg3e4")
 background = ExtResource("6")
 
 [resource]
-resource_name = "helmet_iron"
+resource_name = "helmet_basic"
 script = ExtResource("1")
-blueprint_id = &"helmet_iron"
-display_name = "Casco de hierro"
+blueprint_id = &"helmet_basic"
+display_name = "Casco Básico"
 description = "Un casco robusto con buen acabado."
-icon_path = "res://art/placeholders/forge/blueprint_helmet_iron.png"
+icon_path = "res://data/items/helmet_basic.tres"
 icon = ExtResource("5")
-result_item = &"helmet_iron"
+blueprint_icon = ExtResource("1_ew7rg")
+result_item = &"helmet_basic"
 materials = {
 "iron": 3
 }
 trial_sequence = [SubResource("2")]
-tags = PackedStringArray("armor", "helmet")

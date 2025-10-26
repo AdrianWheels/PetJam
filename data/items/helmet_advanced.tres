@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ItemResource" load_steps=3 format=3 uid="uid://cbu7fw36bu5ty"]
+
+[ext_resource type="Script" uid="uid://clwxwng7r6vh2" path="res://scripts/data/ItemResource.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://c8vii618s72tt" path="res://art/assets/Imagenes/Items/helmet_advanced.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+item_id = &"helmet_advanced"
+display_name = "Casco Avanzado"
+description = "Un casco reforzado"
+icon = ExtResource("2")
+item_type = "armor"
+equipment_slot = "head"
+rarity = "advanced"
+base_hp_min = 35
+base_hp_max = 75
+base_armor_min = 3
+base_armor_max = 7

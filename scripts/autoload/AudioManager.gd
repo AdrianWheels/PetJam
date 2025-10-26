@@ -88,8 +88,16 @@ func play_music(stream: AudioStream, loop: bool = true, volume_db: float = 0.0, 
 			return  # Contexto desactivado, no reproducir
 		player = ctx.music_player
 	
+	# Configurar loop en el stream si es AudioStreamWAV o AudioStreamOggVorbis
+	if stream is AudioStreamWAV:
+		if loop:
+			stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		else:
+			stream.loop_mode = AudioStreamWAV.LOOP_DISABLED
+	elif stream is AudioStreamOggVorbis:
+		stream.loop = loop
+	
 	player.stream = stream
-	player.loop = loop
 	player.volume_db = volume_db
 	player.play()
 	var ctx_name = _get_context_name(context)

@@ -59,11 +59,23 @@ func _ready():
 	# Ahora UIManager maneja todo el flujo de delivery con DeliveryPanel
 	print("HUD: Delivery buttons managed by UIManager")
 	
-	# Conectar botón "Ver Blueprints"
+	# Conectar botón "Ver Blueprints" (dentro de QueuePanel - oculto)
 	var btn_view_blueprints = get_node_or_null("BlueprintQueuePanel/QueueVBox/ViewBlueprintsBtn")
 	if btn_view_blueprints:
 		btn_view_blueprints.pressed.connect(_on_view_blueprints_pressed)
-		print("HUD: View Blueprints button connected")
+		print("HUD: View Blueprints button (queue) connected")
+	
+	# Conectar botón "BlueprintViewBtn" (nuevo botón principal)
+	var btn_blueprint_view = get_node_or_null("BlueprintViewBtn")
+	if btn_blueprint_view:
+		btn_blueprint_view.pressed.connect(_on_blueprint_view_btn_pressed)
+		print("HUD: BlueprintViewBtn connected")
+	
+	# Conectar botón Toggle Vista (cambio a héroe)
+	var btn_toggle_view = get_node_or_null("ToggleViewBtn")
+	if btn_toggle_view:
+		btn_toggle_view.pressed.connect(_on_toggle_hero_view_pressed)
+		print("HUD: Toggle Hero View button connected")
 	
 	# DeliverPanel con opacidad reducida cuando no hay ítem
 	var deliver_panel = get_node_or_null("DeliverPanel")
@@ -166,7 +178,7 @@ func _on_task_completed(slot_idx: int, crafted_item: Dictionary) -> void:
 	# RequestsManager.requests_refreshed
 	# update_queue_display()  # <-- QUITADO
 	populate_materials_list()
-	append_print("¡Ítem completado! Grado: %s" % crafted_item.get("grade", "?"))
+	append_print("Item completed! Grade: %s" % crafted_item.get("grade", "?"))
 
 func update_queue_display() -> void:
 		var queue_container = get_node_or_null("BlueprintQueuePanel/QueueVBox/QueueContainer")
@@ -282,183 +294,187 @@ func append_print(msg: String) -> void:
 		ta.text += str(msg) + "\n"
 
 func populate_materials_list() -> void:
-		var ml = get_node_or_null("InventoryPanel/InventoryVBox/MaterialsList")
-		if not ml:
-				ml = get_node_or_null("MaterialsList")
-		if not ml:
-				print("HUD: MaterialsList node not found")
-				return
-		
-		# Limpiar lista actual
-		for child in ml.get_children():
-				child.queue_free()
-		
-		if not has_node('/root/InventoryManager'):
-				return
-		
-		var inv = get_node('/root/InventoryManager')
-		if not inv.has_method("get_materials"):
-				return
-		
-		var materials: Dictionary = inv.get_materials()
-		
-		# Orden prioritario: oro primero, luego materiales alfabéticamente
-		var material_order = ["gold", "iron", "leather", "wood", "fiber", "herb", "water"]
-		var material_row_scene = preload("res://scenes/UI/MaterialRow.tscn")
-		
-		for mat_id in material_order:
-				if materials.has(mat_id):
-						var row = material_row_scene.instantiate()
-						ml.add_child(row)
-						row.set_material_data(mat_id, materials[mat_id])
-		
-		# Agregar cualquier material adicional no listado
-		for mat_id in materials.keys():
-				if mat_id not in material_order:
-						var row = material_row_scene.instantiate()
-						ml.add_child(row)
-						row.set_material_data(mat_id, materials[mat_id])
+	var ml = get_node_or_null("InventoryPanel/InventoryVBox/MaterialsList")
+	if not ml:
+		ml = get_node_or_null("MaterialsList")
+	if not ml:
+		print("HUD: MaterialsList node not found")
+		return
+	
+	# Limpiar lista actual
+	for child in ml.get_children():
+		child.queue_free()
+	
+	if not has_node('/root/InventoryManager'):
+		return
+	
+	var inv = get_node('/root/InventoryManager')
+	if not inv.has_method("get_materials"):
+		return
+	
+	var materials: Dictionary = inv.get_materials()
+	
+	# Orden prioritario: materiales comunes primero, luego elementales
+	var material_order = ["iron", "wood", "leather", "cloth", "herb", "water", "fire", "ice", "poison"]
+	var material_row_scene = preload("res://scenes/UI/MaterialRow.tscn")
+	
+	for mat_id in material_order:
+		if materials.has(mat_id):
+			var row = material_row_scene.instantiate()
+			ml.add_child(row)
+			row.set_material_data(mat_id, materials[mat_id])
+	
+	# Agregar cualquier material adicional no listado
+	for mat_id in materials.keys():
+		if mat_id not in material_order:
+			var row = material_row_scene.instantiate()
+			ml.add_child(row)
+			row.set_material_data(mat_id, materials[mat_id])
+
 
 func _launch_trial(task_id: int, config: TrialConfig) -> void:
-		if config == null:
-				return
-		
-		# Limpiar minijuego anterior si existe
-		if _active_minigame and is_instance_valid(_active_minigame):
-				if _active_minigame.get_parent():
-					_active_minigame.get_parent().remove_child(_active_minigame)
-				_active_minigame.queue_free()
-				_active_minigame = null
-		
-		# Buscar el SubViewport directamente por ruta
-		var viewport: SubViewport = get_node_or_null("MinigameContainer/SubViewport")
-		
-		if not viewport:
-				push_error("HUD: SubViewport not found at path 'MinigameContainer/SubViewport'!")
-				print("HUD: Available nodes:")
-				if has_node("MinigameContainer"):
-					var container = get_node("MinigameContainer")
-					print("  MinigameContainer found, children: %d" % container.get_child_count())
-					for child in container.get_children():
-						print("    - %s (%s)" % [child.name, child.get_class()])
-				else:
-					print("  MinigameContainer NOT FOUND")
-				return
-		
-		# Limpiar hijos existentes del viewport
-		for child in viewport.get_children():
-				viewport.remove_child(child)
-				child.queue_free()
-		
-		var scene: PackedScene = config.minigame_scene if config.minigame_scene else _fallback_scene_for(config.minigame_id)
-		if scene == null:
-				push_warning("HUD: No scene for minigame %s" % String(config.minigame_id))
-				return
-		
-		var instance = scene.instantiate()
-		_active_minigame = instance
-		_active_task_id = task_id
-		_active_config = config
-		
-		# Renderizar minijuego en el SubViewport (recorte visual REAL)
-		viewport.add_child(instance)
-		print("HUD: Minigame rendered in SubViewport (800x560, clipped)")
-		
-		# 🎨 FADE IN: Aparecer minijuego con efecto de desvanecimiento
-		instance.modulate.a = 0.0
-		var fade_tween := create_tween()
-		fade_tween.set_ease(Tween.EASE_OUT)
-		fade_tween.set_trans(Tween.TRANS_CUBIC)
-		fade_tween.tween_property(instance, "modulate:a", 1.0, 0.3)		# Bloquear interacción con blueprints mientras minijuego activo
-		_set_queue_interaction_enabled(false)
-		
-		if instance.has_signal("trial_completed"):
-				instance.connect("trial_completed", Callable(self, "_on_trial_completed").bind(instance, task_id, config))
-		if instance.has_method("start_trial"):
-				instance.start_trial(config)
-		elif instance.has_method("start_game"):
-				instance.start_game()
+	if config == null:
+		return
+	
+	# Limpiar minijuego anterior si existe
+	if _active_minigame and is_instance_valid(_active_minigame):
+		if _active_minigame.get_parent():
+			_active_minigame.get_parent().remove_child(_active_minigame)
+		_active_minigame.queue_free()
+		_active_minigame = null
+	
+	# Buscar el SubViewport directamente por ruta
+	var viewport: SubViewport = get_node_or_null("MinigameContainer/SubViewport")
+	
+	if not viewport:
+		push_error("HUD: SubViewport not found at path 'MinigameContainer/SubViewport'!")
+		print("HUD: Available nodes:")
+		if has_node("MinigameContainer"):
+			var container = get_node("MinigameContainer")
+			print("  MinigameContainer found, children: %d" % container.get_child_count())
+			for child in container.get_children():
+				print("    - %s (%s)" % [child.name, child.get_class()])
+		else:
+			print("  MinigameContainer NOT FOUND")
+		return
+	
+	# Limpiar hijos existentes del viewport
+	for child in viewport.get_children():
+		viewport.remove_child(child)
+		child.queue_free()
+	
+	var scene: PackedScene = config.minigame_scene if config.minigame_scene else _fallback_scene_for(config.minigame_id)
+	if scene == null:
+		push_warning("HUD: No scene for minigame %s" % String(config.minigame_id))
+		return
+	
+	var instance = scene.instantiate()
+	_active_minigame = instance
+	_active_task_id = task_id
+	_active_config = config
+	
+	# Renderizar minijuego en el SubViewport (recorte visual REAL)
+	viewport.add_child(instance)
+	print("HUD: Minigame rendered in SubViewport (800x560, clipped)")
+	
+	# 🎨 FADE IN: Aparecer minijuego con efecto de desvanecimiento
+	instance.modulate.a = 0.0
+	var fade_tween := create_tween()
+	fade_tween.set_ease(Tween.EASE_OUT)
+	fade_tween.set_trans(Tween.TRANS_CUBIC)
+	fade_tween.tween_property(instance, "modulate:a", 1.0, 0.3)
+	
+	# Bloquear interacción con blueprints mientras minijuego activo
+	set_queue_interaction_enabled(false)
+	
+	if instance.has_signal("trial_completed"):
+		instance.connect("trial_completed", Callable(self, "_on_trial_completed").bind(instance, task_id, config))
+	if instance.has_method("start_trial"):
+		instance.start_trial(config)
+	elif instance.has_method("start_game"):
+		instance.start_game()
+
 
 func _on_trial_completed(result: TrialResult, instance: Node, task_id: int, config: TrialConfig) -> void:
-		print("HUD: Trial completed, task_id=%d" % task_id)
-		
-		# 🎨 FADE OUT: Desvanecer minijuego antes de eliminarlo
-		if instance and is_instance_valid(instance):
-			var fade_tween := create_tween()
-			fade_tween.set_ease(Tween.EASE_IN)
-			fade_tween.set_trans(Tween.TRANS_CUBIC)
-			fade_tween.tween_property(instance, "modulate:a", 0.0, 0.25)
-			fade_tween.tween_callback(func():
-				# Limpiar minijuego después del fade
-				if instance and is_instance_valid(instance):
-					if instance.get_parent():
-						instance.get_parent().remove_child(instance)
-					instance.queue_free()
-				if _active_minigame == instance:
-					_active_minigame = null
-			)
-		else:
-			# Fallback sin animación
+	print("HUD: Trial completed, task_id=%d" % task_id)
+	
+	# 🎨 FADE OUT: Desvanecer minijuego antes de eliminarlo
+	if instance and is_instance_valid(instance):
+		var fade_tween := create_tween()
+		fade_tween.set_ease(Tween.EASE_IN)
+		fade_tween.set_trans(Tween.TRANS_CUBIC)
+		fade_tween.tween_property(instance, "modulate:a", 0.0, 0.25)
+		fade_tween.tween_callback(func():
+			# Limpiar minijuego después del fade
 			if instance and is_instance_valid(instance):
 				if instance.get_parent():
 					instance.get_parent().remove_child(instance)
 				instance.queue_free()
 			if _active_minigame == instance:
 				_active_minigame = null
-			_active_task_id = -1
-		
-		# Reportar resultado a CraftingManager (esto puede disparar task_started sincrónicamente)
-		var outcome := {}
-		if has_node("/root/CraftingManager"):
-				outcome = get_node("/root/CraftingManager").report_trial_result(task_id, result)
-				print("HUD: CraftingManager outcome = %s" % outcome)
-		if has_node("/root/TelemetryManager"):
-				get_node("/root/TelemetryManager").record_trial(config.blueprint_id, config.trial_id, result)
-		
-		if typeof(outcome) == TYPE_DICTIONARY:
-				var status := String(outcome.get("status", ""))
-				print("HUD: Outcome status = '%s'" % status)
-				if status == "completed":
-					print("HUD: All trials completed! Calling UIManager.present_delivery()")
-					# Ya NO actualizar queue aquí - solo se actualiza desde RequestsManager
-					# ⚠️ NO desbloquear aquí - solo tras delivery_closed
-					# _set_queue_interaction_enabled(true)  # <-- ELIMINAR
-					if has_node("/root/UIManager"):
-						get_node("/root/UIManager").present_delivery(outcome)
-					else:
-						print("HUD: ERROR - UIManager not found!")
-				elif status == "in_progress":
-					print("HUD: More trials remain, next trial will auto-start via task_started signal")
-					# Ya NO actualizar queue aquí - solo se actualiza desde RequestsManager
-					# NO desbloquear blueprints - el siguiente trial iniciará automáticamente
-					# CraftingManager ya llamó _start_next_trial() que emitirá task_started
-				else:
-					print("HUD: Unexpected status '%s', re-enabling blueprint interaction" % status)
-					_set_queue_interaction_enabled(true)
+		)
+	else:
+		# Fallback sin animación
+		if instance and is_instance_valid(instance):
+			if instance.get_parent():
+				instance.get_parent().remove_child(instance)
+			instance.queue_free()
+		if _active_minigame == instance:
+			_active_minigame = null
+		_active_task_id = -1
+	
+	# Reportar resultado a CraftingManager (esto puede disparar task_started sincrónicamente)
+	var outcome := {}
+	if has_node("/root/CraftingManager"):
+		outcome = get_node("/root/CraftingManager").report_trial_result(task_id, result)
+		print("HUD: CraftingManager outcome = %s" % outcome)
+	if has_node("/root/TelemetryManager"):
+		get_node("/root/TelemetryManager").record_trial(config.blueprint_id, config.trial_id, result)
+	
+	if typeof(outcome) == TYPE_DICTIONARY:
+		var status := String(outcome.get("status", ""))
+		print("HUD: Outcome status = '%s'" % status)
+		if status == "completed":
+			print("HUD: All trials completed! Calling UIManager.present_delivery()")
+			# Ya NO actualizar queue aquí - solo se actualiza desde RequestsManager
+			# ⚠️ NO desbloquear aquí - solo tras delivery_closed
+			# set_queue_interaction_enabled(true)  # <-- ELIMINAR
+			if has_node("/root/UIManager"):
+				get_node("/root/UIManager").present_delivery(outcome)
+			else:
+				print("HUD: ERROR - UIManager not found!")
+		elif status == "in_progress":
+			print("HUD: More trials remain, next trial will auto-start via task_started signal")
+			# Ya NO actualizar queue aquí - solo se actualiza desde RequestsManager
+			# NO desbloquear blueprints - el siguiente trial iniciará automáticamente
+			# CraftingManager ya llamó _start_next_trial() que emitirá task_started
+		else:
+			print("HUD: Unexpected status '%s', re-enabling blueprint interaction" % status)
+			set_queue_interaction_enabled(true)
 
 func _fallback_scene_for(minigame_id: StringName) -> PackedScene:
-		var key := StringName(minigame_id)
-		if FALLBACK_MINIGAMES.has(key):
-				return FALLBACK_MINIGAMES[key]
-		return null
+	var key := StringName(minigame_id)
+	if FALLBACK_MINIGAMES.has(key):
+		return FALLBACK_MINIGAMES[key]
+	return null
 
-func _set_queue_interaction_enabled(enabled: bool) -> void:
-		"""Habilita/deshabilita la interacción con los blueprints de la cola"""
-		print("HUD: _set_queue_interaction_enabled(%s)" % enabled)
-		var queue_container = get_node_or_null("BlueprintQueuePanel/QueueVBox/QueueContainer")
-		if not queue_container:
-				queue_container = get_node_or_null("BlueprintQueuePanel/QueueContainer")
-		if not queue_container:
-				queue_container = get_node_or_null("QueueContainer")
-		if queue_container:
-				for slot in queue_container.get_children():
-						if slot.has_method("set_interaction_enabled"):
-								slot.set_interaction_enabled(enabled)
-						elif slot is Control:
-								slot.mouse_filter = Control.MOUSE_FILTER_STOP if enabled else Control.MOUSE_FILTER_IGNORE
-				print("  - Blueprint slots interaction = %s" % ("enabled" if enabled else "disabled"))
-		else:
-				print("  - WARNING: QueueContainer not found")
+func set_queue_interaction_enabled(enabled: bool) -> void:
+	"""Habilita/deshabilita la interacción con los blueprints de la cola"""
+	print("HUD: set_queue_interaction_enabled(%s)" % enabled)
+	var queue_container = get_node_or_null("BlueprintQueuePanel/QueueVBox/QueueContainer")
+	if not queue_container:
+		queue_container = get_node_or_null("BlueprintQueuePanel/QueueContainer")
+	if not queue_container:
+		queue_container = get_node_or_null("QueueContainer")
+	if queue_container:
+		for slot in queue_container.get_children():
+			if slot.has_method("set_interaction_enabled"):
+				slot.set_interaction_enabled(enabled)
+			elif slot is Control:
+				slot.mouse_filter = Control.MOUSE_FILTER_STOP if enabled else Control.MOUSE_FILTER_IGNORE
+		print("  - Blueprint slots interaction = %s" % ("enabled" if enabled else "disabled"))
+	else:
+		print("  - WARNING: QueueContainer not found")
 
 func _on_blueprint_clicked(slot_idx: int) -> void:
 		# Prevenir clicks si hay un minijuego activo
@@ -518,6 +534,42 @@ func _on_view_blueprints_pressed() -> void:
 	else:
 		print("HUD: BlueprintLibraryPanel no encontrado en la escena")
 
+## Toggle del panel de biblioteca de blueprints (nuevo botón principal)
+func _on_blueprint_view_btn_pressed() -> void:
+	print("HUD: BlueprintViewBtn pressed - toggling blueprint library")
+	var library_panel = get_node_or_null("BlueprintLibraryPanel")
+	if library_panel:
+		if library_panel.visible:
+			if library_panel.has_method("close"):
+				library_panel.close()
+			else:
+				library_panel.visible = false
+			print("HUD: Blueprint library closed")
+		else:
+			if library_panel.has_method("open"):
+				library_panel.open()
+			else:
+				library_panel.visible = true
+			print("HUD: Blueprint library opened")
+	else:
+		print("HUD: BlueprintLibraryPanel no encontrado en la escena")
+
+## Cambio a vista del héroe
+func _on_toggle_hero_view_pressed() -> void:
+	print("HUD: Toggle to Hero View pressed")
+	var main = get_tree().root.get_node_or_null("Main")
+	if main and main.has_method("show_hero_view"):
+		main.show_hero_view()
+		print("HUD: Switching to Hero view")
+	else:
+		print("HUD: Main.show_hero_view() no disponible - implementar en Main.gd")
+
+## Toggle entre vista de Forja y Héroe (método legacy)
+func _on_toggle_view_pressed() -> void:
+	print("HUD: Toggle View pressed (legacy)")
+	_on_toggle_hero_view_pressed()
+
+
 	# TODO: Implementar UI de equipamiento en dungeon
 	# Cuando el jugador vaya a la dungeon, mostrar panel para equipar ítems
 
@@ -529,7 +581,7 @@ func _on_delivery_closed() -> void:
 	_active_task_id = -1
 	_active_config = null
 	# Permitir seleccionar otro blueprint
-	_set_queue_interaction_enabled(true)
+	set_queue_interaction_enabled(true)
 	update_queue_display()
 
 func _on_inventory_changed(_current_inventory: Dictionary) -> void:

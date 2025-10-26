@@ -71,7 +71,7 @@ func update_equipment() -> void:
 	accessory_slot.text = "Accesorio: ---"
 
 func _on_room_changed(room_idx: int) -> void:
-	room_label.text = "DUNGEON - Sala: %d" % room_idx
+	room_label.text = "DUNGEON - Room: %d" % room_idx
 
 func _on_hero_damaged(_amount: float) -> void:
 	update_stats()

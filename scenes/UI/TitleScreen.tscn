@@ -1,6 +1,13 @@
-[gd_scene load_steps=2 format=3 uid="uid://bqh8x8x8x8x8"]
+[gd_scene load_steps=3 format=3 uid="uid://bqh8x8x8x8x8"]
 
 [ext_resource type="Script" uid="uid://bvolcyggeitvs" path="res://scripts/TitleScreen.gd" id="1"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_echo"]
+font_size = 72
+font_color = Color(1, 1, 1, 1)
+shadow_size = 23
+shadow_color = Color(0, 0, 0, 0.5)
+shadow_offset = Vector2(23, 23)
 
 [node name="TitleScreen" type="Control"]
 clip_contents = true
@@ -17,13 +24,13 @@ layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -201.0
+offset_left = -300.0
 offset_top = 38.0
-offset_right = 199.0
-offset_bottom = 105.0
+offset_right = 300.0
+offset_bottom = 155.0
 grow_horizontal = 2
-theme_override_font_sizes/font_size = 48
 text = "HAMMER TIME!"
+label_settings = SubResource("LabelSettings_echo")
 horizontal_alignment = 1
 vertical_alignment = 1
 

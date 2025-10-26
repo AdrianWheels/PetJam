@@ -16,7 +16,7 @@ class_name ForgeTrialConfig
 @export_range(0.0, 1.0, 0.05) var hardness: float = 0.3
 
 ## Etiqueta visible en UI.
-@export var label: String = "Forja"
+@export var label: String = "Forge"
 
 func _ready() -> void:
 	_sync_to_parameters()

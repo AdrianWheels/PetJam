@@ -1,7 +1,8 @@
 extends Node2D
 
 const HUD_FORGE_SCENE := preload("res://scenes/UI/HUD_Forge.tscn")
-const HUD_HERO_SCENE := preload("res://scenes/UI/HUD_Hero.tscn")
+# LEGACY: HUD_Hero deshabilitado, ahora usamos DungeonHUD integrado
+#const HUD_HERO_SCENE := preload("res://scenes/UI/HUD_Hero.tscn")
 const CORRIDOR_SCENE := preload("res://scenes/Corridor.tscn")
 const DUNGEON_STATUS_SCENE := preload("res://scenes/HUD/DungeonStatus.tscn")
 const ITEM_INFO_PANEL_SCENE := preload("res://scenes/ForgeUI/ItemInfoPanel.tscn")
@@ -14,28 +15,33 @@ const ITEM_INFO_PANEL_SCENE := preload("res://scenes/ForgeUI/ItemInfoPanel.tscn"
 @onready var dungeon_area: Node2D = $DungeonArea
 
 var hud_forge: CanvasLayer
-var hud_hero: CanvasLayer
+# LEGACY: var hud_hero deshabilitado
+#var hud_hero: CanvasLayer
 var corridor: Node2D
 var dungeon_status: Control
 var delivery_panel: Control  # DeliveryPanel dentro de HUD_Forge
 var item_info_panel: Control
 
 var current_area: StringName = &"forge"
-var forge_camera_pos := Vector2(640, 360)  # Centro de viewport 1280x720
-var dungeon_camera_pos := Vector2(640, 3360)  # 3000px abajo + centro
+var forge_camera_pos := Vector2(540, 960)  # Centro de viewport 1080x1920
+var dungeon_camera_pos := Vector2(540, 3576)  # 3000px abajo + centro del 60% superior (576)
 var forge_zoom := Vector2(1.0, 1.0)  # Zoom 1:1 para ver la pantalla completa
 var dungeon_zoom := Vector2(1.0, 1.0)
 
 func _ready() -> void:
 	print("Main: Scene ready")
 	
+	# Iniciar con fade overlay visible (negro completo)
+	fade_overlay.modulate.a = 1.0
+	fade_layer.visible = true
+	
 	# Instanciar HUD de Forja
 	hud_forge = HUD_FORGE_SCENE.instantiate()
 	forge_ui.add_child(hud_forge)
 	
-	# Instanciar HUD de Héroe
-	hud_hero = HUD_HERO_SCENE.instantiate()
-	dungeon_ui.add_child(hud_hero)
+	# LEGACY: HUD_Hero deshabilitado
+	# hud_hero = HUD_HERO_SCENE.instantiate()
+	# dungeon_ui.add_child(hud_hero)
 
 	corridor = CORRIDOR_SCENE.instantiate()
 	corridor.visible = false
@@ -74,11 +80,24 @@ func _ready() -> void:
 	fade_layer.visible = false
 	corridor.visible = false
 	
+	# 🎵 Reproducir ambiente de forja (loop continuo)
+	if has_node("/root/AudioManager"):
+		var am = get_node("/root/AudioManager")
+		var forge_ambient: AudioStream = load("res://art/sounds/sfx/minigames/forge/amb_forge_market_base.wav")
+		if forge_ambient:
+			# Activar contexto FORGE primero
+			am.set_context_enabled(am.AudioContext.FORGE, true)
+			# Volumen bajo (-12 dB) para que sea ambiental y no moleste
+			am.play_music(forge_ambient, true, -12.0, am.AudioContext.FORGE)
+			print("Main: 🎶 Ambiente de forja reproduciendo")
+		else:
+			print("Main: ❌ No se pudo cargar ambiente de forja")
+	
 	# Inicialmente mostrar solo Forge UI
 	forge_ui.visible = true
 	dungeon_ui.visible = false
 	hud_forge.visible = true
-	hud_hero.visible = false
+	# LEGACY: hud_hero.visible = false
 
 	if has_node("/root/UIManager"):
 		var ui_mgr = get_node("/root/UIManager")
@@ -88,7 +107,7 @@ func _ready() -> void:
 				"dungeon_ui": dungeon_ui,
 				"corridor": corridor,
 				"hud_forge": hud_forge,
-				"hud_hero": hud_hero,
+				# LEGACY: "hud_hero": hud_hero,
 				"dungeon_status": dungeon_status,
 				"delivery_panel": delivery_panel,
 				"item_info_panel": item_info_panel,
@@ -116,7 +135,14 @@ func _ready() -> void:
 		am.set_context_enabled(am.AudioContext.DUNGEON, false)
 		print("Main: Initial audio context FORGE activated")
 	
-	print("Main: Scene ready. Área actual: Forja")
+	print("Main: Scene ready. Current area: Forge")
+	
+	# Fade in desde negro después de que todo esté cargado y la cámara posicionada
+	# Esperar más tiempo para que la cámara se mueva sin que se note
+	await get_tree().create_timer(0.3).timeout
+	var tween = create_tween()
+	tween.tween_property(fade_overlay, "modulate:a", 0.0, 1.2)
+	tween.tween_callback(func(): fade_layer.visible = false)
 
 func _register_game_manager() -> void:
 	if not has_node("/root/GameManager"):
@@ -136,9 +162,9 @@ func _register_game_manager() -> void:
 	var hero := corridor.get_node_or_null("Hero")
 	if hero:
 		gm.register_hero(hero)
-		# Conectar héroe al HUD de Héroe
-		if hud_hero and hud_hero.has_method("set_hero"):
-			hud_hero.set_hero(hero)
+		# LEGACY: Conectar héroe al HUD_Hero deshabilitado
+		# if hud_hero and hud_hero.has_method("set_hero"):
+		# 	hud_hero.set_hero(hero)
 	gm.start_run()
 
 func change_area(area: StringName) -> void:
@@ -169,8 +195,9 @@ func _apply_area_locally(area: StringName) -> void:
 	# Controlar visibilidad de HUDs específicos
 	if hud_forge:
 		hud_forge.visible = not is_dungeon
-	if hud_hero:
-		hud_hero.visible = is_dungeon
+	# LEGACY: hud_hero deshabilitado
+	# if hud_hero:
+	# 	hud_hero.visible = is_dungeon
 	
 	if corridor:
 		corridor.visible = is_dungeon
@@ -194,6 +221,11 @@ func _fade_out_in(callback: Callable) -> void:
 		tween.tween_callback(func(): fade_layer.visible = false)
 
 func _input(event: InputEvent) -> void:
+		# Atajo para abrir comparador de animaciones (F5)
+		if event is InputEventKey and event.pressed and event.keycode == KEY_F5:
+				get_tree().change_scene_to_file("res://scenes/sandboxes/AnimationTestComparison.tscn")
+				return
+		
 		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 				var ui_mgr = get_node_or_null("/root/UIManager")
 				if ui_mgr and not ui_mgr.can_toggle_area():
@@ -215,9 +247,8 @@ func _on_enemy_spawned(enemy_level: int) -> void:
 		_update_hud_label("Enemy Level: %d" % enemy_level)
 
 func _on_game_over() -> void:
-		print("Main: GAME OVER - Cambiando a Forja")
-		change_area(&"forge")
-		_update_hud_label("GAME OVER")
+	print("Main: GAME OVER - Switching to GameOverScreen")
+	get_tree().change_scene_to_file("res://scenes/UI/GameOverScreen.tscn")
 
 func _on_hero_died(death_count: int) -> void:
 		print("Main: Hero died (%d)" % death_count)
@@ -249,13 +280,14 @@ func _on_area_changed(new_area: StringName) -> void:
 			am.set_context_enabled(am.AudioContext.FORGE, true)
 			print("Main: Audio context FORGE activated")
 	
-	# Si cambiamos a dungeon, actualizar stats del héroe
-	if is_dungeon and hud_hero and hud_hero.has_method("update_stats"):
-		hud_hero.update_stats()
+	# LEGACY: Si cambiamos a dungeon, actualizar stats del héroe (deshabilitado con HUD_Hero)
+	# if is_dungeon and hud_hero and hud_hero.has_method("update_stats"):
+	# 	hud_hero.update_stats()
 
 func _update_hud_label(text: String) -> void:
-	# Actualizar label del HUD activo según el área
-	var active_hud := hud_forge if current_area == &"forge" else hud_hero
+	# LEGACY: Actualizar label del HUD activo según el área (deshabilitado con HUD_Hero)
+	# var active_hud := hud_forge if current_area == &"forge" else hud_hero
+	var active_hud = hud_forge  # Solo queda HUD de Forge
 	if active_hud:
 		var label: Label = active_hud.get_node_or_null("RoomLabel")
 		if not label:
@@ -268,6 +300,16 @@ func _get_current_area() -> StringName:
 		if ui_mgr:
 				return ui_mgr.get_current_area()
 		return current_area
+
+## Cambia a la vista del héroe (dungeon)
+func show_hero_view() -> void:
+	print("Main: Switching to Hero/Dungeon view")
+	change_area(&"dungeon")
+
+## Cambia a la vista de la forja
+func show_forge_view() -> void:
+	print("Main: Switching to Forge view")
+	change_area(&"forge")
 
 func _corridor_state_name() -> String:
 		if corridor == null:

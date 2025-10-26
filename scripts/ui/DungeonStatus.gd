@@ -13,7 +13,7 @@ var max_deaths: int = 0
 func set_total_rooms(value: int) -> void:
         total_rooms = value
         if room_label:
-                room_label.text = "Sala: 0 / %d" % max(1, total_rooms)
+                room_label.text = "Room: 0 / %d" % max(1, total_rooms)
 
 func set_max_deaths(value: int) -> void:
         max_deaths = value
@@ -24,7 +24,7 @@ func update_room(room_idx: int) -> void:
         if room_label == null:
                 return
         var total := total_rooms if total_rooms > 0 else room_idx
-        room_label.text = "Sala: %d / %d" % [room_idx, max(1, total)]
+        room_label.text = "Room: %d / %d" % [room_idx, max(1, total)]
 
 func update_deaths(deaths: int) -> void:
         if death_label == null:

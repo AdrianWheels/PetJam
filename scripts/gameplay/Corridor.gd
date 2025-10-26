@@ -9,7 +9,7 @@ extends Node2D
 
 const HERO_SPEED := 120.0
 const SPAWN_DISTANCE := 520.0
-const GROUND_Y := 460.0
+const GROUND_Y := 1120.0
 const CAM_LERP := 0.12
 const HERO_START := Vector2(2100, GROUND_Y)
 const BOSS_LEVEL := 8
@@ -58,10 +58,23 @@ func _ready():
                         _game_manager.connect("hero_respawned", Callable(self, "_on_game_manager_hero_respawned"))
                 if _game_manager.has_signal("boss_defeated"):
                         _game_manager.connect("boss_defeated", Callable(self, "_on_boss_defeated"))
-                if _game_manager.has_signal("enemy_level_changed"):
+        if _game_manager.has_signal("enemy_level_changed"):
                         _game_manager.connect("enemy_level_changed", Callable(self, "_on_enemy_level_changed"))
 
         reset_combat(true)
+        
+        # DEBUG: Imprimir setup inicial
+        print("CORRIDOR READY DEBUG:")
+        print("  Corridor position: ", position)
+        print("  Corridor global_position: ", global_position)
+        if hero:
+                print("  Hero position: ", hero.position)
+                print("  Hero global_position: ", hero.global_position)
+        if camera:
+                print("  Camera position: ", camera.position)
+                print("  Camera global_position: ", camera.global_position)
+        print("  GROUND_Y constant: ", GROUND_Y)
+        print("  HERO_START constant: ", HERO_START)
 
 func _notification(what: int) -> void:
         # Detectar cuando Corridor se hace visible/invisible
@@ -97,7 +110,16 @@ func update_run(delta: float):
         if hero and hero.alive:
                 hero.position.x += HERO_SPEED * delta
         if hero and enemy and hero.alive and enemy.alive:
+                var hero_pos = hero.position
+                var enemy_pos = enemy.position
+                var distance = hero_pos.distance_to(enemy_pos)
+                
+                # Debug cada 60 frames
+                if Engine.get_frames_drawn() % 60 == 0:
+                        print("Corridor RUN: hero_pos=%v, enemy_pos=%v, distance=%.1f" % [hero_pos, enemy_pos, distance])
+                
                 if check_overlap(hero.position, hero.size, enemy.position, enemy.size):
+                        print("Corridor: OVERLAP DETECTED! Switching to FIGHT state")
                         state = State.FIGHT
                         if combat_controller and combat_controller.has_method("start_combat"):
                                 combat_controller.start_combat()
@@ -115,14 +137,30 @@ func update_complete(_delta: float):
 func cam_follow(delta: float):
         if hero == null or camera == null:
                 return
-        var target_x = hero.position.x - 960.0 * 0.33
+        # Calcular target X (33% desde la izquierda del viewport)
+        var target_x = hero.position.x - 540.0 * 0.33  # 540 es mitad de 1080
         cam_x = lerp(cam_x, target_x, 1.0 - pow(1.0 - CAM_LERP, max(1.0, delta * 60.0)))
+        
+        # Calcular Y: Bajar al héroe más, queremos que esté a ~700px desde el top
+        # Viewport centro Y = 960px
+        # Hero debe estar en: 700px desde viewport top
+        # Offset héroe desde cámara debe ser: 700 - 960 = -260px
+        # Camera Y: hero.y - (-260) = hero.y + 260
+        var target_y = hero.position.y + 260.0
+        
         camera.position.x = cam_x
+        camera.position.y = target_y
 
 func check_overlap(pos1: Vector2, size1: Vector2, pos2: Vector2, size2: Vector2) -> bool:
         var rect1 = Rect2(pos1 - size1 / 2.0, size1)
         var rect2 = Rect2(pos2 - size2 / 2.0, size2)
-        return rect1.intersects(rect2)
+        var overlaps = rect1.intersects(rect2)
+        
+        # Debug overlap check
+        if overlaps:
+                print("Corridor: Overlap check TRUE - rect1=%s, rect2=%s" % [rect1, rect2])
+        
+        return overlaps
 
 func advance_enemy():
         if state == State.COMPLETE:

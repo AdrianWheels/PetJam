@@ -38,6 +38,14 @@ var _trial_qualities: Array[String] = []
 var _forge_speed := 1.0  # Velocidad del cursor (multiplicador)
 
 func _ready():
+	# 🎶 Configurar SoundSet específico para Forge (usar sonidos genéricos por ahora)
+	var forge_soundset := MinigameSoundSet.new()
+	forge_soundset.sound_perfect = load("res://art/sounds/perfect.mp3")
+	forge_soundset.sound_bien = load("res://art/sounds/good.mp3")
+	forge_soundset.sound_regular = load("res://art/sounds/regular.mp3")
+	forge_soundset.sound_miss = load("res://art/sounds/miss.mp3")
+	MinigameAudio.set_sound_set(forge_soundset)
+	
 	# Ocultar elementos del juego hasta que inicie
 	_progress_bar.visible = false
 	_temperature_label.visible = false
@@ -46,9 +54,13 @@ func _ready():
 	# Crear pantalla de título (sistema original)
 	setup_title_screen(
 		"🔥 FORGE - Precisión",
-		"Detén el martillo en el punto justo",
+		"Stop the hammer at the right spot",
 		"Pulsa ESPACIO o CLIC para empezar"
 	)
+
+func _exit_tree():
+	"""Detener background audio al salir"""
+	MinigameAudio.stop_background()
 
 func start_trial(config: TrialConfig) -> void:
 	super.start_trial(config)

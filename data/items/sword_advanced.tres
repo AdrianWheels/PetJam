@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ItemResource" load_steps=3 format=3 uid="uid://dp7vn0fgdprt5"]
+
+[ext_resource type="Script" uid="uid://clwxwng7r6vh2" path="res://scripts/data/ItemResource.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://dt5vbjgvebg6b" path="res://art/assets/Imagenes/Items/sword_advanced.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+item_id = &"sword_advanced"
+display_name = "Espada Avanzada"
+description = "Una espada de calidad superior"
+icon = ExtResource("2")
+item_type = "weapon"
+equipment_slot = "main_hand"
+rarity = "advanced"
+base_damage_min = 8
+base_damage_max = 18
+base_crit_min = 0.08
+base_crit_max = 0.20
+base_aps_min = 0.15
+base_aps_max = 0.35

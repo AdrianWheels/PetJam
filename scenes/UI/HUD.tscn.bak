@@ -1,0 +1,128 @@
+[gd_scene load_steps=3 format=3 uid="uid://8trhy2a1ramn"]
+
+[ext_resource type="Script" uid="uid://cro5doma8kkx6" path="res://scripts/core/HUDMinigameLauncher.gd" id="1"]
+
+[ext_resource type="PackedScene" path="res://scenes/UI/BlueprintQueueSlot.tscn" id="2"]
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1")
+
+; Minigames panel (background) with buttons grouped
+[node name="MinigamesPanel" type="ColorRect" parent="."]
+color = Color(0.15, 0.15, 0.18, 0.85)
+custom_minimum_size = Vector2(380, 80)
+offset_left = 340.0
+offset_top = 540.0
+offset_right = 760.0
+offset_bottom = 620.0
+
+[node name="MinigamesHBox" type="HBoxContainer" parent="MinigamesPanel"]
+layout_mode = 0
+separation = 8.0
+anchors_preset = 4
+margin_left = 8.0
+margin_top = 8.0
+margin_right = 8.0
+margin_bottom = 8.0
+
+[node name="BtnHammer" type="Button" parent="MinigamesHBox"]
+text = "Martillo"
+
+[node name="BtnSewOSU" type="Button" parent="MinigamesHBox"]
+text = "Coser OSU"
+
+[node name="BtnQuench" type="Button" parent="MinigamesHBox"]
+text = "Agua"
+
+[node name="BtnTemp" type="Button" parent="MinigamesHBox"]
+text = "Temperatura"
+
+; Blueprint queue panel with title and prints area
+[node name="BlueprintQueuePanel" type="ColorRect" parent="."]
+color = Color(0.5, 0.7, 1, 1)
+custom_minimum_size = Vector2(260, 300)
+offset_left = 10.0
+offset_top = 60.0
+offset_right = 270.0
+offset_bottom = 380.0
+
+[node name="QueueVBox" type="VBoxContainer" parent="BlueprintQueuePanel"]
+layout_mode = 0
+anchors_preset = 7
+margin_left = 8.0
+margin_top = 8.0
+margin_right = 8.0
+margin_bottom = 8.0
+
+[node name="QueueLabel" type="Label" parent="QueueVBox"]
+text = "Cola de blueprints"
+horizontal_alignment = 1
+
+[node name="QueueContainer" type="VBoxContainer" parent="QueueVBox"]
+name = "QueueContainer"
+size_flags_vertical = 2
+anchors_preset = 7
+margin_left = 4.0
+margin_top = 4.0
+margin_right = 4.0
+margin_bottom = 4.0
+
+[node name="PrintsLabel" type="Label" parent="QueueVBox"]
+text = "Debug prints:"
+margin_top = 8.0
+
+[node name="PrintsArea" type="TextEdit" parent="QueueVBox"]
+read_only = true
+custom_minimum_size = Vector2(240, 100)
+anchors_preset = 7
+margin_left = 4.0
+margin_top = 4.0
+margin_right = 4.0
+margin_bottom = 4.0
+
+; Inventory panel on the right with material list
+[node name="InventoryPanel" type="ColorRect" parent="."]
+color = Color(0.9, 0.9, 0.9, 0.9)
+custom_minimum_size = Vector2(220, 300)
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -240.0
+offset_top = 40.0
+offset_right = -20.0
+offset_bottom = 360.0
+
+[node name="InventoryVBox" type="VBoxContainer" parent="InventoryPanel"]
+layout_mode = 0
+anchors_preset = 7
+margin_left = 8.0
+margin_top = 8.0
+margin_right = 8.0
+margin_bottom = 8.0
+
+[node name="InventoryLabel" type="Label" parent="InventoryVBox"]
+text = "Inventario"
+horizontal_alignment = 1
+
+[node name="MaterialsList" type="VBoxContainer" parent="InventoryVBox"]
+name = "MaterialsList"
+separation = 4.0
+custom_minimum_size = Vector2(200, 260)
+size_flags_vertical = 2
+anchors_preset = 7
+margin_left = 4.0
+margin_top = 4.0
+margin_right = 4.0
+margin_bottom = 4.0
+
+[node name="Label" type="Label" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -676.0
+offset_top = 299.0
+offset_right = -476.0
+offset_bottom = 349.0
+grow_horizontal = 0
+text = "HUD - Room: 1"
+horizontal_alignment = 1
+vertical_alignment = 1

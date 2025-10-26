@@ -12,6 +12,19 @@ const BLUEPRINT_ROW_SCENE := preload("res://scenes/UI/BlueprintRow.tscn")
 func _ready() -> void:
 	close_btn.pressed.connect(_on_close_pressed)
 	visible = false
+	mouse_filter = Control.MOUSE_FILTER_STOP  # Capturar clicks en el fondo
+
+func _gui_input(event: InputEvent) -> void:
+	# Cerrar al hacer click en el fondo oscuro
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		# Verificar si el click fue en el fondo y no en el panel
+		var panel_container = get_node_or_null("PanelContainer")
+		if panel_container:
+			var local_pos = panel_container.get_local_mouse_position()
+			var panel_rect = Rect2(Vector2.ZERO, panel_container.size)
+			if not panel_rect.has_point(local_pos):
+				close()
+				accept_event()
 
 func open() -> void:
 	visible = true

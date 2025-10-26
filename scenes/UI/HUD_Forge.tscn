@@ -10,14 +10,13 @@ layer = 5
 script = ExtResource("1")
 
 [node name="BlueprintQueuePanel" type="ColorRect" parent="."]
-anchors_preset = 4
-anchor_top = 0.5
-anchor_bottom = 0.5
-offset_left = 10.0
-offset_top = -180.0
-offset_right = 280.0
-offset_bottom = 430.0
-grow_vertical = 2
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -220.0
+grow_horizontal = 2
+grow_vertical = 0
 color = Color(0.2, 0.2, 0.25, 0.9)
 
 [node name="QueueVBox" type="VBoxContainer" parent="BlueprintQueuePanel"]
@@ -35,30 +34,26 @@ theme_override_constants/separation = 4
 
 [node name="QueueLabel" type="Label" parent="BlueprintQueuePanel/QueueVBox"]
 layout_mode = 2
-text = "Pedidos"
+text = "Requests"
 horizontal_alignment = 1
 
 [node name="ViewBlueprintsBtn" type="Button" parent="BlueprintQueuePanel/QueueVBox"]
+visible = false
 layout_mode = 2
 text = "📋 Ver Blueprints"
 
-[node name="QueueContainer" type="VBoxContainer" parent="BlueprintQueuePanel/QueueVBox"]
+[node name="QueueContainer" type="HBoxContainer" parent="BlueprintQueuePanel/QueueVBox"]
 layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/separation = 4
+theme_override_constants/separation = 8
+alignment = 1
 
 [node name="InventoryPanel" type="ColorRect" parent="."]
-anchors_preset = 6
-anchor_left = 1.0
-anchor_top = 0.5
+anchors_preset = 10
 anchor_right = 1.0
-anchor_bottom = 0.5
-offset_left = -1074.0
-offset_top = -626.0
-offset_right = -8.0
-offset_bottom = -536.0
-grow_horizontal = 0
-grow_vertical = 2
+offset_bottom = 240.0
+grow_horizontal = 2
 color = Color(0.25, 0.25, 0.3, 0.9)
 
 [node name="InventoryVBox" type="HBoxContainer" parent="InventoryPanel"]
@@ -66,24 +61,26 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 8.0
-offset_top = 8.0
-offset_right = -8.0
-offset_bottom = -8.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 12
 
 [node name="InventoryLabel" type="Label" parent="InventoryPanel/InventoryVBox"]
 visible = false
 layout_mode = 2
-text = "Inventario"
+text = "Inventory"
 horizontal_alignment = 1
 
 [node name="MaterialsList" type="HBoxContainer" parent="InventoryPanel/InventoryVBox"]
 layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/separation = 2
+theme_override_constants/separation = 16
+alignment = 1
 
 [node name="RoomLabel" type="Label" parent="."]
 anchors_preset = 5
@@ -98,17 +95,39 @@ text = "FORJA"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="DeliveryPanel" type="ColorRect" parent="."]
-anchors_preset = 7
-anchor_left = 0.5
+[node name="ToggleViewBtn" type="Button" parent="."]
+anchors_preset = 2
 anchor_top = 1.0
-anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = 180.0
-offset_top = -209.0
-offset_right = 479.0
-offset_bottom = -141.0
-grow_horizontal = 2
+offset_left = 20.0
+offset_top = -310.0
+offset_right = 100.0
+offset_bottom = -230.0
+grow_vertical = 0
+text = "🔄"
+
+[node name="BlueprintViewBtn" type="Button" parent="."]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 106.0
+offset_top = -310.0
+offset_right = 186.0
+offset_bottom = -230.0
+grow_vertical = 0
+text = "🔄"
+
+[node name="DeliveryPanel" type="ColorRect" parent="."]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -310.0
+offset_right = -20.0
+offset_bottom = -230.0
+grow_horizontal = 0
 grow_vertical = 0
 color = Color(0.15, 0.15, 0.18, 0.5)
 
@@ -117,43 +136,45 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 8.0
-offset_top = 8.0
-offset_right = -8.0
-offset_bottom = -8.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 4
 
 [node name="DeliverHBox" type="HBoxContainer" parent="DeliveryPanel/DeliveryVBox"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 4
 
 [node name="Client" type="Button" parent="DeliveryPanel/DeliveryVBox/DeliverHBox"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Entregar a Cliente
-(Recibir oro)"
+text = "📦
+Client"
 
 [node name="Hero" type="Button" parent="DeliveryPanel/DeliveryVBox/DeliverHBox"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Equipar en Héroe
-(Mejorar stats)"
+text = "⚔️
+Hero"
 
 [node name="PrintsLabel" type="Label" parent="."]
-offset_left = 13.0
-offset_top = 1138.0
-offset_right = 267.0
-offset_bottom = 1161.0
+visible = false
+offset_left = 18.0
+offset_top = 262.0
+offset_right = 272.0
+offset_bottom = 285.0
 text = "Debug:"
 
 [node name="PrintsArea" type="TextEdit" parent="."]
+visible = false
 custom_minimum_size = Vector2(0, 100)
-offset_left = 13.0
-offset_top = 1165.0
-offset_right = 267.0
-offset_bottom = 1268.0
+offset_left = 18.0
+offset_top = 289.0
+offset_right = 272.0
+offset_bottom = 392.0
 size_flags_vertical = 3
 editable = false
 wrap_mode = 1
@@ -181,10 +202,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -267.0
-offset_top = -192.0
-offset_right = 263.0
-offset_bottom = 188.0
+offset_left = -450.0
+offset_top = -350.0
+offset_right = 450.0
+offset_bottom = 350.0
 grow_horizontal = 2
 grow_vertical = 2
 stretch = true
@@ -195,5 +216,5 @@ script = ExtResource("2")
 unique_name_in_owner = true
 transparent_bg = true
 handle_input_locally = false
-size = Vector2i(530, 380)
+size = Vector2i(900, 700)
 render_target_update_mode = 4

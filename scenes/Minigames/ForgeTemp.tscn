@@ -1,29 +1,52 @@
-[gd_scene load_steps=2 format=3 uid="uid://d3nicie70bayo"]
+[gd_scene load_steps=4 format=3 uid="uid://d3nicie70bayo"]
 
 [ext_resource type="Script" uid="uid://cipmxdcg2apoq" path="res://scripts/ForgeMinigame.gd" id="1"]
+[ext_resource type="Script" uid="uid://c7itf3t0v8wtd" path="res://scripts/forge/AnimatedHeatBackground.gd" id="2_heat_script"]
+[ext_resource type="Texture2D" uid="uid://ccyijhi357vsg" path="res://art/assets/Imagenes/Trial Resources/Heat/Heat.png" id="3_kfvqx"]
 
 [node name="ForgeTemp" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_right = -622.0
-offset_bottom = -268.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="GameArea" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -450.0
+offset_top = -350.0
+offset_right = 450.0
+offset_bottom = 350.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="AnimatedHeatBackground" type="AnimatedSprite2D" parent="GameArea"]
+z_index = -10
+texture_repeat = 2
+position = Vector2(450, 510)
+scale = Vector2(0.8, 0.8)
+script = ExtResource("2_heat_script")
+
+[node name="Background" type="ColorRect" parent="GameArea"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_top = 110.0
+offset_bottom = 110.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.1, 0.1, 0.12, 1)
+color = Color(0.1, 0.1, 0.12, 0.5)
 
-[node name="ProgressBar" type="Panel" parent="."]
+[node name="ProgressBar" type="Panel" parent="GameArea"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 8
@@ -31,14 +54,19 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -149.9
-offset_top = -15.0
-offset_right = 150.1
-offset_bottom = 15.0
+offset_left = -142.99997
+offset_top = -131.0
+offset_right = 157.0
+offset_bottom = -101.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="background" type="ColorRect" parent="ProgressBar"]
+[node name="Heat" type="Sprite2D" parent="GameArea/ProgressBar"]
+position = Vector2(142.90009, 15)
+scale = Vector2(0.20478651, 0.20478651)
+texture = ExtResource("3_kfvqx")
+
+[node name="background" type="ColorRect" parent="GameArea/ProgressBar"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 4
@@ -49,9 +77,9 @@ offset_top = -15.0
 offset_right = 302.0
 offset_bottom = 15.0
 grow_vertical = 2
-color = Color(0.133333, 0.772549, 0.364706, 0.4)
+color = Color(0.9102842, 0.5386069, 0.3507312, 0.35686275)
 
-[node name="TargetZone" type="ColorRect" parent="ProgressBar"]
+[node name="TargetZone" type="ColorRect" parent="GameArea/ProgressBar"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 4
@@ -64,7 +92,7 @@ offset_bottom = 15.0
 grow_vertical = 2
 color = Color(0.133333, 0.772549, 0.364706, 0.4)
 
-[node name="Cursor" type="ColorRect" parent="ProgressBar"]
+[node name="Cursor" type="ColorRect" parent="GameArea/ProgressBar"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 4
@@ -76,7 +104,7 @@ offset_bottom = 20.0
 grow_vertical = 2
 color = Color(1, 0.85, 0.2, 1)
 
-[node name="TemperatureLabel" type="Label" parent="."]
+[node name="TemperatureLabel" type="Label" parent="GameArea"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 8
@@ -94,7 +122,7 @@ theme_override_font_sizes/font_size = 20
 text = "500°C"
 horizontal_alignment = 1
 
-[node name="ProgressLabel" type="Label" parent="."]
+[node name="ProgressLabel" type="Label" parent="GameArea"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 7

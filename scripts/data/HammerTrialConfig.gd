@@ -21,7 +21,7 @@ class_name HammerTrialConfig
 @export_range(0.0, 1.0, 0.05) var weight: float = 0.5
 
 ## Etiqueta visible en UI.
-@export var label: String = "Martillo"
+@export var label: String = "Hammer"
 
 func _ready() -> void:
 	_sync_to_parameters()

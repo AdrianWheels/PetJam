@@ -74,7 +74,7 @@ layout_mode = 2
 
 [node name="Label" type="Label" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "Log de conversión:"
+text = "Conversion log:"
 
 [node name="LogOutput" type="TextEdit" parent="MarginContainer/VBoxContainer"]
 unique_name_in_owner = true

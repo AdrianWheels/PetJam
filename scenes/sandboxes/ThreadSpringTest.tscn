@@ -1,0 +1,40 @@
+[gd_scene load_steps=2 format=3 uid="uid://cq7g8n4xvn7y1"]
+
+[ext_resource type="Script" path="res://scripts/ui/ThreadSpring.gd" id="1"]
+
+[node name="ThreadSpringTest" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.04, 0.05, 0.07, 1)
+
+[node name="ThreadSpring" type="Node2D" parent="."]
+script = ExtResource("1")
+show_debug = true
+
+[node name="Instructions" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 20.0
+offset_bottom = 80.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.58, 0.64, 0.72, 1)
+theme_override_font_sizes/font_size = 16
+text = "🧵 Thread Spring Test
+Mueve el ratón para ver el hilo con física spring
+Click para activar/desactivar"
+horizontal_alignment = 1
+
+[connection signal="gui_input" from="." to="ThreadSpring" method="_on_gui_input"]

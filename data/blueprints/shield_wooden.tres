@@ -1,15 +1,16 @@
-[gd_resource type="Resource" script_class="BlueprintResource" load_steps=17 format=3]
+[gd_resource type="Resource" script_class="BlueprintResource" load_steps=18 format=3 uid="uid://doa5u3vk8gfwn"]
 
-[ext_resource type="Script" path="res://scripts/data/BlueprintResource.gd" id="1"]
-[ext_resource type="Script" path="res://scripts/data/TrialResource.gd" id="2"]
-[ext_resource type="PackedScene" path="res://scenes/Minigames/ForgeTemp.tscn" id="4"]
-[ext_resource type="PackedScene" path="res://scenes/Minigames/HammerMinigame.tscn" id="5"]
-[ext_resource type="Script" path="res://scripts/data/ForgeTrialConfig.gd" id="5_oh74c"]
-[ext_resource type="PackedScene" path="res://scenes/Minigames/QuenchWater.tscn" id="6"]
-[ext_resource type="Texture2D" path="res://art/placeholders/forge/blueprint_shield_wooden.png" id="7"]
-[ext_resource type="Texture2D" path="res://art/placeholders/forge/background_default.png" id="8"]
-[ext_resource type="Script" path="res://scripts/data/HammerTrialConfig.gd" id="8_7b6j8"]
-[ext_resource type="Script" path="res://scripts/data/QuenchTrialConfig.gd" id="10_w5oip"]
+[ext_resource type="Script" uid="uid://c8d1uaeb55e1" path="res://scripts/data/BlueprintResource.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://flij6kbkx62k" path="res://art/assets/Imagenes Raw/Blueprints/shield_basic_bp_raw.png" id="1_w5oip"]
+[ext_resource type="Script" uid="uid://dtkp3d357pf8g" path="res://scripts/data/TrialResource.gd" id="2"]
+[ext_resource type="PackedScene" uid="uid://d3nicie70bayo" path="res://scenes/Minigames/ForgeTemp.tscn" id="4"]
+[ext_resource type="PackedScene" uid="uid://bius0ofgpw8m5" path="res://scenes/Minigames/HammerMinigame.tscn" id="5"]
+[ext_resource type="Script" uid="uid://c2uan22a3ifma" path="res://scripts/data/ForgeTrialConfig.gd" id="5_oh74c"]
+[ext_resource type="PackedScene" uid="uid://c0djy4jj2gkpp" path="res://scenes/Minigames/QuenchWater.tscn" id="6"]
+[ext_resource type="Resource" uid="uid://b1r6qei6mffr0" path="res://data/items/shield_basic.tres" id="7"]
+[ext_resource type="Texture2D" uid="uid://4n00t3n7gs4x" path="res://art/placeholders/forge/background_default.png" id="8"]
+[ext_resource type="Script" uid="uid://cya7b64jx7qe" path="res://scripts/data/HammerTrialConfig.gd" id="8_7b6j8"]
+[ext_resource type="Script" uid="uid://bawr7hn1weh23" path="res://scripts/data/QuenchTrialConfig.gd" id="10_w5oip"]
 
 [sub_resource type="Resource" id="Resource_1ldtf"]
 script = ExtResource("5_oh74c")
@@ -103,17 +104,17 @@ config = SubResource("Resource_mkkjf")
 background = ExtResource("8")
 
 [resource]
-resource_name = "shield_wooden"
+resource_name = "shield_basic"
 script = ExtResource("1")
-blueprint_id = &"shield_wooden"
-display_name = "Escudo de madera"
+blueprint_id = &"shield_basic"
+display_name = "Escudo Básico"
 description = "Defensa básica para aventureros novatos."
-icon_path = "res://art/placeholders/forge/blueprint_shield_wooden.png"
+icon_path = "res://data/items/shield_basic.tres"
 icon = ExtResource("7")
-result_item = &"shield_wooden"
+blueprint_icon = ExtResource("1_w5oip")
+result_item = &"shield_basic"
 materials = {
 "iron": 1,
 "wood": 4
 }
 trial_sequence = [SubResource("2"), SubResource("4"), SubResource("6")]
-tags = PackedStringArray()

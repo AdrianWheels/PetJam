@@ -20,7 +20,7 @@ class_name SewTrialConfig
 @export var spawn_indices: Array[int] = []
 
 ## Etiqueta visible en UI.
-@export var label: String = "Coser"
+@export var label: String = "Sew"
 
 func _ready() -> void:
 	_sync_to_parameters()

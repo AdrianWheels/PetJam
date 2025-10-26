@@ -31,13 +31,13 @@ func _on_gui_input(event: InputEvent) -> void:
 
 func set_blueprint(blueprint: BlueprintResource) -> void:
 	if blueprint == null:
-		set_blueprint_name("(desconocido)")
+		set_blueprint_name("(unknown)")
 		set_icon(null)
 		set_materials({})
 		return
 
 	set_blueprint_name(blueprint.display_name if blueprint.display_name != "" else String(blueprint.blueprint_id))
-	set_icon(blueprint.get_icon())
+	set_icon(blueprint.get_blueprint_icon())  # Usar icono del blueprint para cola de pedidos
 	set_materials(blueprint.materials)
 
 func set_blueprint_name(blueprint_name: String) -> void:

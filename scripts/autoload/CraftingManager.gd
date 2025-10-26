@@ -248,6 +248,13 @@ func _generate_task_id() -> int:
 	_next_task_id += 1
 	return id
 
+func has_active_trial() -> bool:
+	"""Retorna true si hay algún trial de minijuego en progreso"""
+	for task in queue:
+		if task != null and task.status == STATUS_IN_PROGRESS:
+			return true
+	return false
+
 func _resolve_blueprint(recipe_id: StringName) -> BlueprintResource:
 	if not has_node('/root/DataManager'):
 		push_warning("CraftingManager: DataManager unavailable when resolving blueprint %s" % String(recipe_id))
@@ -313,15 +320,39 @@ func _finalize_task(task: CraftingTask) -> Dictionary:
 	task.grade = grade
 	_emit_task_update(task)
 
+	# Crear CraftedItem con calidad normalizada (0.0 - 1.0)
+	var quality_normalized = clampf(ratio, 0.0, 1.0)
+	var crafted_item: CraftedItem = null
+	
+	# Obtener ItemResource del blueprint
+	if task.blueprint and task.blueprint.result_item != StringName():
+		var dm = get_node_or_null("/root/DataManager")
+		if dm and dm.has_method("get_item_resource"):
+			var item_res = dm.get_item_resource(task.blueprint.result_item)
+			if item_res:
+				crafted_item = CraftedItem.new(item_res, quality_normalized)
+				
+				# Añadir al inventario
+				var inv = get_node_or_null("/root/InventoryManager")
+				if inv and inv.has_method("add_crafted_item"):
+					inv.add_crafted_item(crafted_item)
+					print("CraftingManager: ✨ Item crafteado: %s (calidad: %d%%, tier: %s)" % [
+						crafted_item.get_display_name(),
+						crafted_item.get_quality_percent(),
+						crafted_item.get_quality_label()
+					])
+
 	var result := {
 		"status": STATUS_COMPLETED,
 		"task_id": task.id,
 		"grade": grade,
 		"score": task.score_accumulated,
 		"max_score": task.max_score_accumulated,
+		"quality": quality_normalized,
 		"blueprint_id": task.blueprint.blueprint_id if task.blueprint else StringName(),
 		"result_item": task.blueprint.result_item if task.blueprint else StringName(),
 		"materials": task.blueprint.materials if task.blueprint else {},
+		"crafted_item": crafted_item
 	}
 
 	var slot := task.slot_index

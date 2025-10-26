@@ -76,8 +76,8 @@ func _convert_all_blueprints() -> void:
 	_log("\n=== Conversión finalizada ===")
 	_log("✓ Convertidos: %d" % converted_count)
 	if failed_count > 0:
-		_log_error("✗ Fallidos: %d" % failed_count)
-	status_label.text = "Completado: %d/%d" % [converted_count, files.size()]
+		_log_error("✗ Failed: %d" % failed_count)
+	status_label.text = "Completed: %d/%d" % [converted_count, files.size()]
 
 func _convert_blueprint(path: String) -> bool:
 	var blueprint: BlueprintResource = load(path)
@@ -148,7 +148,7 @@ func _create_forge_config(old: TrialConfig) -> ForgeTrialConfig:
 	config.temp_window_base = old.get_parameter("temp_window_base", 90.0)
 	config.hardness = old.get_parameter("hardness", 0.3)
 	config.precision = old.get_parameter("precision", 0.5)
-	config.label = old.get_parameter("label", "Forja")
+	config.label = old.get_parameter("label", "Forge")
 	return config
 
 func _create_hammer_config(old: TrialConfig) -> HammerTrialConfig:
@@ -157,7 +157,7 @@ func _create_hammer_config(old: TrialConfig) -> HammerTrialConfig:
 	config.tempo_bpm = old.get_parameter("tempo_bpm", 85)
 	config.precision = old.get_parameter("precision", 0.4)
 	config.weight = old.get_parameter("weight", 0.5)
-	config.label = old.get_parameter("label", "Martillo")
+	config.label = old.get_parameter("label", "Hammer")
 	return config
 
 func _create_sew_config(old: TrialConfig) -> SewTrialConfig:
@@ -166,7 +166,7 @@ func _create_sew_config(old: TrialConfig) -> SewTrialConfig:
 	config.speed = old.get_parameter("speed", 0.5)
 	config.precision = old.get_parameter("precision", 0.5)
 	config.evasion_threshold = old.get_parameter("evasion_threshold", 0.7)
-	config.label = old.get_parameter("label", "Coser")
+	config.label = old.get_parameter("label", "Sew")
 	return config
 
 func _create_quench_config(old: TrialConfig) -> QuenchTrialConfig:
@@ -380,4 +380,4 @@ func _update_all_configs() -> void:
 	_log("  🔴 Tier 4: speed 1.3-1.4, precision 0.6-0.7")
 	_log(_repeat_char("━", 60))
 	
-	status_label.text = "Completado: %d actualizados, %d sin cambios" % [updated, skipped]
+	status_label.text = "Completed: %d updated, %d unchanged" % [updated, skipped]

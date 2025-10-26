@@ -9,16 +9,17 @@ const MinigameAudio = preload("res://scripts/ui/MinigameAudio.gd")
 
 # Referencias a nodos
 @onready var _background: ColorRect = %Background
-@onready var _track_line: ColorRect = %TrackLine
-@onready var _impact_zone: ColorRect = %ImpactZone
+@onready var _gameplay_container: Control = %GameplayContainer
+@onready var _track_line: Panel = %TrackLine
+@onready var _impact_zone: Panel = %ImpactZone
+@onready var _impact_marker: ColorRect = %ImpactMarker
 @onready var _note_container: Control = %NoteContainer
+@onready var _hammer_note: Panel = %HammerNote
+@onready var _hammer_sprite: TextureRect = %HammerSprite
 @onready var _score_label: Label = %ScoreLabel
 @onready var _progress_label: Label = %ProgressLabel
 
-# Constantes
-const TRACK_START_X := -280.0
-const TRACK_END_X := 260.0
-const IMPACT_X := 260.0
+# Constantes (ahora NO usamos valores hardcodeados, solo progress 0.0 a 1.0)
 const APPROACH_TIME := 1.2  # segundos que tarda nota en llegar
 const DEFAULT_BPM := 90
 const TOTAL_HITS := 5
@@ -34,7 +35,6 @@ var _max_combo := 0
 var _quality_counts := {"Perfect": 0, "Bien": 0, "Regular": 0, "Miss": 0}
 var _windows := {"perfect": 40.0, "bien": 90.0, "regular": 140.0}  # ms
 var _next_hit_time := 0.0
-var _current_note: ColorRect = null
 var _note_spawn_time := 0.0
 var _can_hit := false
 
@@ -42,10 +42,16 @@ var _can_hit := false
 var _max_score := 650.0
 
 func _ready():
+	# 🎶 Configurar SoundSet específico para Hammer
+	var hammer_soundset := MinigameSoundSet.new()
+	hammer_soundset.sound_perfect = load("res://art/sounds/sfx/minigames/hammer/hammer_perfect.wav")
+	hammer_soundset.sound_bien = load("res://art/sounds/sfx/minigames/hammer/hammer_good.wav")
+	hammer_soundset.sound_regular = load("res://art/sounds/sfx/minigames/hammer/hammer_good.wav")
+	hammer_soundset.sound_miss = load("res://art/sounds/sfx/minigames/hammer/hammer_miss.wav")
+	MinigameAudio.set_sound_set(hammer_soundset)
+	
 	# Ocultar elementos del juego
-	_track_line.visible = false
-	_impact_zone.visible = false
-	_note_container.visible = false
+	_gameplay_container.visible = false
 	_score_label.visible = false
 	_progress_label.visible = false
 	
@@ -56,12 +62,16 @@ func _ready():
 		"Pulsa ESPACIO o CLIC cuando la nota llegue"
 	)
 
+func _exit_tree():
+	"""Detener background audio al salir"""
+	MinigameAudio.stop_background()
+
 func start_trial(config: TrialConfig) -> void:
 	super.start_trial(config)
 	
-	# Leer hammer_speed (alias de tempo_bpm)
-	var hammer_speed: float = clamp(float(config.get_parameter(&"hammer_speed", 1.0)), 0.3, 2.5)
-	_bpm = DEFAULT_BPM * hammer_speed  # Aplicar multiplicador de velocidad
+	# Leer hammer_speed directamente (es BPM, no multiplicador)
+	var hammer_speed: int = int(config.get_parameter(&"hammer_speed", DEFAULT_BPM))
+	_bpm = clamp(hammer_speed, 50, 150)  # Limitar BPM entre 50 y 150
 	
 	_precision = clamp(float(config.get_parameter(&"precision", 0.5)), 0.0, 1.0)
 	_max_score = config.max_score if config.max_score > 0 else 650.0
@@ -74,9 +84,7 @@ func start_game():
 	super.start_game()
 	
 	# Mostrar elementos del juego
-	_track_line.visible = true
-	_impact_zone.visible = true
-	_note_container.visible = true
+	_gameplay_container.visible = true
 	_score_label.visible = true
 	_progress_label.visible = true
 	
@@ -103,56 +111,66 @@ func _spawn_next_note() -> void:
 	if _hit_index >= TOTAL_HITS:
 		return
 	
-	# Crear nota visual
-	_current_note = ColorRect.new()
-	_current_note.size = Vector2(30, 30)
-	_current_note.position = Vector2(TRACK_START_X, -15)
-	_current_note.color = Color.CYAN
-	_note_container.add_child(_current_note)
+	# Mostrar la nota en el inicio (anchor_left = 0.0 = izquierda del contenedor)
+	_hammer_note.visible = true
+	_hammer_note.anchor_left = 0.0
+	_hammer_note.anchor_right = 0.0
+	_hammer_note.offset_left = 0.0
+	_hammer_note.offset_right = 50.0
+	
+	# Obtener el fondo de la nota para cambiar color
+	var note_bg := _hammer_note.get_node_or_null("NoteBG") as ColorRect
+	if note_bg:
+		note_bg.color = Color(0.2, 0.8, 1.0, 0.9)  # Color inicial cyan
 	
 	_note_spawn_time = Time.get_ticks_msec() / 1000.0
 	_can_hit = false
 	
 	# Calcular cuándo debería golpearse (en segundos desde ahora)
-	var beat_interval := 60.0 / _bpm
+	var _beat_interval := 60.0 / _bpm
 	_next_hit_time = _note_spawn_time + APPROACH_TIME
 
-func _process(delta):
-	if not _running or _current_note == null:
+func _process(_delta):
+	if not _running or not _hammer_note.visible:
 		return
 	
 	var current_time := Time.get_ticks_msec() / 1000.0
 	var elapsed := current_time - _note_spawn_time
 	var progress := elapsed / APPROACH_TIME
 	
-	# Mover nota hacia impact zone
-	if _current_note:
-		var x_pos: float = lerp(TRACK_START_X, IMPACT_X, progress)
-		_current_note.position.x = x_pos
-		
-		# Cambiar color según proximidad
-		var time_to_hit: float = _next_hit_time - current_time
-		var time_to_hit_ms: float = time_to_hit * 1000.0
-		
+	# Mover nota usando anchor_left (0.0 = izquierda, 1.0 = derecha)
+	# Vamos de 0.0 a 0.92 (cerca del final pero sin llegar al borde)
+	var target_anchor := 0.92
+	_hammer_note.anchor_left = lerp(0.0, target_anchor, progress)
+	_hammer_note.anchor_right = _hammer_note.anchor_left
+	_hammer_note.offset_left = 0.0
+	_hammer_note.offset_right = 50.0
+	
+	# Cambiar color según proximidad (acceder al fondo de la nota)
+	var time_to_hit: float = _next_hit_time - current_time
+	var time_to_hit_ms: float = time_to_hit * 1000.0
+	
+	var note_bg := _hammer_note.get_node_or_null("NoteBG") as ColorRect
+	if note_bg:
 		if abs(time_to_hit_ms) <= _windows.perfect:
-			_current_note.color = MinigameFX.COLORS["Perfect"]
+			note_bg.color = MinigameFX.COLORS["Perfect"]
 			_can_hit = true
 		elif abs(time_to_hit_ms) <= _windows.bien:
-			_current_note.color = MinigameFX.COLORS["Success"]
+			note_bg.color = MinigameFX.COLORS["Success"]
 			_can_hit = true
 		elif abs(time_to_hit_ms) <= _windows.regular:
-			_current_note.color = MinigameFX.COLORS["Warning"]
+			note_bg.color = MinigameFX.COLORS["Warning"]
 			_can_hit = true
 		else:
-			_current_note.color = Color.CYAN
+			note_bg.color = Color(0.2, 0.8, 1.0, 0.9)
 			_can_hit = true  # Siempre permitir golpear
-		
-		# Auto-miss si pasa la zona
-		if progress > 1.15:
-			_judge_hit(9999.0)  # Miss automático
+	
+	# Auto-miss si pasa la zona
+	if progress > 1.15:
+		_judge_hit(9999.0)  # Miss automático
 
 func _input(event):
-	if not _running or _current_note == null:
+	if not _running or not _hammer_note.visible:
 		return
 	
 	if (event is InputEventMouseButton and event.pressed) or \
@@ -163,7 +181,7 @@ func _input(event):
 		accept_event()
 
 func _judge_hit(time_diff_ms: float) -> void:
-	if _current_note == null:
+	if not _hammer_note.visible:
 		return
 	
 	# 🎯 Determinar calidad
@@ -197,10 +215,11 @@ func _judge_hit(time_diff_ms: float) -> void:
 	MinigameFX.create_floating_label(feedback_pos, quality, quality, self)
 	MinigameAudio.play_feedback(quality)
 	
-	# Limpiar nota actual
-	if _current_note:
-		_current_note.queue_free()
-		_current_note = null
+	# 🔨 Efecto de martillazo en la posición del HammerNote
+	_play_hammer_strike(quality)
+	
+	# Ocultar nota después del golpe
+	_hammer_note.visible = false
 	
 	# Avanzar
 	_hit_index += 1
@@ -208,7 +227,7 @@ func _judge_hit(time_diff_ms: float) -> void:
 	
 	if _hit_index >= TOTAL_HITS:
 		await get_tree().create_timer(0.6).timeout
-		_finish_minigame()
+		_end_game()
 	else:
 		# Esperar hasta siguiente beat
 		var beat_interval := 60.0 / _bpm
@@ -219,13 +238,11 @@ func _update_ui() -> void:
 	_score_label.text = "Puntos: %d" % _score
 	_progress_label.text = "Progreso: %d/%d" % [_hit_index, TOTAL_HITS]
 
-func _finish_minigame() -> void:
+func _end_game() -> void:
 	_running = false
 	
-	# Ocultar elementos del juego
-	_track_line.visible = false
-	_impact_zone.visible = false
-	_note_container.visible = false
+	# Ocultar elementos de juego
+	_gameplay_container.visible = false
 	_score_label.visible = false
 	_progress_label.visible = false
 	
@@ -253,3 +270,72 @@ func _finish_minigame() -> void:
 	# ✅ Auto-cerrar después de un breve delay (sin pantalla de puntuación legacy)
 	await get_tree().create_timer(0.5).timeout
 	_fade_out_and_close()
+
+## 🔨 Efecto visual del martillazo
+func _play_hammer_strike(quality: String) -> void:
+	if not _hammer_sprite or not _hammer_note:
+		return
+	
+	# Posicionar martillo usando el mismo anchor que HammerNote
+	_hammer_sprite.anchor_left = _hammer_note.anchor_left
+	_hammer_sprite.anchor_right = _hammer_note.anchor_right
+	_hammer_sprite.offset_left = _hammer_note.offset_left
+	_hammer_sprite.offset_right = _hammer_sprite.offset_left + 200.0
+	
+	_hammer_sprite.visible = true
+	_hammer_sprite.modulate = Color.WHITE
+	_hammer_sprite.rotation = 0.0
+	_hammer_sprite.scale = Vector2.ONE
+	
+	# Tween para el martillazo (ahora +50% más grande: de 1.3 a 1.95)
+	var tween := create_tween()
+	tween.set_parallel(true)
+	
+	# Animación de rotación (golpe hacia abajo)
+	tween.tween_property(_hammer_sprite, "rotation", -0.4, 0.08).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(_hammer_sprite, "rotation", 0.15, 0.15).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_ELASTIC).set_delay(0.08)
+	
+	# Escala (impacto +50% más grande: de 1.3 a 1.95)
+	tween.tween_property(_hammer_sprite, "scale", Vector2(1.95, 1.95), 0.06).set_ease(Tween.EASE_OUT)
+	tween.tween_property(_hammer_sprite, "scale", Vector2.ONE, 0.14).set_ease(Tween.EASE_IN_OUT).set_delay(0.06)
+	
+	# Fade out
+	tween.tween_property(_hammer_sprite, "modulate:a", 0.0, 0.4).set_ease(Tween.EASE_IN).set_delay(0.6)
+	
+	# Screen shake según calidad
+	var shake_strength := 0.0
+	match quality:
+		"Perfect":
+			shake_strength = 20.0
+		"Bien":
+			shake_strength = 12.0
+		"Regular":
+			shake_strength = 6.0
+		_:
+			shake_strength = 3.0
+	
+	_screen_shake(shake_strength, 0.2)
+	
+	# Ocultar después de la animación
+	await tween.finished
+	_hammer_sprite.visible = false
+
+## 📳 Screen shake breve
+func _screen_shake(strength: float, duration: float) -> void:
+	if not _gameplay_container:
+		return
+	
+	var original_pos := _gameplay_container.position
+	var shake_tween := create_tween()
+	
+	# Sacudir varias veces
+	var steps := int(duration / 0.03)
+	for i in range(steps):
+		var offset := Vector2(
+			randf_range(-strength, strength),
+			randf_range(-strength, strength)
+		)
+		shake_tween.tween_property(_gameplay_container, "position", original_pos + offset, 0.03)
+	
+	# Volver a la posición original
+	shake_tween.tween_property(_gameplay_container, "position", original_pos, 0.05).set_ease(Tween.EASE_OUT)

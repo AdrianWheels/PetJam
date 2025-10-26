@@ -8,7 +8,7 @@ var unlocked_blueprints: Dictionary = {}  # blueprint_id -> bool
 const BLUEPRINT_LIBRARY_PATH := "res://data/blueprints/BlueprintLibrary.tres"
 
 # Blueprints desbloqueados por defecto al inicio
-const DEFAULT_UNLOCKED := ["sword_basic", "armor_leather", "shield_wooden"]
+const DEFAULT_UNLOCKED := ["sword_basic", "shield_basic", "boots_basic"]
 
 func _ready() -> void:
 	print("DataManager: Initializing...")
@@ -97,3 +97,27 @@ func get_locked_blueprints() -> Array:
 		if not unlocked_blueprints[bp_id]:
 			result.append(bp_id)
 	return result
+
+## Obtiene un ItemResource por ID desde el blueprint
+func get_item_resource(item_id: StringName) -> ItemResource:
+	# Buscar en todos los blueprints el que tenga este result_item
+	for bp_id in blueprints:
+		var bp: BlueprintResource = blueprints[bp_id]
+		if bp and bp.result_item == item_id:
+			# Intentar cargar desde icon_path
+			if bp.icon_path != "":
+				var loaded = ResourceLoader.load(bp.icon_path)
+				if loaded and loaded is ItemResource:
+					return loaded as ItemResource
+			# Fallback: crear ItemResource básico desde blueprint
+			var fallback = ItemResource.new()
+			fallback.item_id = item_id
+			fallback.display_name = bp.display_name
+			fallback.description = bp.description
+			fallback.icon = bp.icon if bp.icon else null
+			return fallback
+	
+	push_warning("DataManager: ItemResource '%s' not found" % item_id)
+	return null
+
+

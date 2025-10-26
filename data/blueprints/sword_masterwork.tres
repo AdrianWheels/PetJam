@@ -1,0 +1,82 @@
+[gd_resource type="Resource" script_class="BlueprintResource" load_steps=14 format=3 uid="uid://c8onaekykc4ag"]
+
+[ext_resource type="Script" uid="uid://c8d1uaeb55e1" path="res://scripts/data/BlueprintResource.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://p2l0by415wiw" path="res://art/assets/Imagenes Raw/Blueprints/sword_master_bp_raw.png" id="1_238jr"]
+[ext_resource type="Script" uid="uid://dtkp3d357pf8g" path="res://scripts/data/TrialResource.gd" id="2"]
+[ext_resource type="Script" uid="uid://c2uan22a3ifma" path="res://scripts/data/ForgeTrialConfig.gd" id="3"]
+[ext_resource type="Script" uid="uid://cya7b64jx7qe" path="res://scripts/data/HammerTrialConfig.gd" id="3_hammer"]
+[ext_resource type="PackedScene" uid="uid://d3nicie70bayo" path="res://scenes/Minigames/ForgeTemp.tscn" id="4"]
+[ext_resource type="PackedScene" uid="uid://bius0ofgpw8m5" path="res://scenes/Minigames/HammerMinigame.tscn" id="5"]
+[ext_resource type="Resource" uid="uid://ch16ra6cgrvyo" path="res://data/items/sword_masterwork.tres" id="6"]
+[ext_resource type="Texture2D" uid="uid://4n00t3n7gs4x" path="res://art/placeholders/forge/background_default.png" id="7"]
+
+[sub_resource type="Resource" id="1"]
+resource_name = "temp_config"
+script = ExtResource("3")
+forge_speed = 1.3
+precision = 0.7
+label = "Espada maestra"
+minigame_scene = ExtResource("4")
+max_score = 900.0
+parameters = {
+"forge_speed": 1.3,
+"hardness": 0.5,
+"label": "Espada maestra",
+"precision": 0.7,
+"trials": 5
+}
+
+[sub_resource type="Resource" id="2"]
+resource_name = "temp_trial"
+script = ExtResource("2")
+trial_id = &"sword_masterwork_temp"
+display_name = "Calentar metal"
+minigame_id = &"Forge"
+minigame_scene = ExtResource("4")
+min_score = 0.6
+config = SubResource("1")
+background = ExtResource("7")
+
+[sub_resource type="Resource" id="3"]
+resource_name = "hammer_config"
+script = ExtResource("3_hammer")
+hammer_speed = 110
+tempo_bpm = 110
+label = "Espada maestra"
+minigame_scene = ExtResource("5")
+max_score = 650.0
+parameters = {
+"hammer_speed": 110,
+"label": "Espada maestra",
+"notes": 8,
+"precision": 0.7,
+"tempo_bpm": 110,
+"weight": 0.7
+}
+
+[sub_resource type="Resource" id="4"]
+resource_name = "hammer_trial"
+script = ExtResource("2")
+trial_id = &"sword_masterwork_hammer"
+display_name = "Martillar filo"
+minigame_id = &"hammer"
+minigame_scene = ExtResource("5")
+min_score = 0.7
+config = SubResource("3")
+background = ExtResource("7")
+
+[resource]
+resource_name = "sword_masterwork"
+script = ExtResource("1")
+blueprint_id = &"sword_masterwork"
+display_name = "Espada Maestra"
+description = "Una obra maestra de la forja."
+icon_path = "res://data/items/sword_masterwork.tres"
+icon = ExtResource("6")
+blueprint_icon = ExtResource("1_238jr")
+result_item = &"sword_masterwork"
+materials = {
+"fire": 2,
+"iron": 8
+}
+trial_sequence = [SubResource("2"), SubResource("4")]

@@ -11,21 +11,30 @@ const MATERIAL_NAMES := {
 	"iron": "Hierro",
 	"wood": "Madera",
 	"leather": "Cuero",
-	"fiber": "Fibra",
+	"cloth": "Tela",
 	"herb": "Hierba",
-	"water": "Agua",
-	"gold": "Oro"
+	"water": "Water",
+	"fire": "Fuego",
+	"ice": "Hielo",
+	"poison": "Veneno"
 }
 
 func set_material_data(material_id: String, quantity: int) -> void:
-	# Cargar icono del material
-	var icon_path = "res://art/placeholders/forge/material_%s.png" % material_id
-	if ResourceLoader.exists(icon_path):
-		icon.texture = load(icon_path)
+	# Intentar cargar desde MaterialResource primero
+	var material_resource_path = "res://data/materials/%s.tres" % material_id
+	if ResourceLoader.exists(material_resource_path):
+		var material_res = load(material_resource_path)
+		if material_res and material_res.has_method("get_icon"):
+			icon.texture = material_res.get_icon()
 	else:
-		# Fallback a icono genérico
-		if ResourceLoader.exists("res://icon.svg"):
-			icon.texture = load("res://icon.svg")
+		# Fallback a icono placeholder
+		var icon_path = "res://art/placeholders/forge/material_%s.png" % material_id
+		if ResourceLoader.exists(icon_path):
+			icon.texture = load(icon_path)
+		else:
+			# Fallback final a icono genérico
+			if ResourceLoader.exists("res://icon.svg"):
+				icon.texture = load("res://icon.svg")
 	
 	# Nombre legible
 	var display_name = MATERIAL_NAMES.get(material_id, material_id.capitalize())

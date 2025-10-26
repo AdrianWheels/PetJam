@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ItemResource" load_steps=3 format=3 uid="uid://pxde0uljjxmc"]
+
+[ext_resource type="Script" uid="uid://clwxwng7r6vh2" path="res://scripts/data/ItemResource.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://c8lvtum5jh3vg" path="res://art/assets/Imagenes/Items/shield_advanced.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+item_id = &"shield_advanced"
+display_name = "Escudo Avanzado"
+description = "Un escudo reforzado"
+icon = ExtResource("2")
+item_type = "armor"
+equipment_slot = "off_hand"
+rarity = "advanced"
+base_hp_min = 45
+base_hp_max = 95
+base_armor_min = 4
+base_armor_max = 9

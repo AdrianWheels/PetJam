@@ -48,20 +48,20 @@ stretch_mode = 5
 [node name="ItemName" type="Label" parent="Panel/Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Espada básica"
+text = "Basic Sword"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="GradeLabel" type="Label" parent="Panel/Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Calidad: Silver"
+text = "Quality: Silver"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="ScoreLabel" type="Label" parent="Panel/Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Puntaje: 85%"
+text = "Score: 85%"
 horizontal_alignment = 1
 vertical_alignment = 1

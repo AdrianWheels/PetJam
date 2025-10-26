@@ -9,7 +9,8 @@ var forge_ui: CanvasLayer
 var dungeon_ui: CanvasLayer
 var corridor: Node
 var hud_forge: Node
-var hud_hero: Node
+# LEGACY: var hud_hero deshabilitado
+#var hud_hero: Node
 var delivery_panel: Control
 var item_info_panel: Control  # Panel de info centrado (solo visual)
 var dungeon_status: Node
@@ -27,7 +28,6 @@ var _current_item_data: Dictionary = {}  # Guarda datos del ítem completado
 
 var _game_manager: Node
 var _data_manager: Node
-
 func _ready() -> void:
 		_game_manager = get_node_or_null("/root/GameManager")
 		_data_manager = get_node_or_null("/root/DataManager")
@@ -52,7 +52,7 @@ func register_nodes(config: Dictionary) -> void:
 	dungeon_ui = config.get("dungeon_ui", dungeon_ui)
 	corridor = config.get("corridor", corridor)
 	hud_forge = config.get("hud_forge", hud_forge)
-	hud_hero = config.get("hud_hero", hud_hero)
+	# LEGACY: hud_hero = config.get("hud_hero", hud_hero)
 	delivery_panel = config.get("delivery_panel", delivery_panel)
 	item_info_panel = config.get("item_info_panel", item_info_panel)
 	dungeon_status = config.get("dungeon_status", dungeon_status)
@@ -101,8 +101,9 @@ func show_forge() -> void:
 				dungeon_ui.visible = false
 		if hud_forge:
 				hud_forge.visible = true
-		if hud_hero:
-				hud_hero.visible = false
+		# LEGACY: hud_hero deshabilitado
+		# if hud_hero:
+		# 		hud_hero.visible = false
 		if corridor:
 				# Corridor sigue procesando en background (auto-farm)
 				corridor.process_mode = Node.PROCESS_MODE_INHERIT
@@ -121,8 +122,9 @@ func show_dungeon() -> void:
 				dungeon_ui.visible = true
 		if hud_forge:
 				hud_forge.visible = false
-		if hud_hero:
-				hud_hero.visible = true
+		# LEGACY: hud_hero deshabilitado
+		# if hud_hero:
+		# 		hud_hero.visible = true
 		if corridor:
 				corridor.visible = true
 				corridor.process_mode = Node.PROCESS_MODE_INHERIT
@@ -136,9 +138,18 @@ func get_current_area() -> StringName:
 		return _current_area
 
 func can_toggle_area() -> bool:
-		if delivery_panel and delivery_panel.visible:
-				return false
-		return true
+	# Bloquear cambio de área durante delivery
+	if delivery_panel and delivery_panel.visible:
+		return false
+	
+	# Bloquear cambio de área durante minijuegos (crafteo activo)
+	var crafting_mgr = get_node_or_null("/root/CraftingManager")
+	if crafting_mgr and crafting_mgr.has_method("has_active_trial"):
+		if crafting_mgr.has_active_trial():
+			print("UIManager: No se puede cambiar a dungeon - minijuego en progreso")
+			return false
+	
+	return true
 
 func deliver_item_to_hero(item_id: StringName, slot: StringName = StringName()) -> void:
 		if item_id == StringName():
@@ -184,8 +195,23 @@ func present_delivery(result: Dictionary) -> void:
 		delivery_panel.visible = true
 		print("UIManager: DeliveryPanel visible = true")
 	
+	# 🔒 NUEVO: Bloquear interacción con blueprints mientras delivery está abierto
+	if hud_forge and hud_forge.has_method("set_queue_interaction_enabled"):
+		hud_forge.set_queue_interaction_enabled(false)
+		print("UIManager: Blueprints BLOCKED until delivery is completed")
+	
+	# Ocultar paneles de forja (MinigamesPanel, QueuePanel, Inventory)
+	if hud_forge:
+		var panels = ["MinigamesPanel", "BlueprintQueuePanel", "InventoryPanel"]
+		for panel_name in panels:
+			var panel = hud_forge.get_node_or_null(panel_name)
+			if panel:
+				panel.visible = false
+				print("UIManager: %s hidden" % panel_name)
+	
 	show_forge()
 	emit_signal("delivery_opened", item_id)
+
 func is_delivery_open() -> bool:
 		return delivery_panel != null and delivery_panel.visible
 
@@ -267,6 +293,11 @@ func _on_delivered_to_client(item_data: Dictionary) -> void:
 	emit_signal("delivery_closed")
 	print("UIManager: Delivery completed (client), returning to IDLE state")
 	
+	# 🔓 NUEVO: Desbloquear blueprints al cerrar delivery
+	if hud_forge and hud_forge.has_method("set_queue_interaction_enabled"):
+		hud_forge.set_queue_interaction_enabled(true)
+		print("UIManager: Blueprints UNLOCKED after delivery")
+	
 	# Volver a mostrar paneles del HUD forge (IDLE state)
 	print("UIManager: hud_forge = %s" % hud_forge)
 	if hud_forge:
@@ -301,6 +332,11 @@ func _on_delivered_to_hero(item_data: Dictionary) -> void:
 	
 	emit_signal("delivery_closed")
 	print("UIManager: Delivery completed (hero), returning to IDLE state")
+	
+	# 🔓 NUEVO: Desbloquear blueprints al cerrar delivery
+	if hud_forge and hud_forge.has_method("set_queue_interaction_enabled"):
+		hud_forge.set_queue_interaction_enabled(true)
+		print("UIManager: Blueprints UNLOCKED after delivery")
 	
 	# Volver a mostrar paneles del HUD forge (IDLE state)
 	print("UIManager: hud_forge = %s" % hud_forge)
