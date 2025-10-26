@@ -250,9 +250,6 @@ func _finish_minigame() -> void:
 	}
 	complete_trial(result)
 	
-	# Pantalla final
-	var outcome := "🎉 ÉXITO" if success else "❌ FALLO"
-	var stats := "Perfect: %d | Bien: %d | Regular: %d | Miss: %d\nMáx Combo: %d" % \
-		[perfect_count, bien_count, _quality_counts["Regular"], _quality_counts["Miss"], _max_combo]
-	
-	setup_end_screen(outcome, stats + "\n\nPulsa para cerrar")
+	# ✅ Auto-cerrar después de un breve delay (sin pantalla de puntuación legacy)
+	await get_tree().create_timer(0.5).timeout
+	_fade_out_and_close()

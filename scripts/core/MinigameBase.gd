@@ -3,7 +3,6 @@ extends Control
 signal trial_completed(result: TrialResult)
 
 var title_screen = null
-var end_screen = null
 var trial_config: TrialConfig
 var _final_result: TrialResult
 var _result_emitted := false
@@ -71,40 +70,6 @@ func _on_title_continue():
 func start_game():
 	# Override in subclasses
 	pass
-
-func setup_end_screen(title: String, result_text: String):
-	end_screen = preload("res://scenes/UI/TitleScreen.tscn").instantiate()
-	end_screen.title = title
-	end_screen.get_node("ContinueLabel").text = result_text
-	end_screen.connect("continue_pressed", Callable(self, "_on_end_continue"))
-	add_child(end_screen)
-	end_screen.visible = true
-	
-	# 🎨 Animación de entrada dramática
-	end_screen.modulate.a = 0.0
-	end_screen.scale = Vector2(0.7, 0.7)
-	var end_tween := create_tween()
-	end_tween.set_parallel(true)
-	end_tween.set_ease(Tween.EASE_OUT)
-	end_tween.set_trans(Tween.TRANS_ELASTIC)
-	end_tween.tween_property(end_screen, "modulate:a", 1.0, 0.5)
-	end_tween.tween_property(end_screen, "scale", Vector2.ONE, 0.6)
-
-func _on_end_continue():
-	if not _result_emitted:
-		complete_trial(get_result())
-	
-	# Mantener FORGE audio al salir (ya estamos en zona forja)
-	# No es necesario desactivar porque Main.gd maneja los cambios de área
-	
-	var parent_node := get_parent()
-	if parent_node:
-		var hud := parent_node.get_node_or_null("HUD")
-		if hud and hud.has_method("_set_forge_panels_visible"):
-			hud._set_forge_panels_visible(true)
-	
-	# 🎨 Fade-out suave antes de cerrar
-	_fade_out_and_close()
 
 ## Anima el fade-out antes de destruir el minijuego
 func _fade_out_and_close() -> void:

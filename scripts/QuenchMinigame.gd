@@ -216,12 +216,6 @@ func _finish_minigame(quality: String, score: float, success: bool) -> void:
 	}
 	complete_trial(result)
 	
-	# Pantalla final
-	var outcome := "🎉 ÉXITO" if success else "❌ FALLO"
-	var temp_text := "Temperatura: %d°C\nÓptimo: %d-%d°C\nCalidad: %s" % \
-		[int(_current_temperature), int(_optimal_min), int(_optimal_max), quality]
-	
-	if _catalyst_bonus:
-		temp_text += "\n✨ Catalizador activo (+20% ventana)"
-	
-	setup_end_screen(outcome, temp_text + "\n\nPulsa para cerrar")
+	# ✅ Auto-cerrar después de un breve delay (sin pantalla de puntuación legacy)
+	await get_tree().create_timer(0.5).timeout
+	_fade_out_and_close()
