@@ -30,12 +30,12 @@ func set_blueprint_data(bp_id: String, blueprint, is_unlocked: bool) -> void:
 	
 	# Estado
 	if is_unlocked:
-		status_label.text = "✓ Desbloqueado"
+		status_label.text = "✓ Unlocked"
 		status_label.modulate = Color.GREEN
 		name_label.modulate = Color.WHITE
 		materials_label.modulate = Color.WHITE
 	else:
-		status_label.text = "🔒 Bloqueado"
+		status_label.text = "🔒 Locked"
 		status_label.modulate = Color.GRAY
 		name_label.modulate = Color(0.5, 0.5, 0.5)
 		materials_label.modulate = Color(0.5, 0.5, 0.5)

@@ -6,8 +6,8 @@
 [resource]
 script = ExtResource("1")
 item_id = &"boots_advanced"
-display_name = "Botas Avanzadas"
-description = "Unas botas reforzadas"
+display_name = "Advanced Boots"
+description = "Reinforced boots"
 icon = ExtResource("2")
 item_type = "armor"
 equipment_slot = "feet"

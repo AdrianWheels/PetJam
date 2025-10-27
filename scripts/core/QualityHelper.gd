@@ -49,15 +49,15 @@ static func get_quality_label(quality: float) -> String:
 	var tier = get_quality_tier(quality)
 	match tier:
 		"legendary":
-			return "LEGENDARIO"
+			return "LEGENDARY"
 		"epic":
-			return "ÉPICO"
+			return "EPIC"
 		"rare":
-			return "RARO"
+			return "RARE"
 		"uncommon":
-			return "COMÚN"
+			return "COMMON"
 		_:
-			return "BÁSICO"
+			return "BASIC"
 
 ## Retorna calidad como porcentaje (0-100)
 static func get_quality_percent(quality: float) -> int:

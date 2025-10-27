@@ -32,8 +32,8 @@ var _hit_index := 0
 var _score := 0
 var _combo := 0
 var _max_combo := 0
-var _quality_counts := {"Perfect": 0, "Bien": 0, "Regular": 0, "Miss": 0}
-var _windows := {"perfect": 40.0, "bien": 90.0, "regular": 140.0}  # ms
+var _quality_counts := {"Perfect": 0, "Good": 0, "Regular": 0, "Miss": 0}
+var _windows := {"perfect": 40.0, "good": 90.0, "regular": 140.0}  # ms
 var _next_hit_time := 0.0
 var _note_spawn_time := 0.0
 var _can_hit := false
@@ -45,7 +45,7 @@ func _ready():
 	# 🎶 Configurar SoundSet específico para Hammer
 	var hammer_soundset := MinigameSoundSet.new()
 	hammer_soundset.sound_perfect = load("res://art/sounds/sfx/minigames/hammer/hammer_perfect.wav")
-	hammer_soundset.sound_bien = load("res://art/sounds/sfx/minigames/hammer/hammer_good.wav")
+	hammer_soundset.sound_good = load("res://art/sounds/sfx/minigames/hammer/hammer_good.wav")
 	hammer_soundset.sound_regular = load("res://art/sounds/sfx/minigames/hammer/hammer_good.wav")
 	hammer_soundset.sound_miss = load("res://art/sounds/sfx/minigames/hammer/hammer_miss.wav")
 	MinigameAudio.set_sound_set(hammer_soundset)
@@ -93,7 +93,7 @@ func start_game():
 	_score = 0
 	_combo = 0
 	_max_combo = 0
-	_quality_counts = {"Perfect": 0, "Bien": 0, "Regular": 0, "Miss": 0}
+	_quality_counts = {"Perfect": 0, "Good": 0, "Regular": 0, "Miss": 0}
 	
 	_update_ui()
 	_spawn_next_note()
@@ -103,7 +103,7 @@ func _compute_windows() -> void:
 	var scl: float = lerp(1.2, 0.7, _precision)
 	_windows = {
 		"perfect": 40.0,
-		"bien": max(90.0 * scl, 30.0),
+		"good": max(90.0 * scl, 30.0),
 		"regular": max(140.0 * scl, 30.0)
 	}
 
@@ -155,7 +155,7 @@ func _process(_delta):
 		if abs(time_to_hit_ms) <= _windows.perfect:
 			note_bg.color = MinigameFX.COLORS["Perfect"]
 			_can_hit = true
-		elif abs(time_to_hit_ms) <= _windows.bien:
+		elif abs(time_to_hit_ms) <= _windows.good:
 			note_bg.color = MinigameFX.COLORS["Success"]
 			_can_hit = true
 		elif abs(time_to_hit_ms) <= _windows.regular:
@@ -192,8 +192,8 @@ func _judge_hit(time_diff_ms: float) -> void:
 		quality = "Perfect"
 		points = 100
 		_combo += 1
-	elif time_diff_ms <= _windows.bien:
-		quality = "Bien"
+	elif time_diff_ms <= _windows.good:
+		quality = "Good"
 		points = 70
 		_combo += 1
 	elif time_diff_ms <= _windows.regular:
@@ -248,8 +248,8 @@ func _end_game() -> void:
 	
 	# Calcular éxito
 	var perfect_count: int = _quality_counts["Perfect"]
-	var bien_count: int = _quality_counts["Bien"]
-	var hits: int = perfect_count + bien_count + _quality_counts["Regular"]
+	var good_count: int = _quality_counts["Good"]
+	var hits: int = perfect_count + good_count + _quality_counts["Regular"]
 	var success: bool = hits >= int(ceil(TOTAL_HITS * 0.6))
 	
 	# Crear resultado
@@ -260,7 +260,7 @@ func _end_game() -> void:
 	result.duration_ms = Time.get_ticks_msec()
 	result.details = {
 		"perfect": perfect_count,
-		"bien": bien_count,
+		"Good": good_count,
 		"regular": _quality_counts["Regular"],
 		"miss": _quality_counts["Miss"],
 		"max_combo": _max_combo
@@ -307,7 +307,7 @@ func _play_hammer_strike(quality: String) -> void:
 	match quality:
 		"Perfect":
 			shake_strength = 20.0
-		"Bien":
+		"Good":
 			shake_strength = 12.0
 		"Regular":
 			shake_strength = 6.0

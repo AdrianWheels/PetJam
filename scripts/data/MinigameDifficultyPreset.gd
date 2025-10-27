@@ -5,7 +5,7 @@ class_name MinigameDifficultyPreset
 ## Uso: define difficulty_budget (0-100) y distribúyelo entre minijuegos
 
 @export_group("Tier Configuration")
-@export_enum("Común:1", "Raro:2", "Legendario:3") var tier: int = 1
+@export_enum("Common:1", "Rare:2", "Legendary:3") var tier: int = 1
 @export_range(0.0, 100.0, 1.0) var difficulty_budget: float = 50.0
 
 @export_group("Minigame Shares")

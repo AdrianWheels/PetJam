@@ -15,13 +15,13 @@ resource_name = "temp_config"
 script = ExtResource("3")
 forge_speed = 0.8
 precision = 0.4
-label = "Espada básica"
+label = "Basic sword"
 minigame_scene = ExtResource("4")
 max_score = 900.0
 parameters = {
 "forge_speed": 0.8,
 "hardness": 0.3,
-"label": "Espada básica",
+"label": "Basic sword",
 "precision": 0.4,
 "trials": 3
 }
@@ -30,7 +30,7 @@ parameters = {
 resource_name = "temp_trial"
 script = ExtResource("2")
 trial_id = &"sword_basic_temp"
-display_name = "Calentar metal"
+display_name = "Heat metal"
 minigame_id = &"Forge"
 minigame_scene = ExtResource("4")
 min_score = 0.4
@@ -42,12 +42,12 @@ resource_name = "hammer_config"
 script = ExtResource("3_hammer")
 hammer_speed = 68
 tempo_bpm = 68
-label = "Espada básica"
+label = "Basic sword"
 minigame_scene = ExtResource("5")
 max_score = 650.0
 parameters = {
 "hammer_speed": 68,
-"label": "Espada básica",
+"label": "Basic sword",
 "notes": 5,
 "precision": 0.4,
 "tempo_bpm": 68,
@@ -58,7 +58,7 @@ parameters = {
 resource_name = "hammer_trial"
 script = ExtResource("2")
 trial_id = &"sword_basic_hammer"
-display_name = "Martillar filo"
+display_name = "Hammer blade"
 minigame_id = &"hammer"
 minigame_scene = ExtResource("5")
 min_score = 0.5
@@ -69,8 +69,8 @@ background = ExtResource("7")
 resource_name = "sword_basic"
 script = ExtResource("1")
 blueprint_id = &"sword_basic"
-display_name = "Espada Básica"
-description = "Una espada sencilla pero fiable."
+display_name = "Basic Sword"
+description = "A simple but reliable sword."
 icon_path = "res://data/items/sword_basic.tres"
 icon = ExtResource("6")
 blueprint_icon = ExtResource("1_m6iyt")

@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_hammer")
 sound_perfect = null
-sound_bien = null
+sound_good = null
 sound_regular = null
 sound_miss = null
 sound_hit = null

@@ -6,8 +6,8 @@
 [resource]
 script = ExtResource("1")
 item_id = &"shield_basic"
-display_name = "Escudo Básico"
-description = "Un escudo simple de madera"
+display_name = "Basic Shield"
+description = "A simple wooden shield"
 icon = ExtResource("2")
 item_type = "armor"
 equipment_slot = "off_hand"

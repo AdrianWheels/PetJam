@@ -1,9 +1,13 @@
-[gd_scene load_steps=5 format=3 uid="uid://c2yqv7h8mxb8w"]
+[gd_scene load_steps=9 format=3 uid="uid://c2yqv7h8mxb8w"]
 
 [ext_resource type="Script" uid="uid://cro5doma8kkx6" path="res://scripts/core/HUDMinigameLauncher.gd" id="1"]
 [ext_resource type="Script" uid="uid://djvbuaj3613qf" path="res://scripts/ui/MinigameContainer.gd" id="2"]
 [ext_resource type="PackedScene" uid="uid://bplib8x3v7ia" path="res://scenes/UI/BlueprintLibraryPanel.tscn" id="2_blueprint_lib"]
 [ext_resource type="Script" uid="uid://dp8gqnisiuoue" path="res://scripts/ui/RequestsPanel.gd" id="3_a5nox"]
+[ext_resource type="Texture2D" uid="uid://cdqkvt7i4a7ph" path="res://art/assets/Imagenes/Menu/bell_icon.png" id="5_bell"]
+[ext_resource type="Texture2D" uid="uid://bjlmprbmj26dq" path="res://art/assets/Imagenes/Menu/blueprints_icon.png" id="6_blueprints"]
+[ext_resource type="Texture2D" uid="uid://da8ydyh8e4fy2" path="res://art/assets/Imagenes/Menu/closet_icon.png" id="7_closet"]
+[ext_resource type="Texture2D" uid="uid://dg3j8u4fv3a02" path="res://art/assets/Imagenes/Menu/dungeon_icon.png" id="8_dungeon"]
 
 [node name="HUD_Forge" type="CanvasLayer"]
 layer = 5
@@ -40,7 +44,7 @@ horizontal_alignment = 1
 [node name="ViewBlueprintsBtn" type="Button" parent="BlueprintQueuePanel/QueueVBox"]
 visible = false
 layout_mode = 2
-text = "📋 Ver Blueprints"
+text = "📋 View Blueprints"
 
 [node name="QueueContainer" type="HBoxContainer" parent="BlueprintQueuePanel/QueueVBox"]
 layout_mode = 2
@@ -91,11 +95,12 @@ offset_top = 10.0
 offset_right = 100.0
 offset_bottom = 40.0
 grow_horizontal = 2
-text = "FORJA"
+text = "FORGE"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ToggleViewBtn" type="Button" parent="."]
+[node name="DungeonButton" type="TextureButton" parent="."]
+unique_name_in_owner = true
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
@@ -104,9 +109,13 @@ offset_top = -310.0
 offset_right = 100.0
 offset_bottom = -230.0
 grow_vertical = 0
-text = "🔄"
+tooltip_text = "Go to dungeon"
+texture_normal = ExtResource("8_dungeon")
+ignore_texture_size = true
+stretch_mode = 5
 
-[node name="BlueprintViewBtn" type="Button" parent="."]
+[node name="BlueprintsButton" type="TextureButton" parent="."]
+unique_name_in_owner = true
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
@@ -115,7 +124,10 @@ offset_top = -310.0
 offset_right = 186.0
 offset_bottom = -230.0
 grow_vertical = 0
-text = "🔄"
+tooltip_text = "View blueprints library"
+texture_normal = ExtResource("6_blueprints")
+ignore_texture_size = true
+stretch_mode = 5
 
 [node name="DeliveryPanel" type="ColorRect" parent="."]
 anchors_preset = 3
@@ -125,7 +137,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -100.0
 offset_top = -310.0
-offset_right = -20.0
+offset_right = -30.0
 offset_bottom = -230.0
 grow_horizontal = 0
 grow_vertical = 0
@@ -148,17 +160,25 @@ theme_override_constants/separation = 4
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="Client" type="Button" parent="DeliveryPanel/DeliveryVBox/DeliverHBox"]
+[node name="ClientButton" type="TextureButton" parent="DeliveryPanel/DeliveryVBox/DeliverHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "📦
-Client"
+tooltip_text = "Send order to client"
+texture_normal = ExtResource("5_bell")
+ignore_texture_size = true
+stretch_mode = 5
 
-[node name="Hero" type="Button" parent="DeliveryPanel/DeliveryVBox/DeliverHBox"]
+[node name="HeroButton" type="TextureButton" parent="DeliveryPanel/DeliveryVBox/DeliverHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "⚔️
-Hero"
+tooltip_text = "Store in hero's inventory"
+texture_normal = ExtResource("7_closet")
+ignore_texture_size = true
+stretch_mode = 5
 
 [node name="PrintsLabel" type="Label" parent="."]
 visible = false

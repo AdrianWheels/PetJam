@@ -16,7 +16,7 @@
 script = ExtResource("5_oh74c")
 forge_speed = 1.2
 precision = 0.7
-label = "Escudo maestro"
+label = "Master shield"
 minigame_id = &"Forge"
 trial_id = &"shield_master_temp"
 blueprint_id = &"shield_master"
@@ -25,7 +25,7 @@ max_score = 900.0
 parameters = {
 "forge_speed": 1.2,
 "hardness": 0.5,
-"label": "Escudo maestro",
+"label": "Master shield",
 "precision": 0.7,
 "trials": 5
 }
@@ -34,7 +34,7 @@ parameters = {
 resource_name = "temp_trial"
 script = ExtResource("2")
 trial_id = &"shield_master_temp"
-display_name = "Calentar refuerzos"
+display_name = "Heat reinforcements"
 minigame_id = &"Forge"
 minigame_scene = ExtResource("4")
 min_score = 0.6
@@ -47,7 +47,7 @@ notes = 7
 hammer_speed = 100
 tempo_bpm = 100
 weight = 0.75
-label = "Escudo maestro"
+label = "Master shield"
 minigame_id = &"hammer"
 trial_id = &"shield_master_hammer"
 blueprint_id = &"shield_master"
@@ -55,7 +55,7 @@ minigame_scene = ExtResource("5")
 max_score = 650.0
 parameters = {
 "hammer_speed": 100,
-"label": "Escudo maestro",
+"label": "Master shield",
 "notes": 7,
 "precision": 0.7,
 "tempo_bpm": 100,
@@ -66,7 +66,7 @@ parameters = {
 resource_name = "hammer_trial"
 script = ExtResource("2")
 trial_id = &"shield_master_hammer"
-display_name = "Clavar herrajes"
+display_name = "Nail fittings"
 minigame_id = &"hammer"
 minigame_scene = ExtResource("5")
 min_score = 0.65
@@ -78,7 +78,7 @@ script = ExtResource("10_w5oip")
 quench_speed = 1.1
 time_window = 0.25
 catalyst_bonus = 1.0
-label = "Escudo maestro"
+label = "Master shield"
 minigame_id = &"quench"
 trial_id = &"shield_master_quench"
 blueprint_id = &"shield_master"
@@ -86,7 +86,7 @@ minigame_scene = ExtResource("6")
 parameters = {
 "catalyst_bonus": 1.0,
 "element": "",
-"label": "Escudo maestro",
+"label": "Master shield",
 "optimal_time": 1.5,
 "quench_speed": 1.1,
 "time_window": 0.25
@@ -96,7 +96,7 @@ parameters = {
 resource_name = "quench_trial"
 script = ExtResource("2")
 trial_id = &"shield_master_quench"
-display_name = "Tratamiento final"
+display_name = "Final treatment"
 minigame_id = &"quench"
 minigame_scene = ExtResource("6")
 min_score = 0.6
@@ -107,8 +107,8 @@ background = ExtResource("8")
 resource_name = "shield_master"
 script = ExtResource("1")
 blueprint_id = &"shield_master"
-display_name = "Escudo Maestro"
-description = "Defensa suprema legendaria."
+display_name = "Master Shield"
+description = "Legendary supreme defense."
 icon_path = "res://data/items/shield_master.tres"
 icon = ExtResource("7")
 blueprint_icon = ExtResource("1_tc3d7")

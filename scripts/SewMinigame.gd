@@ -53,8 +53,8 @@ var _speed := BASE_SPEED
 var _note_index := 0
 var _combo := 0
 var _max_combo := 0
-var _quality_counts := {"Perfect": 0, "Bien": 0, "Regular": 0, "Miss": 0}
-var _windows := {"perfect": 3.0, "bien": 8.0, "regular": 14.0}
+var _quality_counts := {"Perfect": 0, "Good": 0, "Regular": 0, "Miss": 0}
+var _windows := {"perfect": 3.0, "good": 8.0, "regular": 14.0}
 var _note_active := false
 var _note_judged := false
 var _feedback_timer := 0.0
@@ -70,7 +70,7 @@ func _ready():
 	# 🎶 Configurar SoundSet específico para Sew
 	var sew_soundset := MinigameSoundSet.new()
 	sew_soundset.sound_perfect = load("res://art/sounds/sfx/minigames/sew/stitch_pierce_leather_perfect.wav")
-	sew_soundset.sound_bien = load("res://art/sounds/sfx/minigames/sew/stitch_pierce_leather_good.wav")
+	sew_soundset.sound_good = load("res://art/sounds/sfx/minigames/sew/stitch_pierce_leather_good.wav")
 	sew_soundset.sound_regular = load("res://art/sounds/sfx/minigames/sew/stitch_pierce_leather_good.wav")
 	sew_soundset.sound_miss = load("res://art/sounds/miss.mp3")  # Mantener miss genérico
 	sew_soundset.sound_whoosh = load("res://art/sounds/sfx/minigames/sew/stitch_pullthrough.wav")  # Sonido de pull
@@ -100,7 +100,7 @@ func _ready():
 	# Crear pantalla de título
 	setup_title_screen(
 		"🧵 SEW - Precisión rítmica",
-		"Haz clic cuando los círculos coincidan",
+		"Click when circles align",
 		"Press SPACE or CLICK at the right moment"
 	)
 
@@ -156,7 +156,7 @@ func start_game():
 	_note_index = 0
 	_combo = 0
 	_max_combo = 0
-	_quality_counts = {"Perfect": 0, "Bien": 0, "Regular": 0, "Miss": 0}
+	_quality_counts = {"Perfect": 0, "Good": 0, "Regular": 0, "Miss": 0}
 	_note_active = true
 	_note_judged = false
 	_speed = BASE_SPEED * max(0.4, _stitch_speed)
@@ -179,7 +179,7 @@ func _compute_windows() -> void:
 	var p: float = clamp(_precision, 0.0, 1.0)
 	_windows = {
 		"perfect": max(3.0 * (1.0 + 0.5 * p), 2.0),
-		"bien": max(8.0 * (1.0 + 0.35 * p), 2.0),
+		"good": max(8.0 * (1.0 + 0.35 * p), 2.0),
 		"regular": max(14.0 * (1.0 + 0.20 * p), 2.0)
 	}
 
@@ -258,8 +258,8 @@ func _judge_hit(diff: float, _late: bool) -> void:
 	if diff <= _windows.perfect:
 		quality = "Perfect"
 		_combo += 1
-	elif diff <= _windows.bien:
-		quality = "Bien"
+	elif diff <= _windows.good:
+		quality = "Good"
 		_combo += 1
 	elif diff <= _windows.regular:
 		quality = "Regular"
@@ -314,7 +314,7 @@ func _update_circles() -> void:
 	
 	if diff <= _windows.perfect:
 		color = MinigameFX.COLORS["Perfect"]
-	elif diff <= _windows.bien:
+	elif diff <= _windows.good:
 		color = MinigameFX.COLORS["Success"]
 	elif diff <= _windows.regular:
 		color = MinigameFX.COLORS["Warning"]
@@ -336,19 +336,19 @@ func _finish_minigame() -> void:
 	
 	# Calcular puntuación final
 	var perfect_count: int = _quality_counts["Perfect"]
-	var bien_count: int = _quality_counts["Bien"]
+	var good_count: int = _quality_counts["Good"]
 	var regular_count: int = _quality_counts["Regular"]
 	var miss_count: int = _quality_counts["Miss"]
 	
-	var total_score: float = perfect_count * 300 + bien_count * 200 + regular_count * 100
-	var success: bool = perfect_count + bien_count >= TOTAL_NOTES * 0.5
+	var total_score: float = perfect_count * 300 + good_count * 200 + regular_count * 100
+	var success: bool = perfect_count + good_count >= TOTAL_NOTES * 0.5
 	
 	var avg_quality := "Miss"
 	if perfect_count >= TOTAL_NOTES * 0.75:
 		avg_quality = "Perfect"
-	elif perfect_count + bien_count >= TOTAL_NOTES * 0.625:
-		avg_quality = "Bien"
-	elif perfect_count + bien_count >= TOTAL_NOTES * 0.375:
+	elif perfect_count + good_count >= TOTAL_NOTES * 0.625:
+		avg_quality = "Good"
+	elif perfect_count + good_count >= TOTAL_NOTES * 0.375:
 		avg_quality = "Regular"
 	
 	# Ocultar elementos del juego
@@ -365,7 +365,7 @@ func _finish_minigame() -> void:
 	result.duration_ms = Time.get_ticks_msec()
 	result.details = {
 		"perfect": perfect_count,
-		"bien": bien_count,
+		"good": good_count,
 		"regular": regular_count,
 		"miss": miss_count,
 		"max_combo": _max_combo,

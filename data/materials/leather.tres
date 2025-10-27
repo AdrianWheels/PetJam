@@ -6,6 +6,6 @@
 [resource]
 script = ExtResource("1")
 material_id = &"leather"
-display_name = "Cuero"
-description = "Cuero curtido para armaduras"
+display_name = "Leather"
+description = "Tanned leather for armor"
 icon = ExtResource("2")

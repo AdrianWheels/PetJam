@@ -2,7 +2,7 @@ extends Node
 class_name MinigameAudio
 
 ## Sistema centralizado de audio para minijuegos
-## Maneja feedback sonoro consistente: Perfect, Bien, Regular, Miss
+## Maneja feedback sonoro consistente: Perfect, Good, Regular, Miss
 ## Integrado con AudioManager contexto FORGE
 ## Usa MinigameSoundSet (Resource) para compartir sonidos entre minijuegos
 
@@ -18,7 +18,7 @@ static var _background_player: AudioStreamPlayer = null
 # Paths de sonidos esperados (DEPRECATED - usar SoundSet)
 const SOUND_PATHS := {
 	"Perfect": "res://art/sounds/minigame_perfect.wav",
-	"Bien": "res://art/sounds/minigame_good.wav",
+	"Good": "res://art/sounds/minigame_good.wav",
 	"Regular": "res://art/sounds/minigame_ok.wav",
 	"Miss": "res://art/sounds/minigame_miss.wav",
 	"Hit": "res://art/sounds/minigame_hit.wav",
@@ -44,7 +44,7 @@ static func get_sound_set() -> MinigameSoundSet:
 # Variación de pitch por calidad
 const PITCH_VARIATION := {
 	"Perfect": {"base": 1.2, "variance": 0.05},
-	"Bien": {"base": 1.0, "variance": 0.03},
+	"Good": {"base": 1.0, "variance": 0.03},
 	"Regular": {"base": 0.85, "variance": 0.04},
 	"Miss": {"base": 0.6, "variance": 0.02},
 }
@@ -52,13 +52,13 @@ const PITCH_VARIATION := {
 # Volumen por calidad (dB)
 const VOLUME_DB := {
 	"Perfect": 3.0,
-	"Bien": 0.0,
+	"Good": 0.0,
 	"Regular": -3.0,
 	"Miss": -6.0,
 }
 
 ## Reproduce feedback de audio por calidad de intento
-## @param quality: "Perfect", "Bien", "Regular", "Miss"
+## @param quality: "Perfect", "Good", "Regular", "Miss"
 ## @param position: (Opcional) Posición 2D para audio espacial en el futuro
 static func play_feedback(quality: String, position: Vector2 = Vector2.ZERO) -> void:
 	# Acceder al AudioManager singleton
@@ -175,7 +175,7 @@ static func play_tick() -> void:
 	pass
 
 ## Carga placeholder sound según calidad
-## @param quality: "Perfect", "Bien", "Regular", "Miss"
+## @param quality: "Perfect", "Good", "Regular", "Miss"
 ## @return AudioStream o null
 static func load_placeholder_sound(quality: String) -> AudioStream:
 	# 🔨 HAMMER-SPECIFIC: Intentar usar caché primero
@@ -188,7 +188,7 @@ static func load_placeholder_sound(quality: String) -> AudioStream:
 	# 🔨 HAMMER-SPECIFIC: Intentar cargar sonidos de hammer
 	var hammer_paths := {
 		"Perfect": "res://art/sounds/sfx/minigames/hammer/hammer_perfect.wav",
-		"Bien": "res://art/sounds/sfx/minigames/hammer/hammer_good.wav",
+		"Good": "res://art/sounds/sfx/minigames/hammer/hammer_good.wav",
 		"Regular": "res://art/sounds/sfx/minigames/hammer/hammer_good.wav",  # Reutilizar good para regular
 		"Miss": "res://art/sounds/sfx/minigames/hammer/hammer_miss.wav",
 	}
@@ -210,7 +210,7 @@ static func load_placeholder_sound(quality: String) -> AudioStream:
 	# Fallback: sonidos genéricos (mp3)
 	var generic_paths := {
 		"Perfect": "res://art/sounds/perfect.mp3",
-		"Bien": "res://art/sounds/good.mp3",
+		"Good": "res://art/sounds/good.mp3",
 		"Regular": "res://art/sounds/regular.mp3",
 		"Miss": "res://art/sounds/miss.mp3",
 	}

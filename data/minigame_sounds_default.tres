@@ -10,7 +10,7 @@
 [resource]
 script = ExtResource("1_default")
 sound_perfect = ExtResource("4_qym04")
-sound_bien = ExtResource("2_yu67u")
+sound_good = ExtResource("2_yu67u")
 sound_regular = ExtResource("5_k1ha2")
 sound_miss = ExtResource("3_g1ywr")
 sound_whoosh = ExtResource("6_g1ywr")

@@ -65,17 +65,17 @@ func _ready():
 		btn_view_blueprints.pressed.connect(_on_view_blueprints_pressed)
 		print("HUD: View Blueprints button (queue) connected")
 	
-	# Conectar botón "BlueprintViewBtn" (nuevo botón principal)
-	var btn_blueprint_view = get_node_or_null("BlueprintViewBtn")
-	if btn_blueprint_view:
-		btn_blueprint_view.pressed.connect(_on_blueprint_view_btn_pressed)
-		print("HUD: BlueprintViewBtn connected")
+	# Conectar botón "BlueprintsButton" (nuevo icono)
+	var btn_blueprints = get_node_or_null("%BlueprintsButton")
+	if btn_blueprints:
+		btn_blueprints.pressed.connect(_on_blueprint_view_btn_pressed)
+		print("HUD: BlueprintsButton (icon) connected")
 	
-	# Conectar botón Toggle Vista (cambio a héroe)
-	var btn_toggle_view = get_node_or_null("ToggleViewBtn")
-	if btn_toggle_view:
-		btn_toggle_view.pressed.connect(_on_toggle_hero_view_pressed)
-		print("HUD: Toggle Hero View button connected")
+	# Conectar botón "DungeonButton" (nuevo icono - reemplaza Toggle)
+	var btn_dungeon = get_node_or_null("%DungeonButton")
+	if btn_dungeon:
+		btn_dungeon.pressed.connect(_on_dungeon_button_pressed)
+		print("HUD: DungeonButton (icon) connected")
 	
 	# DeliverPanel con opacidad reducida cuando no hay ítem
 	var deliver_panel = get_node_or_null("DeliverPanel")
@@ -251,14 +251,14 @@ func _update_free_requests_label() -> void:
 	
 	var rm = get_node("/root/RequestsManager") if has_node("/root/RequestsManager") else null
 	if not rm or not rm.has_method("get_free_requests_remaining"):
-		queue_label.text = "Pedidos"
+		queue_label.text = "Requests"
 		return
 	
 	var free_count: int = rm.get_free_requests_remaining()
 	if free_count > 0:
-		queue_label.text = "Pedidos  %d 🎲" % free_count
+		queue_label.text = "Requests  %d 🎲" % free_count
 	else:
-		queue_label.text = "Pedidos"
+		queue_label.text = "Requests"
 
 func _animate_slot_entry(slot_node: Control) -> void:
 	"""Anima la entrada de un nuevo slot desde abajo con efecto bounce"""
@@ -557,7 +557,10 @@ func _on_blueprint_view_btn_pressed() -> void:
 ## Cambio a vista del héroe
 func _on_toggle_hero_view_pressed() -> void:
 	print("HUD: Toggle to Hero View pressed")
-	var main = get_tree().root.get_node_or_null("Main")
+	var tree = get_tree()
+	if not tree or not tree.root:
+		return
+	var main = tree.root.get_node_or_null("Main")
 	if main and main.has_method("show_hero_view"):
 		main.show_hero_view()
 		print("HUD: Switching to Hero view")
@@ -568,6 +571,18 @@ func _on_toggle_hero_view_pressed() -> void:
 func _on_toggle_view_pressed() -> void:
 	print("HUD: Toggle View pressed (legacy)")
 	_on_toggle_hero_view_pressed()
+
+## Botón Dungeon: cambiar a vista de dungeon
+func _on_dungeon_button_pressed() -> void:
+	print("HUD: Dungeon button pressed - Switching to dungeon")
+	var tree = get_tree()
+	if not tree or not tree.root:
+		return
+	var main = tree.root.get_node_or_null("Main")
+	if main and main.has_method("change_area"):
+		main.change_area("dungeon")
+	else:
+		print("HUD: Main.change_area() not available")
 
 
 	# TODO: Implementar UI de equipamiento en dungeon

@@ -6,6 +6,6 @@
 [resource]
 script = ExtResource("1")
 material_id = &"poison"
-display_name = "Veneno"
-description = "Veneno concentrado"
+display_name = "Poison"
+description = "Concentrated poison"
 icon = ExtResource("2")

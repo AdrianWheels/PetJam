@@ -6,6 +6,6 @@
 [resource]
 script = ExtResource("1")
 material_id = &"herb"
-display_name = "Hierba"
-description = "Hierbas medicinales"
+display_name = "Herb"
+description = "Medicinal herbs"
 icon = ExtResource("2")

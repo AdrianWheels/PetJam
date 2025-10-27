@@ -6,6 +6,6 @@
 [resource]
 script = ExtResource("1")
 material_id = &"fire"
-display_name = "Fuego"
-description = "Esencia de fuego elemental"
+display_name = "Fire"
+description = "Elemental fire essence"
 icon = ExtResource("2")

@@ -104,6 +104,7 @@ width = 3.0
 default_color = Color(0.3, 0.25, 0.2, 0.6)
 
 [node name="Decorations" type="Node2D" parent="."]
+visible = false
 
 [node name="Torch_01" type="Label" parent="Decorations"]
 offset_left = 400.0

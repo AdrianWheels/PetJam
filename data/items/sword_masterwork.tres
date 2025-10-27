@@ -6,8 +6,8 @@
 [resource]
 script = ExtResource("1")
 item_id = &"sword_masterwork"
-display_name = "Espada Maestra"
-description = "Una obra maestra de la forja"
+display_name = "Masterwork Sword"
+description = "A masterpiece of forging"
 icon = ExtResource("1_lukbc")
 item_type = "weapon"
 equipment_slot = "main_hand"

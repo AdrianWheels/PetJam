@@ -41,7 +41,7 @@ func _ready():
 	# 🎶 Configurar SoundSet específico para Forge (usar sonidos genéricos por ahora)
 	var forge_soundset := MinigameSoundSet.new()
 	forge_soundset.sound_perfect = load("res://art/sounds/perfect.mp3")
-	forge_soundset.sound_bien = load("res://art/sounds/good.mp3")
+	forge_soundset.sound_good = load("res://art/sounds/good.mp3")
 	forge_soundset.sound_regular = load("res://art/sounds/regular.mp3")
 	forge_soundset.sound_miss = load("res://art/sounds/miss.mp3")
 	MinigameAudio.set_sound_set(forge_soundset)
@@ -187,7 +187,7 @@ func _finish_attempt():
 	if ratio >= 0.95:
 		quality = "Perfect"
 	elif ratio >= 0.75:
-		quality = "Bien"
+		quality = "Good"
 	elif ratio >= 0.5:
 		quality = "Regular"
 	
@@ -228,7 +228,7 @@ func _finish_minigame() -> void:
 	# Calcular puntuación final
 	var total_score := 0.0
 	var perfect_count := 0
-	var bien_count := 0
+	var good_count := 0
 	var regular_count := 0
 	var miss_count := 0
 	
@@ -236,20 +236,20 @@ func _finish_minigame() -> void:
 		total_score += _trial_scores[i]
 		match _trial_qualities[i]:
 			"Perfect": perfect_count += 1
-			"Bien": bien_count += 1
+			"Good": good_count += 1
 			"Regular": regular_count += 1
 			"Miss": miss_count += 1
 	
-	var success: bool = perfect_count + bien_count >= _total_trials * 0.5
+	var success: bool = perfect_count + good_count >= _total_trials * 0.5
 	var elapsed: int = Time.get_ticks_msec() - _start_time
 	
 	# Determinar calidad promedio
 	var avg_quality := "Miss"
 	if perfect_count >= _total_trials * 0.75:
 		avg_quality = "Perfect"
-	elif perfect_count + bien_count >= _total_trials * 0.625:
-		avg_quality = "Bien"
-	elif perfect_count + bien_count >= _total_trials * 0.375:
+	elif perfect_count + good_count >= _total_trials * 0.625:
+		avg_quality = "Good"
+	elif perfect_count + good_count >= _total_trials * 0.375:
 		avg_quality = "Regular"
 	
 	# Ocultar elementos del juego
@@ -265,7 +265,7 @@ func _finish_minigame() -> void:
 	result.duration_ms = elapsed
 	result.details = {
 		"perfect": perfect_count,
-		"bien": bien_count,
+		"Good": good_count,
 		"regular": regular_count,
 		"miss": miss_count,
 		"quality": avg_quality

@@ -16,7 +16,7 @@
 script = ExtResource("5_oh74c")
 forge_speed = 0.7
 precision = 0.4
-label = "Escudo madera"
+label = "Wooden shield"
 minigame_id = &"Forge"
 trial_id = &"shield_wooden_temp"
 blueprint_id = &"shield_wooden"
@@ -25,7 +25,7 @@ max_score = 900.0
 parameters = {
 "forge_speed": 0.7,
 "hardness": 0.3,
-"label": "Escudo madera",
+"label": "Wooden shield",
 "precision": 0.4,
 "trials": 3
 }
@@ -34,7 +34,7 @@ parameters = {
 resource_name = "temp_trial"
 script = ExtResource("2")
 trial_id = &"shield_wooden_temp"
-display_name = "Calentar refuerzos"
+display_name = "Heat reinforcements"
 minigame_id = &"Forge"
 minigame_scene = ExtResource("4")
 min_score = 0.4
@@ -47,7 +47,7 @@ notes = 4
 hammer_speed = 59
 tempo_bpm = 59
 weight = 0.6
-label = "Escudo madera"
+label = "Wooden shield"
 minigame_id = &"hammer"
 trial_id = &"shield_wooden_hammer"
 blueprint_id = &"shield_wooden"
@@ -55,7 +55,7 @@ minigame_scene = ExtResource("5")
 max_score = 650.0
 parameters = {
 "hammer_speed": 59,
-"label": "Escudo madera",
+"label": "Wooden shield",
 "notes": 4,
 "precision": 0.4,
 "tempo_bpm": 59,
@@ -66,7 +66,7 @@ parameters = {
 resource_name = "hammer_trial"
 script = ExtResource("2")
 trial_id = &"shield_wooden_hammer"
-display_name = "Clavar herrajes"
+display_name = "Nail fittings"
 minigame_id = &"hammer"
 minigame_scene = ExtResource("5")
 min_score = 0.5
@@ -78,7 +78,7 @@ script = ExtResource("10_w5oip")
 quench_speed = 0.7
 time_window = 0.35000000000000003
 catalyst_bonus = 1.0
-label = "Escudo madera"
+label = "Wooden shield"
 minigame_id = &"quench"
 trial_id = &"shield_wooden_quench"
 blueprint_id = &"shield_wooden"
@@ -86,7 +86,7 @@ minigame_scene = ExtResource("6")
 parameters = {
 "catalyst_bonus": 1.0,
 "element": "",
-"label": "Escudo madera",
+"label": "Wooden shield",
 "optimal_time": 1.5,
 "quench_speed": 0.7,
 "time_window": 0.35000000000000003
@@ -96,7 +96,7 @@ parameters = {
 resource_name = "quench_trial"
 script = ExtResource("2")
 trial_id = &"shield_wooden_quench"
-display_name = "Tratamiento final"
+display_name = "Final treatment"
 minigame_id = &"quench"
 minigame_scene = ExtResource("6")
 min_score = 0.4
@@ -107,8 +107,8 @@ background = ExtResource("8")
 resource_name = "shield_basic"
 script = ExtResource("1")
 blueprint_id = &"shield_basic"
-display_name = "Escudo Básico"
-description = "Defensa básica para aventureros novatos."
+display_name = "Basic Shield"
+description = "Basic defense for novice adventurers."
 icon_path = "res://data/items/shield_basic.tres"
 icon = ExtResource("7")
 blueprint_icon = ExtResource("1_0jago")

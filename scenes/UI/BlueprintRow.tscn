@@ -25,5 +25,5 @@ text = "Materials: ..."
 [node name="StatusLabel" type="Label" parent="."]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
-text = "Bloqueado"
+text = "Locked"
 horizontal_alignment = 2

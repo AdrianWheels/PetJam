@@ -92,7 +92,7 @@ func _setup_fallback_row(row: HBoxContainer, bp_id: String, blueprint, is_unlock
 		name_label.modulate = Color.WHITE if is_unlocked else Color(0.5, 0.5, 0.5)
 	
 	if status_label:
-		status_label.text = "✓ Desbloqueado" if is_unlocked else "🔒 Bloqueado"
+		status_label.text = "✓ Unlocked" if is_unlocked else "🔒 Locked"
 		status_label.modulate = Color.GREEN if is_unlocked else Color.GRAY
 	
 	if icon:

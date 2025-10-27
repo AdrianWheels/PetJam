@@ -13,13 +13,13 @@
 [sub_resource type="Resource" id="1"]
 resource_name = "temp_config"
 script = ExtResource("3")
-label = "Espada avanzada"
+label = "Advanced sword"
 minigame_scene = ExtResource("4")
 max_score = 900.0
 parameters = {
 "forge_speed": 1.0,
 "hardness": 0.4,
-"label": "Espada avanzada",
+"label": "Advanced sword",
 "precision": 0.5,
 "trials": 4
 }
@@ -28,7 +28,7 @@ parameters = {
 resource_name = "temp_trial"
 script = ExtResource("2")
 trial_id = &"sword_advanced_temp"
-display_name = "Calentar metal"
+display_name = "Heat metal"
 minigame_id = &"Forge"
 minigame_scene = ExtResource("4")
 min_score = 0.5
@@ -38,12 +38,12 @@ background = ExtResource("7")
 [sub_resource type="Resource" id="3"]
 resource_name = "hammer_config"
 script = ExtResource("3_hammer")
-label = "Espada avanzada"
+label = "Advanced sword"
 minigame_scene = ExtResource("5")
 max_score = 650.0
 parameters = {
 "hammer_speed": 85,
-"label": "Espada avanzada",
+"label": "Advanced sword",
 "notes": 6,
 "precision": 0.5,
 "tempo_bpm": 85,
@@ -54,7 +54,7 @@ parameters = {
 resource_name = "hammer_trial"
 script = ExtResource("2")
 trial_id = &"sword_advanced_hammer"
-display_name = "Martillar filo"
+display_name = "Hammer blade"
 minigame_id = &"hammer"
 minigame_scene = ExtResource("5")
 min_score = 0.6
@@ -65,8 +65,8 @@ background = ExtResource("7")
 resource_name = "sword_advanced"
 script = ExtResource("1")
 blueprint_id = &"sword_advanced"
-display_name = "Espada Avanzada"
-description = "Una espada de calidad superior."
+display_name = "Advanced Sword"
+description = "A superior quality sword."
 icon_path = "res://data/items/sword_advanced.tres"
 icon = ExtResource("6")
 blueprint_icon = ExtResource("1_gx00r")

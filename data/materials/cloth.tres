@@ -6,6 +6,6 @@
 [resource]
 script = ExtResource("1")
 material_id = &"cloth"
-display_name = "Tela"
-description = "Tela resistente para coser"
+display_name = "Cloth"
+description = "Durable cloth for sewing"
 icon = ExtResource("2")

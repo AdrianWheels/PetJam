@@ -67,8 +67,8 @@ func register_nodes(config: Dictionary) -> void:
 
 	# Conectar botones de delivery manualmente (DeliveryPanel es ColorRect sin script)
 	if delivery_panel:
-		var btn_client = delivery_panel.get_node_or_null("DeliveryVBox/DeliverHBox/Client")
-		var btn_hero = delivery_panel.get_node_or_null("DeliveryVBox/DeliverHBox/Hero")
+		var btn_client = delivery_panel.get_node_or_null("DeliveryVBox/DeliverHBox/ClientButton")
+		var btn_hero = delivery_panel.get_node_or_null("DeliveryVBox/DeliverHBox/HeroButton")
 		if btn_client and not btn_client.is_connected("pressed", Callable(self, "_on_delivery_btn_client")):
 			btn_client.pressed.connect(_on_delivery_btn_client)
 			print("UIManager: Client button connected")
@@ -91,6 +91,7 @@ func register_nodes(config: Dictionary) -> void:
 			dungeon_status.call_deferred("update_deaths", _game_manager.death_count)
 			dungeon_status.call_deferred("update_state", _dungeon_state_name(_game_manager.dungeon_state))
 	if delivery_panel:
+		_stop_delivery_button_highlight()
 		delivery_panel.visible = false
 
 func show_forge() -> void:
@@ -194,6 +195,8 @@ func present_delivery(result: Dictionary) -> void:
 	if delivery_panel:
 		delivery_panel.visible = true
 		print("UIManager: DeliveryPanel visible = true")
+		# Iniciar animación de highlight
+		_start_delivery_button_highlight()
 	
 	# 🔒 NUEVO: Bloquear interacción con blueprints mientras delivery está abierto
 	if hud_forge and hud_forge.has_method("set_queue_interaction_enabled"):
@@ -287,6 +290,7 @@ func _on_delivered_to_client(item_data: Dictionary) -> void:
 	if item_info_panel:
 		item_info_panel.call("hide_info")
 	if delivery_panel:
+		_stop_delivery_button_highlight()
 		delivery_panel.visible = false
 		print("UIManager: DeliveryPanel hidden")
 	
@@ -327,6 +331,7 @@ func _on_delivered_to_hero(item_data: Dictionary) -> void:
 	if item_info_panel:
 		item_info_panel.call("hide_info")
 	if delivery_panel:
+		_stop_delivery_button_highlight()
 		delivery_panel.visible = false
 		print("UIManager: DeliveryPanel hidden")
 	
@@ -358,6 +363,7 @@ func _on_delivery_cancelled() -> void:
 	if item_info_panel:
 		item_info_panel.call("hide_info")
 	if delivery_panel:
+		_stop_delivery_button_highlight()
 		delivery_panel.visible = false
 	
 	emit_signal("delivery_closed")
@@ -404,3 +410,63 @@ func _open_blueprint_library() -> void:
 						library_panel = forge_ui.get_node_or_null("BlueprintLibraryPanel")
 				if library_panel and library_panel.has_method("open"):
 						library_panel.call_deferred("open")
+
+# Animación de highlight pulsante para botones del DeliveryPanel
+func _start_delivery_button_highlight() -> void:
+	if not delivery_panel:
+		return
+	
+	var btn_client = delivery_panel.get_node_or_null("DeliveryVBox/DeliverHBox/ClientButton")
+	var btn_hero = delivery_panel.get_node_or_null("DeliveryVBox/DeliverHBox/HeroButton")
+	
+	for btn in [btn_client, btn_hero]:
+		if not btn:
+			continue
+		
+		# Resetear modulate y escala
+		btn.modulate = Color.WHITE
+		btn.scale = Vector2.ONE
+		
+		# Crear tween para pulso de escala
+		var tween_scale := create_tween()
+		tween_scale.set_loops()
+		tween_scale.tween_property(btn, "scale", Vector2(1.15, 1.15), 0.6).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+		tween_scale.tween_property(btn, "scale", Vector2.ONE, 0.6).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+		
+		# Crear tween para brillo
+		var tween_glow := create_tween()
+		tween_glow.set_loops()
+		tween_glow.tween_property(btn, "modulate", Color(1.5, 1.5, 1.5, 1.0), 0.6).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+		tween_glow.tween_property(btn, "modulate", Color.WHITE, 0.6).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+		
+		# Guardar tweens para poder detenerlos después
+		btn.set_meta("highlight_tween_scale", tween_scale)
+		btn.set_meta("highlight_tween_glow", tween_glow)
+
+func _stop_delivery_button_highlight() -> void:
+	if not delivery_panel:
+		return
+	
+	var btn_client = delivery_panel.get_node_or_null("DeliveryVBox/DeliverHBox/ClientButton")
+	var btn_hero = delivery_panel.get_node_or_null("DeliveryVBox/DeliverHBox/HeroButton")
+	
+	for btn in [btn_client, btn_hero]:
+		if not btn:
+			continue
+		
+		# Detener tweens
+		if btn.has_meta("highlight_tween_scale"):
+			var tween = btn.get_meta("highlight_tween_scale")
+			if tween:
+				tween.kill()
+			btn.remove_meta("highlight_tween_scale")
+		
+		if btn.has_meta("highlight_tween_glow"):
+			var tween = btn.get_meta("highlight_tween_glow")
+			if tween:
+				tween.kill()
+			btn.remove_meta("highlight_tween_glow")
+		
+		# Resetear propiedades
+		btn.modulate = Color.WHITE
+		btn.scale = Vector2.ONE

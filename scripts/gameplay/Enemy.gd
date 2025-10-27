@@ -381,7 +381,11 @@ func _spawn_floating_number(damage: int, is_crit: bool):
 	floating_label.global_position = global_position + Vector2(randf_range(-20, 20), -40)
 	
 	# Añadir al árbol (en root para que no se mueva con el personaje)
-	get_tree().root.add_child(floating_label)
+	var tree = get_tree()
+	if tree and tree.root:
+		tree.root.add_child(floating_label)
+	else:
+		floating_label.queue_free()
 
 func _update_health_bar() -> void:
 	if not health_bar:

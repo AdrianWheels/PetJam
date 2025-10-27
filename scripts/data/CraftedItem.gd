@@ -56,15 +56,15 @@ func get_quality_color() -> Color:
 func get_quality_label() -> String:
 	match get_quality_tier():
 		"legendary":
-			return "LEGENDARIO"
+			return "LEGENDARY"
 		"epic":
-			return "ÉPICO"
+			return "EPIC"
 		"rare":
-			return "RARO"
+			return "RARE"
 		"uncommon":
-			return "COMÚN"
+			return "COMMON"
 		_:
-			return "BÁSICO"
+			return "BASIC"
 
 ## Retorna el nombre del item con calidad
 func get_display_name() -> String:

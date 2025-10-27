@@ -15,7 +15,7 @@
 [sub_resource type="Resource" id="Resource_1ldtf"]
 script = ExtResource("5_oh74c")
 forge_speed = 0.9
-label = "Escudo avanzado"
+label = "Advanced shield"
 minigame_id = &"Forge"
 trial_id = &"shield_advanced_temp"
 blueprint_id = &"shield_advanced"
@@ -24,7 +24,7 @@ max_score = 900.0
 parameters = {
 "forge_speed": 0.9,
 "hardness": 0.4,
-"label": "Escudo avanzado",
+"label": "Advanced shield",
 "precision": 0.5,
 "trials": 4
 }
@@ -33,7 +33,7 @@ parameters = {
 resource_name = "temp_trial"
 script = ExtResource("2")
 trial_id = &"shield_advanced_temp"
-display_name = "Calentar refuerzos"
+display_name = "Heat reinforcements"
 minigame_id = &"Forge"
 minigame_scene = ExtResource("4")
 min_score = 0.5
@@ -45,7 +45,7 @@ script = ExtResource("8_7b6j8")
 hammer_speed = 75
 tempo_bpm = 75
 weight = 0.65
-label = "Escudo avanzado"
+label = "Advanced shield"
 minigame_id = &"hammer"
 trial_id = &"shield_advanced_hammer"
 blueprint_id = &"shield_advanced"
@@ -53,7 +53,7 @@ minigame_scene = ExtResource("5")
 max_score = 650.0
 parameters = {
 "hammer_speed": 75,
-"label": "Escudo avanzado",
+"label": "Advanced shield",
 "notes": 5,
 "precision": 0.5,
 "tempo_bpm": 75,
@@ -64,7 +64,7 @@ parameters = {
 resource_name = "hammer_trial"
 script = ExtResource("2")
 trial_id = &"shield_advanced_hammer"
-display_name = "Clavar herrajes"
+display_name = "Nail fittings"
 minigame_id = &"hammer"
 minigame_scene = ExtResource("5")
 min_score = 0.55
@@ -75,7 +75,7 @@ background = ExtResource("8")
 script = ExtResource("10_w5oip")
 quench_speed = 0.85
 catalyst_bonus = 1.0
-label = "Escudo avanzado"
+label = "Advanced shield"
 minigame_id = &"quench"
 trial_id = &"shield_advanced_quench"
 blueprint_id = &"shield_advanced"
@@ -83,7 +83,7 @@ minigame_scene = ExtResource("6")
 parameters = {
 "catalyst_bonus": 1.0,
 "element": "",
-"label": "Escudo avanzado",
+"label": "Advanced shield",
 "optimal_time": 1.5,
 "quench_speed": 0.85,
 "time_window": 0.3
@@ -93,7 +93,7 @@ parameters = {
 resource_name = "quench_trial"
 script = ExtResource("2")
 trial_id = &"shield_advanced_quench"
-display_name = "Tratamiento final"
+display_name = "Final treatment"
 minigame_id = &"quench"
 minigame_scene = ExtResource("6")
 min_score = 0.5
@@ -104,8 +104,8 @@ background = ExtResource("8")
 resource_name = "shield_advanced"
 script = ExtResource("1")
 blueprint_id = &"shield_advanced"
-display_name = "Escudo Avanzado"
-description = "Defensa reforzada para guerreros."
+display_name = "Advanced Shield"
+description = "Reinforced defense for warriors."
 icon_path = "res://data/items/shield_advanced.tres"
 icon = ExtResource("7")
 blueprint_icon = ExtResource("1_2wlri")

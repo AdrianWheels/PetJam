@@ -32,7 +32,9 @@ func _ready():
         # Buscar DungeonLayout en el árbol
         _dungeon_layout = get_node_or_null("../DungeonLayout")
         if _dungeon_layout == null:
-                _dungeon_layout = get_tree().root.find_child("DungeonLayout", true, false)
+                var tree = get_tree()
+                if tree and tree.root:
+                        _dungeon_layout = tree.root.find_child("DungeonLayout", true, false)
         if _dungeon_layout:
                 print("Corridor: DungeonLayout found at %s" % _dungeon_layout.get_path())
         

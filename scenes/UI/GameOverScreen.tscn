@@ -44,7 +44,7 @@ size_flags_vertical = 3
 [node name="GameOverLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 96
-text = "YOU LOST"
+text = "GAME OVER"
 horizontal_alignment = 1
 vertical_alignment = 1
 

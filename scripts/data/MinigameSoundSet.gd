@@ -6,7 +6,7 @@ class_name MinigameSoundSet
 
 @export_group("Feedback Sounds")
 @export var sound_perfect: AudioStream
-@export var sound_bien: AudioStream
+@export var sound_good: AudioStream
 @export var sound_regular: AudioStream
 @export var sound_miss: AudioStream
 
@@ -26,8 +26,8 @@ func get_feedback_sound(quality: String) -> AudioStream:
 	match quality:
 		"Perfect":
 			return sound_perfect
-		"Bien":
-			return sound_bien
+		"Good":
+			return sound_good
 		"Regular":
 			return sound_regular
 		"Miss":

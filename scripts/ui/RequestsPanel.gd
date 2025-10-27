@@ -69,7 +69,7 @@ func _create_ui_structure() -> void:
 	vbox.add_child(header)
 	
 	var title := Label.new()
-	title.text = "PEDIDOS DISPONIBLES"
+	title.text = "AVAILABLE REQUESTS"
 	title.add_theme_font_size_override("font_size", 24)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
@@ -101,7 +101,7 @@ func _create_ui_structure() -> void:
 	
 	var refresh_button := Button.new()
 	refresh_button.name = "RefreshBtn"
-	refresh_button.text = "🔄 Actualizar Pedidos"
+	refresh_button.text = "🔄 Refresh Requests"
 	refresh_button.custom_minimum_size = Vector2(200, 40)
 	refresh_button.pressed.connect(_on_refresh_pressed)
 	footer.add_child(refresh_button)
@@ -133,7 +133,7 @@ func _populate_requests() -> void:
 	
 	if requests.is_empty():
 		var label := Label.new()
-		label.text = "No hay pedidos disponibles"
+		label.text = "No requests available"
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		requests_container.add_child(label)
 		return
@@ -203,7 +203,7 @@ func _create_fallback_row() -> PanelContainer:
 
 func _setup_fallback_row(row: Control, request: Dictionary, index: int) -> void:
 	var blueprint: BlueprintResource = request.get("blueprint")
-	var client_name: String = request.get("client_name", "Cliente Anónimo")
+	var client_name: String = request.get("client_name", "Anonymous Client")
 	var reward: int = request.get("gold_reward", 50)
 	
 	var name_label := row.find_child("NameLabel", true, false) as Label
@@ -215,10 +215,10 @@ func _setup_fallback_row(row: Control, request: Dictionary, index: int) -> void:
 		name_label.text = blueprint.display_name if blueprint.display_name != "" else String(blueprint.blueprint_id)
 	
 	if client_label:
-		client_label.text = "Cliente: " + client_name
+		client_label.text = "Client: " + client_name
 	
 	if reward_label:
-		reward_label.text = "Recompensa: %d oro" % reward
+		reward_label.text = "Reward: %d gold" % reward
 	
 	if accept_btn:
 		accept_btn.pressed.connect(func(): _on_request_row_clicked(index))

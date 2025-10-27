@@ -21,7 +21,7 @@ const QualityUtils = preload("res://scripts/core/QualityHelper.gd")
 @onready var armor_name: Label = $MainPanel/MarginContainer/VBoxContainer/EquipHBoxContainer/EquipmentSection/EquipmentGrid/ArmorSlot/ArmorName
 
 @onready var inventory_grid: GridContainer = $MainPanel/MarginContainer/VBoxContainer/EquipHBoxContainer/InventorySection/InventoryScroll/InventoryGrid
-@onready var back_button: Button = $MainPanel/MarginContainer/VBoxContainer/BackButton
+@onready var back_button: TextureButton = $MainPanel/MarginContainer/VBoxContainer/BackButton
 
 var hero_ref: Node = null
 var game_manager: Node = null
@@ -81,7 +81,10 @@ func _find_hero_if_needed() -> void:
 		return
 	
 	# Fallback: búsqueda por path
-	var main = get_tree().root.get_node_or_null("Main")
+	var tree = get_tree()
+	if not tree or not tree.root:
+		return
+	var main = tree.root.get_node_or_null("Main")
 	if main:
 		var dungeon_area = main.get_node_or_null("DungeonArea")
 		if dungeon_area:
@@ -150,7 +153,10 @@ func _find_references() -> void:
 		inventory_manager = get_node("/root/InventoryManager")
 	
 	# Buscar Main y Corridor
-	var main = get_tree().root.get_node_or_null("Main")
+	var tree = get_tree()
+	if not tree or not tree.root:
+		return
+	var main = tree.root.get_node_or_null("Main")
 	if main:
 		var dungeon_area = main.get_node_or_null("DungeonArea")
 		if dungeon_area:
@@ -361,7 +367,7 @@ func _update_inventory() -> void:
 	if unequipped_items.is_empty():
 		# Todos equipados - mostrar mensaje
 		var empty_label = Label.new()
-		empty_label.text = "Todos los items están equipados"
+		empty_label.text = "Craft items to equip"
 		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		empty_label.modulate = Color.GRAY
@@ -529,7 +535,10 @@ func _on_items_changed(_items_array: Array) -> void:
 
 func _on_back_button_pressed() -> void:
 	# Cambiar a forja
-	var main = get_tree().root.get_node_or_null("Main")
+	var tree = get_tree()
+	if not tree or not tree.root:
+		return
+	var main = tree.root.get_node_or_null("Main")
 	if main and main.has_method("change_area"):
 		main.change_area(&"forge")
 

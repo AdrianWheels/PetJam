@@ -6,6 +6,6 @@
 [resource]
 script = ExtResource("1")
 material_id = &"wood"
-display_name = "Madera"
-description = "Madera robusta"
+display_name = "Wood"
+description = "Sturdy wood"
 icon = ExtResource("2")

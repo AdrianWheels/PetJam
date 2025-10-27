@@ -31,7 +31,10 @@ func _process(_delta: float) -> void:
 
 func _find_hero() -> void:
 	# Buscar en Corridor o Main
-	var main = get_tree().root.get_node_or_null("Main")
+	var tree = get_tree()
+	if not tree or not tree.root:
+		return
+	var main = tree.root.get_node_or_null("Main")
 	if main:
 		var dungeon_area = main.get_node_or_null("DungeonArea")
 		if dungeon_area:

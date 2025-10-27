@@ -6,39 +6,44 @@ extends HBoxContainer
 @onready var name_label: Label = $NameLabel
 @onready var quantity_label: Label = $QuantityLabel
 
-# Mapeo de material_id a nombres legibles en español
+# Material ID to display name mapping (English)
 const MATERIAL_NAMES := {
-	"iron": "Hierro",
-	"wood": "Madera",
-	"leather": "Cuero",
-	"cloth": "Tela",
-	"herb": "Hierba",
+	"iron": "Iron",
+	"wood": "Wood",
+	"leather": "Leather",
+	"cloth": "Cloth",
+	"herb": "Herb",
 	"water": "Water",
-	"fire": "Fuego",
-	"ice": "Hielo",
-	"poison": "Veneno"
+	"fire": "Fire",
+	"ice": "Ice",
+	"poison": "Poison"
 }
 
 func set_material_data(material_id: String, quantity: int) -> void:
-	# Intentar cargar desde MaterialResource primero
+	# Try loading from MaterialResource first
 	var material_resource_path = "res://data/materials/%s.tres" % material_id
 	if ResourceLoader.exists(material_resource_path):
 		var material_res = load(material_resource_path)
-		if material_res and material_res.has_method("get_icon"):
-			icon.texture = material_res.get_icon()
-	else:
-		# Fallback a icono placeholder
-		var icon_path = "res://art/placeholders/forge/material_%s.png" % material_id
-		if ResourceLoader.exists(icon_path):
-			icon.texture = load(icon_path)
+		if material_res:
+			# Use display_name from resource if available
+			if "display_name" in material_res and material_res.display_name != "":
+				name_label.text = material_res.display_name
+			else:
+				name_label.text = MATERIAL_NAMES.get(material_id, material_id.capitalize())
+			
+			# Use icon from resource if available
+			if "icon" in material_res and material_res.icon:
+				icon.texture = material_res.icon
+			else:
+				_try_fallback_icon(material_id)
 		else:
-			# Fallback final a icono genérico
-			if ResourceLoader.exists("res://icon.svg"):
-				icon.texture = load("res://icon.svg")
-	
-	# Nombre legible
-	var display_name = MATERIAL_NAMES.get(material_id, material_id.capitalize())
-	name_label.text = display_name
+			# Failed to load resource
+			name_label.text = MATERIAL_NAMES.get(material_id, material_id.capitalize())
+			_try_fallback_icon(material_id)
+	else:
+		# Resource doesn't exist, use fallback
+		name_label.text = MATERIAL_NAMES.get(material_id, material_id.capitalize())
+		_try_fallback_icon(material_id)
 	
 	# Cantidad con color
 	quantity_label.text = "x%d" % quantity
@@ -50,3 +55,14 @@ func set_material_data(material_id: String, quantity: int) -> void:
 		quantity_label.modulate = Color(1.0, 0.7, 0.3)  # Naranja si poco
 	else:
 		quantity_label.modulate = Color(0.3, 1.0, 0.3)  # Verde si suficiente
+
+
+func _try_fallback_icon(material_id: String) -> void:
+	"""Try to load fallback icon for material"""
+	var icon_path = "res://art/placeholders/forge/material_%s.png" % material_id
+	if ResourceLoader.exists(icon_path):
+		icon.texture = load(icon_path)
+	else:
+		# Final fallback to generic icon
+		if ResourceLoader.exists("res://icon.svg"):
+			icon.texture = load("res://icon.svg")

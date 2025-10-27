@@ -53,7 +53,7 @@ func _ready():
 	# 🎶 Configurar SoundSet específico para Quench (feedback de calidad)
 	var quench_soundset := MinigameSoundSet.new()
 	quench_soundset.sound_perfect = load("res://art/sounds/perfect.mp3")
-	quench_soundset.sound_bien = load("res://art/sounds/good.mp3")
+	quench_soundset.sound_good = load("res://art/sounds/good.mp3")
 	quench_soundset.sound_regular = load("res://art/sounds/regular.mp3")
 	quench_soundset.sound_miss = load("res://art/sounds/miss.mp3")
 	MinigameAudio.set_sound_set(quench_soundset)
@@ -78,8 +78,8 @@ func _ready():
 	# Crear pantalla de título
 	setup_title_screen(
 		"💧 QUENCH - Temple",
-		"Suelta en el momento óptimo para el temple",
-		"Mantén pulsado y suelta en zona verde"
+	"Release at optimal moment for tempering",
+	"Hold and release in green zone"
 	)
 
 func _exit_tree():
@@ -257,8 +257,8 @@ func _input(event):
 	   (event is InputEventKey and event.keycode == KEY_SPACE and event.pressed):
 		if not _holding:
 			_holding = true
-			_instruction_hint.text = "Enfriando... Suelta en la zona verde!"
-			print("[Quench] � Botón presionado - iniciando descenso")
+		_instruction_hint.text = "Cooling... Release in green zone!"
+		print("[Quench] ⏬ Button pressed - starting descent")
 		accept_event()
 	
 	# Detectar soltar
@@ -318,7 +318,7 @@ func _judge_release() -> void:
 			quality = "Perfect"
 			score = _max_score
 		elif precision_ratio >= 0.6:
-			quality = "Bien"
+			quality = "Good"
 			score = _max_score * 0.8
 		else:
 			quality = "Regular"

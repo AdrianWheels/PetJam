@@ -6,8 +6,8 @@
 [resource]
 script = ExtResource("1")
 item_id = &"shield_master"
-display_name = "Escudo Maestro"
-description = "Un escudo de defensa suprema"
+display_name = "Master Shield"
+description = "A supreme defense shield"
 icon = ExtResource("2")
 item_type = "armor"
 equipment_slot = "off_hand"

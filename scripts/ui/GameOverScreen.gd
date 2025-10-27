@@ -4,6 +4,7 @@ extends Control
 @onready var game_over_label: Label = $VBoxContainer/GameOverLabel
 
 var float_time: float = 0.0
+var is_victory: bool = false
 
 func _ready() -> void:
 	# Fade in al aparecer
@@ -11,10 +12,15 @@ func _ready() -> void:
 	var tween = create_tween()
 	tween.tween_property(self, "modulate:a", 1.0, 0.8)
 	
-	# Mostrar el death count actual
+	# Mostrar el death count actual solo si es derrota
 	var gm = get_node_or_null("/root/GameManager")
 	if gm:
-		death_count_label.text = "Deaths: %d/%d" % [gm.death_count, gm.MAX_DEATHS]
+		if is_victory:
+			game_over_label.text = "YOU WIN!"
+			death_count_label.text = "Victory! Boss Defeated!"
+		else:
+			game_over_label.text = "YOU LOST"
+			death_count_label.text = "Deaths: %d/%d" % [gm.death_count, gm.MAX_DEATHS]
 
 func _process(delta: float) -> void:
 	# Efecto flotante con intensidad 100 (equivalente a 10 unidades de amplitud)

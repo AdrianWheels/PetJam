@@ -221,17 +221,19 @@ func _fade_out_in(callback: Callable) -> void:
 		tween.tween_callback(func(): fade_layer.visible = false)
 
 func _input(event: InputEvent) -> void:
-		# Atajo para abrir comparador de animaciones (F5)
-		if event is InputEventKey and event.pressed and event.keycode == KEY_F5:
-				get_tree().change_scene_to_file("res://scenes/sandboxes/AnimationTestComparison.tscn")
-				return
-		
-		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
-				var ui_mgr = get_node_or_null("/root/UIManager")
-				if ui_mgr and not ui_mgr.can_toggle_area():
-						return
-				var target_area := &"dungeon" if _get_current_area() == &"forge" else &"forge"
-				change_area(target_area)
+	# Atajo para abrir comparador de animaciones (F5)
+	if event is InputEventKey and event.pressed and event.keycode == KEY_F5:
+		get_tree().change_scene_to_file("res://scenes/sandboxes/AnimationTestComparison.tscn")
+		return
+	
+	# DESACTIVADO: Toggle de área con clic derecho
+	# Ahora se usan los botones de UI (bell, blueprints, closet, dungeon icons)
+	#if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+	#	var ui_mgr = get_node_or_null("/root/UIManager")
+	#	if ui_mgr and not ui_mgr.can_toggle_area():
+	#		return
+	#	var target_area := &"dungeon" if _get_current_area() == &"forge" else &"forge"
+	#	change_area(target_area)
 
 func _process(_delta: float) -> void:
 		if _get_current_area() != &"dungeon" or corridor == null or dungeon_status == null:
@@ -248,7 +250,18 @@ func _on_enemy_spawned(enemy_level: int) -> void:
 
 func _on_game_over() -> void:
 	print("Main: GAME OVER - Switching to GameOverScreen")
-	get_tree().change_scene_to_file("res://scenes/UI/GameOverScreen.tscn")
+	_load_game_over_screen(false)
+
+func _load_game_over_screen(victory: bool) -> void:
+	"""Carga la pantalla de Game Over con el estado de victoria/derrota"""
+	var packed_scene = load("res://scenes/UI/GameOverScreen.tscn")
+	if packed_scene:
+		var scene_instance = packed_scene.instantiate()
+		if "is_victory" in scene_instance:
+			scene_instance.is_victory = victory
+		get_tree().root.add_child(scene_instance)
+		get_tree().current_scene.queue_free()
+		get_tree().current_scene = scene_instance
 
 func _on_hero_died(death_count: int) -> void:
 		print("Main: Hero died (%d)" % death_count)
@@ -259,8 +272,11 @@ func _on_hero_respawned(death_count: int) -> void:
 		_update_hud_label("Hero ready (deaths %d)" % death_count)
 
 func _on_boss_defeated() -> void:
-		print("Main: Boss defeated!")
-		_update_hud_label("Boss defeated!")
+	print("Main: Boss defeated! Loading victory screen")
+	_update_hud_label("Boss defeated!")
+	# Esperar 2 segundos antes de mostrar victoria
+	await get_tree().create_timer(2.0).timeout
+	_load_game_over_screen(true)
 
 func _on_area_changed(new_area: StringName) -> void:
 	current_area = new_area

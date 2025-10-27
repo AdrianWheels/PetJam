@@ -7,7 +7,7 @@ class_name MinigameFX
 # 🎨 PALETA DE COLORES ESTÁNDAR
 const COLORS := {
 	"Perfect": Color("#22c55e"),     # Verde brillante
-	"Bien": Color("#38bdf8"),        # Azul cielo
+	"Good": Color("#38bdf8"),        # Azul cielo
 	"Regular": Color("#f59e0b"),     # Naranja
 	"Miss": Color("#ef4444"),        # Rojo
 	"Neutral": Color("#94a3b8"),     # Gris azulado
@@ -22,14 +22,14 @@ const COLORS := {
 # 🎯 INTENSIDADES DE EFECTOS POR CALIDAD
 const INTENSITY := {
 	"Perfect": {"pulse_scale": 1.5, "particles": 24, "shake": 0.15, "flash": 0.6},
-	"Bien": {"pulse_scale": 1.25, "particles": 12, "shake": 0.08, "flash": 0.35},
+	"Good": {"pulse_scale": 1.25, "particles": 12, "shake": 0.08, "flash": 0.35},
 	"Regular": {"pulse_scale": 1.1, "particles": 6, "shake": 0.04, "flash": 0.15},
 	"Miss": {"pulse_scale": 1.0, "particles": 3, "shake": 0.12, "flash": 0.25},
 }
 
 ## Crea un efecto de pulso visual en una posición
 ## @param position: Posición en pantalla
-## @param quality: "Perfect", "Bien", "Regular", "Miss"
+## @param quality: "Perfect", "Good", "Regular", "Miss"
 ## @param parent: Nodo padre donde añadir el efecto
 static func create_pulse(position: Vector2, quality: String, parent: Node) -> void:
 	var config: Dictionary = INTENSITY.get(quality, INTENSITY["Miss"])
@@ -53,7 +53,7 @@ static func create_pulse(position: Vector2, quality: String, parent: Node) -> vo
 
 ## Crea partículas explosivas desde una posición
 ## @param position: Centro de la explosión
-## @param quality: "Perfect", "Bien", "Regular", "Miss"
+## @param quality: "Perfect", "Good", "Regular", "Miss"
 ## @param parent: Nodo padre
 static func create_particles(position: Vector2, quality: String, parent: Node) -> void:
 	var config: Dictionary = INTENSITY.get(quality, INTENSITY["Miss"])
@@ -87,7 +87,7 @@ static func create_particles(position: Vector2, quality: String, parent: Node) -
 
 ## Aplica screen shake a una cámara o nodo
 ## @param node: Nodo a sacudir (típicamente Camera2D o Control)
-## @param quality: "Perfect", "Bien", "Regular", "Miss"
+## @param quality: "Perfect", "Good", "Regular", "Miss"
 static func apply_shake(node: Node, quality: String) -> void:
 	if node == null:
 		return
@@ -127,7 +127,7 @@ static func apply_shake(node: Node, quality: String) -> void:
 		tween.tween_property(node, "position", original_pos, 0.1)
 
 ## Crea un flash de pantalla completa
-## @param quality: "Perfect", "Bien", "Regular", "Miss"
+## @param quality: "Perfect", "Good", "Regular", "Miss"
 ## @param parent: Nodo padre (típicamente el minijuego)
 static func create_flash(quality: String, parent: Node) -> void:
 	var config: Dictionary = INTENSITY.get(quality, INTENSITY["Miss"])
@@ -156,7 +156,7 @@ static func create_flash(quality: String, parent: Node) -> void:
 
 ## Efecto completo de feedback (flash + partículas + pulso)
 ## @param position: Posición en pantalla
-## @param quality: "Perfect", "Bien", "Regular", "Miss"
+## @param quality: "Perfect", "Good", "Regular", "Miss"
 ## @param parent: Nodo padre
 static func full_feedback(position: Vector2, quality: String, parent: Node) -> void:
 	create_flash(quality, parent)
@@ -166,7 +166,7 @@ static func full_feedback(position: Vector2, quality: String, parent: Node) -> v
 ## Crea un label flotante con texto de feedback
 ## @param position: Posición inicial
 ## @param text: Texto a mostrar
-## @param quality: "Perfect", "Bien", "Regular", "Miss"
+## @param quality: "Perfect", "Good", "Regular", "Miss"
 ## @param parent: Nodo padre
 static func create_floating_label(position: Vector2, text: String, quality: String, parent: Node) -> void:
 	var color: Color = COLORS.get(quality, COLORS["Neutral"])

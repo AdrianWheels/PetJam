@@ -12,13 +12,13 @@
 script = ExtResource("5_accye")
 precision = 0.5
 weight = 0.6
-label = "Casco"
+label = "Helmet"
 minigame_id = &"Hammer"
 minigame_scene = ExtResource("4")
 max_score = 650.0
 parameters = {
 "hammer_speed": 85,
-"label": "Casco",
+"label": "Helmet",
 "notes": 5,
 "precision": 0.5,
 "tempo_bpm": 85,
@@ -29,7 +29,7 @@ parameters = {
 resource_name = "hammer_trial"
 script = ExtResource("2")
 trial_id = &"helmet_basic_hammer"
-display_name = "Golpear el casco"
+display_name = "Strike helmet"
 minigame_id = &"Hammer"
 minigame_scene = ExtResource("4")
 min_score = 0.55
@@ -40,8 +40,8 @@ background = ExtResource("6")
 resource_name = "helmet_basic"
 script = ExtResource("1")
 blueprint_id = &"helmet_basic"
-display_name = "Casco Básico"
-description = "Un casco robusto con buen acabado."
+display_name = "Basic Helmet"
+description = "A sturdy helmet with good finish."
 icon_path = "res://data/items/helmet_basic.tres"
 icon = ExtResource("5")
 blueprint_icon = ExtResource("1_1tofw")

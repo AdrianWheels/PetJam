@@ -6,6 +6,6 @@
 [resource]
 script = ExtResource("1")
 material_id = &"iron"
-display_name = "Hierro"
-description = "Mineral de hierro forjable"
+display_name = "Iron"
+description = "Forgeable iron ore"
 icon = ExtResource("2")

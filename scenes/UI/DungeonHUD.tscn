@@ -1,6 +1,10 @@
-[gd_scene load_steps=2 format=3 uid="uid://ntb2kx8ctcux"]
+[gd_scene load_steps=4 format=3 uid="uid://ntb2kx8ctcux"]
 
 [ext_resource type="Script" uid="uid://bjucqpkh2aqye" path="res://scripts/ui/DungeonHUD.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://c3xbrd4tp3i20" path="res://art/assets/Imagenes/Menu/forge_icon.png" id="2_forge"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7dbyo"]
+bg_color = Color(0.0768358, 0.07683582, 0.076835774, 1)
 
 [node name="DungeonHUD" type="Control"]
 layout_mode = 3
@@ -17,15 +21,17 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -768.0
+offset_top = -880.0
 grow_horizontal = 2
 grow_vertical = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_7dbyo")
 
 [node name="MarginContainer" type="MarginContainer" parent="MainPanel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_top = 90.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/margin_left = 30
@@ -49,17 +55,17 @@ theme_override_constants/separation = 10
 [node name="RunLabel" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/TopSection/ProgressSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-text = "Sala: 1/8"
+text = "Room: 1/8"
 
 [node name="DeathLabel" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/TopSection/ProgressSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-text = "Muertes: 0"
+text = "Deaths: 0"
 
 [node name="StateLabel" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/TopSection/ProgressSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-text = "Estado: Corriendo"
+text = "State: Running"
 
 [node name="StatsSection" type="VBoxContainer" parent="MainPanel/MarginContainer/VBoxContainer/TopSection"]
 layout_mode = 2
@@ -125,16 +131,18 @@ text = "ARMOR: 0"
 
 [node name="EquipHBoxContainer" type="HBoxContainer" parent="MainPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
+size_flags_vertical = 3
 alignment = 1
 
 [node name="EquipmentSection" type="VBoxContainer" parent="MainPanel/MarginContainer/VBoxContainer/EquipHBoxContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 15
 
 [node name="EquipmentTitle" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/EquipHBoxContainer/EquipmentSection"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "EQUIPAMIENTO"
+theme_override_font_sizes/font_size = 18
+text = "EQUIPMENT"
 horizontal_alignment = 1
 
 [node name="EquipmentGrid" type="GridContainer" parent="MainPanel/MarginContainer/VBoxContainer/EquipHBoxContainer/EquipmentSection"]
@@ -155,7 +163,7 @@ color = Color(0.3, 0.3, 0.35, 1)
 [node name="HelmetLabel" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/EquipHBoxContainer/EquipmentSection/EquipmentGrid/HelmetSlot"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Casco"
+text = "Helmet"
 horizontal_alignment = 1
 
 [node name="HelmetName" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/EquipHBoxContainer/EquipmentSection/EquipmentGrid/HelmetSlot"]
@@ -176,7 +184,7 @@ color = Color(0.3, 0.3, 0.35, 1)
 [node name="WeaponLabel" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/EquipHBoxContainer/EquipmentSection/EquipmentGrid/WeaponSlot"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Arma"
+text = "Weapon"
 horizontal_alignment = 1
 
 [node name="WeaponName" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/EquipHBoxContainer/EquipmentSection/EquipmentGrid/WeaponSlot"]
@@ -197,7 +205,7 @@ color = Color(0.3, 0.3, 0.35, 1)
 [node name="ShieldLabel" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/EquipHBoxContainer/EquipmentSection/EquipmentGrid/ShieldSlot"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Escudo"
+text = "Shield"
 horizontal_alignment = 1
 
 [node name="ShieldName" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/EquipHBoxContainer/EquipmentSection/EquipmentGrid/ShieldSlot"]
@@ -218,7 +226,7 @@ color = Color(0.3, 0.3, 0.35, 1)
 [node name="BootsLabel" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/EquipHBoxContainer/EquipmentSection/EquipmentGrid/BootsSlot"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Botas"
+text = "Boots"
 horizontal_alignment = 1
 
 [node name="BootsName" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/EquipHBoxContainer/EquipmentSection/EquipmentGrid/BootsSlot"]
@@ -239,7 +247,7 @@ color = Color(0.3, 0.3, 0.35, 1)
 [node name="ArmorLabel" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/EquipHBoxContainer/EquipmentSection/EquipmentGrid/ArmorSlot"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Armadura"
+text = "Armor"
 horizontal_alignment = 1
 
 [node name="ArmorName" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/EquipHBoxContainer/EquipmentSection/EquipmentGrid/ArmorSlot"]
@@ -250,12 +258,13 @@ horizontal_alignment = 1
 
 [node name="InventorySection" type="VBoxContainer" parent="MainPanel/MarginContainer/VBoxContainer/EquipHBoxContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 10
 
 [node name="InventoryTitle" type="Label" parent="MainPanel/MarginContainer/VBoxContainer/EquipHBoxContainer/InventorySection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "INVENTARIO FORJA (Items Crafteados)"
+text = "FORGE INVENTORY (Crafted Items)"
 horizontal_alignment = 1
 
 [node name="InventoryScroll" type="ScrollContainer" parent="MainPanel/MarginContainer/VBoxContainer/EquipHBoxContainer/InventorySection"]
@@ -275,8 +284,10 @@ layout_mode = 2
 [node name="Separator2" type="HSeparator" parent="MainPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="BackButton" type="Button" parent="MainPanel/MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 60)
+[node name="BackButton" type="TextureButton" parent="MainPanel/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "← Volver a Forja (Clic Derecho)"
+tooltip_text = "← Back to Forge"
+texture_normal = ExtResource("2_forge")
+ignore_texture_size = true
+stretch_mode = 5
