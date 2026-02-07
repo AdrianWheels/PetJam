@@ -1,0 +1,239 @@
+[gd_scene load_steps=8 format=3 uid="uid://cjc1dxeuc7wwj"]
+
+[ext_resource type="Script" path="res://scripts/ui/HUDMain.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://dnldhcl8qe2km" path="res://scenes/Corridor.tscn" id="2_corridor"]
+[ext_resource type="PackedScene" uid="uid://bplib8x3v7ia" path="res://scenes/UI/BlueprintLibraryPanel.tscn" id="3_blueprints"]
+[ext_resource type="Texture2D" uid="uid://bjlmprbmj26dq" path="res://art/assets/Imagenes/Menu/blueprints_icon.png" id="4_blueprints_icon"]
+[ext_resource type="Texture2D" uid="uid://cdqkvt7i4a7ph" path="res://art/assets/Imagenes/Menu/bell_icon.png" id="5_delivery_icon"]
+[ext_resource type="PackedScene" uid="uid://28clsjg2fun" path="res://scenes/UI/EquipmentPanel.tscn" id="6_equipment"]
+[ext_resource type="Texture2D" path="res://art/placeholders/forge_background.png" id="7_forge_bg"]
+
+[node name="HUD_Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+; ============================================
+; PANEL SUPERIOR: ESCENA DEL HÉROE (25% = 480px)
+; ============================================
+[node name="HeroViewPanel" type="SubViewportContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 480.0
+grow_horizontal = 2
+stretch = true
+
+[node name="HeroViewport" type="SubViewport" parent="HeroViewPanel"]
+transparent_bg = true
+handle_input_locally = false
+size = Vector2i(1080, 480)
+render_target_update_mode = 4
+
+[node name="Corridor" parent="HeroViewPanel/HeroViewport" instance=ExtResource("2_corridor")]
+position = Vector2(0, 0)
+
+[node name="HeroOverlay" type="Control" parent="HeroViewPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="RoomLabel" type="Label" parent="HeroViewPanel/HeroOverlay"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -150.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 40.0
+theme_override_font_sizes/font_size = 24
+text = "Sala 1/8"
+horizontal_alignment = 2
+
+[node name="DeathLabel" type="Label" parent="HeroViewPanel/HeroOverlay"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -150.0
+offset_top = 45.0
+offset_right = -10.0
+offset_bottom = 70.0
+theme_override_font_sizes/font_size = 18
+text = "Muertes: 0"
+horizontal_alignment = 2
+
+; ============================================
+; PANEL CENTRAL: MINIJUEGOS (50% = 960px)
+; ============================================
+[node name="MinigamePanel" type="SubViewportContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.25
+anchor_right = 1.0
+anchor_bottom = 0.75
+grow_horizontal = 2
+grow_vertical = 2
+stretch = true
+
+[node name="MinigameViewport" type="SubViewport" parent="MinigamePanel"]
+transparent_bg = true
+handle_input_locally = false
+size = Vector2i(1080, 960)
+render_target_update_mode = 4
+
+[node name="ForgeBackground" type="TextureRect" parent="MinigamePanel/MinigameViewport"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("7_forge_bg")
+expand_mode = 1
+stretch_mode = 6
+
+; ============================================
+; PANEL INFERIOR IZQUIERDO: BOTONES + COLA (25%, 70% ancho)
+; ============================================
+[node name="BottomLeftPanel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.75
+anchor_right = 0.7
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BottomLeftPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+theme_override_constants/separation = 10
+
+[node name="TouchButtonsLabel" type="Label" parent="BottomLeftPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "MINIJUEGOS"
+horizontal_alignment = 1
+
+[node name="TouchButtonsRow" type="HBoxContainer" parent="BottomLeftPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="ForgeBtn" type="Button" parent="BottomLeftPanel/VBoxContainer/TouchButtonsRow"]
+custom_minimum_size = Vector2(120, 100)
+layout_mode = 2
+text = "🔥
+Forja"
+
+[node name="HammerBtn" type="Button" parent="BottomLeftPanel/VBoxContainer/TouchButtonsRow"]
+custom_minimum_size = Vector2(120, 100)
+layout_mode = 2
+text = "🔨
+Martillo"
+
+[node name="SewBtn" type="Button" parent="BottomLeftPanel/VBoxContainer/TouchButtonsRow"]
+custom_minimum_size = Vector2(120, 100)
+layout_mode = 2
+text = "🧵
+Coser"
+
+[node name="QuenchBtn" type="Button" parent="BottomLeftPanel/VBoxContainer/TouchButtonsRow"]
+custom_minimum_size = Vector2(120, 100)
+layout_mode = 2
+text = "💧
+Temple"
+
+[node name="QueueLabel" type="Label" parent="BottomLeftPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "COLA DE PEDIDOS"
+horizontal_alignment = 1
+
+[node name="QueueContainer" type="HBoxContainer" parent="BottomLeftPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="RequestSlot1" type="ColorRect" parent="BottomLeftPanel/VBoxContainer/QueueContainer"]
+custom_minimum_size = Vector2(240, 110)
+layout_mode = 2
+color = Color(0.3, 0.3, 0.35, 1)
+
+[node name="RequestSlot2" type="ColorRect" parent="BottomLeftPanel/VBoxContainer/QueueContainer"]
+custom_minimum_size = Vector2(240, 110)
+layout_mode = 2
+color = Color(0.3, 0.3, 0.35, 1)
+
+[node name="RequestSlot3" type="ColorRect" parent="BottomLeftPanel/VBoxContainer/QueueContainer"]
+custom_minimum_size = Vector2(240, 110)
+layout_mode = 2
+color = Color(0.3, 0.3, 0.35, 1)
+
+; ============================================
+; PANEL INFERIOR DERECHO: BLUEPRINTS + ENTREGAS (25%, 30% ancho)
+; ============================================
+[node name="BottomRightPanel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.7
+anchor_top = 0.75
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BottomRightPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="BlueprintsBtn" type="TextureButton" parent="BottomRightPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Ver biblioteca de blueprints"
+texture_normal = ExtResource("4_blueprints_icon")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="DeliveryBtn" type="TextureButton" parent="BottomRightPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Ver equipamiento del héroe"
+texture_normal = ExtResource("5_delivery_icon")
+ignore_texture_size = true
+stretch_mode = 5
+
+; ============================================
+; POPUPS (Inicialmente ocultos)
+; ============================================
+[node name="BlueprintLibraryPanel" parent="." instance=ExtResource("3_blueprints")]
+visible = false
+
+[node name="EquipmentPanel" parent="." instance=ExtResource("6_equipment")]
+visible = false

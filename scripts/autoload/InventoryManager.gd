@@ -3,6 +3,7 @@ class_name InventoryManager
 
 signal inventory_changed(current_inventory)
 signal crafted_items_changed(items_array)
+signal equipment_changed(equipment_stats: Dictionary)
 
 # Diccionario de materiales (StringName -> int)
 var inventory: Dictionary = {}
@@ -141,6 +142,7 @@ func equip_item(item: CraftedItem) -> bool:
 	item.is_equipped = true
 	
 	emit_signal("crafted_items_changed", crafted_items)
+	emit_signal("equipment_changed", calculate_total_stats())
 	print("InventoryManager: Equipado %s en slot %s" % [item.get_display_name(), slot])
 	return true
 
@@ -154,6 +156,7 @@ func unequip_item(slot: String) -> bool:
 	equipped_items.erase(slot)
 	
 	emit_signal("crafted_items_changed", crafted_items)
+	emit_signal("equipment_changed", calculate_total_stats())
 	print("InventoryManager: Desequipado item del slot %s" % slot)
 	return true
 

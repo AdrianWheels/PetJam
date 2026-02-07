@@ -110,15 +110,10 @@ func _setup_animations() -> void:
 	call_deferred("_change_animation", AnimState.IDLE)
 
 func _process(delta: float) -> void:
-	"""Sistema de animación para enemigos"""
 	if not sprite_node or not sprite_node is Sprite2D or anim_config.is_empty():
 		return
 	
-	# DEBUG: Estado de animación
-	if Engine.get_frames_drawn() % 60 == 0:  # Cada 60 frames (~1 segundo)
-		print("Enemy Animation State: alive=%s, is_attacking=%s, current_anim=%s" % [alive, is_attacking, AnimState.keys()[current_anim_state]])
-	
-	# Determinar estado de animación
+	# Determinar estado de animacion
 	var target_state := AnimState.IDLE
 	if not alive:
 		target_state = AnimState.DEATH
@@ -126,7 +121,6 @@ func _process(delta: float) -> void:
 		target_state = AnimState.ATTACK
 	
 	if target_state != current_anim_state:
-		print("Enemy: Changing animation from %s to %s" % [AnimState.keys()[current_anim_state], AnimState.keys()[target_state]])
 		_change_animation(target_state)
 	
 	# Animar solo si el FPS > 0
@@ -167,16 +161,13 @@ func _process(delta: float) -> void:
 			
 			# Si alcanzamos hit_frame y no hemos disparado aún
 			if prev_frame != hit_frame and current_frame == hit_frame and not _hit_frame_triggered:
-				print("Enemy: ✨ HIT FRAME REACHED! Emitting signal")
 				emit_signal("hit_frame_reached")
-				_hit_frame_triggered = true  # Marcar como disparado
+				_hit_frame_triggered = true
 			
-			# Resetear flag y terminar ataque SOLO si ya emitimos señal
+			# Resetear flag y terminar ataque SOLO si ya emitimos senal
 			if current_frame == start_frame and _hit_frame_triggered:
 				_hit_frame_triggered = false
-				# Terminar ataque tras completar el ciclo de animación
 				if is_attacking:
-					print("Enemy: Attack animation cycle complete (after hit), resetting is_attacking")
 					is_attacking = false
 
 func _change_animation(new_state: AnimState) -> void:
@@ -228,25 +219,32 @@ func configure_for_level(lv: int, boss: bool) -> void:
 	_update_visuals()
 
 func reset_stats():
-	# Escala MUCHO más agresiva - necesitas crafteo para avanzar
-	STR = 3.0 + level * 2.5  # Era 1.4, ahora 2.5
-	AGI = 1.5 + level * 1.2  # Era 0.8, ahora 1.2
-	INT = 1.5 + level * 0.9  # Era 0.6, ahora 0.9
+	# --- Escalado infinito exponencial ---
+	# Combina componente lineal suave + exponencial para curva idle game.
+	# Niveles 1-10: accesibles con equipo basico.
+	# Niveles 10-50: necesitas crafteo activo.
+	# Niveles 50+:  exponencial puro, necesitas equipo optimizado.
+	var exp_factor := pow(1.04, level - 1)  # +4% compuesto por nivel
+	var lin_factor := 1.0 + 0.15 * (level - 1)  # +15% lineal por nivel
+	var scale := lin_factor * exp_factor  # Combinado
 	var multiplier := (BOSS_LEVEL_MULTIPLIER if is_boss else 1.0)
-	# HP escala mucho más: nivel 1 = 40, nivel 2 = 72, nivel 3 = 112
-	var base_hp := BASE_HP * (1.0 + (level - 1) * 0.8) * multiplier  # Era 0.15, ahora 0.8
-	max_hp = int(base_hp)
+
+	STR = (3.0 + level * 1.5) * exp_factor
+	AGI = (1.5 + level * 0.8) * sqrt(exp_factor)  # Crece mas lento
+	INT = (1.5 + level * 0.6) * sqrt(exp_factor)
+
+	max_hp = int(BASE_HP * scale * multiplier)
 	hp = max_hp
-	dmg = (BASE_DMG + STR * 1.8) * multiplier  # Era 1.5, ahora 1.8
-	aps = clamp(BASE_APS + AGI * 0.03, 0.3, 5.0)  # Era 0.02, ahora 0.03
-	crit_p = min(0.5, AGI * 0.008)  # Era 0.005, ahora 0.008
-	crit_m = clamp(1.5 + INT * 0.015, 1.0, 2.5)  # Era 0.01/2.0, ahora 0.015/2.5
+	dmg = (BASE_DMG + STR * 1.5) * multiplier
+	aps = clamp(BASE_APS + AGI * 0.02, 0.3, 4.0)
+	crit_p = min(0.5, AGI * 0.006)
+	crit_m = clamp(1.5 + INT * 0.012, 1.0, 3.0)
 	atk_timer = 1.0 / aps
 	pulse_timer = PULSE_INTERVAL
 	alive = true
 	size = Vector2(40 + min(20, level * 2), 52 + min(18, level * 2))
 	shape = "rect" if level % 2 == 0 else "circle"
-	print("Enemy: Level %d stats: HP=%d, DMG=%.1f, APS=%.2f (STR=%.1f, AGI=%.1f, INT=%.1f)" % [level, max_hp, dmg, aps, STR, AGI, INT])
+	DebugManager.log_msg(&"combat", "Enemy Lv%d: HP=%d, DMG=%.1f, APS=%.2f, scale=%.2f" % [level, max_hp, dmg, aps, scale])
 	emit_signal("stats_reset")
 
 func expected_dps() -> float:
@@ -265,18 +263,13 @@ func take_damage(amount: int, _is_pulse: bool = false):
 func attack(target, _particles: Array):
 	"""Gestiona timer de ataque. Cuando llega a 0, lanza animación ATTACK."""
 	if not alive or target == null or not target.alive:
-		if is_attacking:
-			print("Enemy: Stopping attack (not alive or no target), setting is_attacking=false")
 		is_attacking = false
 		return
 	
-	# Decrementar timer continuamente
 	atk_timer -= get_process_delta_time()
 	
-	# Si timer llega a 0 o menos, lanzar animación de ataque
 	if atk_timer <= 0.0:
 		if not is_attacking:
-			print("Enemy: Timer ready (%.2fs), launching ATTACK animation" % atk_timer)
 			is_attacking = true
 			_change_animation(AnimState.ATTACK)
 		# Resetear timer para próximo ataque

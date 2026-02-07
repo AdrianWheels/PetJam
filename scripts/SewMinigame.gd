@@ -209,29 +209,33 @@ func _input(event):
 	if not _running or not _note_active or _note_judged:
 		return
 	
-	var is_click := false
-	var mouse_pos := Vector2.ZERO
+	var is_action := false
+	var action_pos := Vector2.ZERO
 	
-	# Detectar click/espacio
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		is_click = true
-		mouse_pos = event.position
-		print("🖱️ [SEW] Mouse click detected at: %v" % mouse_pos)
+	# Detectar touch/click/espacio
+	if event is InputEventScreenTouch and event.pressed:
+		is_action = true
+		action_pos = event.position
+		print("📱 [SEW] Screen touch detected at: %v" % action_pos)
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		is_action = true
+		action_pos = event.position
+		print("🖱️ [SEW] Mouse click detected at: %v" % action_pos)
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_SPACE:
-		is_click = true
-		mouse_pos = get_viewport().get_mouse_position()
-		print("⌨️  [SEW] Space pressed, mouse at: %v" % mouse_pos)
+		is_action = true
+		action_pos = get_viewport().get_mouse_position()
+		print("⌨️  [SEW] Space pressed, mouse at: %v" % action_pos)
 	
-	if is_click:
+	if is_action:
 		# 🎯 Calcular centro del círculo en coordenadas locales del viewport
 		# CRÍTICO: No usar global_position dentro de SubViewport, usar position local
 		var circle_center := _collapsing_circle.position + _collapsing_circle.size / 2.0
-		var distance_to_center := mouse_pos.distance_to(circle_center)
+		var distance_to_center := action_pos.distance_to(circle_center)
 		var current_circle_radius := (_current_radius / START_R) * (_collapsing_circle.size.x / 2.0)
 		
 		# 🔍 DEBUG: Información detallada
 		print("  📍 Circle center (local): %v" % circle_center)
-		print("  📍 Mouse pos (viewport): %v" % mouse_pos)
+		print("  📍 Action pos (viewport): %v" % action_pos)
 		print("  📏 Distance to center: %.1f px" % distance_to_center)
 		print("  ⭕ Current circle radius: %.1f px" % current_circle_radius)
 		print("  ✅ Inside circle: %s" % (distance_to_center <= current_circle_radius))
@@ -244,7 +248,7 @@ func _input(event):
 			_judge_hit(diff, late)
 			accept_event()
 		else:
-			print("  ❌ Click outside circle, ignored")
+			print("  ❌ Action outside circle, ignored")
 
 func _judge_hit(diff: float, _late: bool) -> void:
 	if _note_judged:

@@ -173,8 +173,14 @@ func _input(event):
 	if not _running or not _hammer_note.visible:
 		return
 	
-	if (event is InputEventMouseButton and event.pressed) or \
+	var is_action := false
+	if event is InputEventScreenTouch and event.pressed:
+		is_action = true
+	elif (event is InputEventMouseButton and event.pressed) or \
 	   (event is InputEventKey and event.pressed and event.keycode == KEY_SPACE):
+		is_action = true
+		
+	if is_action:
 		var current_time: float = Time.get_ticks_msec() / 1000.0
 		var time_diff_ms: float = abs(_next_hit_time - current_time) * 1000.0
 		_judge_hit(time_diff_ms)

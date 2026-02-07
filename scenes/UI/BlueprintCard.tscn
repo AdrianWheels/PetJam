@@ -1,0 +1,64 @@
+[gd_scene load_steps=2 format=3 uid="uid://cax2scdqvexf"]
+
+[ext_resource type="Script" path="res://scripts/ui/BlueprintCard.gd" id="1_x"]
+
+[node name="BlueprintCard" type="PanelContainer"]
+custom_minimum_size = Vector2(160, 180)
+offset_right = 160.0
+offset_bottom = 180.0
+script = ExtResource("1_x")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="IconContainer" type="Control" parent="VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="Icon" type="TextureRect" parent="VBox/IconContainer"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 2
+stretch_mode = 5
+
+[node name="LockOverlay" type="ColorRect" parent="VBox/IconContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.470588)
+
+[node name="LockIcon" type="Label" parent="VBox/IconContainer/LockOverlay"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -11.5
+offset_right = 20.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+text = "🔒"
+horizontal_alignment = 1
+
+[node name="NameLabel" type="Label" parent="VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Blueprint Name"
+horizontal_alignment = 1
+autowrap_mode = 3

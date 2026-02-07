@@ -9,10 +9,10 @@ extends Node2D
 
 const HERO_SPEED := 120.0
 const SPAWN_DISTANCE := 520.0
-const GROUND_Y := 1120.0
+const GROUND_Y := 350.0  # Ajustado para viewport 1080x480
 const CAM_LERP := 0.12
-const HERO_START := Vector2(2100, GROUND_Y)
-const BOSS_LEVEL := 8
+const HERO_START := Vector2(400, GROUND_Y)  # Mas cerca para empezar visible
+const BOSS_INTERVAL := 10  # Boss cada 10 niveles
 const RESPAWN_DELAY := 1.5
 
 enum State { RUN, FIGHT, DEAD, COMPLETE }
@@ -64,19 +64,6 @@ func _ready():
                         _game_manager.connect("enemy_level_changed", Callable(self, "_on_enemy_level_changed"))
 
         reset_combat(true)
-        
-        # DEBUG: Imprimir setup inicial
-        print("CORRIDOR READY DEBUG:")
-        print("  Corridor position: ", position)
-        print("  Corridor global_position: ", global_position)
-        if hero:
-                print("  Hero position: ", hero.position)
-                print("  Hero global_position: ", hero.global_position)
-        if camera:
-                print("  Camera position: ", camera.position)
-                print("  Camera global_position: ", camera.global_position)
-        print("  GROUND_Y constant: ", GROUND_Y)
-        print("  HERO_START constant: ", HERO_START)
 
 func _notification(what: int) -> void:
         # Detectar cuando Corridor se hace visible/invisible
@@ -112,16 +99,7 @@ func update_run(delta: float):
         if hero and hero.alive:
                 hero.position.x += HERO_SPEED * delta
         if hero and enemy and hero.alive and enemy.alive:
-                var hero_pos = hero.position
-                var enemy_pos = enemy.position
-                var distance = hero_pos.distance_to(enemy_pos)
-                
-                # Debug cada 60 frames
-                if Engine.get_frames_drawn() % 60 == 0:
-                        print("Corridor RUN: hero_pos=%v, enemy_pos=%v, distance=%.1f" % [hero_pos, enemy_pos, distance])
-                
                 if check_overlap(hero.position, hero.size, enemy.position, enemy.size):
-                        print("Corridor: OVERLAP DETECTED! Switching to FIGHT state")
                         state = State.FIGHT
                         if combat_controller and combat_controller.has_method("start_combat"):
                                 combat_controller.start_combat()
@@ -140,18 +118,18 @@ func cam_follow(delta: float):
         if hero == null or camera == null:
                 return
         # Calcular target X (33% desde la izquierda del viewport)
-        var target_x = hero.position.x - 540.0 * 0.33  # 540 es mitad de 1080
+        # Viewport es 1080x480, así que centro X = 540
+        var target_x = hero.position.x - 540.0 * 0.33
         cam_x = lerp(cam_x, target_x, 1.0 - pow(1.0 - CAM_LERP, max(1.0, delta * 60.0)))
         
-        # Calcular Y: Bajar al héroe más, queremos que esté a ~700px desde el top
-        # Viewport centro Y = 960px
-        # Hero debe estar en: 700px desde viewport top
-        # Offset héroe desde cámara debe ser: 700 - 960 = -260px
-        # Camera Y: hero.y - (-260) = hero.y + 260
-        var target_y = hero.position.y + 260.0
+        # Para viewport de 480px de alto, queremos al héroe centrado
+        var target_y = hero.position.y
         
         camera.position.x = cam_x
         camera.position.y = target_y
+        
+        # Aplicar zoom para que el héroe se vea más grande
+        camera.zoom = Vector2(1.5, 1.5)
 
 func check_overlap(pos1: Vector2, size1: Vector2, pos2: Vector2, size2: Vector2) -> bool:
         var rect1 = Rect2(pos1 - size1 / 2.0, size1)
@@ -165,17 +143,12 @@ func check_overlap(pos1: Vector2, size1: Vector2, pos2: Vector2, size2: Vector2)
         return overlaps
 
 func advance_enemy():
-        if state == State.COMPLETE:
-                return
-        if enemy and enemy.is_boss and not enemy.alive:
-                state = State.COMPLETE
-                return
-        # Delegar al GameManager para avanzar nivel de enemigo
+        # Endless: siempre avanza al siguiente nivel
         if _game_manager and _game_manager.has_method("advance_enemy_level"):
                 _game_manager.advance_enemy_level()
         else:
-                # Fallback local si no hay GameManager
-                level = min(BOSS_LEVEL, level + 1)
+                # Fallback local
+                level += 1
                 spawn_enemy(level, hero.position.x + SPAWN_DISTANCE)
                 state = State.RUN
                 dist_ref = enemy.position.x - hero.position.x
@@ -193,7 +166,7 @@ func spawn_enemy(lv: int, x: float):
                 # Fallback a posición calculada
                 spawn_pos = Vector2(x, GROUND_Y)
         
-        var boss := lv >= BOSS_LEVEL
+        var boss := lv % BOSS_INTERVAL == 0 and lv > 0  # Boss cada N niveles
         if enemy.has_method("configure_for_level"):
                 enemy.configure_for_level(lv, boss)
         else:
@@ -223,7 +196,7 @@ func reset_combat(full_reset: bool):
                         print("Corridor: Syncing enemy level from GameManager = %d" % level)
         spawn_enemy(level, hero_spawn_pos.x + SPAWN_DISTANCE)
         state = State.RUN
-        cam_x = hero.position.x - 960.0 * 0.33 if hero else 0.0
+        cam_x = hero.position.x - 540.0 * 0.33 if hero else 0.0
         ground_offset = 0.0
         dist_ref = enemy.position.x - hero.position.x if hero and enemy else 0.0
 
@@ -250,15 +223,12 @@ func _on_local_hero_died():
                 _start_respawn_timer()
 
 func _on_game_manager_hero_died(_death_count):
-        if state != State.COMPLETE:
-                _start_respawn_timer()
+        # Endless: siempre iniciar respawn
+        _start_respawn_timer()
 
 func _on_respawn_timeout():
         if _game_manager and _game_manager.has_method("request_respawn"):
                 if _game_manager.request_respawn():
-                        return
-                if _game_manager.has_method("is_run_failed") and _game_manager.is_run_failed():
-                        state = State.COMPLETE
                         return
         _perform_respawn()
 
@@ -266,15 +236,14 @@ func _on_game_manager_hero_respawned(_death_count):
         _perform_respawn()
 
 func _perform_respawn():
-        if state == State.COMPLETE:
-                return
         reset_combat(false)
 
 func _on_enemy_stats_reset():
         dist_ref = enemy.position.x - hero.position.x if hero and enemy else 0.0
 
 func _on_boss_defeated():
-        state = State.COMPLETE
+        # Endless: boss es milestone, no terminal. Continuar avanzando.
+        pass
 
 func _on_enemy_level_changed(new_level: int):
         print("Corridor: Enemy level changed to %d" % new_level)

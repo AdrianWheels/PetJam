@@ -1,0 +1,270 @@
+[gd_scene load_steps=3 format=3 uid="uid://28clsjg2fun"]
+
+[ext_resource type="Script" path="res://scripts/ui/EquipmentPanel.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://b8y2n2j2m1k2l" path="res://art/assets/Imagenes/hero_stand_sin_fondo.png" id="2"]
+
+[node name="EquipmentPanel" type="ColorRect"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.8)
+script = ExtResource("1")
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -520.0
+offset_top = -360.0
+offset_right = 520.0
+offset_bottom = 360.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MainVBox" type="VBoxContainer" parent="PanelContainer"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="TitleBar" type="HBoxContainer" parent="PanelContainer/MainVBox"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="PanelContainer/MainVBox/TitleBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 28
+text = "⚔️ Hero Equipment"
+horizontal_alignment = 1
+
+[node name="CloseBtn" type="Button" parent="PanelContainer/MainVBox/TitleBar"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "✕"
+
+[node name="ContentHBox" type="HBoxContainer" parent="PanelContainer/MainVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 15
+
+; ============================================
+; LEFT PART: EQUIPMENT (DARKER BACKGROUND)
+; ============================================
+[node name="EquipmentBG" type="ColorRect" parent="PanelContainer/MainVBox/ContentHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.5
+color = Color(0.12, 0.12, 0.15, 1)
+
+[node name="WoWStyleLayout" type="HBoxContainer" parent="PanelContainer/MainVBox/ContentHBox/EquipmentBG"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="LeftColumn" type="VBoxContainer" parent="PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+theme_override_constants/separation = 25
+alignment = 1
+
+[node name="HelmetSlot" type="VBoxContainer" parent="PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout/LeftColumn"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="HelmetIcon" type="ColorRect" parent="PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout/LeftColumn/HelmetSlot"]
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.2, 0.2, 0.25, 1)
+
+[node name="HelmetLabel" type="Label" parent="PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout/LeftColumn/HelmetSlot"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.8, 1)
+theme_override_font_sizes/font_size = 12
+text = "Helmet"
+horizontal_alignment = 1
+
+[node name="ArmorSlot" type="VBoxContainer" parent="PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout/LeftColumn"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ArmorIcon" type="ColorRect" parent="PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout/LeftColumn/ArmorSlot"]
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.2, 0.2, 0.25, 1)
+
+[node name="ArmorLabel" type="Label" parent="PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout/LeftColumn/ArmorSlot"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.8, 1)
+theme_override_font_sizes/font_size = 12
+text = "Armor"
+horizontal_alignment = 1
+
+[node name="HeroCenter" type="CenterContainer" parent="PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HeroTexture" type="TextureRect" parent="PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout/HeroCenter"]
+custom_minimum_size = Vector2(240, 360)
+layout_mode = 2
+texture = ExtResource("2")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RightColumn" type="VBoxContainer" parent="PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="WeaponSlot" type="VBoxContainer" parent="PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout/RightColumn"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="WeaponIcon" type="ColorRect" parent="PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout/RightColumn/WeaponSlot"]
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.2, 0.2, 0.25, 1)
+
+[node name="WeaponLabel" type="Label" parent="PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout/RightColumn/WeaponSlot"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.8, 1)
+theme_override_font_sizes/font_size = 12
+text = "Weapon"
+horizontal_alignment = 1
+
+[node name="ShieldSlot" type="VBoxContainer" parent="PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout/RightColumn"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ShieldIcon" type="ColorRect" parent="PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout/RightColumn/ShieldSlot"]
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.2, 0.2, 0.25, 1)
+
+[node name="ShieldLabel" type="Label" parent="PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout/RightColumn/ShieldSlot"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.8, 1)
+theme_override_font_sizes/font_size = 12
+text = "Shield"
+horizontal_alignment = 1
+
+[node name="BootsSlot" type="VBoxContainer" parent="PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout/RightColumn"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="BootsIcon" type="ColorRect" parent="PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout/RightColumn/BootsSlot"]
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.2, 0.2, 0.25, 1)
+
+[node name="BootsLabel" type="Label" parent="PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout/RightColumn/BootsSlot"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.8, 1)
+theme_override_font_sizes/font_size = 12
+text = "Boots"
+horizontal_alignment = 1
+
+; ============================================
+; RIGHT PART: MOCHILA (LIGHTER BACKGROUND)
+; ============================================
+[node name="InventoryBG" type="ColorRect" parent="PanelContainer/MainVBox/ContentHBox"]
+custom_minimum_size = Vector2(350, 0)
+layout_mode = 2
+color = Color(0.18, 0.18, 0.22, 1)
+
+[node name="InventorySection" type="VBoxContainer" parent="PanelContainer/MainVBox/ContentHBox/InventoryBG"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="InventoryTitle" type="Label" parent="PanelContainer/MainVBox/ContentHBox/InventoryBG/InventorySection"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.9, 0.95, 1)
+theme_override_font_sizes/font_size = 18
+text = "BACKPACK"
+horizontal_alignment = 1
+
+[node name="InventoryScroll" type="ScrollContainer" parent="PanelContainer/MainVBox/ContentHBox/InventoryBG/InventorySection"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="InventoryGrid" type="GridContainer" parent="PanelContainer/MainVBox/ContentHBox/InventoryBG/InventorySection/InventoryScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 4
+
+; ============================================
+; FOOTER: STATS (DISTINCT BACKGROUND)
+; ============================================
+[node name="StatsBG" type="ColorRect" parent="PanelContainer/MainVBox"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+color = Color(0.2, 0.2, 0.25, 0.5)
+
+[node name="HeroStatsSection" type="VBoxContainer" parent="PanelContainer/MainVBox/StatsBG"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 5
+alignment = 1
+
+[node name="StatsTitle" type="Label" parent="PanelContainer/MainVBox/StatsBG/HeroStatsSection"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.5, 1)
+theme_override_font_sizes/font_size = 16
+text = "HERO STATS"
+horizontal_alignment = 1
+
+[node name="StatsGrid" type="GridContainer" parent="PanelContainer/MainVBox/StatsBG/HeroStatsSection"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/h_separation = 50
+columns = 4
+
+[node name="HPLabel" type="Label" parent="PanelContainer/MainVBox/StatsBG/HeroStatsSection/StatsGrid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "HP: 100/100"
+
+[node name="DMGLabel" type="Label" parent="PanelContainer/MainVBox/StatsBG/HeroStatsSection/StatsGrid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "DMG: 10"
+
+[node name="ARMORLabel" type="Label" parent="PanelContainer/MainVBox/StatsBG/HeroStatsSection/StatsGrid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "ARMOR: 0"
+
+[node name="CRITLabel" type="Label" parent="PanelContainer/MainVBox/StatsBG/HeroStatsSection/StatsGrid"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "CRIT: 5%"

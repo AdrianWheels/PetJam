@@ -33,7 +33,6 @@ var stored_hp: int = 0  # Backup de HP pre-invencibilidad
 var stored_dmg: float = 0.0  # Backup de DMG pre-invencibilidad
 
 var size: Vector2 = Vector2(280, 380)  # Tamaño del CollisionShape2D
-var loadout_bonus: Dictionary = {}
 
 # Animación
 enum AnimState { IDLE, WALK, ATTACK, DEATH }
@@ -103,21 +102,16 @@ func _process(delta: float) -> void:
 		if has_node("/root/DebugManager"):
 			get_node("/root/DebugManager").log_dungeon("Hero Animation State: %s" % debug_state)
 	
-	# Actualizar estado de animación según contexto
+	# Actualizar estado de animacion segun contexto
 	if not alive:
 		if current_anim_state != AnimState.DEATH:
-			print("Hero: Changing to DEATH animation")
 			_change_animation(AnimState.DEATH)
 	elif is_attacking:
 		if current_anim_state != AnimState.ATTACK:
-			print("Hero: Changing to ATTACK animation (is_attacking=true)")
 			_change_animation(AnimState.ATTACK)
 	else:
-		# Si está quieto (velocidad ~0), usar IDLE; si avanza, usar WALK
 		var target_anim = AnimState.IDLE if velocity.length() < 1.0 else AnimState.WALK
 		if current_anim_state != target_anim:
-			var anim_name = "IDLE" if target_anim == AnimState.IDLE else "WALK"
-			print("Hero: Changing to %s animation (is_attacking=false, velocity=%.1f)" % [anim_name, velocity.length()])
 			_change_animation(target_anim)
 	
 	# Animar el spritesheet actual
@@ -156,16 +150,12 @@ func _process(delta: float) -> void:
 			
 			# Si alcanzamos hit_frame y no hemos disparado aún
 			if prev_frame != hit_frame and current_frame == hit_frame and not _hit_frame_triggered:
-				print("Hero: ✨ HIT FRAME REACHED! Emitting signal")
 				emit_signal("hit_frame_reached")
-				_hit_frame_triggered = true  # Marcar como disparado
+				_hit_frame_triggered = true
 			
-			# Resetear flag y terminar ataque SOLO si ya emitimos señal
 			if current_frame == start_frame and _hit_frame_triggered:
 				_hit_frame_triggered = false
-				# Terminar ataque tras completar el ciclo de animación
 				if is_attacking:
-					print("Hero: Attack animation cycle complete (after hit), resetting is_attacking")
 					is_attacking = false
 
 func _change_animation(new_state: AnimState) -> void:
@@ -211,35 +201,31 @@ func _calculate_attack_fps() -> float:
 	return clamp(required_fps, 12.0, 60.0)
 
 func reset_stats():
-	# Obtener bonuses del equipamiento
-	var equipment_stats = {}
+	# Obtener bonuses del equipamiento (sistema unificado via InventoryManager)
+	var equipment_stats := {}
 	var inv_manager = get_node_or_null("/root/InventoryManager")
 	if inv_manager and inv_manager.has_method("calculate_total_stats"):
 		equipment_stats = inv_manager.calculate_total_stats()
 	
-	# Bonuses de stats primarios (STR, AGI, INT)
-	var bonus_str: int = int(loadout_bonus.get("STR", 0)) + int(equipment_stats.get("str", 0))
-	var bonus_agi: int = int(loadout_bonus.get("AGI", 0)) + int(equipment_stats.get("agi", 0))
-	var bonus_int: int = int(loadout_bonus.get("INT", 0)) + int(equipment_stats.get("int", 0))
-	STR = BASE_STR + bonus_str
-	AGI = BASE_AGI + bonus_agi
-	INT = BASE_INT + bonus_int
+	# Stats primarios con bonuses de equipamiento
+	STR = BASE_STR + int(equipment_stats.get("str", 0))
+	AGI = BASE_AGI + int(equipment_stats.get("agi", 0))
+	INT = BASE_INT + int(equipment_stats.get("int", 0))
 	
-	# Bonuses de stats derivados
-	var bonus_hp: int = int(loadout_bonus.get("HP", 0)) + int(equipment_stats.get("hp", 0))
-	var bonus_dmg: float = float(loadout_bonus.get("DMG", 0.0)) + float(equipment_stats.get("damage", 0))
-	var bonus_aps: float = float(loadout_bonus.get("APS", 0.0)) + float(equipment_stats.get("aps", 0.0))
-	var bonus_crit_p: float = float(loadout_bonus.get("CRIT_P", 0.0)) + float(equipment_stats.get("crit", 0.0))
-	var bonus_crit_m: float = float(loadout_bonus.get("CRIT_M", 0.0))
-	var bonus_armor: int = int(equipment_stats.get("armor", 0))  # NUEVO: armor reduce daño
+	# Stats derivados
+	var bonus_hp: int = int(equipment_stats.get("hp", 0))
+	var bonus_dmg: float = float(equipment_stats.get("damage", 0))
+	var bonus_aps: float = float(equipment_stats.get("aps", 0.0))
+	var bonus_crit_p: float = float(equipment_stats.get("crit", 0.0))
+	var bonus_armor: int = int(equipment_stats.get("armor", 0))
 	
 	max_hp = BASE_HP + STR * 10 + bonus_hp
 	hp = max_hp
 	dmg = BASE_DMG + STR * 1.5 + bonus_dmg
 	aps = clamp(BASE_APS + AGI * 0.02 + bonus_aps, 0.3, 5.0)
 	crit_p = clamp(AGI * 0.005 + bonus_crit_p, 0.0, 0.75)
-	crit_m = clamp(1.5 + INT * 0.01 + bonus_crit_m, 1.0, 3.0)
-	armor = bonus_armor  # Aplicar armor del equipamiento
+	crit_m = clamp(1.5 + INT * 0.01, 1.0, 3.0)
+	armor = bonus_armor
 	atk_timer = 1.0 / aps
 	pulse_timer = PULSE_INTERVAL
 	alive = true
@@ -287,18 +273,13 @@ func set_invincible(invincible: bool) -> void:
 func attack(target, _particles: Array) -> void:
 	"""Gestiona timer de ataque. Cuando llega a 0, lanza animación ATTACK."""
 	if not alive or target == null or not target.alive:
-		if is_attacking:
-			print("Hero: Stopping attack (not alive or no target), setting is_attacking=false")
 		is_attacking = false
 		return
 	
-	# Decrementar timer continuamente
 	atk_timer -= get_process_delta_time()
 	
-	# Si timer llega a 0 o menos, lanzar animación de ataque
 	if atk_timer <= 0.0:
 		if not is_attacking:
-			print("Hero: Timer ready (%.2fs), launching ATTACK animation" % atk_timer)
 			is_attacking = true
 			_change_animation(AnimState.ATTACK)
 		# Resetear timer para próximo ataque
@@ -330,18 +311,11 @@ func respawn(start_position: Vector2 = Vector2(2100, 1120)) -> void:
 	animation_timer = 0.0
 	current_frame = 0
 	death_hold_timer = 0.0
-	print("HERO RESPAWN DEBUG:")
-	print("  Start position: ", start_position)
-	print("  Hero position: ", position)
-	print("  Hero global_position: ", global_position)
-	if get_parent():
-		print("  Parent: ", get_parent().name)
-		print("  Parent position: ", get_parent().position if get_parent() is Node2D else "N/A")
 	emit_signal("respawned")
 
-func apply_loadout(loadout: Dictionary) -> void:
-		loadout_bonus = loadout.duplicate(true)
-		reset_stats()
+func apply_loadout(_loadout: Dictionary) -> void:
+	# Legacy: ya no se usa loadout_bonus, stats vienen de InventoryManager
+	reset_stats()
 
 func _create_spark_particle(pos: Vector2) -> Dictionary:
 		var angle := randf() * PI * 2.0

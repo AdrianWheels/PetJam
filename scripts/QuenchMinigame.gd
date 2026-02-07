@@ -253,17 +253,30 @@ func _input(event):
 		return
 	
 	# Detectar presionar (iniciar descenso)
-	if (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed) or \
+	var is_press := false
+	if event is InputEventScreenTouch and event.pressed:
+		is_press = true
+	elif (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed) or \
 	   (event is InputEventKey and event.keycode == KEY_SPACE and event.pressed):
+		is_press = true
+		
+	if is_press:
 		if not _holding:
 			_holding = true
 		_instruction_hint.text = "Cooling... Release in green zone!"
 		print("[Quench] ⏬ Button pressed - starting descent")
 		accept_event()
+		return
 	
 	# Detectar soltar
+	var is_release := false
+	if event is InputEventScreenTouch and not event.pressed:
+		is_release = true
 	elif (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed) or \
 		 (event is InputEventKey and event.keycode == KEY_SPACE and not event.pressed):
+		is_release = true
+		
+	if is_release:
 		if _holding:
 			_judge_release()
 		accept_event()

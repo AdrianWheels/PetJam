@@ -169,7 +169,16 @@ func _process(delta):
 func _input(event):
 	if not _running:
 		return
-	if (event is InputEventMouseButton and event.pressed) or (event is InputEventKey and event.pressed and event.keycode == KEY_SPACE):
+	
+	var is_action := false
+	if event is InputEventScreenTouch and event.pressed:
+		is_action = true
+	elif event is InputEventMouseButton and event.pressed:
+		is_action = true
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_SPACE:
+		is_action = true
+		
+	if is_action:
 		_finish_attempt()
 		accept_event()
 

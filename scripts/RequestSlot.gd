@@ -1,4 +1,4 @@
-extends Panel
+extends PanelContainer
 
 # Request Slot Script
 # Este script maneja la visualización e interacción de un pedido individual en la cola de pedidos
@@ -9,9 +9,9 @@ const MATERIAL_ICON_SCENE := preload("res://scenes/UI/MaterialIcon.tscn")
 
 var slot_index: int = -1
 
-@onready var icon_rect: TextureRect = $Icon
-@onready var name_label: Label = $VBoxContainer/NameLabel
-@onready var materials_container: HBoxContainer = $VBoxContainer/MaterialsContainer
+@onready var icon_rect: TextureRect = $MarginContainer/HBoxContainer/IconContainer/Icon
+@onready var name_label: Label = $MarginContainer/HBoxContainer/VBoxContainer/NameLabel
+@onready var materials_container: HBoxContainer = $MarginContainer/HBoxContainer/VBoxContainer/MaterialsContainer
 
 func _ready() -> void:
 	gui_input.connect(_on_gui_input)
@@ -62,16 +62,18 @@ func set_materials(materials) -> void:
 	pass
 
 func _add_material_row(material_name: String, quantity) -> void:
-	var hbox = HBoxContainer.new()
-	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	var container = HBoxContainer.new()
+	container.add_theme_constant_override("separation", 2)
 
 	var icon_node = MATERIAL_ICON_SCENE.instantiate()
-	icon_node.custom_minimum_size = Vector2(20, 20)
+	icon_node.custom_minimum_size = Vector2(24, 24)
 	icon_node.set("material_name", material_name)
-	hbox.add_child(icon_node)
+	container.add_child(icon_node)
 
 	var qty_label = Label.new()
-	qty_label.text = str(quantity)
-	hbox.add_child(qty_label)
+	qty_label.text = "x%s" % str(quantity)
+	qty_label.add_theme_font_size_override("font_size", 14)
+	qty_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.9))
+	container.add_child(qty_label)
 
-	materials_container.add_child(hbox)
+	materials_container.add_child(container)

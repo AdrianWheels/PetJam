@@ -4,16 +4,13 @@ class_name GameManager
 signal enemy_spawned(enemy_level)  # Cuando spawnea un nuevo nivel de enemigo
 signal hero_died(death_count)
 signal hero_respawned(death_count)
-signal boss_defeated
-signal game_over
+signal boss_defeated  # Milestone: boss derrotado (no termina el juego)
 signal dungeon_state_changed(new_state)
 signal hero_loadout_changed(loadout)
-signal enemy_defeated_first_time(enemy_level)  # Nueva señal para desbloquear blueprint
+signal enemy_defeated_first_time(enemy_level)  # Para desbloquear blueprint
 signal enemy_level_changed(new_level)  # Señal cuando cambia nivel de enemigo
 
-const MAX_DEATHS := 50
-
-enum DungeonState { IDLE, RUNNING, HERO_DEAD, COMPLETED, FAILED }
+enum DungeonState { IDLE, RUNNING, HERO_DEAD }
 
 const ITEM_DEFAULT_SLOT := {
 		&"sword_basic": &"weapon",
@@ -35,8 +32,7 @@ const ITEM_BONUSES := {
 		&"potion_heal": {"HP": 25},
 }
 
-var current_enemy_level: int = 1  # Nivel del enemigo actual (1-9)
-var max_enemy_levels: int = 9  # Total de niveles antes del jefe (nivel 8+)
+var current_enemy_level: int = 1  # Nivel del enemigo actual (infinito)
 var inventory := {}
 var blueprints_unlocked := {}
 var enemies_defeated := {}  # Track niveles de enemigo derrotados para desbloqueo de blueprints
@@ -61,100 +57,94 @@ var hero_loadout := {
 var _hero: Node = null
 
 func _ready():
-		print("GameManager: Ready")
+	DebugManager.log_msg(&"game", "GameManager ready")
+	# Conectar señal de equipamiento para actualizar stats del héroe
+	var inv_manager = get_node_or_null("/root/InventoryManager")
+	if inv_manager and inv_manager.has_signal("equipment_changed"):
+		inv_manager.equipment_changed.connect(_on_equipment_changed)
+
+func get_hero() -> Node:
+	return _hero
 
 func register_hero(hero_node: Node) -> void:
-		_hero = hero_node
-		_apply_hero_loadout()
+	_hero = hero_node
+	# Aplicar stats de equipo actual al registrar héroe
+	_on_equipment_changed({})
+
+func _on_equipment_changed(_equipment_stats: Dictionary) -> void:
+	"""Cuando cambia el equipamiento, recalcular stats del héroe"""
+	if _hero and _hero.has_method("reset_stats"):
+		_hero.reset_stats()
+		DebugManager.log_msg(&"game", "Hero stats recalculated after equipment change")
 
 func start_run():
 	current_enemy_level = 1
 	death_count = 0
 	boss_defeated_flag = false
-	enemies_defeated.clear()  # Reset enemigos derrotados al iniciar run
+	enemies_defeated.clear()
 	dungeon_state = DungeonState.RUNNING
-	print("GameManager: Starting new run at enemy level 1")
+	DebugManager.log_msg(&"game", "Starting endless run at enemy level 1")
 	emit_signal("enemy_spawned", current_enemy_level)
 	emit_signal("enemy_level_changed", current_enemy_level)
 	emit_signal("hero_respawned", death_count)
 func advance_enemy_level():
 	current_enemy_level += 1
-	print("GameManager: Advanced to enemy level %d" % current_enemy_level)
+	DebugManager.log_msg(&"game", "Advanced to enemy level %d" % current_enemy_level)
 	emit_signal("enemy_level_changed", current_enemy_level)
-	if current_enemy_level > max_enemy_levels:
-		register_boss_defeat()
-	else:
-		emit_signal("enemy_spawned", current_enemy_level)
+	# TODO: Boss cada X niveles (ej. cada 10)
+	emit_signal("enemy_spawned", current_enemy_level)
 func register_enemy_defeat(level: int) -> void:
 	if dungeon_state != DungeonState.RUNNING:
 		return
-	print("GameManager: Enemy level %d defeated (current_enemy_level: %d)" % [level, current_enemy_level])
+	DebugManager.log_msg(&"game", "Enemy level %d defeated (current: %d)" % [level, current_enemy_level])
 	
-	# Si es la primera vez que se derrota este nivel de enemigo, desbloquear blueprint
+	# Si es la primera vez que se derrota este nivel, desbloquear blueprint
 	if not enemies_defeated.has(level):
 		enemies_defeated[level] = true
-		print("GameManager: Enemy level %d defeated for FIRST TIME - unlocking blueprint" % level)
+		DebugManager.log_msg(&"game", "Enemy level %d first kill - unlocking blueprint" % level)
 		emit_signal("enemy_defeated_first_time", level)
 		
-		# Desbloquear un blueprint aleatorio
 		var dm = get_node_or_null("/root/DataManager")
 		if dm and dm.has_method("get_locked_blueprints"):
 			var locked = dm.get_locked_blueprints()
 			if locked.size() > 0:
 				var random_bp = locked[randi() % locked.size()]
 				if dm.unlock_blueprint(random_bp):
-					print("GameManager: ✓ Unlocked blueprint '%s'" % random_bp)
-					# TODO: Mostrar notificación "¡Nuevo blueprint descubierto: [Nombre]!"
-			else:
-				print("GameManager: No locked blueprints available to unlock")
+					DebugManager.log_msg(&"game", "Unlocked blueprint '%s'" % random_bp)
 func register_boss_defeat():
 		if boss_defeated_flag:
 				return
 		boss_defeated_flag = true
-		dungeon_state = DungeonState.COMPLETED
-		print("GameManager: Boss defeated! Run completed")
+		# En endless, el boss es un milestone, no termina el juego
+		DebugManager.log_msg(&"game", "Boss defeated! Continuing endless...")
 		emit_signal("boss_defeated")
-		emit_signal("game_over")
+		# Continuar al siguiente nivel
+		advance_enemy_level()
 
 func register_hero_death():
-	if dungeon_state == DungeonState.FAILED or dungeon_state == DungeonState.COMPLETED:
+	if dungeon_state != DungeonState.RUNNING:
 		return
 	death_count += 1
 	dungeon_state = DungeonState.HERO_DEAD
-	print("GameManager: Hero died (%d/%d) - will respawn at enemy level 1" % [death_count, MAX_DEATHS])
+	DebugManager.log_msg(&"game", "Hero died (total: %d) - will respawn at enemy level 1" % death_count)
 	emit_signal("hero_died", death_count)
-	
-	# Reset a nivel de enemigo 1 cuando muere
+	# Reset a nivel de enemigo 1 cuando muere (endless: sin límite)
 	current_enemy_level = 1
-	
-	if death_count >= MAX_DEATHS:
-		dungeon_state = DungeonState.FAILED
-		print("GameManager: Run failed - maximum deaths reached")
-		emit_signal("game_over")
 func request_respawn() -> bool:
 	if not can_respawn():
 		return false
 	dungeon_state = DungeonState.RUNNING
-	print("GameManager: Hero respawned at enemy level %d" % current_enemy_level)
+	DebugManager.log_msg(&"game", "Hero respawned at enemy level %d" % current_enemy_level)
 	emit_signal("hero_respawned", death_count)
-	emit_signal("enemy_spawned", current_enemy_level)  # Spawnear enemigo del nivel actual
-	emit_signal("enemy_level_changed", current_enemy_level)  # Actualizar nivel de enemigo en UI
+	emit_signal("enemy_spawned", current_enemy_level)
+	emit_signal("enemy_level_changed", current_enemy_level)
 	return true
 
 func respawn_hero():
 		return request_respawn()
 
 func can_respawn() -> bool:
-		if dungeon_state != DungeonState.HERO_DEAD:
-				return false
-		if boss_defeated_flag:
-				return false
-		if death_count >= MAX_DEATHS:
-				return false
-		return true
-
-func is_run_failed() -> bool:
-		return dungeon_state == DungeonState.FAILED
+		return dungeon_state == DungeonState.HERO_DEAD
 
 func is_run_active() -> bool:
 		return dungeon_state == DungeonState.RUNNING

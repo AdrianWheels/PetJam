@@ -1,200 +1,310 @@
-
-# Copilot — Instrucciones del proyecto (Godot 4.5 Jam)
+# Copilot — Instrucciones del proyecto PetJam (Godot 4.5)
 
 ## TL;DR
-- **Engine**: Godot **4.5.1** estable. Lenguaje: **GDScript**. 2D minimal.
-- **Goal**: Jam MVP. Un corredor con **8 salas + jefe**, héroe en auto‑avance y **4 minijuegos** de crafteo (Forja, Martillo, Coser, Temple/Agua).
+- **Engine**: Godot **4.5.1** estable. Lenguaje: **GDScript**. 2D.
+- **Plataforma objetivo**: **Android** (Google Play). Testing en desktop con ratón.
+- **Concepto**: Juego idle/casual móvil. Eres un herrero que craftea equipo via **4 minijuegos** mientras un héroe IA lucha indefinidamente en una dungeon endless. Escalado infinito. Sin condición de victoria/derrota.
 - **Arquitectura fija**: usa **9 AutoLoads** registrados: `GameManager`, `DataManager`, `InventoryManager`, `CraftingManager`, `DebugManager`, `AudioManager`, `TelemetryManager`, `UIManager`, `RequestManager`.
 - **Entrega**: todo snippet debe ser **pegable** y referenciar rutas reales `res://...`. Nada de plugins externos ni rework masivo.
-- **CRÍTICO - Indentación**: Godot 4.5 usa **TABS** exclusivamente. **NUNCA** uses espacios ni mezcles tabs y espacios. Todo el proyecto usa tabs.
-- **Resolución**: Base **1280x720** (desktop). Viewport móvil: **1080x1350** (portrait 4:5). Stretch mode: `2d` con aspect `expand`.
+- **CRÍTICO - Indentación**: Godot 4.5 usa **TABS** exclusivamente. **NUNCA** uses espacios ni mezcles tabs y espacios.
+- **Resolución**: **1080x1920** (portrait 9:16) para móvil. Stretch mode: `canvas_items` con aspect `keep_width`.
+- **Skills de referencia**: en `.agents/skills/` hay skills de buenas prácticas (`godot-gdscript-patterns`), mobile (`mobile-android-design`) y game development (`game-development`).
+
+---
+
+## Concepto de juego
+
+### Visión
+Un juego idle/casual para Android donde el jugador es un **herrero** que craftea equipamiento via minijuegos de timing. Un **héroe IA** lucha en una dungeon endless en segundo plano. El héroe sigue luchando incluso cuando la app está cerrada (cálculos offline). El jugador craftea mejor equipo → el héroe avanza más lejos.
+
+### Loop principal
+1. El héroe pelea automáticamente contra enemigos (endless, escalado infinito)
+2. Al morir, el héroe resetea al nivel 1 **con su equipo actual**
+3. El jugador acepta **requests** (pedidos) para craftear items
+4. Cada item requiere completar una secuencia de **trials** (minijuegos)
+5. La calidad del item depende de la precisión en los minijuegos + nivel de forjamagia
+6. El jugador equipa items al héroe para que avance más
+7. Los enemigos dropean **blueprints** e **infusiones elementales**
+8. **No hay condición de victoria ni derrota** — es un juego infinito con leaderboard
+
+### Modelo de sesión
+- **No hay "runs" ni "partidas"**. Es una **sesión continua persistente**.
+- El jugador juega tantos minijuegos como quiera.
+- El héroe combate en segundo plano indefinidamente.
+- Progresión = mejor equipo crafteado = héroe llega más lejos.
+- El Corridor se instancia una vez y persiste siempre.
+- Cuando el jugador cierra la app, el héroe sigue luchando (cálculo offline al volver).
 
 ---
 
 ## Contexto del repo
-- El diseño de juego está en `README.md` (GDD resumido). Respétalo.
+- El diseño de juego está en `README.md` (GDD original, parcialmente desactualizado). Las copilot-instructions tienen la **visión actualizada**.
+- Documentación del proyecto: `doc/PROJECT_FAQ.md` (preguntas y respuestas), `doc/ARCHITECTURE.md` (arquitectura técnica).
 - Proyecto 2D. No intentes migrar a 3D ni a C#.
-- Objetivo de sesión: producir features autocontenidas y probables en ≤90 min.
 
 ## Resolución y Display
-- **Base de diseño**: 1280x720 (16:9) para desktop
-- **Viewport móvil actual**: 1080x1350 (portrait 4:5)
-- **Stretch Mode**: `2d` con aspect `expand`
-- **Recomendación móvil**: Para portrait óptimo usa 1080x1920 (9:16) o mantén 1080x1350 si prefieres formato cuadrado
-- **Nota**: El layout de forja y dungeon debe ser responsive. Usa anchors y layouts flexibles en UI.
-- **Testing**: Prueba tanto en 1280x720 como en la resolución móvil configurada
+- **Resolución base**: **1080x1920** (portrait 9:16) — Android
+- **Stretch Mode**: `canvas_items` con aspect `keep_width`
+- **Input principal**: touch (Android). Para testing: ratón en desktop.
+- **Layout**: todo en una única pantalla (ver Layout más abajo)
+- Usa anchors y layouts flexibles en UI. No hardcodees posiciones.
+
+## Layout de pantalla (1080x1920)
+```
+┌─────────────────────────────────────┐ 0px
+│       ESCENA DEL HÉROE (25%)        │ ← Héroe peleando + HP encima
+│       Muertes centradas arriba      │    480px
+├─────────────────────────────────────┤ 480px
+│                                     │
+│       ZONA IDLE / MINIJUEGOS (50%)  │ ← Minijuegos se lanzan aquí
+│       (MinigameContainer)           │    960px
+│                                     │
+├───────────────────────┬─────────────┤ 1440px
+│  REQUESTS ACTIVOS     │  BOTONES    │
+│  (cola de pedidos)    │  Blueprints │ ← Controles (25%)
+│                       │  Inventario │    480px
+│                       │  Tienda     │
+└───────────────────────┴─────────────┘ 1920px
+     70% ancho            30% ancho
+```
 
 ## Estructura REAL del proyecto
 ```
 res://
   scenes/
-    Main.tscn                    # Escena principal
-    DungeonLayout.tscn           # Layout visual de dungeon (NUEVO)
-    Corridor.tscn                # Corredor lineal de salas (lógica Hero/Enemy)
-    Room.tscn                    # Sala individual de combate (obsoleto)
-    Hero.tscn                    # Héroe jugable
-    Enemy.tscn                   # Enemigo base
+    Main.tscn                    # Escena principal (HUDLayer + FadeLayer, usa main.gd)
+    Corridor.tscn                # Corredor endless (Hero/Enemy/Combat)
+    DungeonLayout.tscn           # Layout visual posiciones enemigos
+    Hero.tscn                    # Héroe (CharacterBody2D)
+    Enemy.tscn                   # Enemigo base (grunt/tank)
     Minigames/
-      ForgeTemp.tscn            # Minijuego de temperatura/forja
-      HammerMinigame.tscn       # Minijuego de martillo (timing)
-      SewOSU.tscn               # Minijuego de coser (ritmo OSU-like)
-      QuenchWater.tscn          # Minijuego de temple/agua
+      ForgeTemp.tscn            # Minijuego de temperatura/forja (timing)
+      HammerMinigame.tscn       # Minijuego de martillo (rhythm)
+      SewOSU.tscn               # Minijuego de coser (timing/patrones)
+      QuenchWater.tscn          # Minijuego de temple/agua (hold&release)
     UI/
-      HUD_Forge.tscn            # HUD principal con MinigameContainer
-      BlueprintLibraryPanel.tscn
-      TitleScreen.tscn
-    ForgeUI/                    # Paneles UI de forja
-    HUD/                        # Componentes HUD
-    sandboxes/                  # Escenas de prueba
+      StartScreen.tscn          # Pantalla de inicio
+      HUD_Main.tscn             # Layout unificado (héroe+minijuegos+controles)
+      HUD_Forge.tscn            # HUD legacy de forja (deprecated)
+      BlueprintLibraryPanel.tscn # Catálogo de blueprints
+      BlueprintCard.tscn        # Card individual de blueprint
+      BlueprintQueueSlot.tscn   # Slot de cola de crafteo
+      EquipmentPanel.tscn       # Panel equipamiento héroe
+      DungeonHUD.tscn           # HUD de dungeon
+      TitleScreen.tscn          # Overlay de título minijuego
+      MaterialIcon.tscn         # Icono de material
+      RequestSlot.tscn          # Slot de request
+    ForgeUI/
+      DeliveryPanel.tscn        # Panel de entrega de items
+      ItemInfoPanel.tscn        # Info de item crafteado
+      ResultPanel.tscn          # Panel resultado crafteo
+    HUD/
+      DungeonStatus.tscn        # Status del corredor (unificar con héroe)
+    sandboxes/                  # Escenas de prueba para development
   scripts/
+    main.gd                      # Script bootstrap (Main.tscn)
     autoload/
-      GameManager.gd            # Estado de partida, flujo de salas
-      DataManager.gd            # Blueprints, materiales, items
-      InventoryManager.gd       # Sistema de inventario
-      CraftingManager.gd        # Cola crafteo, minijuegos, entrega
-      DebugManager.gd           # Herramientas debug (*enabled)
-      AudioManager.gd           # SFX, bips, contextos de audio
+      GameManager.gd            # Estado global, enemigos, respawn, loadout
+      DataManager.gd            # Catálogo blueprints, materiales, items
+      InventoryManager.gd       # Inventario materiales + items crafteados + equipo
+      CraftingManager.gd        # Cola crafteo (5 slots), trials, scoring
+      DebugManager.gd           # Debug tools (*=autorun)
+      AudioManager.gd           # SFX y música unificado
       TelemetryManager.gd       # Logs a user://telemetry.log
       UIManager.gd              # Gestión de paneles UI
-      RequestsManager.gd        # Sistema de peticiones
+      RequestsManager.gd        # Sistema de pedidos (timer + eventos)
     core/
       MinigameBase.gd           # Clase base para minijuegos
-      HUDMinigameLauncher.gd    # Launcher de minijuegos desde blueprints
-      TrialConfig.gd            # Configuración de trials
+      HUDMinigameLauncher.gd    # Launcher de minijuegos desde HUD
+      TrialConfig.gd            # Configuración base de trials
       TrialResult.gd            # Resultado de trials
+      QualityHelper.gd          # Helper cálculo calidad
+      ParticleManager.gd        # Gestor de partículas
     gameplay/
       Hero.gd                   # Lógica del héroe
-      Enemy.gd                  # Lógica enemigos
+      Enemy.gd                  # Lógica enemigos (grunt/tank, drops)
       CombatController.gd       # Sistema de combate
-      Corridor.gd               # Gestión del corredor
-      DungeonLayout.gd          # Layout visual de dungeon (NUEVO)
+      Corridor.gd               # Gestión del corredor endless
+      DungeonLayout.gd          # Posiciones de spawn
+      FloatingNumber.gd         # Números de daño flotantes
+      CorridorParallax.gd       # Parallax visual
     data/
-      BlueprintResource.gd      # Recurso de blueprint
-      TrialResource.gd          # Recurso de trial
+      BlueprintResource.gd      # Recurso blueprint (trial_sequence, materials, stats)
+      BlueprintLibrary.gd       # Colección de blueprints
+      ItemResource.gd           # Template de item
+      CraftedItem.gd            # Instancia de item con calidad
+      MaterialResource.gd       # Recurso de material
+      TrialResource.gd          # Recurso de trial individual
       ForgeTrialConfig.gd       # Config específica Forge
       HammerTrialConfig.gd      # Config específica Hammer
       SewTrialConfig.gd         # Config específica Sew
       QuenchTrialConfig.gd      # Config específica Quench
       MinigameDifficultyPreset.gd  # Presets de dificultad
-    ui/
-      MinigameFX.gd             # Sistema de efectos visuales
-      MinigameAudio.gd          # Sistema de audio minijuegos
-      MinigameContainer.gd      # Contenedor de minijuegos
-    # Scripts raíz (legacy, considerar mover):
-    ForgeMinigame.gd
-    HammerMinigame.gd / HammerMinigame_NEW.gd
-    SewMinigame.gd / SewMinigame_NEW.gd
-    QuenchMinigame.gd / QuenchMinigame_NEW.gd
-    main.gd
+      MinigameSoundSet.gd       # Set de sonidos por minijuego
+    ui/                          # Scripts de UI (~24 scripts)
+    forge/                       # Scripts de paneles de forja
+    # Scripts en raíz de scripts/ (legacy, pendiente organizar):
+    ForgeMinigame.gd             # Minijuego Forge (extiende MinigameBase)
+    HammerMinigame.gd            # Minijuego Hammer (extiende MinigameBase)
+    SewMinigame.gd               # Minijuego Sew (extiende MinigameBase)
+    QuenchMinigame.gd            # Minijuego Quench (extiende MinigameBase)
   data/
-    blueprints/                 # Archivos .tres de blueprints
-      sword_basic.tres
-      armor_leather.tres
-      bow_simple.tres
-      shield_wooden.tres
-      (etc... 16 blueprints)
-    drops/                      # Configuración de drops
-    minigame_sounds_default.tres
+    blueprints/                 # 15 BlueprintResource .tres + BlueprintLibrary.tres
+    items/                      # 12 ItemResource .tres (faltan 3)
+    materials/                  # 9 MaterialResource .tres
+    drops/                      # DropTable configs
+    minigame_sounds_*.tres      # Sound sets por minijuego
   art/
-    placeholders/
-      forge/                    # Assets forja
-      dungeon/                  # Assets dungeon
-    sounds/                     # SFX .wav/.mp3
+    placeholders/               # Iconos, fondos, dungeon background
+    sounds/                     # SFX: sfx/{combat,minigames/}, ambient/
+    font/                       # Fuentes (PirataOne)
+    assets/                     # Subrepo de arte (spritesheets, imágenes raw)
   doc/                          # Documentación técnica
-  addons/
-    editor_scripts/             # Scripts de editor
+  addons/editor_scripts/        # Scripts de editor (gestión blueprints)
+  shaders/circular_mask.gdshader # Shader para MinigameContainer
 ```
-- **No** añadas nuevos autoloads sin confirmación. Usa los **9 registrados**.
-- Nombres de archivos `snake_case`. Clases `PascalCase`. Señales `lower_snake_case`.
+
+### Convenciones de nombres
+- Archivos: `snake_case` (.gd, .tscn, .tres)
+- Clases: `PascalCase`
+- Señales: `lower_snake_case`
 - **TABS, no espacios**. Jamás mezcles.
+- Archivos `.uid` acompañan cada `.gd` — internos de Godot 4.5, no borrar.
+- **No** añadas nuevos autoloads sin confirmación.
 
 ## AutoLoads (Singletons) — YA REGISTRADOS
 **NO AÑADAS NUEVOS**. Los siguientes ya están en `project.godot`:
-1. `GameManager` — `res://scripts/autoload/GameManager.gd` (estado de partida, flujo de salas, respawn)
-2. `DataManager` — `res://scripts/autoload/DataManager.gd` (blueprints, materiales, items, balance)
-3. `InventoryManager` — `res://scripts/autoload/InventoryManager.gd` (inventario del jugador)
-4. `CraftingManager` — `res://scripts/autoload/CraftingManager.gd` (cola crafteo, trials, resultados)
-5. `DebugManager` — `*res://scripts/autoload/DebugManager.gd` (debug tools, *=autorun enabled)
-6. `AudioManager` — `res://scripts/autoload/AudioManager.gd` (SFX, contextos DUNGEON/FORGE)
-7. `TelemetryManager` — `res://scripts/autoload/TelemetryManager.gd` (logs a `user://telemetry.log`)
-8. `UIManager` — `res://scripts/autoload/UIManager.gd` (gestión de UI, paneles)
-9. `RequestManager` — `res://scripts/autoload/RequestsManager.gd` (sistema de pedidos/requests)
+
+| # | Singleton | Script | Responsabilidad |
+|---|-----------|--------|-----------------|
+| 1 | `GameManager` | `res://scripts/autoload/GameManager.gd` | Estado global, nivel enemigos (infinito), muertes, respawn, loadout héroe, desbloqueo blueprints |
+| 2 | `DataManager` | `res://scripts/autoload/DataManager.gd` | Catálogo blueprints, unlock state, resolución ItemResource. Emite `data_ready` |
+| 3 | `InventoryManager` | `res://scripts/autoload/InventoryManager.gd` | Materiales (add/consume), items crafteados, equipment slots (7), cálculo stats totales |
+| 4 | `CraftingManager` | `res://scripts/autoload/CraftingManager.gd` | Cola de crafteo (5 slots), secuenciador trials, scoring, calidad final |
+| 5 | `DebugManager` | `*res://scripts/autoload/DebugManager.gd` | Debug tools, logging por categorías (* = autorun) |
+| 6 | `AudioManager` | `res://scripts/autoload/AudioManager.gd` | SFX y música. Contexto unificado |
+| 7 | `TelemetryManager` | `res://scripts/autoload/TelemetryManager.gd` | Logs JSON a `user://telemetry.log` |
+| 8 | `UIManager` | `res://scripts/autoload/UIManager.gd` | Gestión paneles UI, delivery, registro de nodos |
+| 9 | `RequestManager` | `res://scripts/autoload/RequestsManager.gd` | Pedidos por timer (3-8s), máx 4 activos, validación materiales |
+
+### Dependencias entre AutoLoads
+```
+DataManager ──(data_ready)──→ RequestsManager, CraftingManager
+RequestsManager ──→ DataManager, InventoryManager, CraftingManager
+CraftingManager ──→ DataManager, InventoryManager
+UIManager ──→ GameManager, CraftingManager, InventoryManager, DataManager
+GameManager ──→ DataManager (desbloqueo blueprints)
+```
 
 ## Reglas de implementación
-- Escribe **GDScript** idiomático. Señales > polling. `await` en vez de temporizadores manuales cuando cuadre.
-- **TABS**: usa **tabs (\\t)** para indentación, **nunca espacios**. Godot 4.5 requiere tabs exclusivamente.
+- Escribe **GDScript** idiomático. Señales > polling. `await` en vez de temporizadores manuales.
+- **TABS (\t)** para indentación, **nunca espacios**. Sin excepciones.
 - Los minijuegos **extienden `MinigameBase`** (`res://scripts/core/MinigameBase.gd`):
-  - `func start_trial(config: TrialConfig) -> void` — inicia el trial con configuración
-  - `signal trial_completed(result: TrialResult)` — emite resultado al finalizar
-  - Tienen pantallas de título y fin integradas
-  - Soportan fade-in/out y sistema anti-spam
+  - `func start_trial(config: TrialConfig)` — inicia trial. Subclases llaman `super()`.
+  - `signal trial_completed(result: TrialResult)` — emite resultado.
+  - Pantalla de título animada al inicio (solo texto, ej: "Hammer Time!").
+  - Sin pantalla de fin por trial individual. Al completar TODOS los trials → resultado con barra de calidad animada.
+  - Siempre produce resultado (mínimo 1% calidad), nunca fallo total.
 - **Arquitectura de trials**:
-  - Cada blueprint tiene `trial_sequence: Array[TrialResource]`
-  - `TrialResource` contiene: `trial_id`, `display_name`, `minigame_id`, `minigame_scene`, `config`, `min_score`
-  - Configs específicas: `ForgeTrialConfig`, `HammerTrialConfig`, `SewTrialConfig`, `QuenchTrialConfig`
-  - `TrialResult` devuelve: `score`, `grade`, `quality_label`, `normalized_score`
-- UI: minimal, legible, sin fuentes custom. Nada de dependencias de AssetLib.
-- Input: teclado y ratón; accesos rápidos: Espacio confirma en minijuegos.
-- Persistencia temporal: `DataManager` en memoria durante la run; nada de escribir a disco salvo Telemetry.
-- Export objetivo: Desktop. No metas plataformas móviles.
+  - Cada blueprint tiene `trial_sequence: Array[TrialResource]` (varía por blueprint)
+  - `TrialResource`: `trial_id`, `display_name`, `minigame_id`, `minigame_scene`, `config`, `min_score`
+  - Configs tipadas: `ForgeTrialConfig`, `HammerTrialConfig`, `SewTrialConfig`, `QuenchTrialConfig`
+  - `TrialResult`: `score`, `grade`, `quality_label`, `normalized_score`
+  - Calidad final = puntuación total / puntuación máxima posible del blueprint
+- **Input**: touch (Android) + ratón (testing). No hace falta teclado.
+- **Persistencia**: a futuro guardar en disco (`user://`). Actualmente en memoria.
+- **Export**: Android (Google Play). Desktop solo para desarrollo.
 
-## Loop y escenas core
-- `Main.tscn` orquesta: muestra HUD, corredor y gestiona transición de salas.
-- `Room.tscn` resuelve combates del héroe con 1 grupo. Sin pathfinding complejo.
-- El **héroe** avanza solo; al morir, respawn en Sala 1 tras 3 s.
-- Tras 8 salas, spawnea **Jefe**; victoria termina la run.
+## Sistema de combate
+- Escalado **infinito**: enemigos suben stats con fórmula exponencial por nivel.
+- Héroe escala por equipo: stats sumadas de items en 7 slots.
+- **Equipment slots**: `main_hand`, `off_hand`, `helmet`, `chest`, `boots`, `trinket_1`, `trinket_2`.
+- Al morir → resetea a nivel 1 con equipo intacto. Al reemplazar item, el anterior se pierde.
+- Enemies dropean **blueprints** (primer kill) e **infusiones elementales**.
+- Sistema de tipos de daño previsto: armaduras (fortificada/pesada/ligera/héroe/divina) × daño (siege/perforante/cortante/caos).
+- Boss cada X niveles: stats × multiplicador + pasivas de un pool. Escalado combinatorio al agotar pool.
+- **Dirección visual**: simplificar a formas geométricas + ataques por cooldown.
 
 ## Crafting y minijuegos
-- `CraftingManager` mantiene **cola de trials**, inicia scenes de minijuegos y procesa resultados.
-- `HUDMinigameLauncher` (`HUD_Forge.tscn`) gestiona el flujo:
-  - Lanza trials desde blueprints en `MinigameContainer`
-  - Procesa resultados con `TrialResult`
-  - Actualiza UI de cola y blueprints
-- Minijuegos MVP implementados:
-  1) **Forja (ForgeTemp)**: cursor senoidal de temperatura; 3 aciertos en zona target.  
-  2) **Martillo (HammerMinigame)**: timing de golpes; precisión en ventanas temporales.  
-  3) **Coser (SewOSU)**: anillos colapsantes tipo OSU; 8 eventos; media ≥ Bien concede bonus.  
-  4) **Agua (QuenchWater)**: suelta en ventana óptima; catalizador amplía ventana +20%.
-- Sistema de calificación consistente:
-  - `Perfect` (>90% ventana perfecta)
-  - `Bien` (>70% ventana buena)
-  - `Regular` (>40% ventana regular)
-  - `Miss` (fuera de ventana o sin input)
-- **Difficulty presets**: `MinigameDifficultyPreset.gd` genera configs balanceadas por blueprint.
+- `CraftingManager` mantiene **cola de 5 slots**, gestiona trials, calcula calidad.
+- `HUDMinigameLauncher` orquesta el flujo desde el HUD.
+- **Flujo**: Request → accept (consume materiales) → enqueue → start → trials secuenciales → finalize → CraftedItem → equip
+- **Forjamagia**: medidor siempre presente durante crafteo. Heat + Crit Craft activos.
+- Minijuegos:
+  1) **Forja (ForgeTemp)**: timing — cursor senoidal, tap en zona target
+  2) **Martillo (HammerMinigame)**: rhythm — notas acercándose, tap en timing. Cantidad parametrizable
+  3) **Coser (SewOSU)**: timing con patrones predefinidos (simplificar a timing puro)
+  4) **Agua (QuenchWater)**: hold & release — pulsar, mantener, soltar en ventana óptima
+- Calificación: `Perfect` / `Bien` / `Regular` / `Miss` con thresholds numéricos consistentes.
+- Dificultad escala: minijuegos más rápidos, más eventos, ventanas más estrectas.
+- Materiales influyen en tipo de prueba (metal → forja, tela/cuero → coser).
 
-## Estilo de respuesta que espero de Copilot
-- **Idioma**: español técnico. **Salida**: snippet listo para pegar, con **ruta** y **archivo** destino al inicio.
-- Cambios en **parches pequeños**: si algo afecta a varias escenas, devuelve un listado de diffs por archivo.
-- **INDENTACIÓN CON TABS**: Godot 4.5.1 usa **tabs exclusivamente**. Nunca uses espacios. No mezcles tabs y espacios bajo ninguna circunstancia.
+## Estilo de respuesta
+- **Idioma**: español técnico.
+- **Salida**: snippet listo para pegar, con ruta y archivo destino.
+- Cambios en **parches pequeños**; si afecta varias escenas, lista de diffs.
+- **TABS exclusivamente** en todo código GDScript.
 - No propongas reestructurar el proyecto. Trabaja con lo que hay.
-- Al generar código, respeta la estructura existente y los nombres de archivos reales.
+- Consulta las skills en `.agents/skills/` para patrones Godot y diseño móvil.
 
 ## No hagas (hard limits)
 - Nada de plugins, paquetes de terceros ni migración de versión de Godot.
-- No añadas sistemas de ECS, jobs o “task runners” inventados.
+- No añadas sistemas de ECS, jobs o "task runners" inventados.
 - No muevas autoloads ni renombres rutas existentes.
-- No uses `res://` para escribir archivos en runtime; usa `user://` para Telemetry.
+- No uses `res://` para escribir en runtime; usa `user://`.
+- No diseñes para "runs" o "partidas". Es una sesión persistente continua.
+- No diseñes UI con hover o interacciones solo de desktop; todo debe ser touch-friendly.
 
-## Calidad y pruebas
-- Cada PR feature debe incluir: 1) scene nueva o script editado, 2) acceso desde `Main.tscn` o botón oculto de debug.
-- Log mínimo desde `TelemetryManager`: `{ event, data }` en `user://telemetry.log`.
-- FPS objetivo 60; no utilices `await` encadenados largos si generan stutter.
+## Sistemas deprecados (NO usar)
+- `switch_area()` / dual-context forge/dungeon — todo en una pantalla
+- `Room.tscn` — obsoleto
+- `HUD_Forge.tscn` — reemplazado por `HUD_Main.tscn`
+- `GameOverScreen` / `MAX_DEATHS` — no hay game over en endless
+- Entrega QTE — deprecado, entrega instantánea por botón
+
+## Features por implementar
+- [ ] Persistencia a disco (save/load inventario, equipo, progreso)
+- [ ] Cálculos offline (combate del héroe mientras app cerrada)
+- [ ] Sistema tipos de daño (armadura × daño estilo Warcraft 3)
+- [ ] Pool de pasivas para bosses (escalado combinatorio)
+- [ ] Leaderboard (nivel máximo alcanzado)
+- [ ] Fórmulas escalado infinito enemigos
+- [ ] Tienda materiales + pociones (gastar oro)
+- [ ] Infusiones elementales (drops → dificultad extra → encantamiento)
+- [ ] Medidor de Forjamagia + Heat + Crit Craft
+- [ ] Simplificar combate a formas geométricas + CD attacks
+- [ ] Simplificar Sew a timing puro
+- [ ] Pantalla resultado crafteo con barra calidad animada
+- [ ] Export + testing Android
+- [ ] Eventos prefijados en RequestManager para narrativa
+- [ ] Items faltantes (3 ItemResource por crear)
 
 ## Checklists rápidas
-- [ ] El código es GDScript y referencia rutas `res://...` reales.
-- [ ] Los autoloads declarados existen y se usan, no se añaden nuevos.
-- [ ] Un minijuego expone `start_trial(config)` y emite `trial_completed(result)`.
-- [ ] No hay dependencias externas ni cambios al engine.
-- [ ] El héroe sigue el loop: salas → jefe; respawn correcto.
-- [ ] **CRÍTICO**: El código usa **tabs** para indentación, nunca espacios, y no mezcla ambos.
+- [ ] GDScript con rutas `res://...` reales
+- [ ] Autoloads existentes, no se añaden nuevos
+- [ ] Minijuegos: `start_trial(config)` + `trial_completed(result)`
+- [ ] Sin dependencias externas
+- [ ] Héroe pelea endless, resetea nivel 1 al morir con equipo
+- [ ] **TABS** para indentación, nunca espacios
+- [ ] UI funciona en 1080x1920 portrait
+- [ ] Input touch-friendly (botones grandes, sin hover)
 
 ## Pitfalls frecuentes
-- Escribir en `res://` en runtime. Usa `user://`.
-- Minijuegos sin API común. Estandariza extendiendo `MinigameBase` con `start_trial`/`trial_completed`.
-- Señales no desconectadas y quedan escuchas colgantes en escenas recargadas.
-- Fugas por timers manuales: usa `await get_tree().create_timer(...)` cuando aporte claridad.
-- **Usar espacios en lugar de tabs**: Godot 4.5 no acepta código con espacios. Siempre usa tabs.
+- Escribir en `res://` en runtime → usa `user://`
+- Minijuegos sin API común → extiende `MinigameBase`
+- Señales no desconectadas → listeners colgantes al recargar
+- Timers manuales → usa `await get_tree().create_timer()`
+- **Espacios en vez de tabs** → Godot 4.5 requiere tabs
+- Mentalidad de "runs/partidas" → sesión continua
+- Hardcodear resolución desktop → target es 1080x1920
+- Usar `area_switch` deprecado → todo en una pantalla
+- `duck_music()` crea Timer sin limpiar → potencial leak
 
 ## Referencias internas
-- GDD resumido: `README.md` del repo.
-- AutoLoads: `res://scripts/autoload/*.gd` (registrar manualmente en Godot 4.5).
+- GDD original: `README.md` (parcialmente desactualizado)
+- FAQ completo: `doc/PROJECT_FAQ.md`
+- Arquitectura: `doc/ARCHITECTURE.md`
+- Layout spec: `doc/LAYOUT_SPEC.md`
+- Roadmap: `doc/ROADMAP.md`
+- Skills: `.agents/skills/` (godot-gdscript-patterns, mobile-android-design, game-development)
+- AutoLoads: `res://scripts/autoload/*.gd`
