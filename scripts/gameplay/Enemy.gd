@@ -50,7 +50,7 @@ var size: Vector2 = Vector2(16, 25)  # Compatibilidad
 
 # ─── Arquetipo ─────────────────────────────────────────────────────────
 var archetype: StringName = &"skeleton"
-var display_name: String = "Esqueleto"
+var display_name: String = "Esqueleto"  # texto base en español: se traduce al enseñarlo
 var half_width: float = 8.0
 var body_height: float = 25.0
 var hover: float = 0.0
@@ -470,8 +470,10 @@ func hud_bar_rect() -> Rect2:
 	return Rect2(roundf(-w * 0.5 + shift), top - 5.0, w, 3.0)
 
 
+## Nombre y nivel sobre la barra, en el idioma del jugador ("Limo Nv 3" / "Slime Lv 3").
+## display_name guarda el texto base (español) y se traduce aquí, al pintarlo.
 func hud_label() -> String:
-	return "%s Nv %d" % [display_name, level]
+	return tr("%s Nv %d") % [tr(display_name), level]
 
 
 ## El nombre arranca en el borde izquierdo de la barra y crece hacia la derecha, lejos del de Tico.

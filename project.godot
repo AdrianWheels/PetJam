@@ -39,3 +39,8 @@ window/handheld/orientation=1
 [gui]
 
 theme/custom="res://art/font/default_theme.tres"
+
+[internationalization]
+
+locale/translations=PackedStringArray("res://locale/textos.es.translation", "res://locale/textos.en.translation")
+locale/fallback="en"

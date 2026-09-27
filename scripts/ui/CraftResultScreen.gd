@@ -18,7 +18,8 @@ const REVEAL_SFX := {
 	"common": preload("res://art/sounds/sfx/craft/craft_bronze.wav"),
 }
 
-## Umbrales de calidad (mismos que CraftedItem/QualityHelper)
+## Umbrales de calidad (mismos que CraftedItem/QualityHelper). Los nombres de TIERS y STAT_NAMES son el
+## texto base en español: se pasan por tr() al enseñarlos (CraftedItem.get_quality_label usa los mismos).
 const TIERS := [
 	{"id": "common", "at": 0.0, "name": "BÁSICO", "color": Color("cfd6dc")},
 	{"id": "uncommon", "at": 0.40, "name": "BUENO", "color": Color("6ad16a")},
@@ -112,7 +113,7 @@ func show_result(result: Dictionary) -> void:
 			if TIERS[i].id == tier_id:
 				_tier_index = i
 	_tier_color = TIERS[_tier_index].color
-	_tier_name = TIERS[_tier_index].name
+	_tier_name = tr(TIERS[_tier_index].name)
 
 	# Textos e icono
 	var bp_id: String = str(result.get("blueprint_id", ""))
@@ -126,7 +127,7 @@ func show_result(result: Dictionary) -> void:
 		var bp = dm.get_blueprint(StringName(bp_id))
 		if bp:
 			if bp.display_name != "":
-				item_name = bp.display_name
+				item_name = tr(bp.display_name)
 			if icon == null:
 				icon = bp.get_icon()  # resuelve icon_path (bp.icon queda vacío al cargar)
 	if item_name == "":
@@ -156,7 +157,7 @@ func show_result(result: Dictionary) -> void:
 	var fm_value: int = result.get("forjamagia", 0)
 	if fm_bonus > 0.0:
 		var fm_label := Label.new()
-		fm_label.text = "Forjamagia %d/10 → +%d%% calidad" % [fm_value, int(fm_bonus * 100)]
+		fm_label.text = tr("Forjamagia %d/10 → +%d%% calidad") % [fm_value, int(fm_bonus * 100)]
 		fm_label.add_theme_font_size_override("font_size", 24)
 		fm_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
 		fm_label.add_theme_constant_override("outline_size", 5)
@@ -179,13 +180,13 @@ func _tier_for(q: float) -> int:
 func _get_title_text(grade: String) -> String:
 	match grade:
 		"gold":
-			return "¡OBRA MAESTRA!"
+			return tr("¡OBRA MAESTRA!")
 		"silver":
-			return "¡BUEN TRABAJO!"
+			return tr("¡BUEN TRABAJO!")
 		"bronze":
-			return "TRABAJO COMPLETO"
+			return tr("TRABAJO COMPLETO")
 		_:
-			return "FORJADO"
+			return tr("FORJADO")
 
 
 func _animate_entrance() -> void:
@@ -319,7 +320,7 @@ func _populate_stats(result: Dictionary) -> void:
 		if typeof(value) == TYPE_INT and value == 0:
 			continue
 		var stat_label := Label.new()
-		var display_name: String = STAT_NAMES.get(key, String(key).capitalize())
+		var display_name: String = tr(STAT_NAMES.get(key, String(key).capitalize()))
 		if key == "crit":
 			stat_label.text = "+%d%% %s" % [roundi(float(value) * 100.0), display_name]
 		elif key == "aps":
@@ -386,7 +387,7 @@ func _build_ui() -> void:
 	margin.add_child(main_vbox)
 
 	_title_label = _label(64, Color(1.0, 0.85, 0.4), 10)
-	_title_label.text = "FORJADO"
+	_title_label.text = tr("FORJADO")
 	main_vbox.add_child(_title_label)
 
 	_item_name_label = _label(38, Color(0.93, 0.88, 0.8), 6)
@@ -410,13 +411,13 @@ func _build_ui() -> void:
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_continue_container.add_child(btn_row)
 	_continue_btn = Button.new()
-	_continue_btn.text = "AL INVENTARIO"
+	_continue_btn.text = tr("AL INVENTARIO")
 	_continue_btn.custom_minimum_size = Vector2(460, 104)
 	_continue_btn.add_theme_font_size_override("font_size", 36)
 	_continue_btn.pressed.connect(_on_continue_pressed)
 	btn_row.add_child(_continue_btn)
 	var hint_label := _label(22, Color(0.7, 0.62, 0.52), 4)
-	hint_label.text = "Equípalo desde «Equipo» · véndelo en «Tienda»"
+	hint_label.text = tr("Equípalo desde «Equipo» · véndelo en «Tienda»")
 	_continue_container.add_child(hint_label)
 
 	# Destello a pantalla completa (encima de todo)
@@ -503,7 +504,7 @@ func _build_bar(parent: Control) -> void:
 		_tick_marks.append(mark)
 		var lbl := _label(24, t.color, 5)
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		lbl.text = "%s %d%%" % [t.name, int(round(t.at * 100.0))] if i > 0 else t.name
+		lbl.text = "%s %d%%" % [tr(t.name), int(round(t.at * 100.0))] if i > 0 else tr(t.name)
 		lbl.position = Vector2(4, y - 18.0)
 		lbl.size = Vector2(190, 36)
 		lbl.modulate = Color(1, 1, 1, 0.35)

@@ -1,6 +1,8 @@
 # Godot
 .godot/
 *.import
+# Traducciones: salen de importar locale/textos.csv (--import o el editor), como el resto de importados
+locale/*.translation
 
 # Documentation (clone de docs oficiales)
 doc/godotdocu/

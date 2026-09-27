@@ -51,15 +51,18 @@ func _on_gui_input(event: InputEvent) -> void:
 		print("RequestSlot: Clicked slot %d" % slot_index)
 
 
-## Configura la tarjeta con el diccionario del pedido (blueprint, gold_reward, client_name).
+## Configura la tarjeta con el diccionario del pedido (blueprint, gold_reward y el cliente).
 func set_request(request: Dictionary) -> void:
 	set_blueprint(request.get("blueprint"))
 	var reward := int(request.get("gold_reward", 0))
 	reward_label.text = str(reward) if reward > 0 else "—"
+	var rm := get_node_or_null("/root/RequestsManager")
+	# El cliente se traduce al enseñarlo ("Brenna la Guerrera" / "Brenna the Warrior")
 	var client := String(request.get("client_name", ""))
+	if rm and rm.has_method("client_display_name"):
+		client = rm.client_display_name(request)
 	client_label.text = client
 	client_label.visible = client != ""
-	var rm := get_node_or_null("/root/RequestsManager")
 	var free: bool = rm != null and rm.has_method("get_free_requests_remaining") and rm.get_free_requests_remaining() > 0
 	free_tag.visible = free
 	_refresh_material_colors()
@@ -67,12 +70,12 @@ func set_request(request: Dictionary) -> void:
 
 func set_blueprint(blueprint: BlueprintResource) -> void:
 	if blueprint == null:
-		set_blueprint_name("(unknown)")
+		set_blueprint_name(tr("(desconocido)"))
 		set_icon(null)
 		set_materials({})
 		return
 
-	set_blueprint_name(blueprint.display_name if blueprint.display_name != "" else String(blueprint.blueprint_id))
+	set_blueprint_name(tr(blueprint.display_name) if blueprint.display_name != "" else String(blueprint.blueprint_id))
 	set_icon(blueprint.get_blueprint_icon())  # Usar icono del blueprint para cola de pedidos
 	set_materials(blueprint.materials)
 

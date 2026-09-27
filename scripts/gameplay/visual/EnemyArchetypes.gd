@@ -5,6 +5,8 @@ extends RefCounted
 ## para no romper la curva de dificultad: cambia el ritmo del combate, no lo duro que es.
 ## Las medidas (medio ancho, alto, vuelo) salen del sprite: art/sprites/pixel/metrics.json (PixelSprites).
 ## body/shade/accent son los colores de los efectos (fragmentos, chispas, orbe).
+## "name" y BOSS_NAMES son el texto base en español: quien los enseña los pasa por tr()
+## (locale/textos.csv; en inglés, Limo → Slime, Rey Osario → Bone King…).
 ##
 ## style: cómo ataca (anima la anticipación y el impacto)
 ##   hop   → se aplasta y salta hacia delante

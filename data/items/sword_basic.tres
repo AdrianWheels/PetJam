@@ -6,8 +6,8 @@
 [resource]
 script = ExtResource("1")
 item_id = &"sword_basic"
-display_name = "Basic Sword"
-description = "A simple but effective sword"
+display_name = "Espada básica"
+description = "Una espada simple pero efectiva"
 icon = ExtResource("2")
 item_type = "weapon"
 equipment_slot = "main_hand"

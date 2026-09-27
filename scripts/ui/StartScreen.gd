@@ -58,7 +58,7 @@ func _refresh_record() -> void:
 	var best := 1
 	if gm and "best_enemy_level" in gm:
 		best = int(gm.best_enemy_level)
-	record_label.text = "Mejor profundidad: sala %d" % best if best > 1 else "El héroe te espera en la mazmorra"
+	record_label.text = tr("Mejor profundidad: sala %d") % best if best > 1 else tr("El héroe te espera en la mazmorra")
 
 
 func _add_shade() -> void:

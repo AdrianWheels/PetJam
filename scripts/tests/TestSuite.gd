@@ -5,13 +5,17 @@ extends Node
 ##   D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/<Suite>.tscn
 ## Sale con código 0 si todo pasa y 1 si algo falla. Guarda y restaura user://save.json
 ## (las pruebas cargan los autoloads, que pueden autoguardar).
+## Las pruebas corren en español (el texto base del juego) aunque el sistema esté en otro idioma; al
+## terminar se deja el idioma que había.
 
 const SAVE_PATH := "user://save.json"
+const TEST_LOCALE := "es"
 
 var _checks := 0
 var _failures := 0
 var _had_save := false
 var _save_backup := PackedByteArray()
+var _locale_backup := ""
 var _errors := ErrorCounter.new()
 
 
@@ -28,6 +32,8 @@ class ErrorCounter extends Logger:
 func _ready() -> void:
 	await _wait_for_game_data()
 	_backup_save()
+	_locale_backup = TranslationServer.get_locale()
+	TranslationServer.set_locale(TEST_LOCALE)
 	OS.add_logger(_errors)
 	for m in get_method_list():
 		var method_name: String = m.name
@@ -48,6 +54,7 @@ func _ready() -> void:
 	for i in 3:
 		await get_tree().process_frame
 	_restore_save()
+	TranslationServer.set_locale(_locale_backup)
 	print("[%s] %d comprobaciones, %d fallos" % [get_script().resource_path.get_file().get_basename(), _checks, _failures])
 	get_tree().quit(1 if _failures > 0 else 0)
 

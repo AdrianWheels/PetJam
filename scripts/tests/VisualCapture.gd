@@ -5,15 +5,21 @@ extends Node
 ##
 ## Uso:
 ##   godot --path . --write-movie out/f.png --fixed-fps 10 --quit-after 200 res://scenes/tests/VisualCapture.tscn -- --plan=craft
+## Opciones:
+##   --locale=xx → idioma de la captura (es, en…): se pone antes de instanciar Main, como haría el móvil.
+##                 Sin él se usa el del sistema.
 ## Planes:
+##   start  → solo la pantalla de inicio (StartScreen), sin Main
 ##   main   → solo arranca Main y deja al héroe luchar
 ##   craft  → acepta el primer pedido y va tocando la pantalla para jugar los minijuegos
 ##   boss   → salta al nivel 9 para ver la llegada del jefe
 ##   death  → quita vida al héroe para ver muerte + respawn
 ##   potions → compra Velocidad, Suerte y Vida en la tienda, fuerza el botín doble y adelanta el
 ##             final de la Velocidad para ver su parpadeo y cómo desaparece (sala 2, combate normal)
+##   shop   → abre la tienda y enseña sus pestañas una a una (materiales, pociones y venta)
 
 const MAIN_SCENE := preload("res://scenes/Main.tscn")
+const START_SCENE := preload("res://scenes/UI/StartScreen.tscn")
 
 var _plan := "main"
 var _main: Node
@@ -23,7 +29,12 @@ func _ready() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--plan="):
 			_plan = arg.trim_prefix("--plan=")
-	print("[VisualCapture] plan=%s" % _plan)
+		elif arg.begins_with("--locale="):
+			TranslationServer.set_locale(arg.trim_prefix("--locale="))
+	print("[VisualCapture] plan=%s locale=%s" % [_plan, TranslationServer.get_locale()])
+	if _plan == "start":
+		add_child(START_SCENE.instantiate())
+		return
 	_main = MAIN_SCENE.instantiate()
 	add_child(_main)
 	match _plan:
@@ -47,6 +58,8 @@ func _ready() -> void:
 			_run_title_plan()
 		"potions":
 			_run_potions_plan()
+		"shop":
+			_run_shop_plan()
 
 
 func _hud() -> Node:
@@ -149,6 +162,19 @@ func _run_panels_plan() -> void:
 		hud.equipment_panel.visible = false
 	await get_tree().create_timer(0.5).timeout
 	hud._on_blueprints_pressed()
+
+
+func _run_shop_plan() -> void:
+	# Tienda pestaña a pestaña: materiales, pociones (descripciones) y venta (tarjetas con estadísticas)
+	var hud := _hud()
+	if hud == null:
+		return
+	await get_tree().create_timer(1.0).timeout
+	hud._on_shop_pressed()
+	var tabs: TabContainer = hud.shop_panel._tab_container
+	for i in tabs.get_tab_count():
+		tabs.current_tab = i
+		await get_tree().create_timer(2.5).timeout
 
 
 func _run_result_plan() -> void:

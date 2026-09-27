@@ -87,9 +87,10 @@ static func biome_for_room(room: int) -> Dictionary:
 	return get_biome(biome_index_for_room(room))
 
 
-## Nombre visible: "Catacumbas", y a partir de la segunda vuelta "Catacumbas II".
+## Nombre visible en el idioma del jugador: "Catacumbas", y a partir de la segunda vuelta "Catacumbas II"
+## ("Catacombs II" en inglés). Los nombres de LIST son el texto base (locale/textos.csv los traduce).
 static func display_name(index: int) -> String:
-	var base: String = get_biome(index).get("name", "")
+	var base: String = TranslationServer.translate(get_biome(index).get("name", ""))
 	var cycle := floori(float(index) / LIST.size())
 	if cycle <= 0:
 		return base

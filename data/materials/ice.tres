@@ -6,6 +6,6 @@
 [resource]
 script = ExtResource("1")
 material_id = &"ice"
-display_name = "Ice"
-description = "Elemental ice crystal"
+display_name = "Hielo"
+description = "Cristal de hielo elemental"
 icon = ExtResource("2")

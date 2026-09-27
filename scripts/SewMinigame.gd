@@ -90,9 +90,9 @@ func _ready():
 	
 	# Crear pantalla de título
 	setup_title_screen(
-		"¡A COSER!",
-		"Toca cuando los círculos se cierren",
-		"Sigue el ritmo de la costura"
+		tr("¡A COSER!"),
+		tr("Toca cuando los círculos se cierren"),
+		tr("Sigue el ritmo de la costura")
 	)
 
 func start_trial(config: TrialConfig) -> void:
@@ -242,7 +242,7 @@ func _judge_hit(diff: float, _late: bool) -> void:
 	# 🎨 Efectos visuales y sonoros
 	var feedback_pos := _target_ring.global_position + _target_ring.size / 2
 	MinigameFX.full_feedback(feedback_pos, quality, self)
-	MinigameFX.create_floating_label(feedback_pos, quality, quality, self)
+	MinigameFX.create_floating_label(feedback_pos, MinigameFX.quality_text(quality), quality, self)
 	MinigameAudio.play_feedback(quality)
 	
 	# Avanzar a siguiente nota
@@ -270,7 +270,7 @@ func _judge_hit(diff: float, _late: bool) -> void:
 
 func _update_ui() -> void:
 	_score_label.text = "%d/%d" % [_note_index, TOTAL_NOTES]
-	_combo_label.text = "Combo: %d" % _combo
+	_combo_label.text = tr("Combo: %d") % _combo
 
 func _update_circles() -> void:
 	# Actualizar tamaño del círculo colapsando

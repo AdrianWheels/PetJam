@@ -6,8 +6,8 @@
 [resource]
 script = ExtResource("1")
 item_id = &"helmet_advanced"
-display_name = "Advanced Helmet"
-description = "A reinforced helmet"
+display_name = "Casco avanzado"
+description = "Un casco reforzado"
 icon = ExtResource("2")
 item_type = "armor"
 equipment_slot = "head"

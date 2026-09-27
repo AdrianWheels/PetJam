@@ -366,12 +366,12 @@ func _on_enemy_died_fx(_drops) -> void:
 	if was_boss:
 		Sfx.play(&"boss_defeated", 2.0)
 		backdrop.flash(Color(1, 0.85, 0.4), 0.5, 0.6)
-		fx.float_text(pos + Vector2(0, -30), "¡JEFE DERROTADO!", Color("ffd54a"), true, 1.8, 6.0, 0.25)
+		fx.float_text(pos + Vector2(0, -30), tr("¡JEFE DERROTADO!"), Color("ffd54a"), true, 1.8, 6.0, 0.25)
 		boss_slain.emit(int(info.get("level", level)), String(info.get("name", "")))
 	var md: Dictionary = info.get("material", {})
 	if not md.is_empty():
 		var mat := _material_info(StringName(md.get("item_id", "")))
-		fx.loot_pop(pos + Vector2(2, -4), mat.get("icon"), "+%d %s" % [int(md.get("quantity", 0)), mat.get("name", "")], Color(1, 0.93, 0.7), 0.3 if was_boss else 0.12, FLOOR_Y)
+		fx.loot_pop(pos + Vector2(2, -4), mat.get("icon"), "+%d %s" % [int(md.get("quantity", 0)), tr(mat.get("name", ""))], Color(1, 0.93, 0.7), 0.3 if was_boss else 0.12, FLOOR_Y)
 		loot_dropped.emit(&"material", pos, {"id": md.get("item_id", ""), "quantity": md.get("quantity", 0)})
 		# Tintineo cuando sale el botín (va con el mismo retardo que su icono)
 		get_tree().create_timer(0.3 if was_boss else 0.12).timeout.connect(func(): Sfx.play(&"loot_coins"))
@@ -387,11 +387,13 @@ func _on_blueprint_unlocked(bp_id: StringName) -> void:
 		bp_name = bp.display_name
 		icon = bp.get_blueprint_icon()  # el arte del plano; bp.icon no llega a cargarse
 	fx.star(pos + Vector2(0, -16), Color("ffe08a"), 14.0, 0.4)
-	fx.float_text(pos + Vector2(0, -26), "¡Nuevo plano!", Color("ffe08a"), true, 1.6, 8.0)
+	fx.float_text(pos + Vector2(0, -26), tr("¡Nuevo plano!"), Color("ffe08a"), true, 1.6, 8.0)
 	Sfx.play(&"blueprint_found", 1.0)
 	loot_dropped.emit(&"blueprint", pos + Vector2(0, -16), {"id": bp_id, "name": bp_name, "icon": icon})
 
 
+## Nombre e icono de un material (caché). El nombre es el texto base en español del .tres: quien lo
+## enseña lo pasa por tr() al pintarlo, así la caché no guarda textos de un idioma viejo.
 func _material_info(mat_id: StringName) -> Dictionary:
 	if _material_cache.has(mat_id):
 		return _material_cache[mat_id]

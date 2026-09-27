@@ -24,7 +24,7 @@ func set_blueprint_data(bp_id: StringName, blueprint: BlueprintResource, unlocke
 	
 	# Configurar Visuales
 	if blueprint_data:
-		name_label.text = blueprint_data.display_name if blueprint_data.display_name != "" else str(bp_id)
+		name_label.text = _blueprint_name()
 		
 		var icon_tex = blueprint_data.get_icon()
 		if icon_tex:
@@ -41,43 +41,59 @@ func set_blueprint_data(bp_id: StringName, blueprint: BlueprintResource, unlocke
 	# Configurar Tooltip
 	_update_tooltip()
 
+## Nombre del plano en el idioma del jugador.
+func _blueprint_name() -> String:
+	return tr(blueprint_data.display_name) if blueprint_data.display_name != "" else str(blueprint_id)
+
+
+## Tooltip con descripción, estadísticas y materiales, todo en el idioma del jugador (los nombres de
+## estadística son los de la pantalla de resultado y los de material, los de sus MaterialResource).
 func _update_tooltip() -> void:
 	if not blueprint_data:
 		return
-		
-	var text = "[b]%s[/b]\n" % (blueprint_data.display_name if blueprint_data.display_name != "" else str(blueprint_id))
-	
+
+	var text = "[b]%s[/b]\n" % _blueprint_name()
+
 	if not is_unlocked:
-		text += "[color=gray]Bloqueado[/color]\n\n"
-	
+		text += "[color=gray]%s[/color]\n\n" % tr("Bloqueado")
+
 	if blueprint_data.description != "":
-		text += "%s\n\n" % blueprint_data.description
-	
+		text += "%s\n\n" % tr(blueprint_data.description)
+
 	# Estadísticas
 	if item_resource:
-		text += "[b]Estadísticas base:[/b]\n"
-		if item_resource.base_damage_max > 0:
-			text += "- Daño: %d - %d\n" % [item_resource.base_damage_min, item_resource.base_damage_max]
-		if item_resource.base_armor_max > 0:
-			text += "- Armadura: %d - %d\n" % [item_resource.base_armor_min, item_resource.base_armor_max]
-		if item_resource.base_hp_max > 0:
-			text += "- Vida: %d - %d\n" % [item_resource.base_hp_min, item_resource.base_hp_max]
-		if item_resource.base_str_max > 0:
-			text += "- Fuerza: %d - %d\n" % [item_resource.base_str_min, item_resource.base_str_max]
-		if item_resource.base_agi_max > 0:
-			text += "- Agilidad: %d - %d\n" % [item_resource.base_agi_min, item_resource.base_agi_max]
-		if item_resource.base_int_max > 0:
-			text += "- Inteligencia: %d - %d\n" % [item_resource.base_int_min, item_resource.base_int_max]
+		text += "[b]%s[/b]\n" % tr("Estadísticas base:")
+		var ranges := [
+			["Daño", item_resource.base_damage_min, item_resource.base_damage_max],
+			["Armadura", item_resource.base_armor_min, item_resource.base_armor_max],
+			["Vida", item_resource.base_hp_min, item_resource.base_hp_max],
+			["Fuerza", item_resource.base_str_min, item_resource.base_str_max],
+			["Agilidad", item_resource.base_agi_min, item_resource.base_agi_max],
+			["Intelecto", item_resource.base_int_min, item_resource.base_int_max],
+		]
+		for r in ranges:
+			if r[2] > 0:
+				text += "- %s: %d - %d\n" % [tr(r[0]), r[1], r[2]]
 		text += "\n"
-	
+
 	# Materiales
 	if not blueprint_data.materials.is_empty():
-		text += "[b]Requisitos:[/b]\n"
+		text += "[b]%s[/b]\n" % tr("Requisitos:")
 		for mat_id in blueprint_data.materials:
 			var qty = blueprint_data.materials[mat_id]
-			text += "- %s: x%d\n" % [mat_id.capitalize(), qty]
-	
+			text += "- %s: x%d\n" % [_material_name(String(mat_id)), qty]
+
 	tooltip_text = text
+
+
+## Nombre de un material en el idioma del jugador (el de su MaterialResource).
+func _material_name(mat_id: String) -> String:
+	var path := "res://data/materials/%s.tres" % mat_id
+	if ResourceLoader.exists(path):
+		var res = load(path)
+		if res and res.display_name != "":
+			return tr(res.display_name)
+	return mat_id.capitalize()
 
 # Godot 4 permite personalizar el tooltip si el texto tiene formato BBCode?
 # En realidad, ScrollContainer y otros nodos usan el tooltip estándar. 

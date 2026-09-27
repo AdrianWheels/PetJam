@@ -77,9 +77,9 @@ func _ready():
 	
 	# Crear pantalla de título
 	setup_title_screen(
-		"¡A TEMPLAR!",
-		"Mantén pulsado para sumergir la pieza",
-		"Suelta en la zona verde"
+		tr("¡A TEMPLAR!"),
+		tr("Mantén pulsado para sumergir la pieza"),
+		tr("Suelta en la zona verde")
 	)
 
 func _exit_tree():
@@ -263,7 +263,7 @@ func _input(event):
 	if is_press:
 		if not _holding:
 			_holding = true
-		_instruction_hint.text = "Cooling... Release in green zone!"
+		_instruction_hint.text = tr("Enfriando... ¡Suelta en la zona verde!")
 		print("[Quench] ⏬ Button pressed - starting descent")
 		accept_event()
 		return

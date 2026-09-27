@@ -137,7 +137,7 @@ func _draw() -> void:
 	# ── Label ──
 	var font := ThemeDB.fallback_font
 	var fs := 18
-	var lt := "⚡ MAX" if _overclock_active else "%d/%d" % [
+	var lt := "⚡ %s" % tr("MÁX") if _overclock_active else "%d/%d" % [
 		_current_value, _max_value
 	]
 	var ts := font.get_string_size(

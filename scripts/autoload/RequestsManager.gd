@@ -17,6 +17,22 @@ const REQUEST_DELAY_MIN := 3.0  # Segundos mínimos entre pedidos
 const REQUEST_DELAY_MAX := 8.0  # Segundos máximos entre pedidos
 const FREE_REQUESTS_COUNT := 2  # Primeros X pedidos son gratis
 
+## Clientes: nombre → género ("m" o "f"). El título concuerda con él: "Aldric el Guerrero",
+## "Brenna la Guerrera". Hombres: Aldric, Cedric, Eldon y Gareth; mujeres: Brenna, Dara, Fiona y Hilda.
+const CLIENT_NAMES := {
+	"Aldric": "m", "Brenna": "f", "Cedric": "m", "Dara": "f",
+	"Eldon": "m", "Fiona": "f", "Gareth": "m", "Hilda": "f",
+}
+## Títulos por género, en español (texto base; locale/textos.csv los traduce: "la Guerrera" → "the Warrior").
+const CLIENT_TITLES := [
+	{"m": "el Guerrero", "f": "la Guerrera"},
+	{"m": "el Mago", "f": "la Maga"},
+	{"m": "el Explorador", "f": "la Exploradora"},
+	{"m": "el Cazador", "f": "la Cazadora"},
+	{"m": "el Herrero", "f": "la Herrera"},
+	{"m": "el Mercader", "f": "la Mercader"},
+]
+
 var active_requests: Array[Dictionary] = []
 var free_requests_remaining: int = FREE_REQUESTS_COUNT
 var _data_manager: Node
@@ -65,12 +81,13 @@ func _generate_initial_requests() -> void:
 		var blueprint: BlueprintResource = _data_manager.get_blueprint(blueprint_id)
 		if blueprint:
 			var reward := _calculate_reward(blueprint)
-			active_requests.append({
+			var request := {
 				"blueprint_id": blueprint_id,
 				"blueprint": blueprint,
 				"gold_reward": reward,
-				"client_name": _generate_client_name()
-			})
+			}
+			request.merge(_generate_client())
+			active_requests.append(request)
 	
 	print("RequestsManager: Generados %d pedidos iniciales (2 inmediatos)" % active_requests.size())
 	for i in range(active_requests.size()):
@@ -173,15 +190,15 @@ func _add_new_request() -> void:
 	
 	if blueprint:
 		var reward := _calculate_reward(blueprint)
-		var client_name := _generate_client_name()
-		active_requests.append({
+		var request := {
 			"blueprint_id": blueprint_id,
 			"blueprint": blueprint,
 			"gold_reward": reward,
-			"client_name": client_name
-		})
-		
-		print("RequestsManager: ✨ New request added: %s - %d gold - Client: %s" % [blueprint.display_name, reward, client_name])
+		}
+		request.merge(_generate_client())
+		active_requests.append(request)
+
+		print("RequestsManager: ✨ New request added: %s - %d gold - Client: %s" % [blueprint.display_name, reward, request.client_name])
 		requests_refreshed.emit(active_requests)
 
 func refresh_all_requests() -> void:
@@ -208,12 +225,22 @@ func _calculate_reward(blueprint: BlueprintResource) -> int:
 	
 	return base_reward
 
-func _generate_client_name() -> String:
-	"""Generates random client name for immersion"""
-	var first_names := ["Aldric", "Brenna", "Cedric", "Dara", "Eldon", "Fiona", "Gareth", "Hilda"]
-	var titles := ["the Warrior", "the Mage", "the Explorer", "the Hunter", "the Blacksmith", "the Merchant"]
-	
-	return first_names[randi() % first_names.size()] + " " + titles[randi() % titles.size()]
+## Cliente al azar para el pedido. Se guardan el nombre y el título en español (texto base) y la tarjeta
+## lo traduce al enseñarlo (client_display_name): así un cambio de idioma no deja clientes a medias.
+## client_name es el nombre completo en español ("Brenna la Guerrera"), para los registros.
+func _generate_client() -> Dictionary:
+	var names: Array = CLIENT_NAMES.keys()
+	var first: String = names[randi() % names.size()]
+	var title: String = CLIENT_TITLES[randi() % CLIENT_TITLES.size()][CLIENT_NAMES[first]]
+	return {"client_name": "%s %s" % [first, title], "client_first": first, "client_title": title}
+
+
+## Nombre del cliente de un pedido en el idioma del jugador ("Brenna la Guerrera" / "Brenna the Warrior").
+func client_display_name(request: Dictionary) -> String:
+	var title := String(request.get("client_title", ""))
+	if title == "":
+		return String(request.get("client_name", ""))
+	return "%s %s" % [request.get("client_first", ""), tr(title)]
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 🕐 SISTEMA DE DELAY PROGRESIVO

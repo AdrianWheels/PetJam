@@ -9,6 +9,8 @@ extends Control
 ## mayúsculas y los segundos que le quedan, redondeados hacia arriba ("VELOCIDAD 25 s"), cada una de
 ## su color. Parpadean los últimos 5 s y desaparecen al caducar. Solo letras y cifras: sin emoji.
 ## La de Suerte da un latido cuando sale un botín doble.
+## Todo lo que enseña pasa por tr() al ponerlo (locale/textos.csv): los nombres que llegan por señal
+## (jefes, planos) vienen en español, que es el texto base.
 
 const SK := preload("res://scripts/gameplay/visual/ShapeKit.gd")
 
@@ -16,7 +18,7 @@ const TOP_BAND := 96.0
 const PIP_Y := 86.0
 const PIP_SPACING := 30.0
 
-## Efecto → [nombre, color]. El orden es el de las filas.
+## Efecto → [nombre (texto base), color]. El orden es el de las filas.
 const BUFF_LABELS := {
 	&"speed": ["VELOCIDAD", Color("a3e4ff")],
 	&"luck": ["SUERTE", Color("a8ee84")],
@@ -217,7 +219,7 @@ func _refresh_buffs() -> void:
 			continue
 		label.position = BUFF_POS + Vector2(0, BUFF_ROW * row)
 		row += 1
-		label.text = "%s %d s" % [BUFF_LABELS[id][0], ceili(left)]
+		label.text = "%s %d s" % [tr(BUFF_LABELS[id][0]), ceili(left)]
 		label.modulate.a = 0.45 + 0.55 * absf(cos(_t * 5.0)) if left <= BUFF_BLINK_TIME else 1.0
 	var luck: Label = _buff_labels[&"luck"]
 	luck.scale = Vector2.ONE * (1.0 + 0.3 * _luck_pop)
@@ -227,11 +229,11 @@ func _refresh_buffs() -> void:
 
 
 func _refresh_room() -> void:
-	_room_label.text = "Sala %d" % _room
+	_room_label.text = tr("Sala %d") % _room
 	var idx := Biomes.biome_index_for_room(_room)
-	_biome_label.text = Biomes.display_name(idx)
+	_biome_label.text = Biomes.display_name(idx)  # ya traducido
 	_record = maxi(_record, _room)
-	_record_label.text = "Récord: sala %d" % _record
+	_record_label.text = tr("Récord: sala %d") % _record
 
 
 func _draw() -> void:
@@ -355,20 +357,20 @@ func _on_room_entered(room: int, _is_boss: bool) -> void:
 func _on_biome_entered(idx: int, biome_name: String) -> void:
 	# El cartel solo al avanzar (no al volver a la sala 1 tras morir)
 	if _corridor and _corridor.is_advancing() and idx > 0 and Biomes.room_in_biome(_corridor.level) == 1:
-		show_banner(biome_name, "Profundidad %d" % _corridor.level, Biomes.get_biome(idx).get("light", Color("ffe7b0")).lerp(Color.WHITE, 0.4))
+		show_banner(tr(biome_name), tr("Profundidad %d") % _corridor.level, Biomes.get_biome(idx).get("light", Color("ffe7b0")).lerp(Color.WHITE, 0.4))
 		Sfx.play(&"biome_enter")
 
 
 func _on_boss_appeared(room: int, boss_name: String) -> void:
-	show_banner("¡JEFE!", "%s · Sala %d" % [boss_name, room], Color("ff6a4a"), 1.1)
+	show_banner(tr("¡JEFE!"), tr("%s · Sala %d") % [tr(boss_name), room], Color("ff6a4a"), 1.1)
 
 
 func _on_boss_slain(_room_num: int, boss_name: String) -> void:
-	show_toast("%s ha caído" % boss_name, Color("ffd76a"))
+	show_toast(tr("%s ha caído") % tr(boss_name), Color("ffd76a"))
 
 
 func _on_hero_fell(room: int) -> void:
-	show_banner("El héroe ha caído", "Llegó a la sala %d · vuelve con su equipo" % room, Color("ff8a7a"), 0.7)
+	show_banner(tr("El héroe ha caído"), tr("Llegó a la sala %d · vuelve con su equipo") % room, Color("ff8a7a"), 0.7)
 	_fade_to(0.85, 0.35, 0.95)
 
 
@@ -389,14 +391,14 @@ func _on_deaths_changed(death_count: int) -> void:
 func _on_record_changed(best: int) -> void:
 	var was := _record
 	_record = maxi(_record, best)
-	_record_label.text = "Récord: sala %d" % _record
+	_record_label.text = tr("Récord: sala %d") % _record
 	if best > was and best > 2 and not _record_announced:
 		_record_announced = true
-		show_toast("¡Nuevo récord de profundidad!", Color("ffd76a"))
+		show_toast(tr("¡Nuevo récord de profundidad!"), Color("ffd76a"))
 
 
 func _on_loot_dropped(kind: StringName, _world_pos: Vector2, payload: Dictionary) -> void:
 	if kind == &"blueprint":
-		show_toast("¡Nuevo plano: %s!" % String(payload.get("name", "")), Color("9fe0ff"))
+		show_toast(tr("¡Nuevo plano: %s!") % tr(String(payload.get("name", ""))), Color("9fe0ff"))
 	elif payload.get("bonus", false):
 		_luck_pop = 1.0  # botín doble de la Poción de Suerte

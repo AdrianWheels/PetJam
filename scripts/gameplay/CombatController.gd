@@ -176,7 +176,7 @@ func _execute_enemy_attack():
 		fx.damage_number(number_pos, dealt, &"hero")
 		if dealt < raw and _block_text_cd <= 0.0 and hero.has_method("armor_mitigation") and hero.armor_mitigation() >= 0.2:
 			_block_text_cd = 2.5
-			fx.float_text(hit_pos + Vector2(-9, -4), "Bloqueo", Color("b8c4d6"), false, 0.7, 8.0)
+			fx.float_text(hit_pos + Vector2(-9, -4), tr("Bloqueo"), Color("b8c4d6"), false, 0.7, 8.0)
 		match style:
 			"slam":
 				fx.dust_puff(hero.position + Vector2(8, 0), Color(0.75, 0.7, 0.62, 0.6), 9, 1.6)
@@ -272,7 +272,7 @@ func _show_bonus_loot(info: Dictionary) -> void:
 	var mat := _material_info(StringName(md.get("item_id", "")))
 	if fx:
 		var vx := randf_range(BONUS_LOOT_SPEED.x, BONUS_LOOT_SPEED.y)
-		fx.loot_pop(pos + Vector2(2.0 + BONUS_LOOT_AHEAD, -4), mat.get("icon"), "+%d %s" % [int(md.get("quantity", 0)), mat.get("name", "")], Color(1, 0.93, 0.7), delay, PixelView.FLOOR_Y, vx, 1)
+		fx.loot_pop(pos + Vector2(2.0 + BONUS_LOOT_AHEAD, -4), mat.get("icon"), "+%d %s" % [int(md.get("quantity", 0)), tr(mat.get("name", ""))], Color(1, 0.93, 0.7), delay, PixelView.FLOOR_Y, vx, 1)
 	if corridor and corridor.has_signal("loot_dropped"):
 		corridor.loot_dropped.emit(&"material", pos, {"id": md.get("item_id", ""), "quantity": md.get("quantity", 0), "bonus": true})
 	get_tree().create_timer(delay + BONUS_LOOT_SOUND_LAG).timeout.connect(func(): Sfx.play(&"loot_coins"))

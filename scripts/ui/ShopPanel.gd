@@ -35,10 +35,12 @@ const MATERIAL_CATALOG := {
 
 ## Pociones. Las de efecto temporal llevan el id del efecto en GameManager ("buff") y su duración en
 ## segundos: comprar una que ya está activa vuelve a la duración completa (no suma tiempo ni efecto).
+## Descripciones con el mismo formato: efecto y, si dura, sus segundos entre paréntesis ("(30 s)"),
+## con espacio antes de % y de s. Los nombres y descripciones son el texto base: se enseñan con tr().
 const POTION_CATALOG := {
 	&"potion_heal": {"display_name": "Poción de Vida", "price": 100, "description": "Cura al héroe al máximo"},
-	&"potion_speed": {"display_name": "Poción de Velocidad", "price": 150, "description": "Héroe ataca 50% más rápido (30s)", "buff": &"speed", "duration": 30.0},
-	&"potion_luck": {"display_name": "Poción de Suerte", "price": 200, "description": "20 % de botín doble (60 s)", "buff": &"luck", "duration": 60.0},
+	&"potion_speed": {"display_name": "Poción de Velocidad", "price": 150, "description": "El héroe ataca un 50 % más rápido (30 s)", "buff": &"speed", "duration": 30.0},
+	&"potion_luck": {"display_name": "Poción de Suerte", "price": 200, "description": "Botín doble el 20 % de las veces (60 s)", "buff": &"luck", "duration": 60.0},
 }
 
 # ═══════════════════════════════════════════════════════════════════
@@ -109,7 +111,7 @@ func _build_ui() -> void:
 	main_vbox.add_child(header)
 	
 	_title_label = Label.new()
-	_title_label.text = "🏪 TIENDA"
+	_title_label.text = "🏪 %s" % tr("TIENDA")
 	_title_label.add_theme_font_size_override("font_size", 42)
 	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(_title_label)
@@ -176,10 +178,15 @@ func _build_ui() -> void:
 	_inventory_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_inventory_grid.add_theme_constant_override("separation", 12)
 	sell_scroll.add_child(_inventory_grid)
-	
-	# Label vacío para cuando no hay items
+
+	# Las pestañas toman el nombre del nodo: se les pone el título traducido
+	_tab_container.set_tab_title(0, tr("Materiales"))
+	_tab_container.set_tab_title(1, tr("Pociones"))
+	_tab_container.set_tab_title(2, tr("Vender"))
+
+	# Label vacío para cuando no hay objetos
 	_inventory_empty_label = Label.new()
-	_inventory_empty_label.text = "No tienes items para vender.\nCraftea equipo y véndelo aquí."
+	_inventory_empty_label.text = _empty_sell_text()
 	_inventory_empty_label.add_theme_font_size_override("font_size", 26)
 	_inventory_empty_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
 	_inventory_empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -237,7 +244,7 @@ func _create_material_card(mat_id: StringName, info: Dictionary) -> PanelContain
 	var name_label := Label.new()
 	name_label.name = "NameLabel"
 	var owned: int = _inventory_manager.get_quantity(mat_id) if _inventory_manager else 0
-	name_label.text = "%s (x%d)" % [info.display_name, owned]
+	name_label.text = "%s (x%d)" % [tr(info.display_name), owned]
 	name_label.add_theme_font_size_override("font_size", 28)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	row.add_child(name_label)
@@ -247,7 +254,7 @@ func _create_material_card(mat_id: StringName, info: Dictionary) -> PanelContain
 	buy_btn.name = "BuyBtn"
 	var qty: int = info.quantity
 	var price: int = info.price
-	buy_btn.text = "Comprar %dx — %d 💰" % [qty, price]
+	buy_btn.text = "%s 💰" % (tr("Comprar %dx — %d") % [qty, price])
 	buy_btn.custom_minimum_size = Vector2(0, 70)
 	buy_btn.add_theme_font_size_override("font_size", 26)
 	buy_btn.pressed.connect(_on_buy_material.bind(mat_id, qty, price))
@@ -270,14 +277,14 @@ func _create_potion_card(pot_id: StringName, info: Dictionary) -> PanelContainer
 	
 	# Nombre
 	var name_label := Label.new()
-	name_label.text = "🧪 %s" % info.display_name
+	name_label.text = "🧪 %s" % tr(info.display_name)
 	name_label.add_theme_font_size_override("font_size", 30)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(name_label)
-	
+
 	# Descripción
 	var desc_label := Label.new()
-	desc_label.text = info.description
+	desc_label.text = tr(info.description)
 	desc_label.add_theme_font_size_override("font_size", 24)
 	desc_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
 	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -286,7 +293,7 @@ func _create_potion_card(pot_id: StringName, info: Dictionary) -> PanelContainer
 	
 	# Botón comprar
 	var buy_btn := Button.new()
-	buy_btn.text = "Comprar — %d 💰" % info.price
+	buy_btn.text = "%s 💰" % (tr("Comprar — %d") % info.price)
 	buy_btn.custom_minimum_size = Vector2(0, 70)
 	buy_btn.add_theme_font_size_override("font_size", 26)
 	buy_btn.pressed.connect(_on_buy_potion.bind(pot_id, info.price))
@@ -307,16 +314,16 @@ func _on_buy_material(mat_id: StringName, quantity: int, price: int) -> void:
 	
 	var gold: int = _inventory_manager.get_quantity(&"gold")
 	if gold < price:
-		_show_toast("❌ Oro insuficiente", Color(1.0, 0.3, 0.3))
+		_show_toast("❌ %s" % tr("Oro insuficiente"), Color(1.0, 0.3, 0.3))
 		return
-	
+
 	# Consumir oro y añadir materiales
 	_inventory_manager.consume_materials({&"gold": price})
 	_inventory_manager.add_item(mat_id, quantity)
-	
+
 	var info: Dictionary = MATERIAL_CATALOG.get(mat_id, {})
 	var display_name: String = info.get("display_name", String(mat_id))
-	_show_toast("✅ +%d %s" % [quantity, display_name], Color(0.3, 1.0, 0.3))
+	_show_toast("✅ +%d %s" % [quantity, tr(display_name)], Color(0.3, 1.0, 0.3))
 	item_purchased.emit(mat_id, quantity, price)
 	
 	print("ShopPanel: Comprado %dx %s por %d oro" % [quantity, mat_id, price])
@@ -328,9 +335,9 @@ func _on_buy_potion(pot_id: StringName, price: int) -> void:
 	
 	var gold: int = _inventory_manager.get_quantity(&"gold")
 	if gold < price:
-		_show_toast("❌ Oro insuficiente", Color(1.0, 0.3, 0.3))
+		_show_toast("❌ %s" % tr("Oro insuficiente"), Color(1.0, 0.3, 0.3))
 		return
-	
+
 	# Una poción que ahora no puede hacer nada no se vende (ni se cobra)
 	var blocked := _potion_block_reason(pot_id)
 	if blocked != "":
@@ -347,25 +354,26 @@ func _on_buy_potion(pot_id: StringName, price: int) -> void:
 	# Aplicar efecto de poción
 	_apply_potion_effect(pot_id)
 	
-	var display_name: String = info.get("display_name", String(pot_id))
-	_show_toast(("✅ %s renovada" if renewed else "✅ %s aplicada") % display_name, Color(0.3, 1.0, 0.3))
+	var display_name: String = tr(info.get("display_name", String(pot_id)))
+	var done: String = tr("%s renovada") if renewed else tr("%s aplicada")
+	_show_toast("✅ %s" % (done % display_name), Color(0.3, 1.0, 0.3))
 	item_purchased.emit(pot_id, 1, price)
 	
 	print("ShopPanel: Comprado %s por %d oro" % [pot_id, price])
 
 
-## Motivo en español por el que la poción no se puede usar ahora ("" si se puede). Se mira antes de
-## cobrar: la de Vida no cura a Tico caído (no resucita) ni a Tico con la vida llena.
+## Motivo, en el idioma del jugador, por el que la poción no se puede usar ahora ("" si se puede). Se
+## mira antes de cobrar: la de Vida no cura a Tico caído (no resucita) ni a Tico con la vida llena.
 func _potion_block_reason(pot_id: StringName) -> String:
 	if pot_id != &"potion_heal":
 		return ""
 	var hero := _find_hero()
 	if hero == null:
-		return "Tico no está en la mazmorra"
+		return tr("Tico no está en la mazmorra")
 	if not hero.alive:
-		return "Tico está caído: la poción no resucita"
+		return tr("Tico está caído: la poción no resucita")
 	if hero.hp >= hero.max_hp:
-		return "Tico ya tiene la vida llena"
+		return tr("Tico ya tiene la vida llena")
 	return ""
 
 
@@ -421,7 +429,7 @@ func _update_material_cards() -> void:
 		var name_label = card.get_node_or_null("VBoxContainer/Row/NameLabel")
 		if name_label:
 			var owned: int = _inventory_manager.get_quantity(mat_id)
-			name_label.text = "%s (x%d)" % [info.get("display_name", ""), owned]
+			name_label.text = "%s (x%d)" % [tr(info.get("display_name", "")), owned]
 
 
 func _on_inventory_changed(_inv: Dictionary) -> void:
@@ -461,7 +469,7 @@ func _populate_sell_items() -> void:
 	if items.is_empty():
 		# Mostrar mensaje vacío
 		_inventory_empty_label = Label.new()
-		_inventory_empty_label.text = "No tienes items para vender.\nCraftea equipo y véndelo aquí."
+		_inventory_empty_label.text = _empty_sell_text()
 		_inventory_empty_label.add_theme_font_size_override("font_size", 26)
 		_inventory_empty_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
 		_inventory_empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -514,7 +522,7 @@ func _create_sell_card(item: CraftedItem) -> PanelContainer:
 	tier_label.add_theme_color_override("font_color", item.get_quality_color().lerp(Color.WHITE, 0.3))
 	info_vbox.add_child(tier_label)
 	
-	# Stats resumidos
+	# Stats resumidos, con los mismos nombres que la pantalla de resultado (Daño, Vida…)
 	var stats_text := ""
 	for stat_key in item.calculated_stats:
 		var val = item.calculated_stats[stat_key]
@@ -524,7 +532,8 @@ func _create_sell_card(item: CraftedItem) -> PanelContainer:
 			continue
 		if stats_text != "":
 			stats_text += " · "
-		stats_text += "%s: +%s" % [stat_key.to_upper(), str(snapped(val, 0.1) if typeof(val) == TYPE_FLOAT else val)]
+		var stat_name: String = tr(CraftResultScreen.STAT_NAMES.get(stat_key, String(stat_key).capitalize()))
+		stats_text += "%s: +%s" % [stat_name, str(snapped(val, 0.1) if typeof(val) == TYPE_FLOAT else val)]
 	
 	if stats_text != "":
 		var stats_label := Label.new()
@@ -554,20 +563,25 @@ func _on_sell_item(item: CraftedItem, price: int) -> void:
 	if _inventory_manager.has_method("remove_crafted_item"):
 		var success: bool = _inventory_manager.remove_crafted_item(item)
 		if not success:
-			_show_toast("❌ Error al vender", Color(1.0, 0.3, 0.3))
+			_show_toast("❌ %s" % tr("Error al vender"), Color(1.0, 0.3, 0.3))
 			return
-	
+
 	# Dar oro
 	_inventory_manager.add_item(&"gold", price)
-	
+
 	var display_name := item.get_display_name()
-	_show_toast("💰 +%d oro — %s vendido" % [price, display_name], Color(1.0, 0.85, 0.2))
+	_show_toast("💰 %s" % (tr("+%d oro por %s") % [price, display_name]), Color(1.0, 0.85, 0.2))
 	item_sold.emit(item, price)
 	
 	print("ShopPanel: Vendido '%s' por %d oro" % [display_name, price])
 	
 	# Refrescar lista de items vendibles
 	_populate_sell_items()
+
+
+## Aviso de la pestaña Vender cuando no hay objetos (dos frases, una por línea).
+func _empty_sell_text() -> String:
+	return "%s\n%s" % [tr("No tienes objetos para vender."), tr("Forja equipo y véndelo aquí.")]
 
 
 func _show_toast(text: String, color: Color = Color.WHITE) -> void:

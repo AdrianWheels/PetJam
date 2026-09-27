@@ -57,9 +57,9 @@ func _ready():
 	
 	# Crear pantalla de título
 	setup_title_screen(
-		"¡A MARTILLAR!",
-		"Golpea al ritmo con precisión",
-		"Toca cuando la nota llegue"
+		tr("¡A MARTILLAR!"),
+		tr("Golpea al ritmo con precisión"),
+		tr("Toca cuando la nota llegue")
 	)
 
 func _exit_tree():
@@ -218,7 +218,7 @@ func _judge_hit(time_diff_ms: float) -> void:
 	# 🎨 Efectos
 	var feedback_pos := _impact_zone.global_position + _impact_zone.size / 2
 	MinigameFX.full_feedback(feedback_pos, quality, self)
-	MinigameFX.create_floating_label(feedback_pos, quality, quality, self)
+	MinigameFX.create_floating_label(feedback_pos, MinigameFX.quality_text(quality), quality, self)
 	MinigameAudio.play_feedback(quality)
 	
 	# 🔨 Efecto de martillazo en la posición del HammerNote
@@ -242,8 +242,8 @@ func _judge_hit(time_diff_ms: float) -> void:
 		_spawn_next_note()
 
 func _update_ui() -> void:
-	_score_label.text = "Puntos: %d" % _score
-	_progress_label.text = "Progreso: %d/%d" % [_hit_index, TOTAL_HITS]
+	_score_label.text = tr("Puntos: %d") % _score
+	_progress_label.text = tr("Progreso: %d/%d") % [_hit_index, TOTAL_HITS]
 
 func _end_game() -> void:
 	_running = false

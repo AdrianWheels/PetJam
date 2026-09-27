@@ -34,6 +34,7 @@ var _game_manager: Node
 var _puppet: Node2D
 
 const EQUIPMENT_SLOT_TYPES := ["head", "main_hand", "off_hand", "body", "feet"]
+## Nombres de hueco y de calidad: texto base en español, se enseñan con tr() (locale/textos.csv)
 const SLOT_NAMES := {"head": "Casco", "main_hand": "Arma", "off_hand": "Escudo", "body": "Pecho", "feet": "Botas"}
 const TIER_NAMES := {"legendary": "Legendario", "epic": "Épico", "rare": "Raro", "uncommon": "Bueno", "common": "Básico"}
 const RARITY_RANK := {"basic": 0, "advanced": 1, "master": 2}
@@ -200,14 +201,14 @@ func _refresh_equipment() -> void:
 			_set_frame_color(frame, equipped_item.get_quality_color(), 4)
 			slot_node.tooltip_text = equipped_item.get_display_name()
 			if label:
-				label.text = "%d%% %s" % [equipped_item.get_quality_percent(), TIER_NAMES.get(equipped_item.get_quality_tier(), "")]
+				label.text = "%d%% %s" % [equipped_item.get_quality_percent(), tr(TIER_NAMES.get(equipped_item.get_quality_tier(), ""))]
 				label.add_theme_color_override("font_color", equipped_item.get_quality_color())
 		else:
 			tex_rect.texture = null
 			_set_frame_color(frame, COLOR_FRAME_EMPTY, 3)
-			slot_node.tooltip_text = SLOT_NAMES.get(slot_type, slot_type.capitalize())
+			slot_node.tooltip_text = tr(SLOT_NAMES.get(slot_type, slot_type.capitalize()))
 			if label:
-				label.text = SLOT_NAMES.get(slot_type, slot_type.capitalize())
+				label.text = tr(SLOT_NAMES.get(slot_type, slot_type.capitalize()))
 				label.add_theme_color_override("font_color", Color(0.6, 0.52, 0.42))
 		if icon_rect is ColorRect:
 			icon_rect.color = COLOR_SLOT_EMPTY
@@ -275,14 +276,14 @@ func _refresh_stats() -> void:
 		return
 
 	if hp_label:
-		hp_label.text = "Vida %d" % hero.max_hp
+		hp_label.text = tr("Vida %d") % hero.max_hp
 	if dmg_label:
-		dmg_label.text = "Daño %.0f" % hero.dmg
+		dmg_label.text = tr("Daño %.0f") % hero.dmg
 	if armor_label:
 		var mitigation: float = hero.armor_mitigation() if hero.has_method("armor_mitigation") else 0.0
-		armor_label.text = "Armadura %d (-%d%%)" % [hero.armor, int(round(mitigation * 100.0))]
+		armor_label.text = tr("Armadura %d (-%d%%)") % [hero.armor, int(round(mitigation * 100.0))]
 	if crit_label:
-		crit_label.text = "Crítico %.0f%%" % (hero.crit_p * 100.0)
+		crit_label.text = tr("Crítico %.0f%%") % (hero.crit_p * 100.0)
 
 func _refresh_stats_from_equipment() -> void:
 	## Fallback: calcular stats solo de equipamiento sin referencia al héroe
@@ -290,13 +291,13 @@ func _refresh_stats_from_equipment() -> void:
 		return
 	var stats: Dictionary = _inventory_manager.calculate_total_stats()
 	if hp_label:
-		hp_label.text = "Vida +%d" % int(stats.get("hp", 0))
+		hp_label.text = tr("Vida +%d") % int(stats.get("hp", 0))
 	if dmg_label:
-		dmg_label.text = "Daño +%d" % int(stats.get("damage", 0))
+		dmg_label.text = tr("Daño +%d") % int(stats.get("damage", 0))
 	if armor_label:
-		armor_label.text = "Armadura +%d" % int(stats.get("armor", 0))
+		armor_label.text = tr("Armadura +%d") % int(stats.get("armor", 0))
 	if crit_label:
-		crit_label.text = "Crítico +%.0f%%" % (float(stats.get("crit", 0.0)) * 100.0)
+		crit_label.text = tr("Crítico +%.0f%%") % (float(stats.get("crit", 0.0)) * 100.0)
 
 # ═══════════════════════════════════════════════════════════════════
 #  ITEM SLOTS (inventario)
@@ -320,15 +321,15 @@ func _stat_line(item: CraftedItem) -> String:
 	var parts: Array[String] = []
 	var st: Dictionary = item.calculated_stats
 	if int(st.get("damage", 0)) > 0:
-		parts.append("+%d Daño" % int(st.damage))
+		parts.append(tr("+%d Daño") % int(st.damage))
 	if int(st.get("hp", 0)) > 0:
-		parts.append("+%d Vida" % int(st.hp))
+		parts.append(tr("+%d Vida") % int(st.hp))
 	if int(st.get("armor", 0)) > 0:
-		parts.append("+%d Arm" % int(st.armor))
+		parts.append(tr("+%d Arm") % int(st.armor))
 	if float(st.get("crit", 0.0)) > 0.005:
-		parts.append("+%d%% Crít" % int(round(float(st.crit) * 100.0)))
+		parts.append(tr("+%d%% Crít") % int(round(float(st.crit) * 100.0)))
 	if float(st.get("aps", 0.0)) > 0.01:
-		parts.append("+%.1f Vel" % float(st.aps))
+		parts.append(tr("+%.1f Vel") % float(st.aps))
 	return "  ".join(parts.slice(0, 2))
 
 func _create_item_slot(item: CraftedItem) -> Control:
@@ -366,7 +367,7 @@ func _create_item_slot(item: CraftedItem) -> Control:
 	name_label.add_theme_font_size_override("font_size", 22)
 	name_label.add_theme_constant_override("outline_size", 4)
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	name_label.text = item.item_resource.display_name if item.item_resource else "???"
+	name_label.text = tr(item.item_resource.display_name) if item.item_resource else "???"
 	vbox.add_child(name_label)
 
 	var quality_label := Label.new()
@@ -374,7 +375,7 @@ func _create_item_slot(item: CraftedItem) -> Control:
 	quality_label.add_theme_font_size_override("font_size", 20)
 	quality_label.add_theme_color_override("font_color", tier_color)
 	quality_label.add_theme_constant_override("outline_size", 4)
-	quality_label.text = "%d%% · %s" % [item.get_quality_percent(), TIER_NAMES.get(item.get_quality_tier(), "")]
+	quality_label.text = "%d%% · %s" % [item.get_quality_percent(), tr(TIER_NAMES.get(item.get_quality_tier(), ""))]
 	vbox.add_child(quality_label)
 
 	var stat_label := Label.new()
@@ -390,7 +391,7 @@ func _create_item_slot(item: CraftedItem) -> Control:
 		up.add_theme_font_size_override("font_size", 20)
 		up.add_theme_color_override("font_color", Color(0.45, 0.95, 0.5))
 		up.add_theme_constant_override("outline_size", 4)
-		up.text = "▲ Mejora"
+		up.text = "▲ %s" % tr("Mejora")
 		vbox.add_child(up)
 
 	# Toque para equipar
