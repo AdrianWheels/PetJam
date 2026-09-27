@@ -64,6 +64,12 @@ Todo texto visible nuevo de este plan va en español en el código o los datos, 
   - no provoca hit-stop ni temblor.
 - Guardado versión 2 con migración desde la 1: lo forjado pasa a rango I, lo desbloqueado se conserva y se aplican los hitos del récord.
 - Textos de la franja solo con caracteres de `PixelFont`: A-Z, ÁÉÍÓÚÜÑ, 0-9, ! ¡ ? ¿ . , : ; - + / ( ) % ' · ×.
+- `locale/textos.csv` (integrado en 24cde90):
+  - columnas `keys,es,en`, con `es` igual a la clave;
+  - **sin líneas en blanco**, porque el importador de Godot se para en la primera;
+  - tras editarlo, `--import`;
+  - `TextTests` comprueba que todas las filas se importan y que los datos visibles están en español con su fila en inglés.
+  - Los textos de datos nuevos (nombres y descripciones de material) necesitan su fila o `TextTests` falla.
 - Pruebas:
   - las suites extienden `res://scripts/tests/TestSuite.gd`, que protege `user://save.json`;
   - `VisualCapture` no lo protege: copia `%APPDATA%/Godot/app_userdata/PetJam/save.json` antes de grabar y restáuralo al acabar;
@@ -117,8 +123,11 @@ timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/
 timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/BalanceSim.tscn
 timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/GameplayTests.tscn
 timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/PixelTests.tscn
+timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/TextTests.tscn
 python -m unittest discover tools/pixel_art/tests
 ```
+
+Donde una tarea diga "RankTests, GameplayTests y PixelTests", añade también TextTests si la tarea toca textos o `locale/textos.csv`.
 
 Cada escena sale con 0 si todo pasa y con 1 si algo falla, e imprime `[Suite] N comprobaciones, M fallos`.
 
