@@ -1,0 +1,108 @@
+{
+  "version": 2,
+  "chosen": [
+    {
+      "id": "enemy_shatter",
+      "category": "combat",
+      "chosen": null,
+      "note": "Elegidas por CLAP (adherencia al prompt); reauditar a oído"
+    },
+    {
+      "id": "boss_appear",
+      "category": "combat",
+      "chosen": "combat/boss_appear_v1.wav",
+      "note": "Elegida por CLAP (adherencia al prompt); reauditar a oído"
+    },
+    {
+      "id": "boss_defeated",
+      "category": "feedback",
+      "chosen": "feedback/boss_defeated_v4.wav",
+      "note": "Elegida por CLAP (adherencia al prompt); reauditar a oído"
+    },
+    {
+      "id": "hero_fall",
+      "category": "combat",
+      "chosen": "combat/hero_fall_v1.wav",
+      "note": "Elegida por CLAP (adherencia al prompt); reauditar a oído"
+    },
+    {
+      "id": "hero_respawn",
+      "category": "feedback",
+      "chosen": "feedback/hero_respawn_v1.wav",
+      "note": "Elegida por CLAP (adherencia al prompt); reauditar a oído"
+    },
+    {
+      "id": "loot_coins",
+      "category": "feedback",
+      "chosen": null,
+      "note": "Elegidas por CLAP (adherencia al prompt); reauditar a oído"
+    },
+    {
+      "id": "blueprint_found",
+      "category": "feedback",
+      "chosen": "feedback/blueprint_found_v2.wav",
+      "note": "Elegida por CLAP (adherencia al prompt); reauditar a oído"
+    },
+    {
+      "id": "biome_enter",
+      "category": "ambience",
+      "chosen": "ambience/biome_enter_v3.wav",
+      "note": "Elegida por CLAP (adherencia al prompt); reauditar a oído"
+    },
+    {
+      "id": "wraith_orb",
+      "category": "combat",
+      "chosen": null,
+      "note": "Elegidas por CLAP (adherencia al prompt); reauditar a oído"
+    },
+    {
+      "id": "golem_slam",
+      "category": "combat",
+      "chosen": null,
+      "note": "Elegidas por CLAP (adherencia al prompt); reauditar a oído"
+    },
+    {
+      "id": "equip_clink",
+      "category": "ui",
+      "chosen": "ui/equip_clink_v2.wav",
+      "note": "Elegida por CLAP (adherencia al prompt); reauditar a oído"
+    },
+    {
+      "id": "request_accept",
+      "category": "ui",
+      "chosen": "ui/request_accept_v1.wav",
+      "note": "Elegida por CLAP (adherencia al prompt); reauditar a oído"
+    },
+    {
+      "id": "ui_tap",
+      "category": "ui",
+      "chosen": "ui/ui_tap_v2.wav",
+      "note": "Elegida por CLAP (adherencia al prompt); reauditar a oído"
+    }
+  ],
+  "pool": {
+    "enemy_shatter": [
+      1,
+      2,
+      5
+    ],
+    "loot_coins": [
+      2,
+      3,
+      5
+    ],
+    "wraith_orb": [
+      1,
+      3,
+      4
+    ],
+    "golem_slam": [
+      3,
+      4,
+      5
+    ]
+  },
+  "layers": {},
+  "layer_mix": {},
+  "scores": []
+}

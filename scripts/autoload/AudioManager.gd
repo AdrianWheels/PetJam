@@ -2,33 +2,61 @@ extends Node
 
 ## Sistema de audio unificado (contexto unico)
 ## Ya no hay dual-context FORGE/DUNGEON -- todo en una pantalla
+## Los SFX usan un pool de voces: varios sonidos a la vez sin cortarse (golpes, minijuegos, UI).
 
 ## Enum mantenido por compatibilidad (ya no tiene efecto funcional)
 enum AudioContext { GLOBAL, FORGE, DUNGEON }
 
+const SFX_VOICES := 10
+
 # Players globales
-@onready var _sfx_player := AudioStreamPlayer.new()
 @onready var _music_player := AudioStreamPlayer.new()
 
+var _sfx_voices: Array[AudioStreamPlayer] = []
+var _next_voice := 0
+var _sfx_bus := "Master"
 var _original_music_volume: float = 0.0
 var _duck_tween: Tween
 
 func _ready():
 	add_child(_music_player)
-	add_child(_sfx_player)
 	_music_player.bus = "Master"
-	_sfx_player.bus = "SFX"
 	_music_player.name = "MusicPlayer"
-	_sfx_player.name = "SFXPlayer"
-	DebugManager.log_msg(&"audio", "AudioManager ready")
+	# El bus "SFX" solo se usa si existe en el layout de buses
+	if AudioServer.get_bus_index("SFX") != -1:
+		_sfx_bus = "SFX"
+	for i in SFX_VOICES:
+		var p := AudioStreamPlayer.new()
+		p.name = "SFXVoice%d" % i
+		p.bus = _sfx_bus
+		add_child(p)
+		_sfx_voices.append(p)
+	DebugManager.log_msg(&"audio", "AudioManager ready (%d voces SFX)" % SFX_VOICES)
 
 ## Reproduce SFX
 func play_sfx(stream: AudioStream, volume_db: float = 0.0, _context = null):
-	if stream == null:
+	play_sfx_pitched(stream, volume_db, 1.0, 0.0)
+
+## Reproduce SFX con tono (y variación aleatoria ± variance) para que las repeticiones no suenen idénticas
+func play_sfx_pitched(stream: AudioStream, volume_db: float = 0.0, pitch: float = 1.0, variance: float = 0.0) -> void:
+	if stream == null or _sfx_voices.is_empty():
 		return
-	_sfx_player.stream = stream
-	_sfx_player.volume_db = volume_db
-	_sfx_player.play()
+	var voice := _get_free_voice()
+	voice.stream = stream
+	voice.volume_db = volume_db
+	voice.pitch_scale = maxf(0.05, pitch + randf_range(-variance, variance))
+	voice.play()
+
+func _get_free_voice() -> AudioStreamPlayer:
+	for i in _sfx_voices.size():
+		var idx := (_next_voice + i) % _sfx_voices.size()
+		if not _sfx_voices[idx].playing:
+			_next_voice = (idx + 1) % _sfx_voices.size()
+			return _sfx_voices[idx]
+	# Todas ocupadas: se reutiliza la más antigua (round-robin)
+	var voice := _sfx_voices[_next_voice]
+	_next_voice = (_next_voice + 1) % _sfx_voices.size()
+	return voice
 
 ## Reproduce musica
 func play_music(stream: AudioStream, loop: bool = true, volume_db: float = 0.0, _context = null):
