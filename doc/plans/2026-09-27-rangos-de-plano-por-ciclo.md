@@ -1038,7 +1038,7 @@ git commit -m "feat: curva de enemigos calibrada para los rangos (BalanceSim), a
   - `data/materials/bone.tres`, `moss.tres`, `obsidian.tres`, `frost.tres` y `void_shard.tres`.
 - Modify:
   - `tools/pixel_art/export.py`, `scripts/MaterialIcon.gd`;
-  - `scripts/gameplay/Enemy.gd` (botín), `scripts/gameplay/Corridor.gd` (aviso del botín de bioma);
+  - `scripts/gameplay/Enemy.gd` (botín), `scripts/gameplay/Corridor.gd` (presenta los tres botines), `scripts/gameplay/CombatController.gd` (deja de presentar el botín doble);
   - `scripts/tests/GameplayTests.gd`, `scripts/tests/RankTests.gd`, `locale/textos.csv`.
 - Generated: `art/sprites/pixel/materials/{bone,moss,obsidian,frost,void_shard}.png`
 
@@ -1408,16 +1408,28 @@ Donde `_die()` rellena `death_info` (hoy `"material": last_material_drop.duplica
 
 - [ ] **Step 7: Aviso del botín de bioma en la franja**
 
-El botín de siempre lo pinta `Corridor._on_enemy_died_fx()` y el doble de la Suerte, `CombatController._show_bonus_loot()`, con el mismo retraso. El de bioma lo pinta el `Corridor`, un poco después y más arriba, para que no se tapen. En `Corridor._on_enemy_died_fx()`, tras el bloque del material de siempre (`loot_pop` + `loot_dropped` + tintineo), añade:
+Hoy, tras integrar la tarjeta de pociones:
+- el botín de siempre lo pinta `Corridor._on_enemy_died_fx()`;
+- el doble de la Suerte lo pinta `CombatController._show_bonus_loot()`, que llama al método privado `Corridor._material_info()`, emite desde fuera la señal `loot_dropped` del pasillo y la emite antes que la del primer botín.
+
+**Ruling (integración de pociones):** los tres botines (el de siempre, el doble y el de bioma) los presenta el `Corridor`, en un solo sitio y en orden.
+- Mueve `_show_bonus_loot()` y sus constantes (`BONUS_LOOT_AHEAD`, `BONUS_LOOT_SPEED` y `BONUS_LOOT_SOUND_LAG`) de `CombatController` a `Corridor`.
+- En `CombatController`, borra `_material_info()` y la llamada a `_show_bonus_loot()` de `_on_enemy_died`.
+- En `Corridor._on_enemy_died_fx()`, tras el bloque del material de siempre (`loot_pop` + `loot_dropped` + tintineo), añade:
 
 ```gdscript
+	_show_bonus_loot(info)
 	var bd: Dictionary = info.get("biome_material", {})
 	if not bd.is_empty():
 		var bmat := _material_info(StringName(bd.get("item_id", "")))
 		var bdelay := (0.3 if was_boss else 0.12) + 0.18
-		fx.loot_pop(pos + Vector2(8, -8), bmat.get("icon"), "+%d %s" % [int(bd.get("quantity", 0)), bmat.get("name", "")], Color(0.8, 0.95, 1.0), bdelay, FLOOR_Y)
-		loot_dropped.emit(&"material", pos, {"id": bd.get("item_id", ""), "quantity": bd.get("quantity", 0)})
+		# Fila 2 de etiqueta: el de siempre usa la 0 y el doble de la Suerte la 1, así no se pisan
+		fx.loot_pop(pos + Vector2(8, -8), bmat.get("icon"), "+%d %s" % [int(bd.get("quantity", 0)), bmat.get("name", "")], Color(0.8, 0.95, 1.0), bdelay, FLOOR_Y, NAN, 2)
+		loot_dropped.emit(&"material", pos, {"id": bd.get("item_id", ""), "quantity": bd.get("quantity", 0), "biome": true})
+		get_tree().create_timer(bdelay + 0.1).timeout.connect(func(): Sfx.play(&"loot_coins"))
 ```
+
+En el `_show_bonus_loot()` movido, `_material_info(...)` pasa a ser la del propio `Corridor`, y la señal se emite como `loot_dropped.emit(...)`. Las pruebas de GameplayTests que miran el botín doble tienen que seguir en verde sin tocarlas; si alguna llamaba a `CombatController._show_bonus_loot`, apúntala al `Corridor`.
 
 `_material_info()` ya lee el nombre y el icono de `data/materials/<id>.tres`. Si la tarjeta de idioma lo cambió para traducir el nombre, el material de bioma usa el mismo camino.
 
@@ -1431,7 +1443,7 @@ Expected: 0 fallos en las tres.
 - [ ] **Step 9: Commit**
 
 ```bash
-git add tools/pixel_art/materials.py tools/pixel_art/tests/test_materials.py tools/pixel_art/export.py art/sprites/pixel/materials data/materials/bone.tres data/materials/moss.tres data/materials/obsidian.tres data/materials/frost.tres data/materials/void_shard.tres scripts/MaterialIcon.gd scripts/gameplay/Enemy.gd scripts/gameplay/Corridor.gd scripts/tests/RankTests.gd scripts/tests/GameplayTests.gd locale/textos.csv
+git add tools/pixel_art/materials.py tools/pixel_art/tests/test_materials.py tools/pixel_art/export.py art/sprites/pixel/materials data/materials/bone.tres data/materials/moss.tres data/materials/obsidian.tres data/materials/frost.tres data/materials/void_shard.tres scripts/MaterialIcon.gd scripts/gameplay/Enemy.gd scripts/gameplay/Corridor.gd scripts/gameplay/CombatController.gd scripts/tests/RankTests.gd scripts/tests/GameplayTests.gd locale/textos.csv
 git commit -m "feat: materiales de bioma (hueso, musgo, obsidiana, escarcha y vacío) y botín por ciclo"
 ```
 
@@ -2002,6 +2014,8 @@ func _on_blueprints_milestone(rank: int, tier: StringName, _ids: Array) -> void:
 ```
 
 `show_banner` sustituye al cartel en curso (no encola). En la muerte de un jefe hoy no hay otro cartel, solo el toast del jefe y el texto "¡JEFE DERROTADO!" de la franja, así que el del hito puede salir enseguida.
+
+En `_on_loot_dropped()`, quita el toast `"¡Nuevo plano: %s!"` de los pergaminos (`kind == &"blueprint"`). Con los hitos llegan 4 a la vez y encolarían 4 avisos; el cartel del hito ya los anuncia. La rama del botín doble (`payload.bonus`, que hace latir SUERTE) se queda como está.
 
 Fila en `locale/textos.csv`:
 
@@ -3180,8 +3194,10 @@ Repite con 720x1280 (`--resolution 720x1280`) para ver la franja a escala no ent
 Run: los cinco comandos de la cabecera.
 Expected: todo en verde.
 
-Run: `timeout 120 D:/Software/Godot/godot_ver4.5.exe --headless --path . --quit-after 600 res://scenes/Main.tscn 2>&1 | grep -iE "SCRIPT ERROR|Parse Error|ERROR:"`
+Run: `timeout 120 D:/Software/Godot/godot_ver4.5.exe --headless --path . --quit-after 600 res://scenes/Main.tscn 2>&1 | grep -iE "SCRIPT ERROR|Parse Error|ERROR:" | grep -v "resources still in use at exit"`
 Expected: sin resultados. Restaura `save.json`.
+
+El aviso `1 resources still in use at exit` (el ambiente de la forja, `amb_forge_market_base.wav`) ya existía antes de este plan. Sale al cerrar desde la línea de órdenes, porque el servidor de audio del motor no suelta la reproducción en el mismo fotograma. Por eso se filtra.
 
 - [ ] **Step 3: Documentación**
 
