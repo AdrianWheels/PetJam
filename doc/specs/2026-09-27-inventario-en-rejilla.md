@@ -1,6 +1,6 @@
 # Inventario en rejilla
 
-**Fecha:** 2026-09-27 · **Estado:** diseño aprobado en conversación, pendiente de revisar este spec
+**Fecha:** 2026-09-27 · **Estado:** aprobado. El 2026-09-28, al escribir el plan, se ajustó a la revisión del spec de rangos (duelos con la vida llena, muro y calibración con Balanza) y a la fase 2 del pixel art, en los apartados 3.2, 5, 6, 7, 8, 9.5, 13, 14 y 16
 **Petición:** "Quiero que el inventario del héroe de PetJam funcione como el de Lootbound" (https://store.steampowered.com/app/3091140/Lootbound/). En Lootbound el equipo es una rejilla delante de la silueta del héroe, sin huecos fijos: cada objeto ocupa una forma que se gira y se coloca donde quepa. Hay mochila, botín y 2 consumibles, y algunos objetos dan auras a sus vecinos o se activan por su posición. La tarjeta del tablero pide que colocar lo que se forja sea un puzle con sinergias y dé más razones para forjar. Decisiones del usuario:
 
 | Pregunta | Elegido |
@@ -89,12 +89,13 @@ Las piezas de una rejilla guardan también su casilla (`CraftedItem.cell`, la es
 - Una pieza cabe si todas sus casillas, limpias y aristas, están dentro de la rejilla y no pisan otra pieza.
 - Al soltar una pieza:
   - **en casillas libres de una rejilla:** se coloca;
-  - **encima de una sola pieza, si cabe al quitarla:** se intercambian. La otra va al sitio exacto de donde salió la primera (rejilla o botín, casilla y giro) si cabe allí; si no, al botín;
+  - **encima de una sola pieza, si cabe al quitarla:** se intercambian. La otra va al sitio de donde salió la primera (la misma rejilla y casilla, o el botín) con su propio giro, si cabe allí; si no, al botín;
   - **encima de dos o más piezas, fuera de una rejilla o donde no cabe:** vuelve a su sitio;
   - **en el botín:** pasa al botín;
   - **en la zona de venta:** se vende al precio de la tienda (`ShopPanel._get_sell_price`, que el spec de rangos multiplica por el rango). Vender una Épica o una Legendaria pide confirmación.
 - **Vender todo:** vende las piezas del botín, salvo las Épicas y las Legendarias, tras una confirmación con el total. No toca la mochila ni la rejilla de Tico.
 - **Nada se coloca solo.** La única excepción es la migración de partidas antiguas (apartado 10).
+- **Muro de los rangos:** colocar, quitar, girar o intercambiar una pieza de la rejilla de Tico cuenta como cambiarle el equipo. Tico vuelve a probar el muro (spec de rangos, apartado 7).
 
 ### 3.3 Tamaño de la rejilla de Tico
 - Empieza en 4×4 (ancho × alto) y llega a 6×6 con las 4 recetas de ampliación (apartado 7): 4×4 → 5×4 → 5×5 → 6×5 → 6×6.
@@ -152,7 +153,7 @@ Cada pieza tiene su habilidad de combate cuando sale Legendaria. Las maestras so
 | Escudo maestro | Espinas | Devuelve el 30 % del daño recibido | Velocidad de ataque ×0,85 |
 | Casco básico | Ojo de halcón | Probabilidad de crítico ×1,5 | — |
 | Casco avanzado | Regeneración | Recupera el 1,5 % de la vida máxima por segundo | — |
-| Casco maestro | Segunda oportunidad | Una vez por carrera, al caer vuelve con el 40 % de la vida | Vida máxima ×0,85 |
+| Casco maestro | Segunda oportunidad | Una vez por duelo, al caer vuelve con el 40 % de la vida | Vida máxima ×0,85 |
 | Botas básicas | Paso ligero | Velocidad de ataque ×1,15 | — |
 | Botas avanzadas | Esquiva | 12 % de esquivar un golpe | — |
 | Botas maestras | Ímpetu | El primer golpe contra cada enemigo hace ×3 | Armadura ×0,8 |
@@ -166,30 +167,49 @@ Cada pieza tiene su habilidad de combate cuando sale Legendaria. Las maestras so
   - Esquiva y parada: el golpe no hace daño. Se tira primero la esquiva y después la parada.
   - Espinas: vuelve al atacante el 30 % del daño que Tico recibe de verdad, después de la armadura.
   - Regeneración: solo con Tico vivo; no resucita.
-  - Segunda oportunidad: la primera vez en una carrera que la vida de Tico iba a llegar a 0, se queda con el 40 % y sigue. Se recarga al reaparecer en la sala 1.
+  - Segunda oportunidad: la primera vez en un duelo que la vida de Tico iba a llegar a 0, se queda con el 40 % y sigue. Se recarga al empezar el duelo siguiente: en el spec de rangos revisado, cada sala es un duelo con la vida llena.
   - Ímpetu: solo el primer golpe contra cada enemigo; con golpe doble, solo el primero de los dos. El pulso mágico no cuenta como golpe.
 - **En la franja:** se ven con la fuente pixel ("¡DOBLE!", "¡PARADA!", "¡ESQUIVA!", "¡OTRA VEZ!") y con efectos de quemadura y de curación en `CombatFX`.
 - **Magnitudes:** son de partida; las fija la calibración.
 
 ## 6. Balance
 
+El spec de rangos se revisó el 2026-09-27 (apartados 6 y 7). Desde entonces, cada sala es un duelo con la vida llena y los objetivos se miden en duelos. La calibración se hará con el motor Balanza, y el tablero fija el orden: Balanza, rangos e inventario. Este apartado sigue esa revisión.
+
 - **Poder por casilla.** Con "lo que quepa", el espacio es el techo de poder, así que las estadísticas de las piezas se miden por casilla limpia:
   - a igual nivel, las cuatro piezas dan el mismo poder por casilla (hoy el casco da unas tres veces más que las botas);
   - cada nivel da más por casilla que el anterior. Punto de partida: avanzado ×1,3 y maestro ×1,6 frente al básico;
-  - `BalanceSim` mide el poder de una pieza como las salas que gana Tico al añadirla a una rejilla de referencia;
+  - el poder de una pieza se mide con una métrica continua: cuánto sube el daño esperado por la vida efectiva de Tico (con su armadura) al añadirla a una rejilla de referencia;
   - con eso se reescriben los rangos de estadísticas de los 12 `data/items/*.tres`.
-- **`BalanceSim` con rejillas de verdad:**
-  - `GearPacker` llena la rejilla del tamaño que tiene el jugador en esa sala (las ampliaciones de los jefes del ciclo I, apartado 7);
-  - la llena con piezas del nivel, el rango y la calidad que se prueban, con sus aristas. A calidad 0,55: 2 aristas y aura del 5 %. A calidad 1,0: limpias, aura del 20 % y habilidad legendaria;
-  - prueba varias mezclas de armas y armaduras y se queda con la mejor;
-  - aplica auras, zonas, tope y habilidades con las reglas reales;
-  - los objetivos son los de la tabla del spec de rangos, cambiando "las 4 piezas" por "la rejilla llena".
-- **Qué se recalibra:** `Ranks.stat_mult`, las constantes de `EnemyScaling` si hace falta, las estadísticas de las piezas y las cifras de auras, zonas, tope y habilidades.
+- **Simulación con rejillas de verdad.** Es la de los rangos: `BalanceSim`, o el enlace de PetJam con Balanza si los rangos se calibraron con él.
+  - Mide duelos, como los rangos: Tico entra en cada sala con la vida llena, y su muro es el primer enemigo al que no gana.
+  - La rejilla tiene en cada sala el tamaño que tendría el jugador. En el ciclo I, crece una vez por cada jefe de las salas 10, 20, 30 y 40 ya vencido, contando con que su receta se forja en cuanto sale. Desde el ciclo II mide siempre 6×6.
+  - `GearPacker` la llena con piezas del nivel, el rango y la calidad que se prueban, con las aristas que les tocan por su calidad.
+  - Prueba varias mezclas de armas y armaduras y se queda con la que llega más lejos.
+  - Aplica auras, zonas, tope y habilidades legendarias con las reglas reales. Las habilidades cuentan por su valor esperado en el duelo:
+    - golpe doble, quemadura e ímpetu suben el daño;
+    - esquiva y parada quitan golpes;
+    - espinas devuelve daño;
+    - regeneración cura;
+    - segunda oportunidad da una segunda vida del 40 %.
+  - Los objetivos son los del spec de rangos: hitos con calidad 0,85, cotas con calidad 1,00 y la escalera de 15 estados. Solo cambia "las 4 piezas equipadas" por "la rejilla llena".
+- **Rango del equipo.** El spec de rangos hace que la base de Tico crezca con el rango de su equipo, y deja la regla en una sola función para que este spec la redefina.
+  - Con la rejilla, es el menor rango entre las mejores piezas de cada tipo que lleva Tico (las que dibuja su sprite, apartado 9.4).
+  - Añadir una pieza de un tipo que ya lleva nunca lo baja.
+  - Una pieza de rango bajo de un tipo que no llevaba sí lo baja, como con 4 huecos.
+  - Sin piezas, es el rango I.
+- **Qué se recalibra:**
+  - de los rangos: `Ranks.stat_mult`, la base de Tico por rango y, si hace falta, las constantes de `EnemyScaling`;
+  - de este spec: las estadísticas de las piezas y las cifras de auras, zonas, tope y habilidades.
 - **Materiales.** Un equipo pasa a ser de 8-10 piezas en vez de 4.
-  - Una cuenta de materiales en `BalanceSim` comprueba que llenar la rejilla de un nivel cuesta más o menos las victorias que el spec de rangos preveía para 4 piezas.
+  - Una cuenta de materiales en la simulación comprueba que llenar la rejilla de un nivel cuesta más o menos las victorias que el spec de rangos preveía para 4 piezas.
   - Si no, sube la tanda de botín por enemigo.
   - El resto de la economía es de su tarjeta.
-- **Recalibración:** la calibración que hace ahora el plan de rangos (con 4 piezas) se repite aquí, con la misma escena y los mismos objetivos.
+- **Recalibración.** La calibración de los rangos (con 4 piezas) se repite aquí con rejillas, con la misma herramienta y los mismos objetivos. Con Balanza:
+  - el enlace de PetJam recibe el conjunto de las 4 piezas de un nivel y llena la rejilla con copias, porque en Balanza un conjunto no puede llevar dos piezas de la misma ranura;
+  - el factor de cada pieza es su número de casillas limpias;
+  - las 12 habilidades son efectos, con el precio medido con y sin ellas.
+- **Riesgo propio del ciclo I.** Allí la rejilla crece con los jefes: 20 casillas contra el jefe 20, 30 contra el 40 y 36 al final. Desde el ciclo II siempre tiene 36, así que la ventaja de un nivel sobre otro no será la misma en el ciclo I que en los demás. Si la calibración no cumple con los dos, se consulta al usuario antes de tocar los objetivos.
 
 ## 7. Recetas de ampliación
 
@@ -200,7 +220,7 @@ Cada pieza tiene su habilidad de combate cuando sale Legendaria. Las maestras so
 | Hebillas de obsidiana | Señor del Magma (sala 30) | 5×5 → 6×5 | 10 de obsidiana y 20 de hierro | Forja y martillo |
 | Arnés de escarcha | Coloso de Escarcha (sala 40) | 6×5 → 6×6 | 10 de escarcha y 20 de cuero | Coser y temple |
 
-- **Qué son.** 4 planos (`data/blueprints/expansions/*.tres`, con la etiqueta `ampliacion`) fuera de `BlueprintLibrary`: no salen en los pedidos ni tienen rango. `scripts/core/GridExpansions.gd` (estático) los lista con su jefe y su nombre.
+- **Qué son.** 4 planos que `scripts/core/GridExpansions.gd` (estático) construye en código, sin `.tres`, con su jefe, su nombre, sus materiales y sus minijuegos. Están fuera de `BlueprintLibrary`: no salen en los pedidos ni tienen rango.
 - **En cualquier orden.** Cada receta forjada amplía la rejilla al tamaño siguiente de la tabla, sea cual sea la receta.
 - **Solo en el ciclo I.** Volver a vencer a esos jefes en ciclos posteriores no da nada más.
 - **Al desbloquear:**
@@ -225,6 +245,7 @@ Cada pieza tiene su habilidad de combate cuando sale Legendaria. Las maestras so
   - Vida: cuando Tico recibe daño, sigue vivo y queda por debajo del 30 % de su vida. Cura al máximo, como hoy.
   - Velocidad y Suerte: al aparecer un jefe (sala de jefe según `Biomes.is_boss_room`), si su efecto no está activo.
   - Los efectos no cambian (`GameManager.apply_buff`): Velocidad, ataques ×1,5 durante 30 s; Suerte, 20 % de botín doble durante 60 s.
+  - Beber sola una poción cuenta como beberla para el muro del spec de rangos (apartado 7): Tico vuelve a probarlo.
 - **Dónde se ven:** en el panel de Equipo (los 2 huecos con su número), en la franja (icono pequeño y número, junto al indicador de efectos) y en la tienda ("En hueco: 3").
 - **Vaciar un hueco:** manteniéndolo pulsado en el panel se venden sus pociones a mitad de precio. Es la única forma de cambiar de tipo.
 - **Guardado:** los huecos se guardan. Los efectos activos siguen sin guardarse, como hoy.
@@ -278,10 +299,10 @@ Medidas: casillas de 22×22 píxeles de arte a ×5 (110 px de pantalla), el mism
 ### 9.5 Pixel art
 En `tools/pixel_art/` hay un script nuevo, `gear.py`, con sus pruebas, que exporta a `art/sprites/pixel/gear/`:
 - **Las 12 piezas,** con su forma limpia (22 px por casilla) y su aspecto real:
-  - los píxeles de acento van en la rampa reservada que se recolorea por calidad, como las capas de la fase 2;
-  - llevan la máscara del destello de Épico y Legendario.
+  - los píxeles de acento van en la rampa reservada de la fase 2 (`+ * #`, de `recolor.py`) y el juego los cambia por la rampa de la calidad. Sin la fase 2 integrada, `gear.py` usa esos mismos valores;
+  - en Épicas y Legendarias, un destello recorre esos píxeles de acento, con la fuerza de `recolor.SHINE`.
 - **Teselas de arista:** rebaba de metal (espada, escudo y casco) y de cuero (botas), con 3 variantes de cada. Se dibujan pegadas a un lado y el código las gira.
-- **Interfaz:** casilla (marco y fondo), casilla por abrir, iconos de las 4 zonas, hueco de consumible, iconos de las 3 pociones y zona de venta.
+- **Interfaz:** casilla (marco y fondo), casilla por abrir, iconos de las 4 zonas, iconos de las 3 pociones y un marco de madera para 9 partes, que usan el hueco de consumible y la zona de venta.
 - **Giros:** los hace el código; 90° es exacto en pixel art.
 - **Textos del panel:** usan el tema actual hasta que el spec del tablero y la botonera decida la fuente de la interfaz.
 
@@ -329,14 +350,15 @@ En `tools/pixel_art/` hay un script nuevo, `gear.py`, con sus pruebas, que expor
   - colocar, rechazar (fuera de la rejilla o encima de dos piezas), intercambiar (con vuelta al origen o al botín) y vender;
   - auras: vecindad por los lados y no en diagonal, una vez por vecina, aristas sin efecto y tope;
   - zonas, también después de ampliar la rejilla;
-  - habilidades legendarias: multiplicadores, sin repetir, topes y los efectos de combate con semilla fija;
+  - habilidades legendarias: multiplicadores, sin repetir, topes y los efectos de combate con semilla fija. Segunda oportunidad, una vez por duelo;
   - `calculate_total_stats()` igual a la suma hecha a mano en un caso de ejemplo;
+  - rango del equipo: el menor entre las mejores piezas de cada tipo;
   - recetas: se desbloquean una sola vez al vencer al jefe, forjarlas amplía la rejilla sin crear pieza y no se repiten en el ciclo II;
   - consumibles: compra al hueco, "No hay hueco" sin cobrar, Vida por debajo del 30 %, y Velocidad y Suerte al aparecer un jefe;
   - guardar y cargar la versión 3;
-  - migración con una partida de prueba (`scripts/tests/fixtures/save_v2_inventory.json`) con 4 piezas equipadas, 40 sueltas y récord 35: ninguna pieza perdida, rejilla de 6×5 y aristas deterministas;
+  - migración con una partida de la versión 2 que genera la propia prueba (4 piezas equipadas, 40 sueltas y récord 35): ninguna pieza perdida, rejilla de 6×5 y aristas deterministas;
   - posiciones imposibles al cargar: la pieza pasa al botín.
-- **`BalanceSim`:** rejillas llenas y los objetivos del spec de rangos.
+- **Simulación de balance** (`BalanceSim`, y Balanza si los rangos la usan): duelos con rejillas llenas, los objetivos y la escalera del spec de rangos, el poder por casilla y la cuenta de materiales.
 - **Siguen en verde:**
   - `GameplayTests`, con su prueba de equipar reescrita para la rejilla;
   - `RankTests`, `PixelTests` y `TextTests`;
@@ -357,21 +379,20 @@ En `tools/pixel_art/` hay un script nuevo, `gear.py`, con sus pruebas, que expor
     - `GearPacker.gd`: colocación automática para la migración y la simulación;
     - `GridExpansions.gd`: recetas de ampliación.
   - Interfaz en `scripts/ui/`: `GearGridView.gd` y `LootStripView.gd`. El arrastre vive dentro de `EquipmentPanel.gd`.
-  - Datos: `data/blueprints/expansions/*.tres` (4).
   - Arte: `tools/pixel_art/gear.py` y sus pruebas, que generan `art/sprites/pixel/gear/`.
-  - Pruebas: `scripts/tests/InventoryGridTests.gd`, `scenes/tests/InventoryGridTests.tscn` y `scripts/tests/fixtures/save_v2_inventory.json`.
+  - Pruebas: `scripts/tests/InventoryGridTests.gd` y `scenes/tests/InventoryGridTests.tscn`.
 - **Modificados:**
   - Datos: `ItemResource.gd` (`shape_cells` y `arista_spots`) y los 12 `data/items/*.tres` (formas, sitios de arista y estadísticas por casilla).
   - `CraftedItem.gd`: `place`, `cell`, `rot` y `aristas`; desaparece `is_equipped`.
   - Autoloads y núcleo:
-    - `InventoryManager`: los tres sitios, consumibles, ampliaciones, guardado y migración;
+    - `InventoryManager`: los tres sitios, consumibles, ampliaciones, rango del equipo, guardado y migración;
     - `CraftingManager`: aristas al forjar y recetas de ampliación;
     - `GameManager`: recetas desbloqueadas por jefes y consumibles automáticos;
     - `SaveManager`: versión 3;
-    - `RequestsManager`: sin recetas de ampliación;
+    - `RequestsManager` no cambia: las recetas de ampliación no están en `BlueprintLibrary`, así que nunca salen en los pedidos;
     - `CombatMath`: aplica los multiplicadores legendarios después de `hero_stats()`.
   - Combate:
-    - `Hero`: mejor pieza de cada tipo, regeneración, esquiva, parada, espinas, segunda oportunidad y una señal de daño recibido;
+    - `Hero`: mejor pieza de cada tipo, regeneración, esquiva, parada, espinas, segunda oportunidad (una por duelo) y una señal de daño recibido;
     - `CombatController`: golpe doble, quemadura e ímpetu;
     - `CombatFX`: quemadura, curación y textos.
   - Interfaz: `EquipmentPanel` (rehecho), `HUDMain` (insignia), `CraftResultScreen`, `ShopPanel`, `BlueprintLibraryPanel` y `HeroViewOverlay`.
@@ -388,18 +409,27 @@ Cada fase deja el juego funcionando.
 4. **Habilidades legendarias** en combate y sus efectos en la franja.
 5. **Recetas de ampliación y consumibles.**
 6. **Pixel art** de las piezas, las aristas y el panel.
-7. **Balance:** estadísticas por casilla, `BalanceSim` con rejillas y calibración.
+7. **Balance:** estadísticas por casilla, duelos con rejillas en la simulación y calibración, con la misma herramienta que los rangos.
 8. **Verificación:** capturas, prueba en un móvil y documentación.
 
 ## 16. Dependencias y riesgos
 
+- **Orden: Balanza, rangos e inventario.** La calibración de los rangos está en pausa hasta que esté el motor Balanza (otra sesión), y los rangos no se terminan sin ella.
 - **Rangos:**
   - La implementación empieza cuando la tarjeta "Implementar los rangos de plano por ciclo" esté en "Completada - Pendiente Revisión". Entonces esta rama se rebasa sobre `franja-pixel-fase-1` actualizada.
-  - Usa de los rangos: `CraftedItem.rank`, `Ranks.stat_mult` y los numerales, los materiales de bioma, el encargo propio de la biblioteca, el guardado versión 2 y `BalanceSim`.
+  - Usa de los rangos:
+    - `CraftedItem.rank`, `Ranks.stat_mult` y los numerales;
+    - los materiales de bioma, el encargo propio de la biblioteca y el guardado versión 2;
+    - los duelos con la vida llena y el reintento del muro al cambiar de equipo o beber una poción;
+    - la función del rango del equipo y la simulación de balance.
   - Si al rebasar algo de esto ha cambiado, se ajusta este spec antes de seguir.
-- **Fase 2 del pixel art** (Tico por capas): no hace falta. Si no está hecha, el panel usa el Tico de hoy.
+- **Balanza:** si los rangos se calibran con ella, este spec también (apartado 6). Su orden `import` solo cambia las líneas de estadísticas de los `.tres`, así que conserva `shape_cells` y `arista_spots`.
+- **Fase 2 del pixel art** (Tico por capas): no hace falta. Si no está hecha, el panel usa el Tico de hoy. Si lo está, este spec usa lo suyo:
+  - su rampa de acento y sus rampas de calidad (apartado 9.5);
+  - `Hero.read_equipped_gear()`, la única lectura del equipo para el dibujo (apartado 9.4);
+  - `HeroPreview`, para el Tico grande y tenue del panel (apartado 9.1).
 - **Riesgos:**
-  - **Balance:** ahora tiene tres capas (poder por casilla, auras y habilidades). Se contiene con la simulación y con los topes.
+  - **Balance:** ahora tiene tres capas (poder por casilla, auras y habilidades). Se contiene con la simulación y con los topes. En el ciclo I, además, la rejilla crece con los jefes (apartado 6).
   - **Casillas de 110 px en móviles pequeños:** se comprueba en el dispositivo. Si no se acierta con el dedo, la mochila baja a 6×3 y las casillas crecen.
   - **Jugador nuevo que no coloca nada:** lo cubre la tarjeta del tutorial.
   - **Migración:** se prueba con la partida de ejemplo y con copia de `save.json` antes de cada prueba.
