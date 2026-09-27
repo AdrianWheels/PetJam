@@ -41,6 +41,10 @@ func _ready() -> void:
 			check(false, "%s terminó sin ninguna comprobación" % method_name)
 		print("%s %s" % ["ok   " if _failures == before else "FALLO", method_name])
 	OS.remove_logger(_errors)
+	# GameManager guarda en diferido (call_deferred): se deja que terminen esos guardados antes de
+	# restaurar la partida, o escribirían encima de la copia restaurada
+	for i in 3:
+		await get_tree().process_frame
 	_restore_save()
 	print("[PixelTests] %d comprobaciones, %d fallos" % [_checks, _failures])
 	get_tree().quit(1 if _failures > 0 else 0)
