@@ -102,9 +102,10 @@ StartScreen.tscn ──(botón Play)──→ Main.tscn
 
 #### AudioManager
 - **Enum**: `AudioContext { GLOBAL, FORGE, DUNGEON }` (simplificar a GLOBAL)
-- **API clave**: `play_sfx(stream, vol, ctx)`, `play_music(stream, loop, vol, ctx)`, `stop_music(ctx)`, `duck_music(db, time)`
+- **API clave**: `play_sfx(stream, vol, ctx)`, `play_sfx_pitched(stream, vol, pitch, variance)`, `play_music(stream, loop, vol, ctx)`, `stop_music(ctx)`, `duck_music(db, time)`
+- **Voces**: pool de 10 `AudioStreamPlayer` en el bus `SFX` (los sonidos ya no se cortan entre sí). `default_bus_layout.tres` añade un limitador en Master.
+- **SFX generados**: `scripts/core/Sfx.gd` → `Sfx.play(&"enemy_shatter")`. Catálogo de diseño en `doc/sfx/petjam_sfx_events.json`.
 - **Dependencias**: Ninguna
-- **Bug conocido**: `duck_music()` crea Timer nodes sin limpiarlos.
 
 ### 3.3 Diagrama de dependencias
 
@@ -138,21 +139,31 @@ StartScreen.tscn ──(botón Play)──→ Main.tscn
 ### 4.1 Sistema de combate (Dungeon)
 
 ```
-Corridor (state machine: RUN → FIGHT → DEAD → RUN)
+Corridor (state machine: RUN → FIGHT → DEAD → RUN)        [SubViewport 1080x480 de HUD_Main]
    │
-   ├─ Hero: CharacterBody2D, stats del loadout
-   ├─ Enemy: CharacterBody2D, grunt/tank, stats × nivel
-   └─ CombatController: coordina daño en hit-frames
+   ├─ Backdrop (DungeonBackdrop): Parallax2D por capas + biomas cada 10 salas + viñeta/destellos
+   ├─ GateA / GateB (RoomGate): arco con el número de la sala; cruzarlo = entrar en la sala
+   ├─ Camera2D (CorridorCamera): héroe al 30 % del ancho, shake por trauma, punch de zoom
+   ├─ Hero: pentágono con cara y EQUIPO VISIBLE (arma/escudo/casco/botas por calidad)
+   ├─ Enemy: arquetipo por sala (Limo, Esqueleto, Murciélago, Gólem, Espectro) o jefe del bioma
+   ├─ CombatFX: partículas, números de daño, cortes, anillos y botín en espacio de mundo
+   └─ CombatController: daño por cooldowns (attack_triggered) + feedback de cada golpe
 ```
 
-**Estado actual**: combate basado en hit-frames de spritesheets.  
-**Dirección futura**: formas geométricas + ataques por cooldown.
+**Sistema**: formas geométricas (`_draw()`) + ataques por cooldown, con dirección de arte "geometría iluminada"
+(ver `doc/specs/2026-09-27-mejora-visual-y-feeling.md`). Sin spritesheets. Utilidades en `scripts/gameplay/visual/`
+(`Biomes`, `EnemyArchetypes`, `ShapeKit`…). La anticipación de los ataques se calcula a partir del temporizador del
+cooldown, así que no cambia el DPS. El HUD de la franja (oro, muertes, sala, récord, carteles) es `scripts/ui/HeroViewOverlay.gd`.
+
+**Señal de ataque**: `attack_triggered` — emitida cuando el timer de ataque llega a 0. CombatController escucha y ejecuta daño.
+El pulso mágico emite `pulse_hit(amount, target_pos)` (posición tomada antes del daño).
 
 **Flujo de combate**:
-1. Héroe camina hasta el enemigo (RUN)
-2. CombatController gestiona intercambio de golpes (FIGHT)
-3. Enemigo muere → `GameManager.advance_enemy_level()` → siguiente enemigo
-4. Héroe muere → `GameManager.register_hero_death()` → reset nivel 1 → respawn
+1. Héroe camina (RUN); entra en combate cuando el enemigo está a `reach + half_width` (no por solape de rects)
+2. CombatController gestiona intercambio de golpes por cooldowns (FIGHT). La armadura del héroe reduce el daño físico: `armor / (armor + 40)`, máximo 60 %
+3. Enemigo muere → rellena `death_info` → CombatController registra la victoria y avanza sala → Corridor muestra botín y celebración
+4. Héroe muere → `GameManager.register_hero_death()` → fundido → reaparición en la sala 1 con haz de luz
+5. Hit-stop: `Corridor.hitstop(s)` congela héroe, enemigo y combate (nunca los minijuegos)
 
 ### 4.2 Sistema de crafteo
 

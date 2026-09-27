@@ -223,7 +223,7 @@ GameManager ──→ DataManager (desbloqueo blueprints)
 - Enemies dropean **blueprints** (primer kill) e **infusiones elementales**.
 - Sistema de tipos de daño previsto: armaduras (fortificada/pesada/ligera/héroe/divina) × daño (siege/perforante/cortante/caos).
 - Boss cada X niveles: stats × multiplicador + pasivas de un pool. Escalado combinatorio al agotar pool.
-- **Dirección visual**: simplificar a formas geométricas + ataques por cooldown.
+- **Visual**: Hero = pentágono azul, Enemy grunt = diamante rojo, Enemy boss = hexágono dorado. Dibujados con `_draw()`. Ataques por cooldown (señal `attack_triggered`). Flash blanco al atacar, rojo al recibir daño.
 
 ## Crafting y minijuegos
 - `CraftingManager` mantiene **cola de 5 slots**, gestiona trials, calcula calidad.
@@ -272,9 +272,10 @@ GameManager ──→ DataManager (desbloqueo blueprints)
 - [ ] Tienda materiales + pociones (gastar oro)
 - [ ] Infusiones elementales (drops → dificultad extra → encantamiento)
 - [ ] Medidor de Forjamagia + Heat + Crit Craft
-- [ ] Simplificar combate a formas geométricas + CD attacks
+- [x] Simplificar combate a formas geométricas + CD attacks
+- [x] Fórmulas escalado infinito enemigos
+- [x] Pantalla resultado crafteo con barra calidad animada
 - [ ] Simplificar Sew a timing puro
-- [ ] Pantalla resultado crafteo con barra calidad animada
 - [ ] Export + testing Android
 - [ ] Eventos prefijados en RequestManager para narrativa
 - [ ] Items faltantes (3 ItemResource por crear)

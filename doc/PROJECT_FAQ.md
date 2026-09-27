@@ -120,7 +120,7 @@ InventoryManager ──(inventory_changed)──→ UI
 ## C — Sistema de combate y dungeon
 
 ### C1. ¿Cómo funciona el combate actual?
-Actualmente es **hit-frame based**: la animación del spritesheet emite `hit_frame_reached` y el `CombatController` aplica daño en ese momento. **Se planea simplificarlo a formas geométricas con ataques por cooldown**, eliminando la dependencia de spritesheets de animación.
+Sistema **cooldown-based**: Hero y Enemy se representan como formas geométricas (`_draw()` con pentágono/diamante/hexágono). Cuando el timer de ataque llega a 0, emiten `attack_triggered` y el `CombatController` aplica daño. Feedback visual por color flash (blanco al atacar, rojo al recibir daño). Sin dependencia de spritesheets.
 
 ### C2. ¿Cómo se calculan las stats?
 - **Héroe**: stats base + suma de stats de items equipados (7 slots). `InventoryManager.calculate_total_stats()` hace el cálculo.

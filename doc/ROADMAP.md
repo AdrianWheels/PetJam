@@ -28,12 +28,12 @@ El proyecto viene de una **game jam** y está en fase de **reestructuración hac
 - [x] Archivos obsoletos eliminados
 ### Lo que no funciona / está incompleto
 - [x] EquipmentPanel (WIP — no actualiza stats)
-- [ ] Combate visual (spritesheets complejos con bugs)
+- [x] Combate visual — simplificado a formas geométricas + cooldowns
 - [ ] Persistencia (todo se pierde al cerrar)
-- [ ] Audio (dual-context legacy, leaks)
-- [ ] Escalado infinito real (fórmulas básicas)
-- [ ] Muchos prints de debug activos
-- [ ] Código legacy/muerto en autoloads
+- [x] Audio — AudioManager unificado (sin dual-context)
+- [x] Escalado infinito — fórmulas exponenciales implementadas
+- [x] Prints de debug — categorizado via DebugManager
+- [ ] Código legacy/muerto en autoloads (parcial)
 
 ---
 
@@ -47,27 +47,28 @@ El proyecto viene de una **game jam** y está en fase de **reestructuración hac
 - [x] **Unificar AudioManager**: eliminado dual-context, arreglado leak de duck_music (usa Tween)
 - [x] **Limpiar prints de debug**: reemplazados con DebugManager categorizado en gameplay core
 - [x] **Formulas de escalado infinito**: stats de enemigos crecen exponencialmente (lineal + 4% compuesto/nivel)
-- [ ] **Simplificar combate**: migrar a formas geometricas + ataques por cooldown (eliminar dependencia de spritesheets)
+- [x] **Simplificar combate**: migrado a formas geométricas (`_draw()`) + ataques por cooldown (eliminada dependencia de spritesheets)
 - [x] **EquipmentPanel funcional**: equipar items actualiza stats del heroe correctamente
-- [ ] **Calidad final del crafteo**: puntuacion total / maximo posible, con barra animada
+- [x] **Calidad final del crafteo**: CraftResultScreen con barra animada, reveal de tier, botones vender/equipar integrados
 
 ### Fase 2: Sistemas de progresión
 > Objetivo: que el jugador sienta progresión y enganche.
 
-- [ ] **Persistencia a disco**: save/load inventario, equipo, progreso, blueprints desbloqueados (`user://save.json` o similar)
+- [x] **Persistencia a disco**: SaveManager (`user://save.json`), auto-save 60s + triggers (equip, craft, enemy kill), carga en data_ready
 - [ ] **Cálculos offline**: al volver a abrir la app, calcular cuánto avanzó/murió el héroe según deltatime (mover a una fase mas adelante)
-- [ ] **Tienda de materiales y pociones**: gastar oro obtenido de requests
-- [ ] **Medidor de Forjamagia**: barra siempre presente durante crafteo
-- [ ] **Heat system**: acumular heat por crafteo consecutivo
+- [x] **Tienda de materiales y pociones**: ShopPanel con catálogo de materiales y pociones, gold display en HUD, gold unificado (RequestsManager → CraftingManager → resultado)
+- [x] **Medidor de Forjamagia**: ForgeMagiaMeter con 10 segmentos, colores azul→morado→dorado, glow en overclock. Sube con Perfects (+3), baja con Misses (-1). Bonus calidad: +5%/+10%/+15%. Panel semi-transparente superpuesto al MinigamePanel
 - [ ] **Crit Craft chains**: encadenar perfectos para bonus
-- [ ] **Simplificar Sew**: convertir a timing puro y quitar el mouse pointer custom (quitar click en puntos)
+- [x] **Simplificar Sew**: convertido a timing puro (tap en cualquier lugar, sin check posicional, cursor custom eliminado)
 - [ ] **Sistema de dificultad automático**: generar TrialConfigs según nivel de blueprint
+- [x] **Simplificar final crafteo**: Al completar un item, va directo al inventario con botón "AL INVENTARIO" + animación de partículas. Se vende en la tienda (tab Vender) y se equipa desde el panel de héroe
+- [x] **Mejorar visualmente la tienda**: Textos más grandes (26-42px), tienda ocupa zona central de minijuegos (no fullscreen), nueva pestaña "Vender" para vender items crafteados por oro
 
 ### Fase 3: Contenido y profundidad
 > Objetivo: variedad y profundidad de gameplay.
 
-- [ ] **Sistema de tipos de daño**: armaduras (fortificada/pesada/ligera/héroe/divina) × daño (siege/perforante/cortante/caos)
-- [ ] **Pool de pasivas para bosses**: boss cada X niveles con pasivas del pool. Escalado combinatorio.
+- [ ] **Sistema de tipos de daño**: armaduras (fortificada/pesada/ligera/héroe) × daño (siege/perforante/cortante/caos)
+- [ ] **Pool de pasivas para bosses**: boss cada 10 niveles con pasivas del pool. Escalado combinatorio.
 - [ ] **Infusiones elementales**: drops de enemigos → dificultad extra en recetas → encantamiento al item
 - [ ] **Eventos narrativos en RequestManager**: requests prefijados para partes de "historia"
 - [ ] **Items faltantes**: crear las 3 ItemResources pendientes
@@ -101,8 +102,8 @@ El proyecto viene de una **game jam** y está en fase de **reestructuración hac
 
 ## Prioridades inmediatas (top 5)
 
-1. **Limpiar archivos y código obsoleto** — reducir confusión
-2. **Simplificar combate a geometría** — eliminar bugs de spritesheet
-3. **EquipmentPanel funcional** — cerrar el loop de crafteo
-4. **Persistencia a disco** — que no se pierda el progreso
-5. **Fórmulas de escalado infinito** — que el endless sea real
+1. ~~**Limpiar archivos y código obsoleto**~~ ✅
+2. ~~**Simplificar combate a geometría**~~ ✅ — formas geométricas + cooldowns
+3. ~~**EquipmentPanel funcional**~~ ✅ — cerrar el loop de crafteo
+4. ~~**Persistencia a disco**~~ ✅ — SaveManager + auto-save + load al arrancar
+5. ~~**Fórmulas de escalado infinito**~~ ✅ — que el endless sea real
