@@ -63,6 +63,10 @@ var accent_color: Color = Color("ff4a3a")
 
 var fx: Node = null  # CombatFX (lo asigna el Corridor)
 var last_material_drop: Dictionary = {}  # {"item_id", "quantity"} del último botín
+var last_bonus_drop: Dictionary = {}  # segunda tanda de la Poción de Suerte ({} si no la hubo)
+## Tirada (0..1) del botín doble de la Poción de Suerte. Vacía usa _rng; las pruebas la fijan para
+## forzar el resultado (sale si la tirada es menor que GameManager.double_loot_chance()).
+var luck_roll: Callable = Callable()
 ## Datos del último enemigo muerto. Se rellenan ANTES de emitir died, porque los que escuchan
 ## después (Corridor) ya ven al nodo recolocado en la sala siguiente.
 var death_info: Dictionary = {}
@@ -304,12 +308,34 @@ func generate_drops() -> Array:
 	return drop_table.roll_drops(_rng)
 
 
+## Botín de materiales: 15 de un material al azar de los que piden los planos. Con la Poción de Suerte,
+## a veces una segunda tanda de 15 de OTRO material del mismo conjunto (no repite, para que se lean
+## dos botines distintos; solo repetiría si el conjunto tuviera un único material).
 func _drop_random_materials() -> void:
 	last_material_drop = {}
+	last_bonus_drop = {}
+	var all_materials := _blueprint_materials()
+	if all_materials.is_empty():
+		return
+	var random_material: StringName = all_materials[_rng.randi() % all_materials.size()]
+	last_material_drop = _give_material(random_material)
+	if last_material_drop.is_empty() or not _rolls_double_loot():
+		return
+	var others: Array[StringName] = []
+	for mat_id in all_materials:
+		if mat_id != random_material:
+			others.append(mat_id)
+	if others.is_empty():
+		others = all_materials
+	last_bonus_drop = _give_material(others[_rng.randi() % others.size()])
+
+
+## Materiales que pide algún plano (sin repetir).
+func _blueprint_materials() -> Array[StringName]:
+	var all_materials: Array[StringName] = []
 	var dm := get_node_or_null("/root/DataManager")
 	if not dm or not dm.has_method("get_all_blueprints"):
-		return
-	var all_materials: Array[StringName] = []
+		return all_materials
 	var all_blueprints: Dictionary = dm.get_all_blueprints()
 	for bp_id in all_blueprints:
 		var blueprint = all_blueprints[bp_id]
@@ -317,13 +343,26 @@ func _drop_random_materials() -> void:
 			for mat_id in blueprint.materials.keys():
 				if not all_materials.has(mat_id):
 					all_materials.append(StringName(mat_id))
-	if all_materials.is_empty():
-		return
-	var random_material: StringName = all_materials[_rng.randi() % all_materials.size()]
+	return all_materials
+
+
+## Mete una tanda en el inventario y la devuelve ({} si no hay inventario).
+func _give_material(mat_id: StringName) -> Dictionary:
 	var im := get_node_or_null("/root/InventoryManager")
-	if im and im.has_method("add_item"):
-		im.add_item(random_material, MATERIAL_DROP_QTY)
-		last_material_drop = {"item_id": random_material, "quantity": MATERIAL_DROP_QTY}
+	if im == null or not im.has_method("add_item"):
+		return {}
+	im.add_item(mat_id, MATERIAL_DROP_QTY)
+	return {"item_id": mat_id, "quantity": MATERIAL_DROP_QTY}
+
+
+## ¿Sale el botín doble? Solo con la Poción de Suerte activa (20 % por enemigo derrotado).
+func _rolls_double_loot() -> bool:
+	var gm := get_node_or_null("/root/GameManager")
+	var chance: float = float(gm.double_loot_chance()) if gm and gm.has_method("double_loot_chance") else 0.0
+	if chance <= 0.0:
+		return false
+	var roll: float = float(luck_roll.call()) if luck_roll.is_valid() else _rng.randf()
+	return roll < chance
 
 
 func _die() -> void:
@@ -337,6 +376,7 @@ func _die() -> void:
 	death_info = {
 		"pos": body_center(), "boss": is_boss, "level": level, "name": display_name,
 		"archetype": archetype, "material": last_material_drop.duplicate(),
+		"bonus_material": last_bonus_drop.duplicate(),
 	}
 	emit_signal("died", drops)
 

@@ -6,7 +6,10 @@ extends CharacterBody2D
 ##  - carga, estocada y retroceso como desplazamientos en píxeles enteros; destello al recibir daño y
 ##    disolución al reaparecer con shaders/pixel_sprite.gdshader,
 ##  - barra de vida y nombre en fuente pixel,
-##  - la armadura reduce el daño físico.
+##  - la armadura reduce el daño físico,
+##  - la Poción de Velocidad (GameManager) multiplica el ritmo de ataque mientras dura.
+## Vida: cambiar de equipo conserva la proporción de vida (no cura); solo respawn() la llena y heal()
+## cura sin resucitar.
 ## Unidades: píxeles del arte (la franja mide 216x96). El origen del nodo es el centro de los pies.
 
 signal stats_reset
@@ -54,7 +57,8 @@ var INT: int = BASE_INT
 var max_hp: int = BASE_HP
 var hp: int = BASE_HP
 var dmg: float = BASE_DMG
-var aps: float = BASE_APS
+var base_aps: float = BASE_APS  ## ataques por segundo del equipo, sin efectos temporales
+var aps: float = BASE_APS  ## ritmo efectivo: base_aps × efectos activos (Poción de Velocidad)
 var crit_p: float = 0.0
 var crit_m: float = 1.5
 var armor: int = 0
@@ -64,6 +68,7 @@ var alive: bool = true
 var is_attacking: bool = false
 var debug_invincible: bool = false
 var stored_hp: int = 0
+var stored_max_hp: int = 0
 var stored_dmg: float = 0.0
 
 var size: Vector2 = Vector2(12, 28)  # Compatibilidad
@@ -118,6 +123,9 @@ func _ready():
 	_hud = HudDrawer.new()
 	_hud.hero = self
 	add_child(_hud)
+	var gm := get_node_or_null("/root/GameManager")
+	if gm and gm.has_signal("buffs_changed"):
+		gm.buffs_changed.connect(_on_buffs_changed)
 	respawn(position)
 
 
@@ -156,7 +164,10 @@ func _process(delta: float) -> void:
 
 # --- Stats ------------------------------------------------------------
 
+## Recalcula las stats desde el equipo. No cura: conserva la proporción de vida (con Tico caído sigue
+## a 0). GameManager la llama en cada cambio de equipo; respawn() llena la vida después.
 func reset_stats():
+	var hp_ratio := _hp_ratio()
 	var equipment_stats := {}
 	var inv_manager = get_node_or_null("/root/InventoryManager")
 	if inv_manager and inv_manager.has_method("calculate_total_stats"):
@@ -173,21 +184,53 @@ func reset_stats():
 	var bonus_armor: int = int(equipment_stats.get("armor", 0))
 
 	max_hp = BASE_HP + STR * 10 + bonus_hp
-	hp = max_hp
+	hp = _hp_for_ratio(hp_ratio)
 	dmg = BASE_DMG + STR * 1.5 + bonus_dmg
-	aps = clamp(BASE_APS + AGI * 0.02 + bonus_aps, 0.3, 5.0)
+	base_aps = clamp(BASE_APS + AGI * 0.02 + bonus_aps, 0.3, 5.0)
+	aps = base_aps * _attack_speed_multiplier()
 	crit_p = clamp(AGI * 0.005 + bonus_crit_p, 0.0, 0.75)
 	crit_m = clamp(1.5 + INT * 0.01, 1.0, 3.0)
 	armor = bonus_armor
 	atk_timer = 1.0 / aps
 	pulse_timer = PULSE_INTERVAL
 	# `alive` no se toca aquí: equipar durante la caída no debe resucitarlo (lo hace respawn())
-	_hp_ghost = 1.0
+	_hp_ghost = _hp_ratio()
 	_strike_time = clampf(0.6 / aps, 0.12, 0.24)
 	refresh_gear()
 
 	emit_signal("stats_reset")
 	DebugManager.log_msg(&"combat", "Hero stats — HP:%d DMG:%.1f APS:%.2f CRIT:%.0f%% ARM:%d (-%d%%)" % [max_hp, dmg, aps, crit_p * 100, armor, int(armor_mitigation() * 100.0)])
+
+
+## Vida para la proporción dada con el máximo actual. Vivo nunca baja de 1 (cambiar de equipo no mata)
+## y caído se queda a 0 (no resucita).
+func _hp_for_ratio(ratio: float) -> int:
+	if ratio <= 0.0:
+		return 0
+	return clampi(roundi(ratio * float(max_hp)), 1, max_hp)
+
+
+func _attack_speed_multiplier() -> float:
+	var gm := get_node_or_null("/root/GameManager")
+	if gm and gm.has_method("attack_speed_multiplier"):
+		return float(gm.attack_speed_multiplier())
+	return 1.0
+
+
+func _on_buffs_changed(_active: Dictionary) -> void:
+	refresh_attack_speed()
+
+
+## Aplica al ritmo de ataque los efectos activos sin recalcular el resto: reset_stats() no vale aquí
+## porque también toca la vida y los temporizadores.
+func refresh_attack_speed() -> void:
+	var new_aps := base_aps * _attack_speed_multiplier()
+	if is_equal_approx(new_aps, aps):
+		return
+	# El golpe en curso conserva la parte que le falta: solo cambia la velocidad a la que se carga
+	atk_timer *= aps / new_aps
+	aps = new_aps
+	_strike_time = clampf(0.6 / aps, 0.12, 0.24)
 
 
 ## Lee el equipo actual (espada, escudo, casco, botas) y elige el sprite.
@@ -244,15 +287,32 @@ func set_invincible(invincible: bool) -> void:
 	debug_invincible = invincible
 	if invincible:
 		stored_hp = hp
+		stored_max_hp = max_hp
 		stored_dmg = dmg
 		hp = 10000
 		max_hp = 10000
 		dmg = 10000.0
 	else:
-		hp = stored_hp if stored_hp > 0 else BASE_HP
-		max_hp = BASE_HP
+		# Vuelve con la vida que tenía (reset_stats conserva la proporción: dejar de ser invencible no cura)
+		max_hp = stored_max_hp if stored_max_hp > 0 else BASE_HP
+		hp = clampi(stored_hp, 1, max_hp) if stored_hp > 0 else max_hp
 		dmg = stored_dmg if stored_dmg > 0 else BASE_DMG
 		reset_stats()
+
+
+## Cura hasta max_hp sin resucitar: con Tico caído no hace nada. Devuelve la vida recuperada.
+func heal(amount: int) -> int:
+	if not alive or amount <= 0:
+		return 0
+	var healed := mini(amount, max_hp - hp)
+	if healed <= 0:
+		return 0
+	hp += healed
+	if fx:
+		var c := body_center()
+		fx.ring(c, Color(0.45, 1.0, 0.55, 0.9), 2.0, 14.0, 0.4, 1.0)
+		fx.float_text(c + Vector2(0, -16), "+%d" % healed, Color("7dff8a"), false, 1.0, 10.0)
+	return healed
 
 
 func attack(target, _particles: Array = []) -> void:
@@ -294,6 +354,9 @@ func prepare_for_combat() -> void:
 
 func respawn(start_position: Vector2 = PixelView.HERO_START) -> void:
 	reset_stats()
+	# Reaparecer sí cura del todo (reset_stats conserva la proporción de vida)
+	hp = max_hp
+	_hp_ghost = 1.0
 	position = start_position
 	velocity = Vector2.ZERO
 	alive = true

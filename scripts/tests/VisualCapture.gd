@@ -10,6 +10,8 @@ extends Node
 ##   craft  → acepta el primer pedido y va tocando la pantalla para jugar los minijuegos
 ##   boss   → salta al nivel 9 para ver la llegada del jefe
 ##   death  → quita vida al héroe para ver muerte + respawn
+##   potions → compra Velocidad, Suerte y Vida en la tienda, fuerza el botín doble y adelanta el
+##             final de la Velocidad para ver su parpadeo y cómo desaparece (sala 2, combate normal)
 
 const MAIN_SCENE := preload("res://scenes/Main.tscn")
 
@@ -43,6 +45,8 @@ func _ready() -> void:
 			_run_tour_plan()
 		"title":
 			_run_title_plan()
+		"potions":
+			_run_potions_plan()
 
 
 func _hud() -> Node:
@@ -179,6 +183,34 @@ func _run_tour_plan() -> void:
 			gm.current_enemy_level = room - 1
 			gm.advance_enemy_level()
 		await get_tree().create_timer(5.0).timeout
+
+
+func _run_potions_plan() -> void:
+	# Pociones compradas por la tienda de verdad (cobro, efecto e indicador del HUD) con la tirada de
+	# Suerte siempre a favor para ver el botín doble en cada muerte
+	await get_tree().create_timer(1.5).timeout
+	var gm := get_node_or_null("/root/GameManager")
+	var inv := get_node_or_null("/root/InventoryManager")
+	var hud := _hud()
+	if gm == null or inv == null or hud == null:
+		return
+	gm.current_enemy_level = 1
+	gm.advance_enemy_level()  # sala 2: combates cortos
+	var corridor: Node = hud.get_corridor()
+	corridor.enemy.luck_roll = func() -> float: return 0.0
+	inv.add_item(&"gold", 1000)
+	var shop: Node = hud.shop_panel
+	for pot_id in [&"potion_speed", &"potion_luck"]:
+		shop._on_buy_potion(pot_id, int(ShopPanel.POTION_CATALOG[pot_id].price))
+	# Poción de Vida con Tico herido, mientras camina hacia el primer enemigo: +N verde sobre él
+	await get_tree().create_timer(1.5).timeout
+	var hero: Node = gm.get_hero()
+	if hero and hero.alive:
+		hero.take_damage(int(hero.max_hp * 0.4), true)
+		shop._on_buy_potion(&"potion_heal", int(ShopPanel.POTION_CATALOG[&"potion_heal"].price))
+	# Adelanta el reloj: a la Velocidad le quedan 4 s (parpadea y luego desaparece)
+	await get_tree().create_timer(7.5).timeout
+	gm.tick_buffs(gm.buff_remaining(&"speed") - 4.0)
 
 
 func _run_title_plan() -> void:

@@ -202,15 +202,18 @@ func float_text(pos: Vector2, text: String, color: Color, big: bool = false, dur
 	})
 
 
-## Icono + texto que sube (botín de materiales).
-func loot_pop(pos: Vector2, icon: Texture2D, text: String, color: Color = Color(1, 0.93, 0.7), delay: float = 0.0, floor_y: float = NAN) -> void:
-	var vx := randf_range(8.0, 18.0)  # hacia delante: se aleja del héroe y de su barra de vida
+## Icono + texto que sube (botín de materiales). vx: velocidad hacia delante (NAN = al azar entre 8 y
+## 18). text_row sube la etiqueta esas filas: dos botines que salen a la vez comparten la altura del
+## salto (misma subida y gravedad), así que con filas distintas sus etiquetas no se pisan.
+func loot_pop(pos: Vector2, icon: Texture2D, text: String, color: Color = Color(1, 0.93, 0.7), delay: float = 0.0, floor_y: float = NAN, vx: float = NAN, text_row: int = 0) -> void:
+	if is_nan(vx):
+		vx = randf_range(8.0, 18.0)  # hacia delante: se aleja del héroe y de su barra de vida
 	# El icono se dibuja centrado: su "suelo" queda medio icono por encima de la línea del suelo
 	var ground := (floor_y - ICON_SIZE * 0.5) if not is_nan(floor_y) else pos.y + 8.0
 	_add({
 		"kind": Kind.ICON, "pos": pos, "vel": Vector2(vx, -52.0), "life": 1.5, "color": color,
 		"icon": icon, "text": text, "grav": 104.0, "drag": 0.5, "floor": ground,
-		"glow": 0.5, "glow_r": 7.0, "delay": delay,
+		"glow": 0.5, "glow_r": 7.0, "delay": delay, "text_row": text_row,
 	})
 
 
@@ -327,4 +330,5 @@ func _draw_icon(p: Dictionary, life_t: float) -> void:
 		draw_texture_rect(icon, rect, false, Color(1, 1, 1, alpha))
 	var text: String = p.text
 	if text != "":
-		PixelFont.draw_centered(self, p.pos + Vector2(0, -ICON_SIZE * 0.5 - PixelFont.SMALL_SIZE), text, p.color, alpha)
+		var lift := float(p.get("text_row", 0)) * float(PixelFont.SMALL_SIZE + 1)
+		PixelFont.draw_centered(self, p.pos + Vector2(0, -ICON_SIZE * 0.5 - PixelFont.SMALL_SIZE - lift), text, p.color, alpha)

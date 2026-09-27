@@ -5,12 +5,26 @@ extends Control
 ## Debajo del centro: 10 marcas hasta el siguiente jefe.
 ## Carteles animados: nuevo bioma, jefe, caída del héroe, récord y plano desbloqueado.
 ## También hace el fundido a negro que oculta el teletransporte al reaparecer.
+## Pociones activas (GameManager): a la derecha del oro, una línea por efecto con su nombre en
+## mayúsculas y los segundos que le quedan, redondeados hacia arriba ("VELOCIDAD 25 s"), cada una de
+## su color. Parpadean los últimos 5 s y desaparecen al caducar. Solo letras y cifras: sin emoji.
+## La de Suerte da un latido cuando sale un botín doble.
 
 const SK := preload("res://scripts/gameplay/visual/ShapeKit.gd")
 
 const TOP_BAND := 96.0
 const PIP_Y := 86.0
 const PIP_SPACING := 30.0
+
+## Efecto → [nombre, color]. El orden es el de las filas.
+const BUFF_LABELS := {
+	&"speed": ["VELOCIDAD", Color("a3e4ff")],
+	&"luck": ["SUERTE", Color("a8ee84")],
+}
+const BUFF_POS := Vector2(236, 8)
+const BUFF_ROW := 36.0
+const BUFF_FONT_SIZE := 28
+const BUFF_BLINK_TIME := 5.0
 
 var _corridor: Node
 var _game_manager: Node
@@ -26,10 +40,12 @@ var _banner_title: Label
 var _banner_sub: Label
 var _toast: Label
 var _fade: ColorRect
+var _buff_labels: Dictionary = {}  # efecto → Label
 
 var _gold_shown := 0.0
 var _gold_target := 0
 var _gold_pop := 0.0
+var _luck_pop := 0.0  # latido de la etiqueta de Suerte al salir un botín doble
 var _death_pop := 0.0
 var _room := 1
 var _record := 1
@@ -119,6 +135,14 @@ func _build() -> void:
 	_record_label.position = Vector2(66, 58)
 	_record_label.size = Vector2(300, 30)
 
+	for id in BUFF_LABELS:
+		var buff := _make_label(BUFF_FONT_SIZE, BUFF_LABELS[id][1], HORIZONTAL_ALIGNMENT_LEFT, 6)
+		buff.position = BUFF_POS
+		buff.size = Vector2(250, BUFF_ROW)
+		buff.pivot_offset = Vector2(0, BUFF_ROW * 0.5)
+		buff.visible = false
+		_buff_labels[id] = buff
+
 	_banner_title = _make_label(64, Color("ffe7b0"), HORIZONTAL_ALIGNMENT_CENTER, 12)
 	_banner_title.position = Vector2(0, 132)
 	_banner_title.size = Vector2(1080, 80)
@@ -156,6 +180,8 @@ func _process(delta: float) -> void:
 	_gold_label.scale = Vector2.ONE * (1.0 + 0.25 * _gold_pop)
 	_death_pop = maxf(0.0, _death_pop - delta * 2.5)
 	_death_label.scale = Vector2.ONE * (1.0 + 0.35 * _death_pop)
+	_luck_pop = maxf(0.0, _luck_pop - delta * 2.0)
+	_refresh_buffs()
 	# Avisos en cola: de uno en uno y nunca encima de un cartel
 	if not _toast_queue.is_empty() and _t >= _banner_until and not (_toast_tween and _toast_tween.is_valid() and _toast_tween.is_running()):
 		var next: Array = _toast_queue.pop_front()
@@ -178,6 +204,26 @@ func _refresh_gold() -> void:
 	if gold > _gold_target:
 		_gold_pop = 1.0
 	_gold_target = gold
+
+
+## Una fila por efecto activo, en el orden de BUFF_LABELS y sin huecos.
+func _refresh_buffs() -> void:
+	var row := 0
+	for id in _buff_labels:
+		var label: Label = _buff_labels[id]
+		var left: float = _game_manager.buff_remaining(id) if _game_manager and _game_manager.has_method("buff_remaining") else 0.0
+		label.visible = left > 0.0
+		if not label.visible:
+			continue
+		label.position = BUFF_POS + Vector2(0, BUFF_ROW * row)
+		row += 1
+		label.text = "%s %d s" % [BUFF_LABELS[id][0], ceili(left)]
+		label.modulate.a = 0.45 + 0.55 * absf(cos(_t * 5.0)) if left <= BUFF_BLINK_TIME else 1.0
+	var luck: Label = _buff_labels[&"luck"]
+	luck.scale = Vector2.ONE * (1.0 + 0.3 * _luck_pop)
+	luck.modulate.r = 1.0 + 0.6 * _luck_pop  # destello (el modulate admite valores mayores que 1)
+	luck.modulate.g = 1.0 + 0.6 * _luck_pop
+	luck.modulate.b = 1.0 + 0.6 * _luck_pop
 
 
 func _refresh_room() -> void:
@@ -352,3 +398,5 @@ func _on_record_changed(best: int) -> void:
 func _on_loot_dropped(kind: StringName, _world_pos: Vector2, payload: Dictionary) -> void:
 	if kind == &"blueprint":
 		show_toast("¡Nuevo plano: %s!" % String(payload.get("name", "")), Color("9fe0ff"))
+	elif payload.get("bonus", false):
+		_luck_pop = 1.0  # botín doble de la Poción de Suerte

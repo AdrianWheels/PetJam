@@ -14,6 +14,7 @@ signal enemy_level_changed(new_level)  # Señal cuando cambia nivel de enemigo
 signal blueprint_unlocked(blueprint_id)  # Plano desbloqueado al matar un enemigo por primera vez
 signal record_changed(best_level)  # Nueva sala máxima alcanzada (base del leaderboard)
 signal progress_loaded  # La partida guardada ya está aplicada (para refrescar HUDs)
+signal buffs_changed(active: Dictionary)  # Un efecto temporal empieza, se renueva o caduca (id → segundos)
 
 enum DungeonState { IDLE, RUNNING, HERO_DEAD }
 
@@ -66,6 +67,18 @@ const AUTOSAVE_INTERVAL := 60.0  # Segundos entre auto-saves
 var _save_loaded := false
 var _autosave_timer: Timer = null
 
+# ─── Efectos temporales (pociones de la tienda) ───────────────────────
+## Poción de Velocidad: ataques por segundo del héroe x1,5 (Hero.refresh_attack_speed).
+const BUFF_SPEED := &"speed"
+## Poción de Suerte: cada enemigo derrotado puede soltar una segunda tanda de material (Enemy).
+const BUFF_LUCK := &"luck"
+const SPEED_ATTACK_MULTIPLIER := 1.5
+const LUCK_DOUBLE_LOOT_CHANCE := 0.2
+## id → segundos restantes. Cuenta tiempo real en _process: sigue durante el hit-stop (lo congela el
+## Corridor, no este autoload) y con Tico caído (el efecto no se pierde al morir). Solo se para si se
+## pausa el árbol entero. No se guarda en save.json: al cerrar el juego se pierde lo que quedara.
+var _buffs: Dictionary = {}
+
 func _ready():
 	DebugManager.log_msg(&"game", "GameManager ready")
 	# Conectar señal de equipamiento para actualizar stats del héroe
@@ -93,6 +106,62 @@ func _ready():
 	# Save al cambiar nivel de enemigo
 	enemy_level_changed.connect(_on_trigger_save)
 	hero_died.connect(_on_trigger_save)
+
+func _process(delta: float) -> void:
+	tick_buffs(delta)
+
+# ═══════════════════════════════════════════════════════════════════
+#  EFECTOS TEMPORALES
+# ═══════════════════════════════════════════════════════════════════
+
+## Activa un efecto durante `duration` segundos. Si ya estaba activo vuelve a la duración completa:
+## no suma tiempo y el efecto no se acumula.
+func apply_buff(id: StringName, duration: float) -> void:
+	if duration <= 0.0:
+		return
+	_buffs[id] = duration
+	buffs_changed.emit(get_active_buffs())
+
+## Segundos que le quedan a un efecto (0 si no está activo).
+func buff_remaining(id: StringName) -> float:
+	return float(_buffs.get(id, 0.0))
+
+func has_buff(id: StringName) -> bool:
+	return buff_remaining(id) > 0.0
+
+## Copia de los efectos activos: id → segundos restantes.
+func get_active_buffs() -> Dictionary:
+	return _buffs.duplicate()
+
+## Descuenta `delta` segundos a los efectos activos y quita los que caducan.
+## _process la llama con el delta real; las pruebas, con el que quieran (sin esperas reales).
+func tick_buffs(delta: float) -> void:
+	if _buffs.is_empty() or delta <= 0.0:
+		return
+	var expired := false
+	for id in _buffs.keys():
+		var left: float = _buffs[id] - delta
+		if left <= 0.0:
+			_buffs.erase(id)
+			expired = true
+		else:
+			_buffs[id] = left
+	if expired:
+		buffs_changed.emit(get_active_buffs())
+
+func clear_buffs() -> void:
+	if _buffs.is_empty():
+		return
+	_buffs.clear()
+	buffs_changed.emit(get_active_buffs())
+
+## Multiplicador del ritmo de ataque del héroe (Poción de Velocidad).
+func attack_speed_multiplier() -> float:
+	return SPEED_ATTACK_MULTIPLIER if has_buff(BUFF_SPEED) else 1.0
+
+## Probabilidad de que un enemigo derrotado suelte botín doble (Poción de Suerte).
+func double_loot_chance() -> float:
+	return LUCK_DOUBLE_LOOT_CHANCE if has_buff(BUFF_LUCK) else 0.0
 
 func get_hero() -> Node:
 	return _hero

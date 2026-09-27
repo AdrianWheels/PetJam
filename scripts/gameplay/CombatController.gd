@@ -33,6 +33,11 @@ const COLOR_PULSE_HERO := Color("6fe3ff")
 @onready var camera: Camera2D = get_node_or_null("../Camera2D")
 
 const CRIT_FX_COOLDOWN := 0.4
+## Botín doble (Poción de Suerte): la segunda tanda sale a la vez que la primera, un icono más adelante,
+## más rápida hacia delante y con la etiqueta una fila más arriba; su tintineo suena un poco después.
+const BONUS_LOOT_AHEAD := 12.0
+const BONUS_LOOT_SPEED := Vector2(22.0, 30.0)
+const BONUS_LOOT_SOUND_LAG := 0.1
 
 var combat_active := false
 var _block_text_cd := 0.0
@@ -242,6 +247,9 @@ func _on_enemy_died(drops):
 	stop_combat()
 	if drops is Array and drops.size() > 0 and _inventory_manager and _inventory_manager.has_method("add_drops"):
 		_inventory_manager.add_drops(drops)
+	# El primer botín lo presenta el Corridor (escucha después); el segundo, aquí y en el mismo fotograma
+	if enemy:
+		_show_bonus_loot(enemy.death_info)
 	if _game_manager:
 		# Primera muerte de cualquier nivel (también jefes) desbloquea plano
 		if _game_manager.has_method("register_enemy_defeat"):
@@ -250,3 +258,28 @@ func _on_enemy_died(drops):
 			_game_manager.register_boss_defeat()
 	if corridor.has_method("advance_enemy"):
 		corridor.advance_enemy()
+
+
+## Segunda tanda de la Poción de Suerte, igual que la primera (Corridor._on_enemy_died_fx): icono con
+## "+15 material" que sale del enemigo, aviso loot_dropped para el HUD ("bonus": true) y tintineo.
+## El material ya está en el inventario (lo mete Enemy al morir).
+func _show_bonus_loot(info: Dictionary) -> void:
+	var md: Dictionary = info.get("bonus_material", {})
+	if md.is_empty():
+		return
+	var pos: Vector2 = info.get("pos", Vector2.ZERO)
+	var delay: float = 0.3 if info.get("boss", false) else 0.12  # el mismo que el primer botín
+	var mat := _material_info(StringName(md.get("item_id", "")))
+	if fx:
+		var vx := randf_range(BONUS_LOOT_SPEED.x, BONUS_LOOT_SPEED.y)
+		fx.loot_pop(pos + Vector2(2.0 + BONUS_LOOT_AHEAD, -4), mat.get("icon"), "+%d %s" % [int(md.get("quantity", 0)), mat.get("name", "")], Color(1, 0.93, 0.7), delay, PixelView.FLOOR_Y, vx, 1)
+	if corridor and corridor.has_signal("loot_dropped"):
+		corridor.loot_dropped.emit(&"material", pos, {"id": md.get("item_id", ""), "quantity": md.get("quantity", 0), "bonus": true})
+	get_tree().create_timer(delay + BONUS_LOOT_SOUND_LAG).timeout.connect(func(): Sfx.play(&"loot_coins"))
+
+
+## Nombre e icono del material: los mismos que usa el Corridor para el primer botín (con su caché).
+func _material_info(mat_id: StringName) -> Dictionary:
+	if corridor and corridor.has_method("_material_info"):
+		return corridor._material_info(mat_id)
+	return {"name": String(mat_id).capitalize(), "icon": null}

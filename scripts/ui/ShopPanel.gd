@@ -33,11 +33,12 @@ const MATERIAL_CATALOG := {
 	&"poison": {"display_name": "Veneno", "price": 50, "quantity": 2},
 }
 
-## Pociones: efecto temporal o mejora permanente (futuro)
+## Pociones. Las de efecto temporal llevan el id del efecto en GameManager ("buff") y su duración en
+## segundos: comprar una que ya está activa vuelve a la duración completa (no suma tiempo ni efecto).
 const POTION_CATALOG := {
 	&"potion_heal": {"display_name": "Poción de Vida", "price": 100, "description": "Cura al héroe al máximo"},
-	&"potion_speed": {"display_name": "Poción de Velocidad", "price": 150, "description": "Héroe ataca 50% más rápido (30s)"},
-	&"potion_luck": {"display_name": "Poción de Suerte", "price": 200, "description": "+20% probabilidad de drops (60s)"},
+	&"potion_speed": {"display_name": "Poción de Velocidad", "price": 150, "description": "Héroe ataca 50% más rápido (30s)", "buff": &"speed", "duration": 30.0},
+	&"potion_luck": {"display_name": "Poción de Suerte", "price": 200, "description": "20 % de botín doble (60 s)", "buff": &"luck", "duration": 60.0},
 }
 
 # ═══════════════════════════════════════════════════════════════════
@@ -330,43 +331,65 @@ func _on_buy_potion(pot_id: StringName, price: int) -> void:
 		_show_toast("❌ Oro insuficiente", Color(1.0, 0.3, 0.3))
 		return
 	
+	# Una poción que ahora no puede hacer nada no se vende (ni se cobra)
+	var blocked := _potion_block_reason(pot_id)
+	if blocked != "":
+		_show_toast(blocked, Color(1.0, 0.65, 0.3))
+		return
+	
+	var info: Dictionary = POTION_CATALOG.get(pot_id, {})
+	var gm := get_node_or_null("/root/GameManager")
+	var renewed: bool = info.has("buff") and gm != null and gm.has_method("has_buff") and gm.has_buff(info.buff)
+	
 	# Consumir oro
 	_inventory_manager.consume_materials({&"gold": price})
 	
 	# Aplicar efecto de poción
 	_apply_potion_effect(pot_id)
 	
-	var info: Dictionary = POTION_CATALOG.get(pot_id, {})
 	var display_name: String = info.get("display_name", String(pot_id))
-	_show_toast("✅ %s aplicada" % display_name, Color(0.3, 1.0, 0.3))
+	_show_toast(("✅ %s renovada" if renewed else "✅ %s aplicada") % display_name, Color(0.3, 1.0, 0.3))
 	item_purchased.emit(pot_id, 1, price)
 	
 	print("ShopPanel: Comprado %s por %d oro" % [pot_id, price])
 
 
+## Motivo en español por el que la poción no se puede usar ahora ("" si se puede). Se mira antes de
+## cobrar: la de Vida no cura a Tico caído (no resucita) ni a Tico con la vida llena.
+func _potion_block_reason(pot_id: StringName) -> String:
+	if pot_id != &"potion_heal":
+		return ""
+	var hero := _find_hero()
+	if hero == null:
+		return "Tico no está en la mazmorra"
+	if not hero.alive:
+		return "Tico está caído: la poción no resucita"
+	if hero.hp >= hero.max_hp:
+		return "Tico ya tiene la vida llena"
+	return ""
+
+
 func _apply_potion_effect(pot_id: StringName) -> void:
-	var gm = get_node_or_null("/root/GameManager")
-	match pot_id:
-		&"potion_heal":
-			# Curar héroe al máximo
-			if gm and gm.has_method("heal_hero"):
-				gm.heal_hero()
-			else:
-				# Buscar héroe directamente
-				var hero = _find_hero()
-				if hero and "hp" in hero:
-					hero.hp = hero.max_hp if "max_hp" in hero else 100
-					print("ShopPanel: Héroe curado al máximo")
-		&"potion_speed":
-			# TODO: Implementar buff temporal de velocidad
-			print("ShopPanel: Poción de velocidad — buff temporal (pendiente)")
-		&"potion_luck":
-			# TODO: Implementar buff temporal de suerte
-			print("ShopPanel: Poción de suerte — buff temporal (pendiente)")
+	var info: Dictionary = POTION_CATALOG.get(pot_id, {})
+	if info.has("buff"):
+		# Velocidad y Suerte: efecto temporal en GameManager (Hero y Enemy lo consultan)
+		var gm := get_node_or_null("/root/GameManager")
+		if gm and gm.has_method("apply_buff"):
+			gm.apply_buff(info.buff, float(info.duration))
+		return
+	if pot_id == &"potion_heal":
+		var hero := _find_hero()
+		if hero and hero.has_method("heal"):
+			hero.heal(hero.max_hp)
 
 
+## El héroe de la partida (lo registra GameManager); si no hay, el primero del grupo "hero".
 func _find_hero() -> Node:
-	# Buscar héroe en el árbol de escena
+	var gm := get_node_or_null("/root/GameManager")
+	if gm and gm.has_method("get_hero"):
+		var registered = gm.get_hero()  # sin tipo: se comprueba antes de usarlo
+		if is_instance_valid(registered):
+			return registered
 	var tree := get_tree()
 	if tree == null:
 		return null
