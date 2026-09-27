@@ -1,16 +1,19 @@
 # Rangos de plano por ciclo
 
-**Fecha:** 2026-09-27 · **Estado:** aprobado; implementación en pausa en la tarea 3 del plan, hasta calibrar el balance (apartado 6)
+**Fecha:** 2026-09-27 · **Estado:** aprobado; revisado el 2026-09-27 con el muro y el farmeo (apartado 7); implementación en pausa en la tarea 3 del plan, hasta calibrar el balance (apartado 6)
 **Petición:** "Qué le faltaría al juego para estar completo". El análisis encontró que el juego se agota pronto: los 12 planos se desbloquean al pasar la sala 9 y el poder de Tico tiene techo, porque solo cuenta el equipo, mientras los enemigos crecen sin límite. El usuario eligió publicar **gratis primero** (medir la retención antes de monetizar) y, como eje de progresión infinito, **rangos de plano por ciclo**, con estas decisiones:
 
 | Pregunta | Elegido |
 |---|---|
 | Qué crece sin límite | Rangos de plano por ciclo de biomas |
-| Dónde reaparece Tico al morir | Sala 1, como ahora |
+| Dónde sigue Tico al morir | Delante del muro: farmea la sala anterior y lo reintenta (revisión) |
+| Cómo vuelve a los biomas anteriores | Selector de sala y candado (revisión) |
 | Qué piden los rangos altos | Materiales nuevos, uno por bioma |
 | Cómo se desbloquea un rango | Por los jefes del ciclo |
 | Dificultad de los minijuegos | Sube con el rango, con tope |
-| Opcionales | Encargo propio y vuelta rápida |
+| Opcionales | Encargo propio (la vuelta rápida se quitó en la revisión) |
+
+**Revisión (2026-09-27):** el usuario encontró en Orc Incremental (Steam) el bucle que tenía en mente: el héroe avanza solo hasta chocar con un muro, muere, mejora y vuelve a intentarlo. Aquí la mejora sale de la forja. Cambian los apartados 1, 6, 7, 8, 9, 10, 11, 12 y 13.
 
 ---
 
@@ -19,7 +22,7 @@
 Cada vuelta completa a los 5 biomas (un ciclo, 50 salas) desbloquea versiones más fuertes de los 12 planos. Bajar más da mejor forja, y la forja es la que permite bajar más.
 
 Criterios:
-- Siempre hay un objetivo a la vista: el siguiente hito de desbloqueo o el primer jefe que Tico no vence.
+- Siempre hay un objetivo a la vista: el muro (el primer enemigo que Tico no vence) y el siguiente hito de desbloqueo.
 - Los minijuegos y la calidad siguen decidiendo: el mismo plano forjado mejor llega más lejos.
 - El oro y los materiales tienen uso en todos los ciclos.
 - Los objetivos de balance del apartado 6 se cumplen en la simulación para los ciclos I a V.
@@ -126,73 +129,80 @@ Criterios:
 
 ## 6. Balance
 
-**Objetivos por ciclo.** "Calidad media" es 0,55 y cada objetivo cuenta con las 4 piezas equipadas:
+**Objetivos: pequeños muros.** Decisión del usuario: "cada bicho es un pequeño muro, que te obligue a farmear un poco el anterior". Se miden en duelos (apartado 7): un equipo llega hasta la última sala en la que Tico gana el duelo con la vida llena, y la siguiente es su muro. Propuesta para cada rango N, que se confirma con el usuario al calibrar:
+- **Escalera:** 15 estados, que son las piezas básicas, avanzadas y maestras con calidad 0,40, 0,55, 0,70, 0,85 y 1,00, con las 4 piezas equipadas. De un estado al siguiente, el muro avanza de 0 a 6 salas: mejorar siempre se nota, pero ningún salto se come medio bioma.
+- **Hitos, con calidad 0,85:** el básico vence al jefe de la sala 50·(N−1)+20, el avanzado al de la +40 y el maestro al de la 50·N (acaba el ciclo).
+- **Cotas, con calidad 1,00:** el básico no vence al jefe +40, el avanzado no acaba el ciclo y el maestro no vence al jefe 50·N+10.
+- Sustituye a los objetivos de la primera versión del spec, que medían carreras sin curarse con calidad 0,55.
 
-| Con el equipo de rango N | Debe |
-|---|---|
-| Básico, calidad media | vencer al jefe de la sala 50·(N−1)+20 |
-| Avanzado, calidad media | vencer al jefe de la sala 50·(N−1)+40 |
-| Maestro, calidad media | vencer al jefe de la sala 50·N (acabar el ciclo) |
-| Maestro, calidad 1,0 | **no** vencer al jefe de la sala 50·N+10 (el primero del ciclo siguiente) |
-| Básico, calidad 1,0 | **no** vencer al jefe de la sala 50·(N−1)+40 |
-| Avanzado, calidad 1,0 | **no** vencer al jefe de la sala 50·N |
+**Base de Tico.** Decisión del usuario: escala con el rango de su equipo. La regla que da "el rango del equipo" va en una sola función, porque el inventario en rejilla la redefine. Con 4 huecos, es el menor rango entre las piezas equipadas.
 
-- Las dos últimas filas se añadieron al escribir el plan (2026-09-27). Estaban implícitas en el diseño: si el equipo básico acabara el ciclo, los avanzados y los maestros no harían falta.
-- Tico no se cura entre salas: el daño se acumula desde la sala 1 hasta que muere o reaparece. La simulación modela la carrera entera, no cada sala por separado.
+**Simulación.** Una escena de pruebas sin ventana (`BalanceSim`, o el motor Balanza cuando esté) calcula, con las fórmulas reales de `Hero` y `Enemy`, el muro de cada combinación de rango, nivel de pieza y calidad: el primer enemigo al que Tico no gana el duelo. Usa el daño esperado por segundo de cada lado (`expected_dps`), la armadura y el tiempo hasta matar, sin azar, y comprueba los objetivos para los ciclos I a V.
 
-- Con la curva actual el primero ya falla: por las cuentas del análisis, con equipo básico Tico pierde contra el jefe de la sala 10. La curva de enemigos cambia:
-  - la fórmula sale de `Enemy.reset_stats` a una clase estática nueva, `scripts/core/EnemyScaling.gd`, con constantes ajustables;
-  - se mantienen los arquetipos y el ×1,6 de los jefes.
-- **Simulación antes de tocar el juego:** una escena de pruebas sin ventana (`BalanceSim`) que calcula, con las fórmulas reales de `Hero` y `Enemy`, quién gana cada sala. Usa el daño esperado por segundo de cada lado (`expected_dps`), la armadura y el tiempo hasta matar, sin azar. Informa de la sala máxima para cada (rango, nivel de pieza, calidad) y comprueba los objetivos de la tabla para los ciclos I a V.
-- Con ella se fijan:
-  - las constantes de `EnemyScaling`;
-  - `stat_mult(N)`: punto de partida, la relación entre la escala del enemigo a mitad del ciclo N y a mitad del ciclo I;
-  - `mat_mult(N)`: punto de partida, 1,6^(N−1);
-  - las cantidades del apartado 4.
-- **Riesgos a vigilar en la simulación:**
-  - la mitigación de armadura (`armor / (armor + 40)`, con tope del 60 %) deja de importar en rangos altos, así que puede tener que compararse con el nivel del enemigo;
-  - el pulso mágico (`INT × 3`) no escala con el rango y se vuelve irrelevante.
-- **Consecuencia aceptada:** en el ciclo I las piezas maestras llegan en la sala 40 en lugar de hacia la 9. El principio es más lento y el contenido dura más.
+**Palancas que fija la calibración:**
+- las constantes de `EnemyScaling` (la fórmula de la curva sale de `Enemy.reset_stats` a esa clase estática; se mantienen los arquetipos y el ×1,6 de los jefes);
+- `stat_mult(N)` y la base de Tico por rango;
+- `mat_mult(N)`: punto de partida, 1,6^(N−1);
+- las cantidades del apartado 4.
+
+**Lo aprendido en la tarea 3.** Medía carreras sin curarse; con duelos hay que rehacer las cuentas.
+- Con las palancas de partida no se cumplía casi nada:
+  - la agilidad y la inteligencia del enemigo crecen fuera de la curva, y el pulso mágico ignora la armadura;
+  - la mitigación de la armadura (`armor / (armor + 40)`, con tope del 60 %) deja de importar en rangos altos;
+  - la base de Tico no escalaba con el rango.
+- En una réplica en Python cumplió los objetivos este modelo, que sirve de punto de partida:
+  - la curva de enemigos va en escalera: poco por sala dentro del ciclo (×1,006) y un salto al empezar cada ciclo (×8);
+  - la agilidad y la inteligencia del enemigo se quedan en las de la sala 1, y su pulso crece con la escala;
+  - la armadura se compara con la escala del enemigo;
+  - la base de Tico se multiplica por el salto elevado a (rango del equipo − 1);
+  - la espada básica sube su daño máximo de 8 a 12 y su ritmo máximo de 0,15 a 0,225.
+- Con un salto de ×8, el equipo de rango V multiplica por 4.096: la interfaz necesitará cifras abreviadas.
+
+**Consecuencia aceptada:** en el ciclo I las piezas maestras llegan en la sala 40 en lugar de hacia la 9. El principio es más lento y el contenido dura más.
 
 **Estado (2026-09-27): calibración en pausa.**
-- La tarea 3 del plan demostró que con estas palancas la tabla de arriba no se cumple:
-  - la agilidad y la inteligencia del enemigo crecen fuera de la curva, y el pulso ignora la armadura;
-  - la base de Tico no escala con el rango.
-- Decisiones del usuario, que sustituyen a la tabla:
-  - **La base de Tico escala con el rango de su equipo.** La regla que da "el rango del equipo" va en una sola función, porque el inventario en rejilla la redefine.
-  - **"Cada bicho es un pequeño muro, que te obligue a farmear un poco el anterior."**
-- Propuesta de objetivos (del controlador, pendiente de confirmar por el usuario):
-  - una escalera de 15 estados (básico, avanzado y maestro, con calidades de 0,40 a 1,00), y de un estado al siguiente Tico avanza de 0 a 6 salas;
-  - hitos con calidad 0,85: el básico vence al jefe +20, el avanzado al +40 y el maestro al 50·N;
-  - cotas con calidad 1,00: el básico no llega al +40, el avanzado no acaba el ciclo y el maestro no vence al jefe 50·N+10.
-- Modelo que cumple esa propuesta en una réplica de la simulación (101 comprobaciones, margen de poder del ±8 %). No está implementado:
-  - la curva de enemigos va en escalera: ×1,006 por sala dentro del ciclo y ×8 al empezar cada ciclo;
-  - la agilidad y la inteligencia del enemigo se quedan en las de la sala 1, y su pulso crece con la escala;
-  - la armadura se compara con la escala del enemigo (K ≈ 60);
-  - la base de Tico, con m = 8^(rango del equipo − 1): vida 160·m, daño 21·m y pulso 24·m;
-  - la espada básica sube su daño máximo de 8 a 12 y su ritmo máximo de 0,15 a 0,225;
-  - en el rango V el equipo multiplica por 4.096, así que la interfaz necesitará cifras abreviadas.
-- La calibración se hará con el motor de balance reutilizable (Balanza), que se está haciendo en otra sesión, y se repetirá con el inventario en rejilla (su spec, apartado 6). Hasta entonces los rangos se paran en la tarea 3:
-  - sin calibrar, la tarea 6 atascaría la partida;
-  - con el equipo de hoy, Tico llega a la sala 7 con el básico y a la 15 con el maestro, y los avanzados pedirían vencer al jefe de la sala 20.
+- Se hará con el motor de balance reutilizable (Balanza), que se está haciendo en otra sesión, y se repetirá con el inventario en rejilla (su spec, apartado 6).
+- Hasta entonces, los rangos se paran en la tarea 3 del plan. Sin calibrar, la tarea 6 podría atascar la partida: los avanzados piden vencer al jefe de la sala 20, y en las carreras que medía la tarea 3 el equipo básico no pasaba de la sala 7.
 - Dónde está lo hecho:
   - el código de la tarea 3, en la rama local `rangos-calibracion-aparcada`;
   - el informe y la réplica en Python, en `.superpowers/sdd/2026-09-27-rangos-de-plano-por-ciclo/` (fuera de git).
 
-## 7. Muerte y vuelta rápida
+## 7. Muro, farmeo y selector de sala
 
-- Al morir, Tico vuelve a la sala 1, como ahora. El récord no cambia.
-- **Vuelta rápida (opcional aprobado).** Se activa en una sala cuando se cumplen dos condiciones:
-  - la sala está por debajo del récord;
-  - un golpe sin crítico de Tico basta para matar al enemigo de esa sala.
-- Mientras está activa, Tico:
-  - anda 3 veces más rápido;
-  - ataca nada más llegar al enemigo;
-  - apenas se detiene tras la muerte (pausa al 25 %).
-- En esas salas no hay hit-stop ni temblor, para que la carrera no dé tirones.
-- Se acaba en la primera sala que no cumple las dos condiciones.
-- No hay carteles: se nota por la velocidad.
-- Vive en `Corridor` y `Hero` (velocidad de paso y primer ataque), sin cambiar la lógica de combate.
+**Referencia del usuario:** Orc Incremental (Steam). El ejército avanza solo hasta chocar con un muro, muere, mejora y vuelve a intentarlo. En PetJam la mejora sale de la forja.
+
+**Duelos:**
+- Tico entra en cada sala con la vida llena: los golpes de una sala no pasan a la siguiente.
+- La poción de Vida sigue sirviendo a mitad de un duelo.
+
+**Récord y muro:**
+- El récord (`GameManager.best_enemy_level`) es la sala más profunda que Tico ha alcanzado y aún no ha vencido. Vencerla lo sube aunque Tico no avance, por ejemplo con el candado puesto.
+- **El muro** es la sala donde Tico perdió por última vez, hasta que la vence. Casi siempre es la del récord.
+- Los hitos del apartado 3 no cambian: el jefe de la sala X está vencido si el récord es mayor que X.
+
+**Al perder en la sala X:**
+- Tico reaparece en la sala X−1 (en la 1 si X es la 1), con la animación de siempre. Morir no cuesta nada más que ese tiempo.
+- Delante del muro, farmea la sala anterior: la repite y se queda con su botín.
+- Vuelve a probar el muro cada 3 victorias (constante `WALL_RETRY_WINS`), y también en cuanto le cambian el equipo o bebe una poción.
+- Con el muro en la sala 1, lo reintenta cada vez que reaparece.
+- Al vencer el muro, deja de haberlo y Tico sigue avanzando.
+
+**Selector de sala y candado** (junto al indicador de sala de la franja, hoy en `HeroViewOverlay`):
+- **Flechas:** mandan a Tico a cualquier sala entre la 1 y el récord. Elegir el récord es probarlo ya. Mantener pulsada una flecha salta al principio del bioma anterior o del siguiente.
+- **Viaje:** instantáneo, con un fundido. Si había un combate a medias, se abandona sin premio ni castigo.
+- **Candado:** elegir a mano una sala por debajo del récord lo pone (elegir el récord es probarlo, sin candado). Con el candado, Tico repite esa sala sin fin y no reintenta el muro. Sirve, por ejemplo, para farmear hueso en las Catacumbas.
+- **Quitar el candado** lleva a Tico a la sala anterior al muro, o a la anterior al récord si no hay muro (como mínimo, a la 1). Desde ahí sigue el bucle: delante de un muro farmea y reintenta; si no, avanza.
+- **Si muere con el candado puesto,** reaparece en la sala anterior y el candado baja con él.
+- **Muro a la vista:** con muro, el indicador dice "Muro: sala N" en lugar de "Récord: sala N".
+- Los controles tienen tamaño de dedo en un móvil.
+
+**Botín al farmear:**
+- El de siempre (apartado 4), incluido el material de bioma.
+- El extra del jefe (10 × `mat_mult` de su material) solo cae cuando su muerte sube el récord. Si se repite, suelta el botín de un enemigo normal. Así, poner el candado en un jefe no multiplica el material de bioma.
+
+**Se quitan** la vuelta a la sala 1 al morir y la vuelta rápida.
+
+**Dónde vive:** `GameManager` (récord, muro, candado y contador de reintentos), `Corridor` y `Hero` (vida llena al entrar, reaparición, viaje y combate abandonado) y `HeroViewOverlay` (selector, candado y muro).
 
 ## 8. Datos y guardado
 
@@ -205,11 +215,12 @@ Criterios:
   - los objetos forjados pasan a rango I;
   - los planos desbloqueados se conservan como rango I;
   - después se aplican los hitos que ya supera el récord (apartado 3).
+- **Muro y candado:** `GameManager` guarda también el candado y la sala del muro (0 si no hay). La sala actual ya se guardaba (`current_enemy_level`). El contador de reintentos vuelve a 0 al cargar, y una partida de la versión 1 carga sin candado ni muro.
 - Si ya está hecha la tarjeta de guardado robusto (escritura atómica y copia de seguridad), la migración se hace sobre ella. Si no, esta tarjeta no la adelanta.
 
 ## 9. Textos e idioma
 
-- Los textos nuevos van en español, que es el texto base, con su entrada en el CSV de inglés de la tarjeta de traducción. Algunos ejemplos: nombres de material, "Forjar", avisos de hito y numerales.
+- Los textos nuevos van en español, que es el texto base, con su entrada en el CSV de inglés de la tarjeta de traducción. Algunos ejemplos: nombres de material, "Forjar", avisos de hito, numerales y "Muro: sala %d".
 - Los que se pintan en la franja respetan los caracteres de `PixelFont`: A-Z, ÁÉÍÓÚÜÑ, cifras y ! ¡ ? ¿ . , : ; - + / ( ) % ' · ×.
 
 ## 10. Pruebas
@@ -222,10 +233,13 @@ Criterios:
   - Crafteo: la tarea de rango N da un objeto de rango N con las estadísticas multiplicadas; el encargo propio cobra la receta y no da oro.
   - Botín: la cantidad crece con el ciclo; el material de bioma cae solo en su bioma; el jefe siempre suelta el suyo.
   - Guardado: una partida de versión 1 (fichero de prueba) carga en la versión 2 sin perder objetos ni planos, con los hitos del récord aplicados.
-  - Vuelta rápida: activa por debajo del récord cuando un golpe mata e inactiva en caso contrario.
-- **`BalanceSim`:** los objetivos del apartado 6 para los ciclos I a V, como comprobaciones.
+  - Muro y farmeo: al perder en la sala X, Tico reaparece en la X−1 con el muro en la X; vuelve al muro tras 3 victorias y en cuanto cambia el equipo o bebe una poción; con el muro en la sala 1 lo reintenta; entra en cada sala con la vida llena.
+  - Selector y candado: no pasa del récord; elegir sala pone el candado; con candado repite la sala; morir con candado lo baja una sala; quitarlo lo lleva delante del muro; cambiar de sala a mitad de un combate lo abandona sin premio.
+  - Botín del jefe: el extra solo cae cuando su muerte sube el récord.
+  - Guardado del muro: la sala, el candado y el muro se guardan y se cargan.
+- **`BalanceSim`:** los objetivos del apartado 6 para los ciclos I a V, medidos en duelos, como comprobaciones.
 - **Siguen en verde:** `PixelTests` y `GameplayTests`.
-- **Capturas con `VisualCapture`:** tarjeta de pedido con numeral, biblioteca con el selector de rango, botín con material de bioma y aviso de hito.
+- **Capturas con `VisualCapture`:** tarjeta de pedido con numeral, biblioteca con el selector de rango, botín con material de bioma, aviso de hito y selector de sala con el candado y el muro.
 
 ## 11. Qué cambia en el código
 
@@ -236,9 +250,9 @@ Criterios:
   - `scenes/tests/RankTests.tscn` y `scenes/tests/BalanceSim.tscn`, con sus scripts.
 - **Modificados:**
   - Autoloads y núcleo: `DataManager`, `GameManager`, `RequestsManager`, `CraftingManager`, `CraftedItem` y `SaveManager`.
-  - Pasillo: `Enemy` (curva y botín), `Corridor` y `Hero` (vuelta rápida).
+  - Pasillo: `Enemy` (curva y botín, con el extra de jefe solo con récord nuevo), `Corridor` y `Hero` (duelos con la vida llena, reaparición delante del muro y viaje entre salas).
   - Minijuegos: `ForgeMinigame` (lee `precision`) y los `.tres` de las botas.
-  - Interfaz: `BlueprintLibraryPanel` y `BlueprintCard` (rango y encargo), `RequestSlot` (numeral), `EquipmentPanel` y `CraftResultScreen` (numeral), `HUDMinigameLauncher` (materiales nuevos) y `HeroViewOverlay` (aviso de hito).
+  - Interfaz: `BlueprintLibraryPanel` y `BlueprintCard` (rango y encargo), `RequestSlot` (numeral), `EquipmentPanel` y `CraftResultScreen` (numeral), `HUDMinigameLauncher` (materiales nuevos) y `HeroViewOverlay` (aviso de hito, selector de sala, candado y muro).
 - **Sin autoloads nuevos ni plugins.** GDScript con tabuladores y comentarios en español.
 
 ## 12. Fases
@@ -249,12 +263,13 @@ Criterios:
 4. **Materiales de bioma:** datos, iconos, botín y recetas.
 5. **Dificultad por rango**, con el arreglo de las claves de forja y botas.
 6. **Encargo propio y numerales en la interfaz.**
-7. **Vuelta rápida.**
+7. **Muro, farmeo y selector de sala.** No depende de la calibración, así que puede ir antes.
 8. **Verificación:** capturas, simulación y prueba en un móvil de los topes de dificultad (con la tarjeta de dispositivo real).
 
 ## 13. Fuera de alcance
 
-- Prestigio y progreso offline (tarjetas aparte; el offline usará estas reglas).
+- Prestigio y progreso offline (tarjetas aparte; el offline farmeará la sala donde esté Tico, con estas reglas).
+- La variedad de jefes entre ciclos: en Orc Incremental se critica que se repitan, y aquí los 5 jefes vuelven en cada ciclo. Queda para la tarjeta de pasivas de jefe.
 - La ranura "Pecho" del panel de Equipo, que hoy no tiene ningún objeto (tarjeta nueva).
 - Cómo se ve el rango en el sprite de Tico (la fase 2 del pixel art dibuja pieza y calidad; el rango solo se ve en la interfaz).
 - Los precios de la tienda más allá de `gold_mult` y los sumideros de oro nuevos (tarjeta de economía).
