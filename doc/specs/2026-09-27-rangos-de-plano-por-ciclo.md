@@ -110,13 +110,13 @@ Criterios:
 |---|---|---|---|
 | Forja | `forge_speed`, `difficulty` | velocidad ×1,1; difficulty +0,06 | velocidad 2,0; difficulty 0,85 |
 | Martillo | `hammer_speed`, `precision` | bpm ×1,08; precision +0,05 | 160 bpm; 0,85 |
-| Coser | `stitch_speed`, `precision` | velocidad ×1,08; precision +0,05 | 1,6; 0,85 |
+| Coser | `stitch_speed`, `precision` | velocidad ×1,08; precision −0,05 (en coser, más precisión agranda las ventanas: es más fácil) | 1,6; 0,0 |
 | Temple | `quench_speed`, `time_window` | velocidad ×1,08; ventana ×0,92 | velocidad 2,0; ventana 0,12 |
 
 - Los topes se confirman jugando en un móvil real (tarjeta de prueba en dispositivo) y quedan por debajo de los límites que ya aplica cada minijuego.
 - **Arreglo previo, porque hoy la dificultad por plano no llega entera a los minijuegos:**
   - La forja lee `difficulty`, pero los planos le pasan `precision`: la ventana de la forja es igual en todos los niveles. La forja pasa a leer `precision`, con `difficulty` como alternativa.
-  - Los planos de botas pasan `circles` y `difficulty`, que el minijuego de coser no lee: las botas se cosen igual en básico y en maestro. Pasan a `SewTrialConfig` con `stitch_speed` y `precision`, escalonados como el resto de piezas.
+  - Los planos de botas pasan `circles` y `difficulty`, que el minijuego de coser no lee: las botas se cosen igual en básico y en maestro. Pasan a `SewTrialConfig` con `stitch_speed` y `precision`, escalonados como el resto de piezas: la velocidad sube del básico al maestro y la precisión baja, porque en coser una precisión menor da ventanas más pequeñas.
 
 **Encargo propio (opcional aprobado):**
 - En la biblioteca de planos, cada plano desbloqueado muestra su rango máximo, un selector de rango (del I al máximo) y el botón **Forjar**.
@@ -134,6 +134,11 @@ Criterios:
 | Avanzado, calidad media | vencer al jefe de la sala 50·(N−1)+40 |
 | Maestro, calidad media | vencer al jefe de la sala 50·N (acabar el ciclo) |
 | Maestro, calidad 1,0 | **no** vencer al jefe de la sala 50·N+10 (el primero del ciclo siguiente) |
+| Básico, calidad 1,0 | **no** vencer al jefe de la sala 50·(N−1)+40 |
+| Avanzado, calidad 1,0 | **no** vencer al jefe de la sala 50·N |
+
+- Las dos últimas filas se añadieron al escribir el plan (2026-09-27). Estaban implícitas en el diseño: si el equipo básico acabara el ciclo, los avanzados y los maestros no harían falta.
+- Tico no se cura entre salas: el daño se acumula desde la sala 1 hasta que muere o reaparece. La simulación modela la carrera entera, no cada sala por separado.
 
 - Con la curva actual el primero ya falla: por las cuentas del análisis, con equipo básico Tico pierde contra el jefe de la sala 10. La curva de enemigos cambia:
   - la fórmula sale de `Enemy.reset_stats` a una clase estática nueva, `scripts/core/EnemyScaling.gd`, con constantes ajustables;
