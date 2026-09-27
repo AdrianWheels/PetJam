@@ -359,3 +359,18 @@ func test_corridor_engages_at_pixel_distance() -> void:
 	check(dist >= 8.0, "no se solapan (%.1f)" % dist)
 	corridor.queue_free()
 	await get_tree().process_frame
+
+
+# ─── Revisión final ────────────────────────────────────────────────────
+
+func test_next_enemy_stays_hidden_during_hitstop() -> void:
+	var e := _new_enemy()
+	e.configure_for_level(1, false)
+	e.wake()
+	e._intro = 1.0
+	e._update_sprite()
+	check(e._sprite.visible, "el enemigo despierto se ve")
+	e.process_mode = Node.PROCESS_MODE_DISABLED  # hit-stop tras la muerte: el enemigo no procesa
+	e.configure_for_level(2, false)  # el Corridor lo recoloca como el enemigo de la sala siguiente
+	check(not e._sprite.visible, "el siguiente enemigo no asoma por el borde durante el hit-stop")
+	e.queue_free()

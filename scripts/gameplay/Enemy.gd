@@ -153,6 +153,11 @@ func configure_for_level(lv: int, boss: bool) -> void:
 	_hp_ghost = 1.0
 	_cast_launched = false
 	queue_redraw()
+	# Ocultar ya el sprite y la barra: tras una muerte el hit-stop congela _process y el enemigo
+	# de la sala siguiente asomaría por el borde derecho hasta que acabe
+	_update_sprite()
+	if _hud:
+		_hud.queue_redraw()
 
 
 func _apply_archetype(id: StringName) -> void:
