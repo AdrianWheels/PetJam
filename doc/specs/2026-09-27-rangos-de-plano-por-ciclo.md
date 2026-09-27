@@ -1,6 +1,6 @@
 # Rangos de plano por ciclo
 
-**Fecha:** 2026-09-27 · **Estado:** diseño aprobado en conversación, pendiente de revisar este spec
+**Fecha:** 2026-09-27 · **Estado:** aprobado; implementación en pausa en la tarea 3 del plan, hasta calibrar el balance (apartado 6)
 **Petición:** "Qué le faltaría al juego para estar completo". El análisis encontró que el juego se agota pronto: los 12 planos se desbloquean al pasar la sala 9 y el poder de Tico tiene techo, porque solo cuenta el equipo, mientras los enemigos crecen sin límite. El usuario eligió publicar **gratis primero** (medir la retención antes de monetizar) y, como eje de progresión infinito, **rangos de plano por ciclo**, con estas decisiones:
 
 | Pregunta | Elegido |
@@ -153,6 +153,31 @@ Criterios:
   - la mitigación de armadura (`armor / (armor + 40)`, con tope del 60 %) deja de importar en rangos altos, así que puede tener que compararse con el nivel del enemigo;
   - el pulso mágico (`INT × 3`) no escala con el rango y se vuelve irrelevante.
 - **Consecuencia aceptada:** en el ciclo I las piezas maestras llegan en la sala 40 en lugar de hacia la 9. El principio es más lento y el contenido dura más.
+
+**Estado (2026-09-27): calibración en pausa.**
+- La tarea 3 del plan demostró que con estas palancas la tabla de arriba no se cumple:
+  - la agilidad y la inteligencia del enemigo crecen fuera de la curva, y el pulso ignora la armadura;
+  - la base de Tico no escala con el rango.
+- Decisiones del usuario, que sustituyen a la tabla:
+  - **La base de Tico escala con el rango de su equipo.** La regla que da "el rango del equipo" va en una sola función, porque el inventario en rejilla la redefine.
+  - **"Cada bicho es un pequeño muro, que te obligue a farmear un poco el anterior."**
+- Propuesta de objetivos (del controlador, pendiente de confirmar por el usuario):
+  - una escalera de 15 estados (básico, avanzado y maestro, con calidades de 0,40 a 1,00), y de un estado al siguiente Tico avanza de 0 a 6 salas;
+  - hitos con calidad 0,85: el básico vence al jefe +20, el avanzado al +40 y el maestro al 50·N;
+  - cotas con calidad 1,00: el básico no llega al +40, el avanzado no acaba el ciclo y el maestro no vence al jefe 50·N+10.
+- Modelo que cumple esa propuesta en una réplica de la simulación (101 comprobaciones, margen de poder del ±8 %). No está implementado:
+  - la curva de enemigos va en escalera: ×1,006 por sala dentro del ciclo y ×8 al empezar cada ciclo;
+  - la agilidad y la inteligencia del enemigo se quedan en las de la sala 1, y su pulso crece con la escala;
+  - la armadura se compara con la escala del enemigo (K ≈ 60);
+  - la base de Tico, con m = 8^(rango del equipo − 1): vida 160·m, daño 21·m y pulso 24·m;
+  - la espada básica sube su daño máximo de 8 a 12 y su ritmo máximo de 0,15 a 0,225;
+  - en el rango V el equipo multiplica por 4.096, así que la interfaz necesitará cifras abreviadas.
+- La calibración se hará con el motor de balance reutilizable (Balanza), que se está haciendo en otra sesión, y se repetirá con el inventario en rejilla (su spec, apartado 6). Hasta entonces los rangos se paran en la tarea 3:
+  - sin calibrar, la tarea 6 atascaría la partida;
+  - con el equipo de hoy, Tico llega a la sala 7 con el básico y a la 15 con el maestro, y los avanzados pedirían vencer al jefe de la sala 20.
+- Dónde está lo hecho:
+  - el código de la tarea 3, en la rama local `rangos-calibracion-aparcada`;
+  - el informe y la réplica en Python, en `.superpowers/sdd/2026-09-27-rangos-de-plano-por-ciclo/` (fuera de git).
 
 ## 7. Muerte y vuelta rápida
 
