@@ -245,7 +245,7 @@ El spec de rangos se revisó el 2026-09-27 (apartados 6 y 7). Desde entonces, ca
   - Vida: cuando Tico recibe daño, sigue vivo y queda por debajo del 30 % de su vida. Cura al máximo, como hoy.
   - Velocidad y Suerte: al aparecer un jefe (sala de jefe según `Biomes.is_boss_room`), si su efecto no está activo.
   - Los efectos no cambian (`GameManager.apply_buff`): Velocidad, ataques ×1,5 durante 30 s; Suerte, 20 % de botín doble durante 60 s.
-  - Beber sola una poción cuenta como beberla para el muro del spec de rangos (apartado 7): Tico vuelve a probarlo.
+  - Con el muro de los rangos (su spec, apartado 7), una poción de efecto manda a Tico a probar el muro, y eso abandona el combate en curso. Por eso, delante del muro y sin candado, Velocidad y Suerte no se beben al aparecer un jefe: se guardan para el muro, para los jefes con candado y para cuando no hay muro. La de Vida se bebe siempre, porque no reintenta el muro.
 - **Dónde se ven:** en el panel de Equipo (los 2 huecos con su número), en la franja (icono pequeño y número, junto al indicador de efectos) y en la tienda ("En hueco: 3").
 - **Vaciar un hueco:** manteniéndolo pulsado en el panel se venden sus pociones a mitad de precio. Es la única forma de cambiar de tipo.
 - **Guardado:** los huecos se guardan. Los efectos activos siguen sin guardarse, como hoy.

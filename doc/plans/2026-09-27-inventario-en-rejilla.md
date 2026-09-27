@@ -39,10 +39,9 @@
   - `Hero.take_damage(amount, is_pulse, attacker_level)` y `Hero.prepare_for_combat()`, que `CombatController` llama al empezar cada duelo;
   - `CombatMath.armor_mitigation(armor, enemy_level)`;
   - los materiales de bioma `bone`, `moss`, `obsidian` y `frost`.
-- **Lo que añadió la revisión del spec de rangos (2026-09-27, apartados 6 y 7),** que su plan aún no tiene. La tarea 0 anota el nombre real de cada cosa:
+- **Lo que añadió la revisión del spec de rangos (2026-09-27, apartados 6 y 7).** La tarea 0 anota el nombre real de cada cosa:
   - la función que da el rango del equipo, que la tarea 6 redefine para la rejilla, y cómo se aplica la base de Tico por rango;
-  - los duelos: Tico entra en cada sala con la vida llena;
-  - el reintento del muro al cambiar de equipo o beber una poción;
+  - ya en la rama base (commit 5c05938): los duelos (Tico entra en cada sala con la vida llena, en `Corridor._enter_room`) y el muro (`GameManager.retry_wall_now()`, que llaman `apply_buff` y `_on_equipment_changed`, con `wall_room` y `room_locked`);
   - la simulación de duelos (`BalanceSim`, o el enlace de Balanza en `balance/` y `addons/balanza/`) con sus objetivos: hitos, cotas y escalera.
 - **Fase 2 del pixel art (Tico por capas, rama `franja-pixel-fase-2`):** no hace falta, pero si está integrada el plan usa lo suyo:
   - `recolor.py`: la rampa de acento `+ * #`, las rampas de calidad y la fuerza del destello (tarea 14);
@@ -204,8 +203,8 @@ grep -n "const MATERIAL_DROP_QTY" scripts/gameplay/Enemy.gd
 
 Anota en "Equivalencias tras los rangos":
 - **Rango del equipo:** la función que lo da (spec de rangos, apartado 6, "Base de Tico") y dónde se usa para la base de Tico. Si `CombatMath.hero_stats` recibe ahora ese rango, anótalo: la tarea 4 lo añade a `hero_stats_with_powers`.
-- **Duelos:** dónde se llena la vida de Tico al empezar cada sala. Comprueba que `CombatController` sigue llamando a `hero.prepare_for_combat()` al empezar cada combate: la tarea 11 recarga ahí la Segunda oportunidad y el Ímpetu.
-- **Muro:** la función que reintenta el muro al beber una poción y la que lo hace al cambiar de equipo, y qué señal escucha esta última (la tarea 13 llama a la primera al beber; la tarea 6 conserva `equipment_changed`).
+- **Duelos:** la vida se llena en `Corridor._enter_room` (commit 5c05938). Comprueba que `CombatController` sigue llamando a `hero.prepare_for_combat()` al empezar cada combate: la tarea 11 recarga ahí la Segunda oportunidad y el Ímpetu.
+- **Muro:** ya está en la rama base (commit 5c05938). `GameManager.retry_wall_now()` lo llaman `apply_buff` y `_on_equipment_changed` (que escucha `InventoryManager.equipment_changed`). La sala del muro y el candado son `wall_room` y `room_locked`. Anota si algo de esto ha cambiado: lo usan las tareas 6 (conserva `equipment_changed`) y 13 (no bebe delante del muro).
 - **Simulación:** con qué funciones mide `BalanceSim` los duelos, qué números tienen sus objetivos y su escalera, y si `ls` encuentra Balanza (entonces la tarea 16 calibra con ella).
 - **Tanda de botín:** el valor de `Enemy.MATERIAL_DROP_QTY` tras los rangos (la tarea 16 lo usa de referencia).
 
@@ -4924,6 +4923,8 @@ func test_boss_drinks_speed_and_luck_once() -> void:
 	var saved := _fresh_inventory()
 	var im := _im()
 	var gm := get_node("/root/GameManager")
+	var wall: int = gm.wall_room
+	gm.wall_room = 0  # sin muro (la partida del usuario puede tener uno)
 	gm.clear_buffs()
 	im.add_potion(&"potion_speed")
 	im.add_potion(&"potion_speed")
@@ -4934,6 +4935,29 @@ func test_boss_drinks_speed_and_luck_once() -> void:
 	gm.on_boss_appeared()
 	check(im.potion_count(&"potion_speed") == 1, "con el efecto activo no se bebe otra")
 	gm.clear_buffs()
+	gm.wall_room = wall
+	await _restore_inventory(saved)
+
+
+func test_boss_potions_wait_in_front_of_the_wall() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var gm := get_node("/root/GameManager")
+	var state := {"level": gm.current_enemy_level, "wall": gm.wall_room, "locked": gm.room_locked}
+	gm.clear_buffs()
+	im.add_potion(&"potion_speed")
+	gm.wall_room = 11
+	gm.room_locked = false
+	gm.current_enemy_level = 10  # farmea el jefe de la sala 10, delante del muro
+	gm.on_boss_appeared()
+	check(im.potion_count(&"potion_speed") == 1 and gm.current_enemy_level == 10, "delante del muro no se bebe: el jefe no se queda a medias")
+	gm.room_locked = true
+	gm.on_boss_appeared()
+	check(im.potion_count(&"potion_speed") == 0 and gm.current_enemy_level == 10, "con candado sí se bebe, y Tico sigue en su sala")
+	gm.clear_buffs()
+	gm.current_enemy_level = state.level
+	gm.wall_room = state.wall
+	gm.room_locked = state.locked
 	await _restore_inventory(saved)
 
 
@@ -4988,9 +5012,12 @@ func test_buying_a_potion_puts_it_in_a_slot() -> void:
 	check(_im().potion_count(&"potion_speed") == 1, "la Velocidad va a su hueco")
 	check(not gm.has_buff(&"speed"), "no se bebe al comprarla")
 	check(_im().get_quantity(&"gold") == 1000 - _price(&"potion_speed"), "y se cobra")
+	var wall: int = gm.wall_room
+	gm.wall_room = 0  # sin muro: delante de uno no se bebe
 	gm.on_boss_appeared()
 	check(gm.has_buff(&"speed") and is_equal_approx(gm.buff_remaining(&"speed"), 30.0), "se bebe sola al aparecer un jefe: 30 s")
 	gm.clear_buffs()
+	gm.wall_room = wall
 	shop.free()
 	_im().consumables = slots
 	_set_gold(had)
@@ -5175,13 +5202,17 @@ func _on_hero_hurt(_amount: int) -> void:
 
 
 ## Aparece un jefe (lo llama el Corridor): Velocidad y Suerte, si las lleva y su efecto no está activo.
+## Delante del muro y sin candado no se beben: una poción de efecto manda a Tico al muro (apply_buff llama
+## a retry_wall_now) y dejaría este jefe a medias (spec del inventario, apartado 8).
 func on_boss_appeared() -> void:
+	if wall_room > 0 and not room_locked and current_enemy_level != wall_room:
+		return
 	for pair in [[&"potion_speed", BUFF_SPEED], [&"potion_luck", BUFF_LUCK]]:
 		if not has_buff(pair[1]):
 			drink_potion(pair[0])
 ```
 
-Beber sola cuenta para el muro (spec del inventario, apartado 8). En `drink_potion`, justo después de `emit_signal("potion_drunk", id)`, llama a la función de los rangos que reintenta el muro al beber (tarea 0). Si los rangos la llamaban desde la compra de `ShopPanel`, esa llamada desaparece con la compra nueva (paso 5) y solo queda esta.
+El muro de los rangos ya está en la rama base (commit 5c05938): `apply_buff` llama a `retry_wall_now()`, así que beber sola una poción de efecto reintenta el muro sin nada más. La de Vida no lo reintenta, igual que antes. Si la tarea 0 anotó otros nombres para `wall_room`, `room_locked` o `retry_wall_now`, usa los suyos.
 
 Sustituye `register_hero`:
 
