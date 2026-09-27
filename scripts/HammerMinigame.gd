@@ -57,9 +57,9 @@ func _ready():
 	
 	# Crear pantalla de título
 	setup_title_screen(
-		"🔨 HAMMER - Timing",
-		"Golpea al ritmo con precisión",
-		"Pulsa ESPACIO o CLIC cuando la nota llegue"
+		tr("¡A MARTILLAR!"),
+		tr("Golpea al ritmo con precisión"),
+		tr("Toca cuando la nota llegue")
 	)
 
 func _exit_tree():
@@ -173,8 +173,14 @@ func _input(event):
 	if not _running or not _hammer_note.visible:
 		return
 	
-	if (event is InputEventMouseButton and event.pressed) or \
+	var is_action := false
+	if event is InputEventScreenTouch and event.pressed:
+		is_action = true
+	elif (event is InputEventMouseButton and event.pressed) or \
 	   (event is InputEventKey and event.pressed and event.keycode == KEY_SPACE):
+		is_action = true
+		
+	if is_action:
 		var current_time: float = Time.get_ticks_msec() / 1000.0
 		var time_diff_ms: float = abs(_next_hit_time - current_time) * 1000.0
 		_judge_hit(time_diff_ms)
@@ -212,7 +218,7 @@ func _judge_hit(time_diff_ms: float) -> void:
 	# 🎨 Efectos
 	var feedback_pos := _impact_zone.global_position + _impact_zone.size / 2
 	MinigameFX.full_feedback(feedback_pos, quality, self)
-	MinigameFX.create_floating_label(feedback_pos, quality, quality, self)
+	MinigameFX.create_floating_label(feedback_pos, MinigameFX.quality_text(quality), quality, self)
 	MinigameAudio.play_feedback(quality)
 	
 	# 🔨 Efecto de martillazo en la posición del HammerNote
@@ -224,6 +230,7 @@ func _judge_hit(time_diff_ms: float) -> void:
 	# Avanzar
 	_hit_index += 1
 	_update_ui()
+	emit_signal("hit_scored", quality, points)
 	
 	if _hit_index >= TOTAL_HITS:
 		await get_tree().create_timer(0.6).timeout
@@ -235,8 +242,8 @@ func _judge_hit(time_diff_ms: float) -> void:
 		_spawn_next_note()
 
 func _update_ui() -> void:
-	_score_label.text = "Puntos: %d" % _score
-	_progress_label.text = "Progreso: %d/%d" % [_hit_index, TOTAL_HITS]
+	_score_label.text = tr("Puntos: %d") % _score
+	_progress_label.text = tr("Progreso: %d/%d") % [_hit_index, TOTAL_HITS]
 
 func _end_game() -> void:
 	_running = false

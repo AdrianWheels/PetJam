@@ -1,6 +1,7 @@
 extends Control
 
 signal trial_completed(result: TrialResult)
+signal hit_scored(quality: String, points: int)
 
 var title_screen = null
 var trial_config: TrialConfig
@@ -27,11 +28,11 @@ func _ready() -> void:
 
 func setup_title_screen(game_title: String, instructions: String = "", continue_text: String = ""):
 	title_screen = preload("res://scenes/UI/TitleScreen.tscn").instantiate()
+	# Se asignan las propiedades (TitleScreen._ready las vuelca a sus labels; antes el
+	# texto puesto directamente en el label se pisaba y salía "INSTRUCTIONS")
 	title_screen.title = game_title
-	if instructions != "":
-		title_screen.get_node("InstructionsLabel").text = instructions
-	if continue_text != "":
-		title_screen.get_node("ContinueLabel").text = continue_text
+	title_screen.instructions = instructions
+	title_screen.continue_text = continue_text
 	title_screen.connect("continue_pressed", Callable(self, "_on_title_continue"))
 	add_child(title_screen)
 	

@@ -8,17 +8,11 @@ class_name DungeonStatus
 @onready var info_label: Label = %InfoLabel
 
 var total_rooms: int = 0
-var max_deaths: int = 0
 
 func set_total_rooms(value: int) -> void:
         total_rooms = value
         if room_label:
                 room_label.text = "Room: 0 / %d" % max(1, total_rooms)
-
-func set_max_deaths(value: int) -> void:
-        max_deaths = value
-        if death_label:
-                death_label.text = "Muertes: 0 / %d" % max(1, max_deaths)
 
 func update_room(room_idx: int) -> void:
         if room_label == null:
@@ -29,8 +23,7 @@ func update_room(room_idx: int) -> void:
 func update_deaths(deaths: int) -> void:
         if death_label == null:
                 return
-        var limit := max_deaths if max_deaths > 0 else deaths
-        death_label.text = "Muertes: %d / %d" % [deaths, max(1, limit)]
+        death_label.text = "Muertes: %d" % deaths
 
 func update_state(state: String) -> void:
         if state_label:

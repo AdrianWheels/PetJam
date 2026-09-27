@@ -40,8 +40,6 @@ func _ready() -> void:
 						_game_manager.hero_respawned.connect(_on_hero_respawned)
 				if not _game_manager.is_connected("boss_defeated", Callable(self, "_on_boss_defeated")):
 						_game_manager.boss_defeated.connect(_on_boss_defeated)
-				if not _game_manager.is_connected("game_over", Callable(self, "_on_game_over")):
-						_game_manager.game_over.connect(_on_game_over)
 				if not _game_manager.is_connected("dungeon_state_changed", Callable(self, "_on_dungeon_state_changed")):
 						_game_manager.dungeon_state_changed.connect(_on_dungeon_state_changed)
 				if not _game_manager.is_connected("hero_loadout_changed", Callable(self, "_on_hero_loadout_changed")):
@@ -85,8 +83,6 @@ func register_nodes(config: Dictionary) -> void:
 
 	if dungeon_status:
 		if _game_manager:
-			#dungeon_status.call_deferred("set_total_rooms", _game_manager.total_rooms)
-			dungeon_status.call_deferred("set_max_deaths", GameManager.MAX_DEATHS)
 			dungeon_status.call_deferred("update_room", _game_manager.current_enemy_level)
 			dungeon_status.call_deferred("update_deaths", _game_manager.death_count)
 			dungeon_status.call_deferred("update_state", _dungeon_state_name(_game_manager.dungeon_state))
@@ -96,23 +92,19 @@ func register_nodes(config: Dictionary) -> void:
 
 func show_forge() -> void:
 		_current_area = &"forge"
+		# En el layout unificado, forja y dungeon están siempre visibles o se manejan vía HUD_Main
+		# Mantenemos visibilidad por si acaso, pero quitamos el movimiento de cámara
 		if forge_ui:
 				forge_ui.visible = true
 		if dungeon_ui:
 				dungeon_ui.visible = false
 		if hud_forge:
 				hud_forge.visible = true
-		# LEGACY: hud_hero deshabilitado
-		# if hud_hero:
-		# 		hud_hero.visible = false
-		if corridor:
-				# Corridor sigue procesando en background (auto-farm)
-				corridor.process_mode = Node.PROCESS_MODE_INHERIT
-				corridor.visible = false
-		# Reactivar cámara de Main para forge
-		if camera:
-				camera.enabled = true
-		_apply_camera_target(forge_position, forge_zoom)
+		
+		# En el nuevo layout, la cámara de Main suele estar fija
+		if camera and camera.enabled:
+			_apply_camera_target(forge_position, forge_zoom)
+			
 		emit_signal("area_changed", _current_area)
 
 func show_dungeon() -> void:
@@ -123,16 +115,11 @@ func show_dungeon() -> void:
 				dungeon_ui.visible = true
 		if hud_forge:
 				hud_forge.visible = false
-		# LEGACY: hud_hero deshabilitado
-		# if hud_hero:
-		# 		hud_hero.visible = true
-		if corridor:
-				corridor.visible = true
-				corridor.process_mode = Node.PROCESS_MODE_INHERIT
-		# Desactivar cámara de Main, Corridor usa la suya
-		if camera:
-				camera.enabled = false
-		_apply_camera_target(dungeon_position, dungeon_zoom)
+				
+		# En el nuevo layout, si cambiamos a "dungeon focus" (si existiera), solo movemos cámara si está activada
+		if camera and camera.enabled:
+			_apply_camera_target(dungeon_position, dungeon_zoom)
+			
 		emit_signal("area_changed", _current_area)
 
 func get_current_area() -> StringName:
@@ -203,14 +190,10 @@ func present_delivery(result: Dictionary) -> void:
 		hud_forge.set_queue_interaction_enabled(false)
 		print("UIManager: Blueprints BLOCKED until delivery is completed")
 	
-	# Ocultar paneles de forja (MinigamesPanel, QueuePanel, Inventory)
-	if hud_forge:
-		var panels = ["MinigamesPanel", "BlueprintQueuePanel", "InventoryPanel"]
-		for panel_name in panels:
-			var panel = hud_forge.get_node_or_null(panel_name)
-			if panel:
-				panel.visible = false
-				print("UIManager: %s hidden" % panel_name)
+	# Ocultar paneles de forja mediante el nuevo HUDMain
+	if hud_forge and hud_forge.has_method("set_forge_panels_visible"):
+		hud_forge.set_forge_panels_visible(false)
+		print("UIManager: Forge panels hidden via HUDMain")
 	
 	show_forge()
 	emit_signal("delivery_opened", item_id)
@@ -251,11 +234,7 @@ func _on_hero_respawned(death_count: int) -> void:
 
 func _on_boss_defeated() -> void:
 		if dungeon_status:
-				dungeon_status.call("show_result", "¡Jefe derrotado!", Color(0.45, 0.95, 0.55))
-
-func _on_game_over() -> void:
-		if dungeon_status:
-				dungeon_status.call("show_result", "Fin de la expedición", Color(1, 0.85, 0.35))
+				dungeon_status.call("show_result", "Boss derrotado!", Color(0.45, 0.95, 0.55))
 
 func _on_dungeon_state_changed(new_state: int) -> void:
 		if dungeon_status:
@@ -303,19 +282,11 @@ func _on_delivered_to_client(item_data: Dictionary) -> void:
 		print("UIManager: Blueprints UNLOCKED after delivery")
 	
 	# Volver a mostrar paneles del HUD forge (IDLE state)
-	print("UIManager: hud_forge = %s" % hud_forge)
-	if hud_forge:
-		print("UIManager: hud_forge found, restoring panels visibility...")
-		# Acceder directamente a los nodos y hacerlos visibles
-		var panels = ["MinigamesPanel", "BlueprintQueuePanel", "InventoryPanel"]
-		for panel_name in panels:
-			var panel = hud_forge.get_node_or_null(panel_name)
-			print("UIManager: Looking for %s... %s" % [panel_name, "found" if panel else "NOT FOUND"])
-			if panel:
-				panel.visible = true
-				print("UIManager: %s.visible = true" % panel_name)
+	if hud_forge and hud_forge.has_method("set_forge_panels_visible"):
+		hud_forge.set_forge_panels_visible(true)
+		print("UIManager: Forge panels restored via HUDMain")
 	else:
-		print("UIManager: ERROR - hud_forge is NULL, cannot restore panels!")
+		print("UIManager: ERROR - hud_forge is NULL or missing method, cannot restore panels!")
 
 func _on_delivered_to_hero(item_data: Dictionary) -> void:
 	# Agregar ítem al inventario del héroe
@@ -344,19 +315,11 @@ func _on_delivered_to_hero(item_data: Dictionary) -> void:
 		print("UIManager: Blueprints UNLOCKED after delivery")
 	
 	# Volver a mostrar paneles del HUD forge (IDLE state)
-	print("UIManager: hud_forge = %s" % hud_forge)
-	if hud_forge:
-		print("UIManager: hud_forge found, restoring panels visibility...")
-		# Acceder directamente a los nodos y hacerlos visibles
-		var panels = ["MinigamesPanel", "BlueprintQueuePanel", "InventoryPanel"]
-		for panel_name in panels:
-			var panel = hud_forge.get_node_or_null(panel_name)
-			print("UIManager: Looking for %s... %s" % [panel_name, "found" if panel else "NOT FOUND"])
-			if panel:
-				panel.visible = true
-				print("UIManager: %s.visible = true" % panel_name)
+	if hud_forge and hud_forge.has_method("set_forge_panels_visible"):
+		hud_forge.set_forge_panels_visible(true)
+		print("UIManager: Forge panels restored via HUDMain")
 	else:
-		print("UIManager: ERROR - hud_forge is NULL, cannot restore panels!")
+		print("UIManager: ERROR - hud_forge is NULL or missing method, cannot restore panels!")
 
 func _on_delivery_cancelled() -> void:
 	# Cerrar ambos paneles

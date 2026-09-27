@@ -38,39 +38,40 @@ func get_quality_tier() -> String:
 	else:
 		return "common"  # Blanco (0-39%)
 
-## Retorna color de outline según tier
+## Retorna color de outline según tier (mismos tonos que el equipo dibujado en el héroe)
 func get_quality_color() -> Color:
 	match get_quality_tier():
 		"legendary":
-			return Color.ORANGE  # FF6A00
+			return Color("ffa629")  # naranja
 		"epic":
-			return Color.PURPLE  # A020F0
+			return Color("b46bff")  # morado
 		"rare":
-			return Color.DODGER_BLUE  # 1E90FF
+			return Color("4ea3ff")  # azul
 		"uncommon":
-			return Color.GREEN  # 00FF00
+			return Color("6ad16a")  # verde
 		_:
-			return Color.WHITE  # FFFFFF
+			return Color("cfd6dc")  # acero
 
-## Retorna label de calidad
+## Nombre de la calidad en el idioma del jugador: los mismos nombres y en el mismo orden que
+## CraftResultScreen.TIERS (BÁSICO … LEGENDARIO), traducidos con locale/textos.csv.
 func get_quality_label() -> String:
 	match get_quality_tier():
 		"legendary":
-			return "LEGENDARY"
+			return tr("LEGENDARIO")
 		"epic":
-			return "EPIC"
+			return tr("ÉPICO")
 		"rare":
-			return "RARE"
+			return tr("RARO")
 		"uncommon":
-			return "COMMON"
+			return tr("BUENO")
 		_:
-			return "BASIC"
+			return tr("BÁSICO")
 
-## Retorna el nombre del item con calidad
+## Nombre del objeto con su calidad, en el idioma del jugador ("Espada básica (93%)")
 func get_display_name() -> String:
 	if item_resource:
-		return "%s (%d%%)" % [item_resource.display_name, get_quality_percent()]
-	return "Unknown item"
+		return "%s (%d%%)" % [tr(item_resource.display_name), get_quality_percent()]
+	return tr("Objeto desconocido")
 
 ## Retorna el slot de equipamiento
 func get_equipment_slot() -> String:

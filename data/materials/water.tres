@@ -6,6 +6,6 @@
 [resource]
 script = ExtResource("1")
 material_id = &"water"
-display_name = "Water"
-description = "Pure elemental water"
+display_name = "Agua"
+description = "Agua pura elemental"
 icon = ExtResource("2")

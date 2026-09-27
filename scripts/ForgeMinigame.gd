@@ -53,9 +53,9 @@ func _ready():
 	
 	# Crear pantalla de título (sistema original)
 	setup_title_screen(
-		"🔥 FORGE - Precisión",
-		"Stop the hammer at the right spot",
-		"Pulsa ESPACIO o CLIC para empezar"
+		tr("¡A LA FORJA!"),
+		tr("Detén el calor en la zona justa"),
+		tr("Toca en el momento exacto")
 	)
 
 func _exit_tree():
@@ -78,7 +78,7 @@ func start_trial(config: TrialConfig) -> void:
 	
 	# Actualizar UI
 	_update_target_zone_position()
-	_progress_label.text = "Soplidos: 0/%d" % _total_trials
+	_progress_label.text = tr("Soplidos: %d/%d") % [0, _total_trials]
 
 func start_game():
 	"""Inicia el minijuego. Override de MinigameBase."""
@@ -169,7 +169,16 @@ func _process(delta):
 func _input(event):
 	if not _running:
 		return
-	if (event is InputEventMouseButton and event.pressed) or (event is InputEventKey and event.pressed and event.keycode == KEY_SPACE):
+	
+	var is_action := false
+	if event is InputEventScreenTouch and event.pressed:
+		is_action = true
+	elif event is InputEventMouseButton and event.pressed:
+		is_action = true
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_SPACE:
+		is_action = true
+		
+	if is_action:
 		_finish_attempt()
 		accept_event()
 
@@ -200,13 +209,14 @@ func _finish_attempt():
 	# 🎨 Efectos visuales y sonoros
 	var feedback_pos := _cursor.global_position + Vector2(_cursor.size.x / 2, 0)
 	MinigameFX.full_feedback(feedback_pos, quality, self)
-	MinigameFX.create_floating_label(feedback_pos, quality, quality, self)
+	MinigameFX.create_floating_label(feedback_pos, MinigameFX.quality_text(quality), quality, self)
 	MinigameAudio.play_feedback(quality)
 	
 	# Actualizar progreso
-	_progress_label.text = "Soplidos: %d/%d" % [_current_trial, _total_trials]
+	_progress_label.text = tr("Soplidos: %d/%d") % [_current_trial, _total_trials]
 	
 	print("  🔥 [FORGE] Trial %d: %.1f pts (%s)" % [_current_trial, score, quality])
+	emit_signal("hit_scored", quality, int(score))
 	
 	# ¿Terminamos todos los trials?
 	if _current_trial >= _total_trials:

@@ -98,6 +98,26 @@ func get_locked_blueprints() -> Array:
 			result.append(bp_id)
 	return result
 
+# ═══════════════════════════════════════════════════════════════════
+#  PERSISTENCIA
+# ═══════════════════════════════════════════════════════════════════
+
+func to_save_data() -> Dictionary:
+	var unlocked_str := {}
+	for bp_id in unlocked_blueprints:
+		unlocked_str[String(bp_id)] = unlocked_blueprints[bp_id]
+	return {
+		"unlocked_blueprints": unlocked_str,
+	}
+
+func load_save_data(data: Dictionary) -> void:
+	var saved_unlocked: Dictionary = data.get("unlocked_blueprints", {})
+	for bp_id_str in saved_unlocked:
+		var bp_id := StringName(bp_id_str)
+		if bp_id in unlocked_blueprints:
+			unlocked_blueprints[bp_id] = bool(saved_unlocked[bp_id_str])
+	print("DataManager: Loaded %d unlocked blueprints from save" % get_unlocked_blueprints().size())
+
 ## Obtiene un ItemResource por ID desde el blueprint
 func get_item_resource(item_id: StringName) -> ItemResource:
 	# Buscar en todos los blueprints el que tenga este result_item
@@ -115,6 +135,35 @@ func get_item_resource(item_id: StringName) -> ItemResource:
 			fallback.display_name = bp.display_name
 			fallback.description = bp.description
 			fallback.icon = bp.icon if bp.icon else null
+			
+			# Determinar tipo y slot basado en el id del item
+			var id_str = String(item_id).to_lower()
+			if id_str.contains("sword") or id_str.contains("weapon"):
+				fallback.item_type = "weapon"
+				fallback.equipment_slot = "main_hand"
+			elif id_str.contains("shield"):
+				fallback.item_type = "shield"
+				fallback.equipment_slot = "off_hand"
+			elif id_str.contains("helmet") or id_str.contains("helm"):
+				fallback.item_type = "helmet"
+				fallback.equipment_slot = "head"
+			elif id_str.contains("armor") or id_str.contains("chest"):
+				fallback.item_type = "armor"
+				fallback.equipment_slot = "body"
+			elif id_str.contains("boots") or id_str.contains("shoes"):
+				fallback.item_type = "boots"
+				fallback.equipment_slot = "feet"
+			else:
+				fallback.item_type = "accessory"
+				fallback.equipment_slot = "main_hand"
+			
+			# Stats base por defecto
+			fallback.base_damage_min = 5
+			fallback.base_damage_max = 15
+			fallback.base_armor_min = 2
+			fallback.base_armor_max = 8
+			
+			print("DataManager: Created fallback ItemResource for '%s' (type: %s, slot: %s)" % [item_id, fallback.item_type, fallback.equipment_slot])
 			return fallback
 	
 	push_warning("DataManager: ItemResource '%s' not found" % item_id)

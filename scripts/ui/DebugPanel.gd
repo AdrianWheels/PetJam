@@ -11,7 +11,6 @@ extends PanelContainer
 @onready var chk_forge_audio: CheckBox = %ChkForgeAudio
 @onready var chk_dungeon_audio: CheckBox = %ChkDungeonAudio
 @onready var chk_hero_invincible: CheckBox = %ChkHeroInvincible
-@onready var btn_trigger_game_over: Button = %BtnTriggerGameOver
 
 func _ready():
 	# Sincronizar estado inicial con managers
@@ -26,7 +25,6 @@ func _ready():
 	chk_forge_audio.toggled.connect(_on_forge_audio_toggled)
 	chk_dungeon_audio.toggled.connect(_on_dungeon_audio_toggled)
 	chk_hero_invincible.toggled.connect(_on_hero_invincible_toggled)
-	btn_trigger_game_over.pressed.connect(_on_trigger_game_over_pressed)
 	
 	# Ocultar por defecto, activar con Shift+P
 	visible = false
@@ -130,22 +128,10 @@ func _on_dungeon_audio_toggled(active: bool) -> void:
 		print("DebugPanel: AudioManager not found")
 
 func _on_hero_invincible_toggled(active: bool) -> void:
-	"""Activa/desactiva invencibilidad del héroe (10k HP + 10k ATK)"""
+	"""Activa/desactiva invencibilidad del heroe (10k HP + 10k ATK)"""
 	var hero = get_tree().get_first_node_in_group("hero")
 	if hero:
 		hero.set_invincible(active)
 		print("DebugPanel: Hero Invincible = %s" % active)
 	else:
 		print("DebugPanel: Hero not found in scene tree")
-
-func _on_trigger_game_over_pressed() -> void:
-	"""Fuerza el game over inmediatamente para testing"""
-	if has_node("/root/GameManager"):
-		var gm = get_node("/root/GameManager")
-		# Forzar death count a MAX_DEATHS
-		gm.death_count = gm.MAX_DEATHS
-		gm.dungeon_state = gm.DungeonState.FAILED
-		gm.emit_signal("game_over")
-		print("DebugPanel: GAME OVER triggered manually")
-	else:
-		print("DebugPanel: GameManager not found")

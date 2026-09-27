@@ -1,8 +1,11 @@
 extends Node
 class_name InventoryManager
 
+const _SaveManager = preload("res://scripts/core/SaveManager.gd")
+
 signal inventory_changed(current_inventory)
 signal crafted_items_changed(items_array)
+signal equipment_changed(equipment_stats: Dictionary)
 
 # Diccionario de materiales (StringName -> int)
 var inventory: Dictionary = {}
@@ -14,21 +17,26 @@ var crafted_items: Array[CraftedItem] = []
 var equipped_items: Dictionary = {}
 
 func _ready() -> void:
-	"""Inicializar inventario con materiales básicos para evitar softlocks"""
-	# Dar materiales generosos al inicio para poder craftear los primeros pedidos gratis
-	var starting_materials := {
-		"wood": 40,
-		"iron": 40,
-		"leather": 40,
-		"cloth": 40,
-		"herb": 30,
-		"fire": 20,
-		"water": 20
-	}
-	
-	for mat_id in starting_materials:
-		add_item(StringName(mat_id), starting_materials[mat_id])
-	
+	"""Inicializa inventario. Si hay save, se cargará luego via load_save_data().
+	Si no hay save, da materiales de inicio."""
+	if not _SaveManager.has_save():
+		_give_starting_materials()
+	else:
+		print("InventoryManager: Save detectado, esperando load_save_data()")
+
+## Materiales generosos al inicio para evitar softlocks. Solo materiales que pide algún plano.
+const STARTING_MATERIALS := {
+	"wood": 40,
+	"iron": 40,
+	"leather": 40,
+	"cloth": 40,
+	"fire": 20,
+	"water": 20,
+}
+
+func _give_starting_materials() -> void:
+	for mat_id in STARTING_MATERIALS:
+		add_item(StringName(mat_id), STARTING_MATERIALS[mat_id])
 	print("InventoryManager: Inicializado con materiales de inicio")
 
 func add_item(item_id: StringName, quantity: int) -> void:
@@ -141,6 +149,7 @@ func equip_item(item: CraftedItem) -> bool:
 	item.is_equipped = true
 	
 	emit_signal("crafted_items_changed", crafted_items)
+	emit_signal("equipment_changed", calculate_total_stats())
 	print("InventoryManager: Equipado %s en slot %s" % [item.get_display_name(), slot])
 	return true
 
@@ -154,6 +163,7 @@ func unequip_item(slot: String) -> bool:
 	equipped_items.erase(slot)
 	
 	emit_signal("crafted_items_changed", crafted_items)
+	emit_signal("equipment_changed", calculate_total_stats())
 	print("InventoryManager: Desequipado item del slot %s" % slot)
 	return true
 
@@ -196,4 +206,78 @@ func remove_crafted_item(item: CraftedItem) -> bool:
 	crafted_items.erase(item)
 	emit_signal("crafted_items_changed", crafted_items)
 	return true
+
+# ═══════════════════════════════════════════════════════════════════
+#  PERSISTENCIA
+# ═══════════════════════════════════════════════════════════════════
+
+func to_save_data() -> Dictionary:
+	# Materiales
+	var mats := {}
+	for mat_id in inventory:
+		mats[String(mat_id)] = inventory[mat_id]
+
+	# Items crafteados
+	var items_arr: Array = []
+	for item in crafted_items:
+		items_arr.append(item.to_dict())
+
+	# Equipment (slot -> indice del item en crafted_items)
+	var equip := {}
+	for slot in equipped_items:
+		var item: CraftedItem = equipped_items[slot]
+		var idx := crafted_items.find(item)
+		if idx >= 0:
+			equip[slot] = idx
+
+	return {
+		"materials": mats,
+		"crafted_items": items_arr,
+		"equipped_slots": equip,
+	}
+
+func load_save_data(data: Dictionary) -> void:
+	# Limpiar estado actual
+	inventory.clear()
+	crafted_items.clear()
+	equipped_items.clear()
+
+	# Materiales
+	var mats: Dictionary = data.get("materials", {})
+	for mat_id_str in mats:
+		inventory[StringName(mat_id_str)] = int(mats[mat_id_str])
+
+	# Items crafteados
+	var dm := get_node_or_null("/root/DataManager")
+	var items_arr: Array = data.get("crafted_items", [])
+	for item_data in items_arr:
+		if not item_data is Dictionary:
+			continue
+		var item_id := StringName(item_data.get("item_id", ""))
+		if item_id == StringName():
+			continue
+		# Resolver ItemResource desde DataManager
+		var item_res: ItemResource = null
+		if dm and dm.has_method("get_item_resource"):
+			item_res = dm.get_item_resource(item_id)
+		if item_res == null:
+			push_warning("InventoryManager: No se pudo resolver ItemResource '%s' — item omitido" % item_id)
+			continue
+		var crafted := CraftedItem.from_dict(item_data, item_res)
+		crafted_items.append(crafted)
+
+	# Equipment (restaurar por índice)
+	var equip: Dictionary = data.get("equipped_slots", {})
+	for slot in equip:
+		var idx: int = int(equip[slot])
+		if idx >= 0 and idx < crafted_items.size():
+			var item := crafted_items[idx]
+			item.is_equipped = true
+			equipped_items[slot] = item
+
+	print("InventoryManager: Loaded %d materials, %d items, %d equipped" % [inventory.size(), crafted_items.size(), equipped_items.size()])
+	emit_signal("inventory_changed", inventory.duplicate())
+	emit_signal("crafted_items_changed", crafted_items)
+	if not equipped_items.is_empty():
+		emit_signal("equipment_changed", calculate_total_stats())
 

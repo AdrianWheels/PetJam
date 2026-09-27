@@ -77,9 +77,9 @@ func _ready():
 	
 	# Crear pantalla de título
 	setup_title_screen(
-		"💧 QUENCH - Temple",
-	"Release at optimal moment for tempering",
-	"Hold and release in green zone"
+		tr("¡A TEMPLAR!"),
+		tr("Mantén pulsado para sumergir la pieza"),
+		tr("Suelta en la zona verde")
 	)
 
 func _exit_tree():
@@ -253,17 +253,30 @@ func _input(event):
 		return
 	
 	# Detectar presionar (iniciar descenso)
-	if (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed) or \
+	var is_press := false
+	if event is InputEventScreenTouch and event.pressed:
+		is_press = true
+	elif (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed) or \
 	   (event is InputEventKey and event.keycode == KEY_SPACE and event.pressed):
+		is_press = true
+		
+	if is_press:
 		if not _holding:
 			_holding = true
-		_instruction_hint.text = "Cooling... Release in green zone!"
+		_instruction_hint.text = tr("Enfriando... ¡Suelta en la zona verde!")
 		print("[Quench] ⏬ Button pressed - starting descent")
 		accept_event()
+		return
 	
 	# Detectar soltar
+	var is_release := false
+	if event is InputEventScreenTouch and not event.pressed:
+		is_release = true
 	elif (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed) or \
 		 (event is InputEventKey and event.keycode == KEY_SPACE and not event.pressed):
+		is_release = true
+		
+	if is_release:
 		if _holding:
 			_judge_release()
 		accept_event()
@@ -347,6 +360,7 @@ func _judge_release() -> void:
 	MinigameFX.full_feedback(feedback_pos, quality, self)
 	MinigameFX.create_floating_label(feedback_pos, "%d°C" % int(_current_temperature), quality, self)
 	MinigameAudio.play_feedback(quality)
+	emit_signal("hit_scored", quality, int(score))
 	
 	await get_tree().create_timer(1.5).timeout
 	_finish_minigame(quality, score, success)

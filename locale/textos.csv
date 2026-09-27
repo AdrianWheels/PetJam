@@ -1,0 +1,228 @@
+keys,es,en
+Espada básica,Espada básica,Basic Sword
+Espada avanzada,Espada avanzada,Advanced Sword
+Espada maestra,Espada maestra,Master Sword
+Escudo básico,Escudo básico,Basic Shield
+Escudo avanzado,Escudo avanzado,Advanced Shield
+Escudo maestro,Escudo maestro,Master Shield
+Casco básico,Casco básico,Basic Helmet
+Casco avanzado,Casco avanzado,Advanced Helmet
+Casco maestro,Casco maestro,Master Helmet
+Botas básicas,Botas básicas,Basic Boots
+Botas avanzadas,Botas avanzadas,Advanced Boots
+Botas maestras,Botas maestras,Master Boots
+Escudo de madera,Escudo de madera,Wooden Shield
+Una espada sencilla pero fiable.,Una espada sencilla pero fiable.,A simple but reliable sword.
+Una espada de calidad superior.,Una espada de calidad superior.,A superior quality sword.
+Una obra maestra de la forja.,Una obra maestra de la forja.,A masterpiece of forging.
+Defensa básica para aventureros novatos.,Defensa básica para aventureros novatos.,Basic defense for novice adventurers.
+Defensa reforzada para guerreros.,Defensa reforzada para guerreros.,Reinforced defense for warriors.
+Defensa suprema legendaria.,Defensa suprema legendaria.,Legendary supreme defense.
+Un casco robusto con buen acabado.,Un casco robusto con buen acabado.,A sturdy helmet with a good finish.
+Casco reforzado de élite.,Casco reforzado de élite.,Elite reinforced helmet.
+Protección suprema legendaria.,Protección suprema legendaria.,Legendary supreme protection.
+Botas ligeras y cómodas.,Botas ligeras y cómodas.,Light and comfortable boots.
+Botas reforzadas de calidad.,Botas reforzadas de calidad.,Quality reinforced boots.
+Botas legendarias de agilidad suprema.,Botas legendarias de agilidad suprema.,Legendary boots of supreme agility.
+Calentar metal,Calentar metal,Heat the metal
+Martillar filo,Martillar filo,Hammer the blade
+Coser botas,Coser botas,Sew the boots
+Golpear el casco,Golpear el casco,Strike the helmet
+Calentar refuerzos,Calentar refuerzos,Heat the reinforcements
+Clavar herrajes,Clavar herrajes,Nail the fittings
+Tratamiento final,Tratamiento final,Final treatment
+Una espada simple pero efectiva,Una espada simple pero efectiva,A simple but effective sword
+Una espada de calidad superior,Una espada de calidad superior,A superior quality sword
+Una obra maestra de la forja,Una obra maestra de la forja,A masterpiece of forging
+Un escudo simple de madera,Un escudo simple de madera,A simple wooden shield
+Un escudo reforzado,Un escudo reforzado,A reinforced shield
+Un escudo de defensa suprema,Un escudo de defensa suprema,A shield of supreme defense
+Un casco simple de hierro,Un casco simple de hierro,A simple iron helmet
+Un casco reforzado,Un casco reforzado,A reinforced helmet
+Un casco de protección suprema,Un casco de protección suprema,A helmet of supreme protection
+Unas botas simples de cuero,Unas botas simples de cuero,Simple leather boots
+Unas botas reforzadas,Unas botas reforzadas,Reinforced boots
+Unas botas de agilidad suprema,Unas botas de agilidad suprema,Boots of supreme agility
+Hierro,Hierro,Iron
+Madera,Madera,Wood
+Cuero,Cuero,Leather
+Tela,Tela,Cloth
+Hierba,Hierba,Herb
+Fuego,Fuego,Fire
+Agua,Agua,Water
+Hielo,Hielo,Ice
+Veneno,Veneno,Poison
+Mineral de hierro forjable,Mineral de hierro forjable,Forgeable iron ore
+Madera robusta,Madera robusta,Sturdy wood
+Cuero curtido para armaduras,Cuero curtido para armaduras,Tanned leather for armor
+Tela resistente para coser,Tela resistente para coser,Durable cloth for sewing
+Hierbas medicinales,Hierbas medicinales,Medicinal herbs
+Esencia de fuego elemental,Esencia de fuego elemental,Elemental fire essence
+Agua pura elemental,Agua pura elemental,Pure elemental water
+Cristal de hielo elemental,Cristal de hielo elemental,Elemental ice crystal
+Veneno concentrado,Veneno concentrado,Concentrated poison
+Limo,Limo,Slime
+Esqueleto,Esqueleto,Skeleton
+Murciélago,Murciélago,Bat
+Gólem,Gólem,Golem
+Espectro,Espectro,Wraith
+Jefe,Jefe,Boss
+Rey Osario,Rey Osario,Bone King
+Madre del Musgo,Madre del Musgo,Moss Mother
+Señor del Magma,Señor del Magma,Magma Lord
+Coloso de Escarcha,Coloso de Escarcha,Frost Colossus
+Heraldo del Vacío,Heraldo del Vacío,Void Herald
+Catacumbas,Catacumbas,Catacombs
+Cripta Musgosa,Cripta Musgosa,Mossy Crypt
+Caverna de Magma,Caverna de Magma,Magma Cavern
+Glaciar Olvidado,Glaciar Olvidado,Forgotten Glacier
+Santuario del Vacío,Santuario del Vacío,Void Sanctum
+%s Nv %d,%s Nv %d,%s Lv %d
+Bloqueo,Bloqueo,Block
+¡JEFE DERROTADO!,¡JEFE DERROTADO!,BOSS DEFEATED!
+¡Nuevo plano!,¡Nuevo plano!,New blueprint!
+VELOCIDAD,VELOCIDAD,SPEED
+SUERTE,SUERTE,LUCK
+Sala %d,Sala %d,Room %d
+Récord: sala %d,Récord: sala %d,Record: room %d
+Profundidad %d,Profundidad %d,Depth %d
+¡JEFE!,¡JEFE!,BOSS!
+%s · Sala %d,%s · Sala %d,%s · Room %d
+%s ha caído,%s ha caído,%s has fallen
+El héroe ha caído,El héroe ha caído,The hero has fallen
+Llegó a la sala %d · vuelve con su equipo,Llegó a la sala %d · vuelve con su equipo,Reached room %d · back with his gear
+¡Nuevo récord de profundidad!,¡Nuevo récord de profundidad!,New depth record!
+¡Nuevo plano: %s!,¡Nuevo plano: %s!,New blueprint: %s!
+Tú forjas. Él desciende.,Tú forjas. Él desciende.,You forge. He descends.
+JUGAR,JUGAR,PLAY
+El héroe te espera en la mazmorra,El héroe te espera en la mazmorra,The hero awaits you in the dungeon
+Mejor profundidad: sala %d,Mejor profundidad: sala %d,Best depth: room %d
+MINIJUEGOS (PRUEBA),MINIJUEGOS (PRUEBA),MINIGAMES (TEST)
+Forja,Forja,Forge
+Martillo,Martillo,Hammer
+Coser,Coser,Sew
+Temple,Temple,Quench
+PEDIDOS · toca uno para forjarlo,PEDIDOS · toca uno para forjarlo,ORDERS · tap one to forge it
+Planos,Planos,Blueprints
+Ver biblioteca de planos,Ver biblioteca de planos,View blueprint library
+Equipo,Equipo,Gear
+Equipar al héroe,Equipar al héroe,Equip the hero
+Tienda,Tienda,Shop
+Abrir tienda,Abrir tienda,Open shop
+GRATIS,GRATIS,FREE
+Paga,Paga,Pays
+oro,oro,gold
+(desconocido),(desconocido),(unknown)
+el Guerrero,el Guerrero,the Warrior
+la Guerrera,la Guerrera,the Warrior
+el Mago,el Mago,the Mage
+la Maga,la Maga,the Mage
+el Explorador,el Explorador,the Explorer
+la Exploradora,la Exploradora,the Explorer
+el Cazador,el Cazador,the Hunter
+la Cazadora,la Cazadora,the Hunter
+el Herrero,el Herrero,the Blacksmith
+la Herrera,la Herrera,the Blacksmith
+el Mercader,el Mercader,the Merchant
+la Mercader,la Mercader,the Merchant
+Biblioteca de planos,Biblioteca de planos,Blueprint library
+Nombre del plano,Nombre del plano,Blueprint name
+Bloqueado,Bloqueado,Locked
+Estadísticas base:,Estadísticas base:,Base stats:
+Requisitos:,Requisitos:,Requirements:
+Equipo del héroe,Equipo del héroe,Hero's gear
+ESTADÍSTICAS,ESTADÍSTICAS,STATS
+Casco,Casco,Helmet
+Pecho,Pecho,Chest
+Arma,Arma,Weapon
+Escudo,Escudo,Shield
+Botas,Botas,Boots
+MOCHILA · toca un objeto para equiparlo,MOCHILA · toca un objeto para equiparlo,BACKPACK · tap an item to equip it
+Legendario,Legendario,Legendary
+Épico,Épico,Epic
+Raro,Raro,Rare
+Bueno,Bueno,Good
+Básico,Básico,Basic
+Vida %d,Vida %d,Health %d
+Daño %.0f,Daño %.0f,Damage %.0f
+Armadura %d (-%d%%),Armadura %d (-%d%%),Armor %d (-%d%%)
+Crítico %.0f%%,Crítico %.0f%%,Crit %.0f%%
+Vida +%d,Vida +%d,Health +%d
+Daño +%d,Daño +%d,Damage +%d
+Armadura +%d,Armadura +%d,Armor +%d
+Crítico +%.0f%%,Crítico +%.0f%%,Crit +%.0f%%
++%d Daño,+%d Daño,+%d Dmg
++%d Vida,+%d Vida,+%d HP
++%d Arm,+%d Arm,+%d Armor
++%d%% Crít,+%d%% Crít,+%d%% Crit
++%.1f Vel,+%.1f Vel,+%.1f Spd
+Mejora,Mejora,Upgrade
+BÁSICO,BÁSICO,BASIC
+BUENO,BUENO,GOOD
+RARO,RARO,RARE
+ÉPICO,ÉPICO,EPIC
+LEGENDARIO,LEGENDARIO,LEGENDARY
+Daño,Daño,Damage
+Vida,Vida,Health
+Armadura,Armadura,Armor
+Crítico,Crítico,Crit
+Velocidad,Velocidad,Speed
+Fuerza,Fuerza,Strength
+Agilidad,Agilidad,Agility
+Intelecto,Intelecto,Intellect
+FORJADO,FORJADO,FORGED
+¡OBRA MAESTRA!,¡OBRA MAESTRA!,MASTERPIECE!
+¡BUEN TRABAJO!,¡BUEN TRABAJO!,GOOD JOB!
+TRABAJO COMPLETO,TRABAJO COMPLETO,JOB DONE
+AL INVENTARIO,AL INVENTARIO,TO INVENTORY
+Equípalo desde «Equipo» · véndelo en «Tienda»,Equípalo desde «Equipo» · véndelo en «Tienda»,Equip it from Gear · sell it in the Shop
+Forjamagia %d/10 → +%d%% calidad,Forjamagia %d/10 → +%d%% calidad,Forgemagic %d/10 → +%d%% quality
+Objeto desconocido,Objeto desconocido,Unknown item
+TIENDA,TIENDA,SHOP
+Materiales,Materiales,Materials
+Pociones,Pociones,Potions
+Vender,Vender,Sell
+No tienes objetos para vender.,No tienes objetos para vender.,You have no items to sell.
+Forja equipo y véndelo aquí.,Forja equipo y véndelo aquí.,Forge gear and sell it here.
+Comprar %dx — %d,Comprar %dx — %d,Buy %dx — %d
+Comprar — %d,Comprar — %d,Buy — %d
+Poción de Vida,Poción de Vida,Health Potion
+Poción de Velocidad,Poción de Velocidad,Speed Potion
+Poción de Suerte,Poción de Suerte,Luck Potion
+Cura al héroe al máximo,Cura al héroe al máximo,Fully heals the hero
+El héroe ataca un 50 % más rápido (30 s),El héroe ataca un 50 % más rápido (30 s),The hero attacks 50% faster (30 s)
+Botín doble el 20 % de las veces (60 s),Botín doble el 20 % de las veces (60 s),Double loot 20% of the time (60 s)
+Oro insuficiente,Oro insuficiente,Not enough gold
+%s renovada,%s renovada,%s renewed
+%s aplicada,%s aplicada,%s applied
+Tico no está en la mazmorra,Tico no está en la mazmorra,Tico is not in the dungeon
+Tico está caído: la poción no resucita,Tico está caído: la poción no resucita,Tico is down: the potion can't revive him
+Tico ya tiene la vida llena,Tico ya tiene la vida llena,Tico is already at full health
+Error al vender,Error al vender,Could not sell
++%d oro por %s,+%d oro por %s,+%d gold for %s
+¡A LA FORJA!,¡A LA FORJA!,TO THE FORGE!
+Detén el calor en la zona justa,Detén el calor en la zona justa,Stop the heat in the right zone
+Toca en el momento exacto,Toca en el momento exacto,Tap at the exact moment
+Soplidos: %d/%d,Soplidos: %d/%d,Blows: %d/%d
+¡A MARTILLAR!,¡A MARTILLAR!,HAMMER TIME!
+Golpea al ritmo con precisión,Golpea al ritmo con precisión,Strike to the beat with precision
+Toca cuando la nota llegue,Toca cuando la nota llegue,Tap when the note arrives
+Puntos: %d,Puntos: %d,Score: %d
+Progreso: %d/%d,Progreso: %d/%d,Progress: %d/%d
+¡A COSER!,¡A COSER!,TIME TO SEW!
+Toca cuando los círculos se cierren,Toca cuando los círculos se cierren,Tap when the circles close
+Sigue el ritmo de la costura,Sigue el ritmo de la costura,Follow the rhythm of the stitching
+Combo: %d,Combo: %d,Combo: %d
+¡A TEMPLAR!,¡A TEMPLAR!,TIME TO QUENCH!
+Mantén pulsado para sumergir la pieza,Mantén pulsado para sumergir la pieza,Hold to dip the piece
+Suelta en la zona verde,Suelta en la zona verde,Release in the green zone
+Mantén pulsado y suelta en la zona verde,Mantén pulsado y suelta en la zona verde,Hold and release in the green zone
+Enfriando... ¡Suelta en la zona verde!,Enfriando... ¡Suelta en la zona verde!,Cooling... Release in the green zone!
+¡Perfecto!,¡Perfecto!,Perfect!
+¡Bien!,¡Bien!,Good!
+Regular,Regular,OK
+Fallo,Fallo,Miss
+MÁX,MÁX,MAX
+¡Planos básicos%s!,¡Planos básicos%s!,Basic blueprints%s!
+¡Planos avanzados%s!,¡Planos avanzados%s!,Advanced blueprints%s!
+¡Planos maestros%s!,¡Planos maestros%s!,Master blueprints%s!

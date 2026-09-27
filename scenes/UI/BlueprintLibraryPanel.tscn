@@ -19,16 +19,16 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -300.0
-offset_top = -250.0
-offset_right = 300.0
-offset_bottom = 250.0
+offset_left = -400.0
+offset_top = -300.0
+offset_right = 400.0
+offset_bottom = 300.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="VBox" type="VBoxContainer" parent="PanelContainer"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 12
 
 [node name="TitleBar" type="HBoxContainer" parent="PanelContainer/VBox"]
 layout_mode = 2
@@ -36,20 +36,28 @@ layout_mode = 2
 [node name="Title" type="Label" parent="PanelContainer/VBox/TitleBar"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Blueprint Library"
+theme_override_colors/font_color = Color(0.91, 0.72, 0.29, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 42
+text = "Biblioteca de planos"
 horizontal_alignment = 1
 
 [node name="CloseBtn" type="Button" parent="PanelContainer/VBox/TitleBar"]
-custom_minimum_size = Vector2(30, 30)
+custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
-text = "✕"
+theme_override_font_sizes/font_size = 34
+text = "X"
 
 [node name="ScrollContainer" type="ScrollContainer" parent="PanelContainer/VBox"]
-custom_minimum_size = Vector2(0, 400)
 layout_mode = 2
 size_flags_vertical = 3
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 2
 
-[node name="BlueprintList" type="VBoxContainer" parent="PanelContainer/VBox/ScrollContainer"]
+[node name="BlueprintList" type="GridContainer" parent="PanelContainer/VBox/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 4
+size_flags_vertical = 3
+theme_override_constants/h_separation = 15
+theme_override_constants/v_separation = 15
+columns = 4
