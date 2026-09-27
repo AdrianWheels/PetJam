@@ -183,14 +183,14 @@ Criterios:
 **Al perder en la sala X:**
 - Tico reaparece en la sala X−1 (en la 1 si X es la 1), con la animación de siempre. Morir no cuesta nada más que ese tiempo.
 - Delante del muro, farmea la sala anterior: la repite y se queda con su botín.
-- Vuelve a probar el muro cada 3 victorias (constante `WALL_RETRY_WINS`), y también en cuanto le cambian el equipo o bebe una poción.
+- Vuelve a probar el muro cada 3 victorias (constante `WALL_RETRY_WINS`), y también en cuanto le cambian el equipo o bebe una poción de efecto (Velocidad o Suerte). La de Vida no cuenta: se gasta en el duelo en curso.
 - Con el muro en la sala 1, lo reintenta cada vez que reaparece.
 - Al vencer el muro, deja de haberlo y Tico sigue avanzando.
 
 **Selector de sala y candado** (junto al indicador de sala de la franja, hoy en `HeroViewOverlay`):
 - **Flechas:** mandan a Tico a cualquier sala entre la 1 y el récord. Elegir el récord es probarlo ya. Mantener pulsada una flecha salta al principio del bioma anterior o del siguiente.
 - **Viaje:** instantáneo, con un fundido. Si había un combate a medias, se abandona sin premio ni castigo.
-- **Candado:** elegir a mano una sala por debajo del récord lo pone (elegir el récord es probarlo, sin candado). Con el candado, Tico repite esa sala sin fin y no reintenta el muro. Sirve, por ejemplo, para farmear hueso en las Catacumbas.
+- **Candado:** elegir a mano una sala por debajo del récord lo pone (elegir el muro o el récord es probarlo, sin candado). Con el candado, Tico repite esa sala sin fin y no reintenta el muro. Sirve, por ejemplo, para farmear hueso en las Catacumbas.
 - **Quitar el candado** lleva a Tico a la sala anterior al muro, o a la anterior al récord si no hay muro (como mínimo, a la 1). Desde ahí sigue el bucle: delante de un muro farmea y reintenta; si no, avanza.
 - **Si muere con el candado puesto,** reaparece en la sala anterior y el candado baja con él.
 - **Muro a la vista:** con muro, el indicador dice "Muro: sala N" en lugar de "Récord: sala N".
@@ -233,12 +233,13 @@ Criterios:
   - Crafteo: la tarea de rango N da un objeto de rango N con las estadísticas multiplicadas; el encargo propio cobra la receta y no da oro.
   - Botín: la cantidad crece con el ciclo; el material de bioma cae solo en su bioma; el jefe siempre suelta el suyo.
   - Guardado: una partida de versión 1 (fichero de prueba) carga en la versión 2 sin perder objetos ni planos, con los hitos del récord aplicados.
-  - Muro y farmeo: al perder en la sala X, Tico reaparece en la X−1 con el muro en la X; vuelve al muro tras 3 victorias y en cuanto cambia el equipo o bebe una poción; con el muro en la sala 1 lo reintenta; entra en cada sala con la vida llena.
-  - Selector y candado: no pasa del récord; elegir sala pone el candado; con candado repite la sala; morir con candado lo baja una sala; quitarlo lo lleva delante del muro; cambiar de sala a mitad de un combate lo abandona sin premio.
   - Botín del jefe: el extra solo cae cuando su muerte sube el récord.
-  - Guardado del muro: la sala, el candado y el muro se guardan y se cargan.
 - **`BalanceSim`:** los objetivos del apartado 6 para los ciclos I a V, medidos en duelos, como comprobaciones.
-- **Siguen en verde:** `PixelTests` y `GameplayTests`.
+- **`GameplayTests`**, además de seguir en verde:
+  - Muro y farmeo: al perder en la sala X, Tico reaparece en la X−1 con el muro en la X; vuelve al muro tras 3 victorias y en cuanto cambia el equipo o bebe una poción de efecto; con el muro en la sala 1 lo reintenta; entra en cada sala con la vida llena.
+  - Selector y candado: no pasa del récord; elegir sala pone el candado (salvo el muro); con candado repite la sala; morir con candado lo baja una sala; quitarlo lo lleva delante del muro; cambiar de sala a mitad de un combate lo abandona sin premio; con Tico caído, el viaje espera a la reaparición.
+  - Guardado del muro: la sala, el candado y el muro se guardan y se cargan.
+- **Siguen en verde:** `PixelTests`.
 - **Capturas con `VisualCapture`:** tarjeta de pedido con numeral, biblioteca con el selector de rango, botín con material de bioma, aviso de hito y selector de sala con el candado y el muro.
 
 ## 11. Qué cambia en el código

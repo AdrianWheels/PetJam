@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** que cada vuelta a los 5 biomas (50 salas) desbloquee versiones más fuertes de los 12 planos (rango II, III…), con materiales de bioma, dificultad de minijuego por rango, encargo propio y vuelta rápida, sobre una curva de enemigos calibrada con una simulación.
+**Goal:** que cada vuelta a los 5 biomas (50 salas) desbloquee versiones más fuertes de los 12 planos (rango II, III…), con materiales de bioma, dificultad de minijuego por rango, encargo propio y el bucle del muro (cada sala es un duelo; al perder, Tico farmea delante del muro y lo reintenta; selector de sala con candado), sobre una curva de enemigos calibrada con una simulación.
 
 **Architecture:** tres clases estáticas nuevas en `scripts/core/`:
 - `EnemyScaling` tiene la curva de enemigos;
@@ -15,11 +15,19 @@ El rango viaja como un entero junto al plano:
 - objeto forjado (`CraftedItem.rank`);
 - guardado, que pasa a la versión 2.
 
-Para calibrar hay una escena de pruebas sin ventana, `BalanceSim`, que simula carreras de Tico desde la sala 1 con las fórmulas reales y comprueba los objetivos del spec. No se crean ficheros de plano por rango: el rango se aplica al forjar.
+Para calibrar hay una escena de pruebas sin ventana, `BalanceSim`, que simula los duelos de Tico sala a sala con las fórmulas reales y comprueba los objetivos del spec (la calibración está en pausa: ver el orden de ejecución). No se crean ficheros de plano por rango: el rango se aplica al forjar.
 
 **Tech Stack:** Godot 4.5.1 (GDScript con tabuladores), Python 3 + Pillow para los iconos pixel, escenas de pruebas sin ventana sobre `scripts/tests/TestSuite.gd`.
 
 **Spec:** `doc/specs/2026-09-27-rangos-de-plano-por-ciclo.md`
+
+## Orden de ejecución (revisión del 2026-09-27)
+
+- Las tareas 1 y 2 están hechas.
+- La 3 (calibración) está en pausa hasta que el motor de balance Balanza esté listo (spec, apartado 6). Lo hecho está en la rama local `rangos-calibracion-aparcada`.
+- La 12 (muro, farmeo y selector de sala) no depende del balance y va ahora, antes que la 3.
+- Después, de la 3 a la 11 y la 13.
+- Como la 12 va antes, las tareas 4, 6 y 7 encontrarán sus cambios en `GameManager` (muro, candado, `room_cleared` y las claves `wall_room` y `room_locked` del guardado), `Corridor` (vida llena, viaje) y `HeroViewOverlay` (selector). El código de esas tareas se escribió antes y no los muestra: se conservan.
 
 ## Requisitos previos
 
@@ -57,11 +65,13 @@ Todo texto visible nuevo de este plan va en español en el código o los datos, 
   - los jefes sueltan siempre `10 × mat_mult(ciclo)` del suyo.
 - `mat_mult(N) = 1,6^(N−1)` y `gold_mult = mat_mult`.
 - Pedidos: rango máximo desbloqueado del plano con un 80 %, el anterior con un 20 %. Recompensa × `gold_mult`.
-- Al morir, Tico vuelve a la sala 1. Vuelta rápida: si la sala está por debajo del récord y un golpe sin crítico de Tico mata al enemigo, Tico:
-  - anda ×3;
-  - ataca al llegar;
-  - hace la pausa tras matar al 25 %;
-  - no provoca hit-stop ni temblor.
+- Muro y farmeo (spec, apartado 7):
+  - cada sala es un duelo con la vida llena;
+  - al perder en la sala X, Tico reaparece en la X−1 y la X es el muro;
+  - delante del muro farmea y lo reintenta cada 3 victorias (`WALL_RETRY_WINS`), y al momento con equipo nuevo o una poción de efecto;
+  - selector de sala (de la 1 al récord) con candado;
+  - el extra de jefe solo cae cuando su muerte sube el récord;
+  - no hay vuelta a la sala 1 ni vuelta rápida.
 - Guardado versión 2 con migración desde la 1: lo forjado pasa a rango I, lo desbloqueado se conserva y se aplican los hitos del récord.
 - Textos de la franja solo con caracteres de `PixelFont`: A-Z, ÁÉÍÓÚÜÑ, 0-9, ! ¡ ? ¿ . , : ; - + / ( ) % ' · ×.
 - `locale/textos.csv` (integrado en 24cde90):
@@ -82,7 +92,7 @@ Todo texto visible nuevo de este plan va en español en el código o los datos, 
 - **Un hito desbloquea 4 planos a la vez:** la franja muestra un solo aviso y los 4 pergaminos salen escalonados, no apilados. Prueba: `test_milestone_shows_one_notice_and_staggers_scrolls` (tarea 7).
 - **Encargo propio con la cola llena, sin materiales o de un rango bloqueado:** no cobra nada. Prueba: `test_own_order_never_charges_when_refused` (tarea 11).
 - **Un pedido ya visible cuando se desbloquea un rango nuevo** conserva su rango, su receta y su oro. Prueba: `test_visible_request_keeps_its_rank` (tarea 8).
-- **Vuelta rápida en la sala del récord o ante un enemigo que aguanta un golpe:** no se activa y hay hit-stop normal. Prueba: `test_rush_only_below_record_and_one_shot` (tarea 12).
+- **Tocar el selector con Tico caído:** la reaparición lo deja en la sala elegida, sin sala doble ni combate colgado. Prueba: `test_travel_while_fallen_waits_for_the_respawn` (tarea 12).
 
 ---
 
@@ -94,25 +104,25 @@ Todo texto visible nuevo de este plan va en español en el código o los datos, 
 | `scripts/core/CombatMath.gd` | crear | estadísticas de Tico, daño esperado y mitigación, sin nodos |
 | `scripts/core/Ranks.gd` | crear | ciclos, hitos, multiplicadores, recetas y textos de hito |
 | `scripts/core/TrialDifficulty.gd` | crear | dificultad de minijuego por rango, con topes |
-| `scripts/gameplay/Hero.gd`, `Enemy.gd` | modificar | usar `CombatMath` / `EnemyScaling`; armadura relativa; primer ataque inmediato; botín por ciclo y de bioma |
-| `scripts/gameplay/CombatController.gd` | modificar | nivel del atacante al dañar; sin hit-stop en vuelta rápida |
-| `scripts/gameplay/Corridor.gd` | modificar | botín de bioma, avisos de hito y vuelta rápida |
+| `scripts/gameplay/Hero.gd`, `Enemy.gd` | modificar | usar `CombatMath` / `EnemyScaling`; armadura relativa; botín por ciclo y de bioma (el extra de jefe, solo con récord nuevo) |
+| `scripts/gameplay/CombatController.gd` | modificar | nivel del atacante al dañar |
+| `scripts/gameplay/Corridor.gd` | modificar | botín de bioma, avisos de hito, vida llena al entrar en cada sala y viaje del selector |
 | `scripts/data/CraftedItem.gd` | modificar | rango, estadísticas escaladas y numeral |
 | `scripts/autoload/DataManager.gd` | modificar | rango máximo por plano, tiers y migración |
-| `scripts/autoload/GameManager.gd` | modificar | hitos al vencer jefes y al cargar |
+| `scripts/autoload/GameManager.gd` | modificar | hitos al vencer jefes y al cargar; muro, farmeo, candado y selector de sala |
 | `scripts/autoload/RequestsManager.gd` | modificar | rango, receta y oro por pedido |
 | `scripts/autoload/CraftingManager.gd` | modificar | rango y encargo propio en las tareas; dificultad por rango |
 | `scripts/core/SaveManager.gd` | modificar | versión 2 |
 | `scripts/ForgeMinigame.gd`, `data/blueprints/boots_*.tres` | modificar | claves de dificultad que sí llegan |
-| `scripts/RequestSlot.gd`, `scripts/ui/HUDMain.gd`, `scripts/ui/BlueprintLibraryPanel.gd`, `scripts/ui/BlueprintCard.gd`, `scripts/ui/EquipmentPanel.gd`, `scripts/ui/CraftResultScreen.gd`, `scripts/ui/HeroViewOverlay.gd`, `scripts/ui/ShopPanel.gd`, `scripts/MaterialIcon.gd` | modificar | numerales, encargo propio, avisos, venta por rango e iconos pixel |
+| `scripts/RequestSlot.gd`, `scripts/ui/HUDMain.gd`, `scripts/ui/BlueprintLibraryPanel.gd`, `scripts/ui/BlueprintCard.gd`, `scripts/ui/EquipmentPanel.gd`, `scripts/ui/CraftResultScreen.gd`, `scripts/ui/HeroViewOverlay.gd`, `scripts/ui/ShopPanel.gd`, `scripts/MaterialIcon.gd` | modificar | numerales, encargo propio, avisos, selector de sala, venta por rango e iconos pixel |
 | `data/materials/{bone,moss,obsidian,frost,void_shard}.tres` | crear | materiales de bioma |
 | `tools/pixel_art/materials.py`, `tools/pixel_art/tests/test_materials.py`, `tools/pixel_art/export.py` | crear / modificar | iconos 12x12 de los materiales de bioma |
 | `art/sprites/pixel/materials/*.png` | generados | iconos |
-| `scripts/tests/RankTests.gd`, `scenes/tests/RankTests.tscn` | crear | pruebas de las tareas 1, 2 y 4 a 12 |
+| `scripts/tests/RankTests.gd`, `scenes/tests/RankTests.tscn` | crear | pruebas de las tareas 1, 2 y 4 a 11 |
 | `scripts/tests/BalanceSim.gd`, `scenes/tests/BalanceSim.tscn` | crear | simulación y objetivos de balance |
 | `scripts/tests/fixtures/save_v1.json` | crear | partida de versión 1 para la migración |
-| `scripts/tests/GameplayTests.gd` | modificar | las pruebas de materiales usan la receta con rango |
-| `scripts/tests/VisualCapture.gd` | modificar | plan de capturas `ranks` |
+| `scripts/tests/GameplayTests.gd` | modificar | las pruebas de materiales usan la receta con rango; muro, farmeo y selector (tarea 12) |
+| `scripts/tests/VisualCapture.gd` | modificar | planes de capturas `wall` y `ranks` |
 | `locale/textos.csv` | modificar | filas de los textos nuevos |
 | `doc/ARCHITECTURE.md`, `doc/ROADMAP.md`, `doc/specs/2026-09-27-rangos-de-plano-por-ciclo.md` | modificar | documentación y valores calibrados |
 
@@ -120,7 +130,7 @@ Comandos de la batería (todos desde la raíz del repo):
 
 ```bash
 timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/RankTests.tscn
-timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/BalanceSim.tscn
+timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/BalanceSim.tscn  # desde la tarea 3
 timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/GameplayTests.tscn
 timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/PixelTests.tscn
 timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/TextTests.tscn
@@ -725,6 +735,8 @@ git commit -m "feat: Ranks — ciclos, hitos, multiplicadores y recetas por rang
 
 ### Task 3: Simulación de balance y calibración de la curva
 
+> **En pausa (2026-09-27).** Esta tarea se rehace con el motor de balance Balanza y con duelos sala a sala (spec, apartados 6 y 7): la versión de abajo mide carreras sin curarse, que ya no es la regla. Lo hecho está en la rama local `rangos-calibracion-aparcada`. No la ejecutes tal cual.
+
 **Files:**
 - Create: `scripts/tests/BalanceSim.gd`, `scenes/tests/BalanceSim.tscn`
 - Modify:
@@ -1052,7 +1064,7 @@ git commit -m "feat: curva de enemigos calibrada para los rangos (BalanceSim), a
 - Generated: `art/sprites/pixel/materials/{bone,moss,obsidian,frost,void_shard}.png`
 
 **Interfaces:**
-- Consumes: `Ranks.BIOME_MATERIALS`, `Ranks.biome_material_for_room`, `Ranks.mat_mult`, `Ranks.cycle_for_room`
+- Consumes: `Ranks.BIOME_MATERIALS`, `Ranks.biome_material_for_room`, `Ranks.mat_mult`, `Ranks.cycle_for_room` y `GameManager.best_enemy_level` (el extra de jefe solo con récord nuevo; spec, apartado 7)
 - Produces:
   - `Enemy.BIOME_DROP_CHANCE` (0,3), `Enemy.BIOME_DROP_QTY` (3), `Enemy.BOSS_BIOME_QTY` (10);
   - `Enemy.biome_drop_chance: float`, que las pruebas pueden forzar;
@@ -1311,9 +1323,16 @@ func test_enemy_loot_grows_with_the_cycle_and_drops_its_biome_material() -> void
 	e.configure_for_level(45, false)
 	e.generate_drops()
 	check(e.last_biome_drop.is_empty(), "sin la tirada no hay material de bioma")
-	e.configure_for_level(40, true)  # jefe del Glaciar: siempre suelta el suyo aunque la probabilidad sea 0
+	var gm := get_node("/root/GameManager")
+	var best_before: int = gm.best_enemy_level
+	gm.best_enemy_level = 40  # la primera vez: su muerte sube el récord
+	e.configure_for_level(40, true)  # jefe del Glaciar: suelta el suyo aunque la probabilidad sea 0
 	e.generate_drops()
 	check(e.last_biome_drop.get("item_id") == &"frost" and int(e.last_biome_drop.get("quantity", 0)) == 10, "el jefe del Glaciar suelta 10 de escarcha (%s)" % [e.last_biome_drop])
+	gm.best_enemy_level = 41  # ya vencido: al repetirlo, como un enemigo normal
+	e.generate_drops()
+	check(e.last_biome_drop.is_empty(), "repetir un jefe no da su tanda de bioma (%s)" % [e.last_biome_drop])
+	gm.best_enemy_level = best_before
 	e.queue_free()
 	await get_tree().process_frame
 ```
@@ -1383,18 +1402,27 @@ func _drop_random_materials() -> void:
 	last_bonus_drop = _give_material(others[_rng.randi() % others.size()])
 
 
-## Material del bioma de la sala: con probabilidad biome_drop_chance, o siempre si es un jefe.
+## Material del bioma de la sala: con probabilidad biome_drop_chance. Un jefe lo suelta seguro, y en tanda
+## de jefe, la vez que su muerte sube el récord (spec de rangos, apartado 7); si se repite, como un enemigo
+## normal. Así, el candado del selector en un jefe no multiplica el material de bioma.
 func _drop_biome_material() -> void:
-	var chance := 1.0 if is_boss else biome_drop_chance
+	var boss_reward := is_boss and _raises_record()
+	var chance := 1.0 if boss_reward else biome_drop_chance
 	if _rng.randf() >= chance:
 		return
 	var im := get_node_or_null("/root/InventoryManager")
 	if im == null or not im.has_method("add_item"):
 		return
 	var mat_id := Ranks.biome_material_for_room(level)
-	var qty := ceili((BOSS_BIOME_QTY if is_boss else BIOME_DROP_QTY) * Ranks.mat_mult(Ranks.cycle_for_room(level)) - 0.0001)
+	var qty := ceili((BOSS_BIOME_QTY if boss_reward else BIOME_DROP_QTY) * Ranks.mat_mult(Ranks.cycle_for_room(level)) - 0.0001)
 	im.add_item(mat_id, qty)
 	last_biome_drop = {"item_id": mat_id, "quantity": qty}
+
+
+## true si vencer a este enemigo sube el récord: su sala es la del récord, la primera sin vencer.
+func _raises_record() -> bool:
+	var gm := get_node_or_null("/root/GameManager")
+	return gm == null or level >= int(gm.best_enemy_level)
 
 
 ## Mete una tanda en el inventario y la devuelve ({} si no hay inventario).
@@ -2938,206 +2966,807 @@ git commit -m "feat: encargo propio desde la biblioteca y numeral de rango en la
 
 ---
 
-### Task 12: Vuelta rápida
+### Task 12: Muro, farmeo y selector de sala
+
+Se ejecuta **antes que la tarea 3**: no depende del balance. Parte de la rama con las tareas 1 y 2 hechas.
 
 **Files:**
-- Modify: `scripts/gameplay/Corridor.gd`, `scripts/gameplay/Hero.gd` (`prepare_for_combat`), `scripts/gameplay/CombatController.gd` (`start_combat`, hit-stop y temblor)
-- Test: `scripts/tests/RankTests.gd`
+- Modify:
+  - `scripts/autoload/GameManager.gd` (récord, muro, candado, reintentos, viaje y guardado);
+  - `scripts/gameplay/Corridor.gd` (vida llena al entrar, sala siguiente y viaje);
+  - `scripts/ui/HeroViewOverlay.gd` (selector, candado, muro y fundido del viaje);
+  - `scripts/tests/VisualCapture.gd` (plan `wall`), `locale/textos.csv`.
+- Test: `scripts/tests/GameplayTests.gd`
 
 **Interfaces:**
-- Consumes: `GameManager.best_enemy_level`, `Hero.dmg`, `Enemy.max_hp`
+- Consumes:
+  - `GameManager.current_enemy_level`, `best_enemy_level`, `register_hero_death()`, `request_respawn()`, `advance_enemy_level()`, `apply_buff()`, `to_save_data()`, `load_save_data()`;
+  - `InventoryManager.equipment_changed`;
+  - `Corridor.reset_combat()`, `_enter_room()`, `advance_enemy()`, `_on_enemy_level_changed()`;
+  - `Hero.heal(amount: int) -> int`;
+  - `Biomes.room_in_biome(room)` (1..10) y `Biomes.ROOMS_PER_BIOME` (10).
 - Produces:
-  - Constantes: `Corridor.RUSH_SPEED_MULT` (3,0) y `Corridor.RUSH_PAUSE_MULT` (0,25).
-  - Consultas del pasillo: `Corridor.is_rushing() -> bool` y `Corridor.rush_for(room: int) -> bool`.
-  - Primer ataque inmediato: `Hero.prepare_for_combat(instant_first_attack: bool = false)` y `CombatController.start_combat(instant_first_attack: bool = false)`.
+  - `GameManager.WALL_RETRY_WINS` (3), `GameManager.wall_room: int` (0 = sin muro) y `GameManager.room_locked: bool`;
+  - señales `GameManager.room_travel(room: int)`, `GameManager.wall_changed(wall_room: int)` y `GameManager.room_lock_changed(locked: bool)`;
+  - `GameManager.room_cleared()`, `travel_to_room(room: int)`, `set_room_locked(locked: bool)`, `retry_wall_now()` y `selector_target(from_room: int, dir: int, by_biome: bool) -> int`;
+  - señal `Corridor.room_traveled(room: int)`;
+  - en el guardado, las claves `wall_room` y `room_locked` de `GameManager.to_save_data()`.
+  - `GameManager.advance_enemy_level()` no cambia: sigue pasando a la sala siguiente sin mirar muro ni candado. Lo usan los planes de `VisualCapture` para saltar de sala.
+
+**Reglas** (spec, apartado 7):
+- El récord (`best_enemy_level`) es la sala más profunda que Tico ha alcanzado y aún no ha vencido. Vencerla lo sube aunque Tico se quede, con el candado puesto.
+- **Al perder en la sala X:** X pasa a ser el muro y Tico reaparece en la X−1 (la 1 como mínimo). Con candado, el candado baja con él, porque su sala es la actual.
+- **Al vencer:**
+  - con candado, repite la sala;
+  - en la sala anterior al muro, farmea: repite la sala y a la tercera victoria (`WALL_RETRY_WINS`) pasa al muro;
+  - vencer el muro, o cualquier sala más honda, lo quita;
+  - si no, avanza.
+- **Reintento al momento:** con muro, sin candado y con la partida en marcha, Tico viaja al muro en cuanto cambia su equipo (`InventoryManager.equipment_changed`) o bebe una poción de efecto (`apply_buff`). La poción de Vida no cuenta: se gasta en el duelo en curso.
+- **Selector:**
+  - `travel_to_room` lleva a Tico a una sala entre la 1 y el récord;
+  - elegir una sala por debajo del récord pone el candado, salvo que sea el muro (elegir el muro o el récord es probarlo);
+  - elegir la sala en la que ya está solo cambia el candado.
+  - Quitar el candado lleva a la sala anterior al muro (o al récord si no hay muro), salvo que Tico ya esté ahí.
+- **Viaje:**
+  - lo hace el pasillo al recibir `room_travel`: abandona el combate a medias sin premio ni castigo y pone a Tico con la vida llena en la sala nueva;
+  - con Tico caído no hace nada, porque la reaparición ya usa la sala nueva;
+  - `GameManager` emite `room_travel` antes que `enemy_level_changed`, así el pasillo, ya recolocado, ignora la segunda señal.
+- **Duelos:** al cruzar la puerta de una sala (`Corridor._enter_room`), Tico recupera toda la vida con `Hero.heal()`.
 
 **Orden de los eventos al matar** (comentario de `Corridor._ready`):
-1. `CombatController._on_enemy_died` hace avanzar la sala.
-2. `Corridor._on_enemy_level_changed` coloca al enemigo siguiente.
-3. Después llega `Corridor._on_enemy_died_fx`.
-
-Por eso el estado de la sala recién vencida se guarda en `_rush_kill` antes de calcular el de la siguiente.
+1. `CombatController._on_enemy_died` llama a `Corridor.advance_enemy()`, que ahora llama a `GameManager.room_cleared()`.
+2. Si la sala se repite, `room_cleared` emite `enemy_level_changed` con la misma sala. Todavía dentro de la señal `died`, el enemigo sigue muerto, así que `Corridor._on_enemy_level_changed` coloca otro enemigo de esa sala por delante, con su puerta.
+3. Después llega `Corridor._on_enemy_died_fx`, que presenta el botín.
 
 - [ ] **Step 1: Pruebas que fallan**
 
-```gdscript
-# ─── Tarea 12: vuelta rápida ───────────────────────────────────────────
+Añade al final de `scripts/tests/GameplayTests.gd`:
 
-func test_rush_only_below_record_and_one_shot() -> void:
-	var gm := get_node("/root/GameManager")
-	var saved_best: int = gm.best_enemy_level
-	gm.best_enemy_level = 30
+```gdscript
+# ─── Muro, farmeo y selector de sala (spec de rangos, apartado 7) ─────
+
+## Estado de la partida en GameManager, para devolverlo al acabar cada prueba (las pruebas del muro lo
+## cambian con load_save_data, la misma entrada que usa el guardado).
+func _gm_snapshot() -> Dictionary:
+	var gm := _gm()
+	var snap: Dictionary = gm.to_save_data()
+	snap["_dungeon_state"] = gm.dungeon_state
+	return snap
+
+
+func _gm_restore(snap: Dictionary) -> void:
+	var gm := _gm()
+	gm.dungeon_state = snap["_dungeon_state"]  # antes de cargar: sin partida en marcha no se mueve ningún pasillo
+	gm.load_save_data(snap)
+	gm.clear_buffs()
+
+
+## Partida de prueba con su sala, su récord y, si se dan, muro y candado. La deja en marcha.
+func _gm_setup(current: int, best: int, wall: int = 0, locked: bool = false) -> void:
+	var gm := _gm()
+	gm.load_save_data({"current_enemy_level": current, "best_enemy_level": best, "wall_room": wall, "room_locked": locked})
+	gm.dungeon_state = gm.DungeonState.RUNNING
+
+
+## Pasillo de prueba sobre la partida de GameManager (empieza en su sala actual).
+func _new_corridor() -> Node2D:
 	var corridor: Node2D = load("res://scenes/Corridor.tscn").instantiate()
 	add_child(corridor)
-	await get_tree().process_frame
+	return corridor
+
+
+func test_losing_leaves_a_wall_and_farms_the_room_before() -> void:
+	var gm := _gm()
+	var snap := _gm_snapshot()
+	_gm_setup(12, 12)
+	gm.register_hero_death()
+	check(gm.current_enemy_level == 11 and gm.wall_room == 12, "cae en la 12: reaparece en la 11 y la 12 es el muro (%d, %d)" % [gm.current_enemy_level, gm.wall_room])
+	gm.request_respawn()
+	gm.room_cleared()
+	gm.room_cleared()
+	check(gm.current_enemy_level == 11, "las dos primeras victorias farmea la 11 (%d)" % gm.current_enemy_level)
+	gm.room_cleared()
+	check(gm.current_enemy_level == 12, "a la tercera vuelve al muro (%d)" % gm.current_enemy_level)
+	gm.register_hero_death()
+	gm.request_respawn()
+	gm.room_cleared()
+	gm.room_cleared()
+	check(gm.current_enemy_level == 11, "tras otra caída la cuenta vuelve a empezar (%d)" % gm.current_enemy_level)
+	_im().equipment_changed.emit({})
+	check(gm.current_enemy_level == 12, "con equipo nuevo prueba el muro al momento (%d)" % gm.current_enemy_level)
+	gm.register_hero_death()
+	gm.request_respawn()
+	gm.apply_buff(&"luck", 60.0)
+	check(gm.current_enemy_level == 12, "y también al beber una poción de efecto (%d)" % gm.current_enemy_level)
+	gm.room_cleared()
+	check(gm.wall_room == 0 and gm.current_enemy_level == 13 and gm.best_enemy_level == 13, "vencer el muro lo quita y sube el récord (muro %d, sala %d, récord %d)" % [gm.wall_room, gm.current_enemy_level, gm.best_enemy_level])
+	_gm_restore(snap)
+	await _flush_deferred_saves()
+
+
+func test_a_wall_in_room_one_is_retried_on_every_respawn() -> void:
+	var gm := _gm()
+	var snap := _gm_snapshot()
+	_gm_setup(1, 1)
+	gm.register_hero_death()
+	check(gm.current_enemy_level == 1 and gm.wall_room == 1, "cae en la 1: reaparece en la 1, delante del muro (%d, %d)" % [gm.current_enemy_level, gm.wall_room])
+	gm.request_respawn()
+	gm.room_cleared()
+	check(gm.wall_room == 0 and gm.current_enemy_level == 2 and gm.best_enemy_level == 2, "al vencerlo sigue a la 2 (muro %d, sala %d, récord %d)" % [gm.wall_room, gm.current_enemy_level, gm.best_enemy_level])
+	_gm_restore(snap)
+	await _flush_deferred_saves()
+
+
+func test_room_selector_and_lock() -> void:
+	var gm := _gm()
+	var snap := _gm_snapshot()
+	_gm_setup(30, 30)
+	gm.travel_to_room(99)
+	check(gm.current_enemy_level == 30 and not gm.room_locked, "no pasa del récord, y el récord no pone el candado (%d)" % gm.current_enemy_level)
+	gm.travel_to_room(5)
+	check(gm.current_enemy_level == 5 and gm.room_locked, "una sala por debajo del récord pone el candado (%d)" % gm.current_enemy_level)
+	gm.room_cleared()
+	check(gm.current_enemy_level == 5, "con candado repite la sala (%d)" % gm.current_enemy_level)
+	gm.register_hero_death()
+	gm.request_respawn()
+	check(gm.current_enemy_level == 4 and gm.wall_room == 5 and gm.room_locked, "si cae con candado, el candado baja con él (sala %d, muro %d)" % [gm.current_enemy_level, gm.wall_room])
+	gm.room_cleared()
+	gm.room_cleared()
+	gm.room_cleared()
+	check(gm.current_enemy_level == 4, "con candado no reintenta el muro (%d)" % gm.current_enemy_level)
+	gm.set_room_locked(false)
+	check(gm.current_enemy_level == 4 and not gm.room_locked, "sin candado sigue delante del muro (%d)" % gm.current_enemy_level)
+	gm.travel_to_room(0)
+	check(gm.current_enemy_level == 1, "tampoco baja de la sala 1 (%d)" % gm.current_enemy_level)
+	gm.travel_to_room(5)
+	check(gm.current_enemy_level == 5 and not gm.room_locked, "elegir el muro es probarlo, sin candado (%d)" % gm.current_enemy_level)
+	_gm_setup(7, 30, 0, true)
+	gm.set_room_locked(false)
+	check(gm.current_enemy_level == 29, "sin muro, quitar el candado lo lleva delante del récord (%d)" % gm.current_enemy_level)
+	_gm_setup(30, 30)
+	gm.set_room_locked(true)
+	gm.room_cleared()
+	check(gm.current_enemy_level == 30 and gm.best_enemy_level == 31, "vencer el récord con candado lo sube aunque Tico se quede (sala %d, récord %d)" % [gm.current_enemy_level, gm.best_enemy_level])
+	check(gm.selector_target(25, -1, true) == 11, "mantener atrás desde la 25: principio del bioma anterior (%d)" % gm.selector_target(25, -1, true))
+	check(gm.selector_target(25, 1, true) == 31, "mantener adelante: principio del siguiente (%d)" % gm.selector_target(25, 1, true))
+	check(gm.selector_target(5, -1, true) == 1, "desde el primer bioma, la 1 (%d)" % gm.selector_target(5, -1, true))
+	check(gm.selector_target(31, 1, false) == 31, "sin pasar del récord (%d)" % gm.selector_target(31, 1, false))
+	_gm_restore(snap)
+	await _flush_deferred_saves()
+
+
+func test_wall_and_lock_are_saved() -> void:
+	var gm := _gm()
+	var snap := _gm_snapshot()
+	_gm_setup(11, 12, 12, true)
+	var data: Dictionary = gm.to_save_data()
+	check(int(data.get("wall_room", 0)) == 12 and bool(data.get("room_locked", false)), "el guardado lleva el muro y el candado (%s)" % data)
+	gm.load_save_data({"current_enemy_level": 3, "best_enemy_level": 9})
+	check(gm.wall_room == 0 and not gm.room_locked, "una partida sin esos campos carga sin muro ni candado")
+	gm.load_save_data({"current_enemy_level": 3, "best_enemy_level": 9, "wall_room": 50})
+	check(gm.wall_room == 9, "un muro más allá del récord se queda en el récord (%d)" % gm.wall_room)
+	_gm_restore(snap)
+	await _flush_deferred_saves()
+
+
+func test_each_room_starts_with_full_health_and_travel_abandons_the_fight() -> void:
+	var gm := _gm()
+	var snap := _gm_snapshot()
+	_gm_setup(3, 12)
+	var start: Dictionary = _im().get_materials()
+	var corridor := _new_corridor()
 	var hero: Node2D = corridor.get_node("Hero")
-	hero.dmg = 1.0e9
-	corridor.spawn_enemy(5, hero.position.x + 160.0)
-	check(corridor.is_rushing(), "sala 5 con récord 30 y un golpe basta: a la carrera")
-	corridor._pause = 0.0  # el pasillo arranca con una pausa en la que Tico no anda
-	corridor.update_run(0.1)
-	check(is_equal_approx(hero.walk_speed, corridor.HERO_SPEED * corridor.RUSH_SPEED_MULT), "anda ×3 (%.1f)" % hero.walk_speed)
-	corridor.spawn_enemy(30, hero.position.x + 160.0)
-	check(not corridor.is_rushing(), "en la sala del récord, no")
-	hero.dmg = 1.0
-	corridor.spawn_enemy(5, hero.position.x + 160.0)
-	check(not corridor.is_rushing(), "si un golpe no basta, no")
-	corridor._pause = 0.0
-	corridor.update_run(0.1)
-	check(is_equal_approx(hero.walk_speed, corridor.HERO_SPEED), "anda normal (%.1f)" % hero.walk_speed)
+	var enemy: Node2D = corridor.get_node("Enemy")
+	hero.hp = maxi(1, hero.max_hp / 2)
+	corridor._enter_room(3)
+	check(hero.hp == hero.max_hp, "al entrar en una sala, Tico tiene la vida llena (%d/%d)" % [hero.hp, hero.max_hp])
+	corridor._begin_fight()
+	hero.hp = maxi(1, hero.max_hp / 2)
+	gm.travel_to_room(7)
+	check(not corridor.combat_controller.combat_active, "viajar abandona el combate a medias")
+	check(corridor.level == 7 and enemy.level == 7 and enemy.alive, "el pasillo pasa a la sala 7 con su enemigo (%d, %d)" % [corridor.level, enemy.level])
+	check(hero.alive and hero.hp == hero.max_hp, "Tico llega con la vida llena (%d/%d)" % [hero.hp, hero.max_hp])
+	check(_gained_since(start).is_empty(), "sin premio: no entra botín (%s)" % _gained_since(start))
 	corridor.queue_free()
-	await get_tree().process_frame
-	gm.best_enemy_level = saved_best
+	_gm_restore(snap)
+	await _flush_deferred_saves()
+	await _silence_loot_sounds()
 
 
-func test_rush_kill_skips_hitstop_and_first_attack_is_instant() -> void:
-	var hero := _new_hero()
-	await get_tree().process_frame
-	hero.prepare_for_combat(true)
-	check(hero.atk_timer <= 0.0, "a la carrera, el primer golpe sale al llegar")
-	hero.prepare_for_combat()
-	check(hero.atk_timer > 0.0, "normalmente, espera su ritmo")
-	hero.queue_free()
-	var corridor: Node2D = load("res://scenes/Corridor.tscn").instantiate()
-	add_child(corridor)
-	await get_tree().process_frame
-	corridor._rush_kill = true
-	corridor.enemy.death_info = {"pos": Vector2(100, 80), "boss": false, "level": 3, "name": "Limo"}
-	corridor._on_enemy_died_fx([])
-	check(corridor._hitstop <= 0.0, "una muerte a la carrera no congela el pasillo")
+func test_farming_puts_another_enemy_of_the_same_room_ahead() -> void:
+	var gm := _gm()
+	var snap := _gm_snapshot()
+	_gm_setup(11, 12, 12)
+	gm.enemies_defeated[11] = true  # sin plano de primera victoria
+	var start: Dictionary = _im().get_materials()
+	var corridor := _new_corridor()
+	var enemy: Node2D = corridor.get_node("Enemy")
+	enemy.take_damage(enemy.hp)
+	check(gm.current_enemy_level == 11, "tras vencer delante del muro sigue en la 11 (%d)" % gm.current_enemy_level)
+	check(enemy.alive and enemy.level == 11, "el pasillo pone otro enemigo de la 11 por delante (%d)" % enemy.level)
+	check(corridor._next_gate_room == 11, "con su puerta de la sala 11 (%d)" % corridor._next_gate_room)
 	corridor.queue_free()
-	await get_tree().process_frame
+	_gm_restore(snap)
+	_im().consume_materials(_gained_since(start))  # devuelve el botín de prueba
+	await _flush_deferred_saves()
+	await _silence_loot_sounds()
+
+
+func test_losing_in_the_corridor_respawns_in_the_room_before() -> void:
+	var gm := _gm()
+	var snap := _gm_snapshot()
+	_gm_setup(12, 12)
+	var corridor := _new_corridor()
+	var hero: Node2D = corridor.get_node("Hero")
+	hero.take_damage(hero.hp * 10, true)  # el pulso no mira la armadura
+	check(gm.wall_room == 12 and gm.current_enemy_level == 11, "cae en la 12: muro en la 12 y vuelta a la 11 (%d, %d)" % [gm.wall_room, gm.current_enemy_level])
+	corridor._respawn_timer.stop()
+	corridor._on_respawn_timeout()  # sin esperar el segundo y medio de la reaparición
+	check(corridor.level == 11 and corridor.enemy.level == 11, "reaparece en la 11 con su enemigo (%d, %d)" % [corridor.level, corridor.enemy.level])
+	check(hero.alive and hero.hp == hero.max_hp, "con la vida llena (%d/%d)" % [hero.hp, hero.max_hp])
+	corridor.queue_free()
+	_gm_restore(snap)
+	await _flush_deferred_saves()
+	await _silence_loot_sounds()
+
+
+func test_travel_while_fallen_waits_for_the_respawn() -> void:
+	var gm := _gm()
+	var snap := _gm_snapshot()
+	_gm_setup(12, 12)
+	var corridor := _new_corridor()
+	var hero: Node2D = corridor.get_node("Hero")
+	hero.take_damage(hero.hp * 10, true)
+	gm.travel_to_room(5)
+	check(corridor.state == corridor.State.DEAD and not hero.alive, "con Tico caído, el viaje espera a la reaparición")
+	corridor._respawn_timer.stop()
+	corridor._on_respawn_timeout()
+	check(corridor.level == 5 and corridor.enemy.level == 5 and hero.alive, "reaparece en la sala elegida (%d, %d)" % [corridor.level, corridor.enemy.level])
+	check(gm.room_locked, "con el candado de haberla elegido")
+	corridor.queue_free()
+	_gm_restore(snap)
+	await _flush_deferred_saves()
+	await _silence_loot_sounds()
+
+
+func test_room_selector_in_the_strip() -> void:
+	var gm := _gm()
+	var snap := _gm_snapshot()
+	_gm_setup(11, 12, 12)
+	var overlay: Control = load("res://scripts/ui/HeroViewOverlay.gd").new()
+	add_child(overlay)
+	check(overlay._record_label.text == "Muro: sala 12", "con muro, el indicador dice «Muro: sala 12» (%s)" % overlay._record_label.text)
+	for b in [overlay._prev_button, overlay._lock_button, overlay._next_button]:
+		check(b.size.x >= 88.0 and b.size.y >= 88.0, "botón del selector con tamaño de dedo (%s)" % b.size)
+	overlay._on_arrow_down(1)
+	overlay._on_arrow_up(1)
+	check(gm.current_enemy_level == 12 and not gm.room_locked, "toque corto adelante: la 12, probar el muro sin candado (%d)" % gm.current_enemy_level)
+	check(overlay._next_button.disabled, "en el récord, la flecha adelante se apaga")
+	_gm_setup(25, 40)
+	overlay._on_arrow_down(-1)
+	overlay._process(overlay.LONG_PRESS + 0.05)
+	check(gm.current_enemy_level == 11 and gm.room_locked, "mantener pulsado atrás: principio del bioma anterior, con candado (%d)" % gm.current_enemy_level)
+	overlay._on_arrow_up(-1)
+	check(gm.current_enemy_level == 11, "soltar tras el salto no mueve otra sala (%d)" % gm.current_enemy_level)
+	overlay._on_lock_pressed()
+	check(not gm.room_locked and gm.current_enemy_level == 39, "quitar el candado lo lleva delante del récord (%d)" % gm.current_enemy_level)
+	check(overlay._record_label.text == "Récord: sala 40", "sin muro vuelve a decir el récord (%s)" % overlay._record_label.text)
+	overlay.queue_free()
+	_gm_restore(snap)
+	await _flush_deferred_saves()
 ```
 
-Run RankTests. Expected: fallan (`is_rushing` no existe; `prepare_for_combat` no acepta argumentos).
+- [ ] **Step 2: Ejecutar y ver que fallan**
 
-- [ ] **Step 2: `Hero.prepare_for_combat`**
+Run: `timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/GameplayTests.tscn`
+Expected: las 9 pruebas nuevas fallan: `room_cleared`, `travel_to_room` y `_prev_button` no existen, y al morir Tico vuelve a la sala 1. Las pruebas que ya había pasan.
+
+- [ ] **Step 3: Muro, candado y selector en `GameManager.gd`**
+
+Señales nuevas, tras `buffs_changed`:
 
 ```gdscript
-## `instant_first_attack`: en la vuelta rápida el primer golpe sale nada más llegar.
-func prepare_for_combat(instant_first_attack: bool = false) -> void:
-	atk_timer = 0.0 if instant_first_attack else 1.0 / aps
-	pulse_timer = PULSE_INTERVAL
-	is_attacking = false
+signal room_travel(room: int)  # el selector o un reintento mandan a Tico a otra sala (viaje instantáneo)
+signal wall_changed(wall_room: int)  # aparece o cae el muro (0 = sin muro)
+signal room_lock_changed(locked: bool)  # candado del selector de sala
 ```
 
-- [ ] **Step 3: `CombatController`**
+Cambia el comentario de `best_enemy_level` y añade, justo debajo:
 
 ```gdscript
-func start_combat(instant_first_attack: bool = false):
-	if combat_active:
+var best_enemy_level: int = 1  # Récord: la sala más profunda alcanzada que Tico aún no ha vencido
+
+## Muro, farmeo y selector de sala (spec de rangos, apartado 7)
+const WALL_RETRY_WINS := 3  # delante del muro, Tico lo reintenta cada 3 victorias
+var wall_room: int = 0  # sala donde Tico perdió por última vez, hasta que la vence (0 = sin muro)
+var room_locked: bool = false  # candado: Tico repite su sala y no reintenta el muro
+var _wins_since_retry: int = 0
+```
+
+En `apply_buff`, tras emitir `buffs_changed`:
+
+```gdscript
+	retry_wall_now()  # una poción de efecto manda a Tico a probar el muro
+```
+
+Sustituye `register_hero` y `_on_equipment_changed`:
+
+```gdscript
+func register_hero(hero_node: Node) -> void:
+	_hero = hero_node
+	# Aplicar stats de equipo actual al registrar héroe
+	_refresh_hero_stats()
+
+func _on_equipment_changed(_equipment_stats: Dictionary) -> void:
+	"""Cuando cambia el equipamiento, recalcular stats del héroe y, delante de un muro, probarlo ya"""
+	_refresh_hero_stats()
+	retry_wall_now()
+
+func _refresh_hero_stats() -> void:
+	if is_instance_valid(_hero) and _hero.has_method("reset_stats"):
+		_hero.reset_stats()
+		DebugManager.log_msg(&"game", "Hero stats recalculated after equipment change")
+```
+
+En `start_run`, dentro de `if not _save_loaded:`, añade:
+
+```gdscript
+		_set_wall(0)
+		_set_room_locked(false)
+```
+
+y, fuera del `if`, `_wins_since_retry = 0`.
+
+Sustituye `register_hero_death`:
+
+```gdscript
+func register_hero_death():
+	if dungeon_state != DungeonState.RUNNING:
 		return
-	combat_active = true
-	if hero and hero.has_method("prepare_for_combat"):
-		hero.prepare_for_combat(instant_first_attack)
-	if enemy and enemy.has_method("prepare_for_combat"):
-		enemy.prepare_for_combat()
-	emit_signal("combat_started")
+	death_count += 1
+	dungeon_state = DungeonState.HERO_DEAD
+	var fell_at := current_enemy_level
+	DebugManager.log_msg(&"game", "Hero died (total: %d) at room %d - it becomes the wall" % [death_count, fell_at])
+	emit_signal("hero_died", death_count)
+	# La sala donde cae es el muro y reaparece en la anterior (spec de rangos, apartado 7). Con candado,
+	# el candado baja con él: su sala es la actual.
+	current_enemy_level = maxi(1, fell_at - 1)
+	_wins_since_retry = 0
+	_set_wall(fell_at)
 ```
 
-En la vuelta rápida, los golpes de Tico no hacen temblar ni congelan el pasillo. El enemigo no llega a atacar, porque muere del primer golpe. Añade:
+Añade, tras `advance_enemy_level`:
 
 ```gdscript
-## Vuelta rápida en curso (Corridor.is_rushing): sin temblor ni hit-stop en los golpes de Tico.
-func _rushing() -> bool:
-	return corridor != null and corridor.has_method("is_rushing") and corridor.is_rushing()
+## Tico ha vencido al enemigo de su sala: decide adónde va (spec de rangos, apartado 7).
+## - Vencer la sala del récord lo sube, aunque Tico se quede (con el candado puesto).
+## - Vencer el muro, o una sala más honda, lo quita.
+## - Con candado repite la sala. En la sala anterior al muro la farmea y a las WALL_RETRY_WINS
+##   victorias pasa al muro. Si no, avanza.
+func room_cleared() -> void:
+	var cleared := current_enemy_level
+	if cleared >= best_enemy_level:
+		best_enemy_level = cleared + 1
+		emit_signal("record_changed", best_enemy_level)
+	if wall_room > 0 and cleared >= wall_room:
+		_set_wall(0)
+	var repeat := room_locked
+	if not repeat and wall_room > 0 and cleared + 1 == wall_room:
+		_wins_since_retry += 1
+		repeat = _wins_since_retry < WALL_RETRY_WINS
+		if not repeat:
+			_wins_since_retry = 0
+	if repeat:
+		# Otro enemigo de la misma sala: el pasillo lo pone por delante, como al avanzar
+		emit_signal("enemy_level_changed", current_enemy_level)
+		emit_signal("enemy_spawned", current_enemy_level)
+	else:
+		advance_enemy_level()
+
+
+## Selector de sala: manda a Tico a una sala entre la 1 y el récord. Por debajo del récord pone el
+## candado, salvo en el muro: elegir el muro o el récord es probarlo. Si ya está en esa sala, solo
+## cambia el candado.
+func travel_to_room(room: int) -> void:
+	var target := clampi(room, 1, best_enemy_level)
+	_set_room_locked(target < best_enemy_level and target != wall_room)
+	if target != current_enemy_level:
+		_travel(target)
+
+
+## Candado del selector. Quitarlo lleva a Tico a la sala anterior al muro (o al récord si no hay muro).
+func set_room_locked(locked: bool) -> void:
+	if locked == room_locked:
+		return
+	_set_room_locked(locked)
+	if locked:
+		return
+	var front := maxi(1, (wall_room if wall_room > 0 else best_enemy_level) - 1)
+	if front != current_enemy_level:
+		_travel(front)
+
+
+## Con muro y sin candado, Tico lo prueba ya (equipo nuevo o poción de efecto). Solo con la partida en marcha.
+func retry_wall_now() -> void:
+	if wall_room <= 0 or room_locked or dungeon_state != DungeonState.RUNNING:
+		return
+	if current_enemy_level != wall_room:
+		_travel(wall_room)
+
+
+## Sala a la que lleva el selector desde `from_room`: la de al lado (dir = −1 o 1) o, con by_biome, el
+## principio del bioma anterior o del siguiente. Siempre entre la 1 y el récord.
+func selector_target(from_room: int, dir: int, by_biome: bool) -> int:
+	var target := from_room + dir
+	if by_biome:
+		var biome_start := from_room - Biomes.room_in_biome(from_room) + 1
+		target = biome_start + Biomes.ROOMS_PER_BIOME * dir
+	return clampi(target, 1, best_enemy_level)
+
+
+## Viaje instantáneo. El pasillo (room_travel) abandona el combate a medias, sin premio ni castigo, y pone
+## a Tico en la sala nueva con la vida llena; con Tico caído, la reaparición ya lo deja ahí. room_travel va
+## antes que enemy_level_changed: el pasillo ya recolocado ignora la segunda.
+func _travel(room: int) -> void:
+	current_enemy_level = room
+	_wins_since_retry = 0
+	emit_signal("room_travel", room)
+	emit_signal("enemy_level_changed", room)
+
+
+func _set_wall(room: int) -> void:
+	if wall_room == room:
+		return
+	wall_room = room
+	emit_signal("wall_changed", wall_room)
+
+
+func _set_room_locked(locked: bool) -> void:
+	if room_locked == locked:
+		return
+	room_locked = locked
+	emit_signal("room_lock_changed", room_locked)
+	_on_trigger_save()
 ```
 
-En `_execute_hero_attack()`, sustituye el bloque de feedback tras `fx.damage_number(…)` (desde `if crit:` hasta el `camera.add_trauma(0.07)` del final) por:
+En `to_save_data`, añade al diccionario:
 
 ```gdscript
-	var rushing := _rushing()
-	if crit:
-		if fx:
-			fx.ring(hit_pos, COLOR_CRIT, 2.0, 13.0, 0.24, 1.0)
-		if _crit_fx_cd <= 0.0:
-			_crit_fx_cd = CRIT_FX_COOLDOWN
-			if camera and not rushing:
-				camera.add_trauma(0.3)
-			if corridor.has_method("hitstop") and not rushing:
-				corridor.hitstop(0.06)
-			_play(CRIT_SFX, -11.0, 1.2, 0.05)
-		elif camera and not rushing:
-			camera.add_trauma(0.1)
-	elif camera and not rushing:
-		camera.add_trauma(0.07)
+		"wall_room": wall_room,
+		"room_locked": room_locked,
 ```
 
-(La línea `_play_random(HIT_SFX, …)` que sigue no cambia.)
-
-- [ ] **Step 4: `Corridor`**
-
-Constantes y estado:
+En `load_save_data`, tras leer `best_enemy_level`:
 
 ```gdscript
-const RUSH_SPEED_MULT := 3.0  # vuelta rápida: anda ×3
-const RUSH_PAUSE_MULT := 0.25  # y apenas se detiene tras matar
-var _rush := false  # la sala actual se cruza a la carrera
-var _rush_kill := false  # la sala que se acaba de vencer iba a la carrera (sin hit-stop ni temblor)
-
-
-## Vuelta rápida (spec de rangos, apartado 7): la sala está por debajo del récord y un golpe sin crítico
-## de Tico mata a su enemigo.
-func rush_for(room: int) -> bool:
-	if _game_manager == null or not ("best_enemy_level" in _game_manager) or not hero.alive:
-		return false
-	return room < int(_game_manager.best_enemy_level) and hero.dmg >= float(enemy.max_hp)
-
-
-func is_rushing() -> bool:
-	return _rush
+	wall_room = clampi(int(data.get("wall_room", 0)), 0, best_enemy_level)
+	room_locked = bool(data.get("room_locked", false))
+	_wins_since_retry = 0
 ```
 
-En `spawn_enemy`, tras configurar al enemigo:
+(Sin señales: el HUD relee todo con `progress_loaded`, como la sala y el récord.)
+
+- [ ] **Step 4: Sala siguiente, vida llena y viaje en `Corridor.gd`**
+
+Señal nueva, tras `hero_returned`:
 
 ```gdscript
-	_rush = rush_for(lv)
+signal room_traveled(room: int)  # viaje del selector o reintento del muro (el HUD funde desde negro)
 ```
 
-En `update_run`, la velocidad:
+En `_ready`, dentro de `if _game_manager:`:
 
 ```gdscript
-	if hero.alive:
-		var speed := HERO_SPEED * (RUSH_SPEED_MULT if _rush else 1.0)
-		hero.position.x += speed * delta
-		hero.walking = true
-		hero.walk_speed = speed
-		ground_offset += speed * delta
+		if _game_manager.has_signal("room_travel"):
+			_game_manager.room_travel.connect(_on_room_travel)
 ```
 
-En `_begin_fight`: `combat_controller.start_combat(_rush)`.
-
-En `_on_enemy_level_changed`, antes de `spawn_enemy`, guarda si la sala vencida iba a la carrera, y usa la pausa corta:
+Sustituye `advance_enemy`:
 
 ```gdscript
-	level = new_level
-	if state == State.RUN or state == State.FIGHT:
-		_rush_kill = _rush
+func advance_enemy():
+	# La sala siguiente la decide GameManager: avanzar, repetir la sala o volver al muro
+	if _game_manager and _game_manager.has_method("room_cleared"):
+		_game_manager.room_cleared()
+	else:
+		level += 1
 		spawn_enemy(level, hero.position.x + SPAWN_AHEAD)
 		state = State.RUN
-		_pause = POST_KILL_PAUSE * (RUSH_PAUSE_MULT if _rush_kill else 1.0)
+		dist_ref = enemy.position.x - hero.position.x
 ```
 
-En `_on_enemy_died_fx`, el temblor y el hit-stop solo si no iba a la carrera:
+Sustituye `_enter_room`:
 
 ```gdscript
-	if not _rush_kill:
-		camera.add_trauma(0.8 if was_boss else 0.32)
-		camera.punch(0.06 if was_boss else 0.025)
-		hitstop(0.22 if was_boss else 0.08)
+func _enter_room(room: int) -> void:
+	# Cada sala es un duelo: Tico entra con la vida llena (spec de rangos, apartado 7)
+	if hero.alive:
+		hero.heal(hero.max_hp - hero.hp)
+	backdrop.set_room(room, true)
+	room_entered.emit(room, Biomes.is_boss_room(room))
 ```
 
-En `reset_combat`: `_rush_kill = false` (al reaparecer, la primera sala se decide en `spawn_enemy`).
+Añade en la sección de muerte y reaparición:
 
-- [ ] **Step 5: Ejecutar y ver que pasa**
+```gdscript
+## Selector de sala o reintento del muro (GameManager.room_travel): viaje instantáneo. Un combate a medias
+## se abandona sin premio ni castigo. Con Tico caído no hace nada: la reaparición ya usa la sala nueva.
+func _on_room_travel(room: int) -> void:
+	if state == State.DEAD:
+		return
+	_set_frozen(false)
+	_hitstop = 0.0
+	reset_combat(false)
+	room_traveled.emit(room)
+```
 
-Run: RankTests, GameplayTests y PixelTests. Expected: 0 fallos.
+Actualiza el comentario de cabecera: "…botín visible, transiciones de muerte/reaparición y viajes del selector de sala."
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Selector, candado y muro en `HeroViewOverlay.gd`**
+
+En la cabecera, tras la línea de las pociones, añade:
+
+```gdscript
+## Selector de sala (spec de rangos, apartado 7), bajo la banda superior, a la derecha: flecha atrás,
+## candado y flecha adelante, con tamaño de dedo. Toque corto: la sala de al lado; mantener pulsado
+## LONG_PRESS: el principio del bioma anterior o del siguiente. Con muro, el récord dice "Muro: sala N".
+```
+
+Constantes, tras las de las pociones:
+
+```gdscript
+const SELECTOR_POS := Vector2(776, 100)
+const SELECTOR_BUTTON := Vector2(96, 96)
+const SELECTOR_GAP := 4.0
+const LONG_PRESS := 0.45
+```
+
+Variables:
+
+```gdscript
+var _prev_button: Button
+var _lock_button: Button
+var _next_button: Button
+var _held_dir := 0  # flecha que se mantiene pulsada (−1, 1 o 0)
+var _held_time := 0.0
+var _held_jumped := false  # ya saltó de bioma en esta pulsación
+```
+
+En `_ready`, dentro de `if _game_manager:`:
+
+```gdscript
+		if _game_manager.has_signal("wall_changed"):
+			_game_manager.wall_changed.connect(func(_w): _refresh_room())
+			_game_manager.room_lock_changed.connect(func(_l): _refresh_room())
+		_game_manager.enemy_level_changed.connect(func(_l): _refresh_selector())
+```
+
+En `bind_corridor`:
+
+```gdscript
+	corridor.room_traveled.connect(_on_room_traveled)
+```
+
+En `_build()`, antes de crear `_fade` (el fundido tiene que quedar por encima de los botones):
+
+```gdscript
+	_prev_button = _make_selector_button(0)
+	_lock_button = _make_selector_button(1)
+	_next_button = _make_selector_button(2)
+	_prev_button.button_down.connect(_on_arrow_down.bind(-1))
+	_prev_button.button_up.connect(_on_arrow_up.bind(-1))
+	_next_button.button_down.connect(_on_arrow_down.bind(1))
+	_next_button.button_up.connect(_on_arrow_up.bind(1))
+	_lock_button.pressed.connect(_on_lock_pressed)
+```
+
+Y la función que los crea (botones planos: el icono lo pinta `_draw`):
+
+```gdscript
+func _make_selector_button(index: int) -> Button:
+	var b := Button.new()
+	b.flat = true
+	b.focus_mode = Control.FOCUS_NONE
+	b.mouse_filter = Control.MOUSE_FILTER_STOP
+	b.position = SELECTOR_POS + Vector2((SELECTOR_BUTTON.x + SELECTOR_GAP) * index, 0)
+	b.size = SELECTOR_BUTTON
+	add_child(b)
+	return b
+```
+
+En `_process`, antes de `queue_redraw()`:
+
+```gdscript
+	# Selector: mantener pulsada una flecha salta de bioma, una sola vez por pulsación
+	if _held_dir != 0 and not _held_jumped:
+		_held_time += delta
+		if _held_time >= LONG_PRESS:
+			_held_jumped = true
+			_travel_selector(_held_dir, true)
+```
+
+Sustituye `_refresh_room` y añade `_refresh_selector`:
+
+```gdscript
+func _refresh_room() -> void:
+	_room_label.text = tr("Sala %d") % _room
+	var idx := Biomes.biome_index_for_room(_room)
+	_biome_label.text = Biomes.display_name(idx)  # ya traducido
+	_record = maxi(_record, _room)
+	var wall: int = int(_game_manager.wall_room) if _game_manager and "wall_room" in _game_manager else 0
+	_record_label.text = tr("Muro: sala %d") % wall if wall > 0 else tr("Récord: sala %d") % _record
+	_refresh_selector()
+
+
+## Flechas apagadas en los extremos (la sala 1 y el récord). El candado siempre se puede tocar.
+func _refresh_selector() -> void:
+	if _prev_button == null or _game_manager == null or not ("room_locked" in _game_manager):
+		return
+	var room: int = int(_game_manager.current_enemy_level)
+	_prev_button.disabled = room <= 1
+	_next_button.disabled = room >= int(_game_manager.best_enemy_level)
+```
+
+En `_on_record_changed`, cambia la línea que pone el texto por `_refresh_room()` (así respeta el muro):
+
+```gdscript
+func _on_record_changed(best: int) -> void:
+	var was := _record
+	_record = maxi(_record, best)
+	_refresh_room()
+	if best > was and best > 2 and not _record_announced:
+		_record_announced = true
+		show_toast(tr("¡Nuevo récord de profundidad!"), Color("ffd76a"))
+```
+
+En `_draw()`, tras `_draw_boss_pips()`, llama a `_draw_selector()`:
+
+```gdscript
+func _draw_selector() -> void:
+	_draw_arrow(_prev_button, -1)
+	_draw_lock(_lock_button)
+	_draw_arrow(_next_button, 1)
+
+
+func _selector_color(button: Button, lit: bool) -> Color:
+	if button.disabled:
+		return Color(0.5, 0.45, 0.42, 0.45)
+	return Color("fff2c9") if lit else Color("f3d9a4")
+
+
+func _draw_arrow(button: Button, dir: int) -> void:
+	var c := button.position + button.size * 0.5
+	draw_colored_polygon(SK.ellipse_pts(c, 40.0, 40.0, 24), Color(0, 0, 0, 0.45))
+	var s := 20.0 * float(dir)
+	var tri := PackedVector2Array([c + Vector2(s, 0), c + Vector2(-s * 0.7, 20), c + Vector2(-s * 0.7, -20)])
+	if dir < 0:
+		tri.reverse()  # el mismo sentido de giro en las dos flechas
+	SK.outlined_poly(self, tri, _selector_color(button, _held_dir == dir), SK.OUTLINE, 3.0)
+
+
+## Candado: cerrado y dorado con el candado puesto; abierto (el arco levantado a un lado) sin él.
+func _draw_lock(button: Button) -> void:
+	var c := button.position + button.size * 0.5
+	draw_colored_polygon(SK.ellipse_pts(c, 40.0, 40.0, 24), Color(0, 0, 0, 0.45))
+	var locked: bool = _game_manager != null and "room_locked" in _game_manager and bool(_game_manager.room_locked)
+	var col := Color("ffd76a") if locked else Color("c9b8a0")
+	var arc_c := c + (Vector2(0, -8) if locked else Vector2(-10, -14))
+	draw_arc(arc_c, 11.0, PI, TAU, 16, SK.OUTLINE, 9.0, true)
+	draw_arc(arc_c, 11.0, PI, TAU, 16, col, 5.0, true)
+	var body := PackedVector2Array([c + Vector2(-16, -8), c + Vector2(16, -8), c + Vector2(16, 18), c + Vector2(-16, 18)])
+	SK.outlined_poly(self, body, col, SK.OUTLINE, 3.0)
+```
+
+Controles y fundido del viaje, en la sección de señales:
+
+```gdscript
+func _on_arrow_down(dir: int) -> void:
+	_held_dir = dir
+	_held_time = 0.0
+	_held_jumped = false
+
+
+func _on_arrow_up(dir: int) -> void:
+	if _held_dir != dir:
+		return
+	_held_dir = 0
+	if not _held_jumped:
+		_travel_selector(dir, false)
+
+
+func _travel_selector(dir: int, by_biome: bool) -> void:
+	if _game_manager == null or not _game_manager.has_method("travel_to_room"):
+		return
+	_game_manager.travel_to_room(_game_manager.selector_target(_game_manager.current_enemy_level, dir, by_biome))
+
+
+func _on_lock_pressed() -> void:
+	if _game_manager and _game_manager.has_method("set_room_locked"):
+		_game_manager.set_room_locked(not _game_manager.room_locked)
+
+
+## Fundido desde negro: tapa el salto de sala del selector o del reintento del muro.
+func _on_room_traveled(_room_num: int) -> void:
+	if _fade_tween and _fade_tween.is_valid():
+		_fade_tween.kill()
+	_fade.color.a = 0.9
+	_fade.visible = true
+	_fade_to(0.0, 0.3)
+```
+
+En `_on_hero_fell`, el subtítulo pasa a nombrar el muro:
+
+```gdscript
+	show_banner(tr("El héroe ha caído"), tr("Muro en la sala %d") % room, Color("ff8a7a"), 0.7)
+```
+
+- [ ] **Step 6: Textos**
+
+En `locale/textos.csv`:
+- añade, sin comillas y sin líneas en blanco:
+
+```
+Muro: sala %d,Muro: sala %d,Wall: room %d
+Muro en la sala %d,Muro en la sala %d,Wall at room %d
+```
+
+- quita la fila de `Llegó a la sala %d · vuelve con su equipo`, que deja de usarse. Antes, confirma con `grep -rn "vuelve con su equipo" scripts scenes` que no la usa nadie más.
+
+Run: `timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . --import`
+
+- [ ] **Step 7: Ejecutar y ver que pasan**
+
+Run: GameplayTests, RankTests, PixelTests y TextTests (comandos de la cabecera; BalanceSim aún no existe en la rama).
+Expected: 0 fallos en las cuatro.
+
+- [ ] **Step 8: Plan de capturas `wall` y revisión visual**
+
+En `VisualCapture.gd`:
+- en la cabecera de planes, añade:
+
+```
+##   wall   → muro y farmeo: cae en la sala 14, farmea la 13 con «Muro: sala 14» y el selector lo lleva a la 4
+```
+
+- añade `"wall": _run_wall_plan()` al `match` de `_ready()`;
+- añade la función:
+
+```gdscript
+func _run_wall_plan() -> void:
+	# Muro y farmeo (spec de rangos, apartado 7): Tico cae en la sala 14 y farmea la 13 con el candado
+	# abierto; después el selector lo lleva a la 4, con el candado cerrado
+	await get_tree().create_timer(1.5).timeout
+	var gm := get_node_or_null("/root/GameManager")
+	var hero: Node = gm.get_hero() if gm else null
+	if gm == null or hero == null:
+		return
+	gm.best_enemy_level = maxi(gm.best_enemy_level, 14)
+	gm.travel_to_room(14)
+	await get_tree().create_timer(2.5).timeout
+	hero.take_damage(hero.hp * 10, true)
+	await get_tree().create_timer(3.5).timeout
+	gm.set_room_locked(false)
+	await get_tree().create_timer(4.0).timeout
+	gm.travel_to_room(4)
+```
+
+Graba tras copiar `save.json`, y restáuralo después:
+
+`timeout 300 D:/Software/Godot/godot_ver4.5.exe --path . --write-movie <scratchpad>/wall/f.png --fixed-fps 10 --quit-after 150 res://scenes/tests/VisualCapture.tscn -- --plan=wall`
+
+Abre con Read los fotogramas de 3 s, 5 s, 9 s y 13 s (`f00000030.png`, `f00000050.png`, `f00000090.png` y `f00000130.png`). Comprueba:
+- a los 3 s, Tico está en la sala 14 tras el fundido;
+- a los 5 s sale el cartel "El héroe ha caído" con "Muro en la sala 14";
+- a los 9 s farmea la sala 13; el indicador dice "Muro: sala 14" y se ven las dos flechas y el candado abierto, legibles sobre el fondo, sin tapar a Tico ni al enemigo;
+- a los 13 s está en la sala 4 con el candado cerrado.
+
+Repite con `--resolution 720x1280` para ver el selector a escala no entera. Si algo se tapa o no se lee, ajusta `SELECTOR_POS` o los colores y vuelve a grabar.
+
+- [ ] **Step 9: Commit**
 
 ```bash
-git add scripts/gameplay/Corridor.gd scripts/gameplay/Hero.gd scripts/gameplay/CombatController.gd scripts/tests/RankTests.gd
-git commit -m "feat: vuelta rápida por debajo del récord (anda ×3, ataca al llegar y sin hit-stop)"
+git add scripts/autoload/GameManager.gd scripts/gameplay/Corridor.gd scripts/ui/HeroViewOverlay.gd scripts/tests/GameplayTests.gd scripts/tests/VisualCapture.gd locale/textos.csv
+git commit -m "feat: muro y farmeo (duelos, reintentos y selector de sala con candado)"
 ```
 
 ---
@@ -3210,7 +3839,7 @@ El aviso `1 resources still in use at exit` (el ambiente de la forja, `amb_forge
 
 - [ ] **Step 3: Documentación**
 
-- `doc/ARCHITECTURE.md`: apartado "Rangos por ciclo" con las clases nuevas (`Ranks`, `EnemyScaling`, `CombatMath`, `TrialDifficulty`), el flujo del rango (hito → `DataManager` → pedido → tarea → objeto) y el guardado versión 2.
+- `doc/ARCHITECTURE.md`: apartado "Rangos por ciclo" con las clases nuevas (`Ranks`, `EnemyScaling`, `CombatMath`, `TrialDifficulty`), el flujo del rango (hito → `DataManager` → pedido → tarea → objeto), el guardado versión 2 y el bucle del muro (`GameManager`: récord, muro, candado y reintentos; `Corridor`: duelos y viaje del selector).
 - `doc/ROADMAP.md`:
   - en la fase 3, los rangos por ciclo sustituyen a "Más blueprints" y a la dificultad automática;
   - la decisión de publicación (gratis primero, sin anuncios al principio, medir la retención).
@@ -3234,7 +3863,7 @@ git commit -m "docs: rangos por ciclo en la arquitectura y el roadmap, y plan de
 | 4. Materiales de bioma (datos, iconos, receta, botín, Suerte) | 2, 4, 8 |
 | 5. Pedidos, oro, crafteo, dificultad, arreglo de claves, encargo propio | 8, 9, 10, 11 |
 | 6. Balance (objetivos, curva, simulación, armadura) | 1, 3 |
-| 7. Muerte y vuelta rápida | 12 |
+| 7. Muro, farmeo y selector de sala | 12, y 4 (extra de jefe con récord nuevo) |
 | 8. Datos y guardado versión 2 | 5, 6, 8 |
 | 9. Textos e idioma | 2, 4, 7, 11 |
 | 10. Pruebas | todas; capturas en 8, 11 y 13 |
