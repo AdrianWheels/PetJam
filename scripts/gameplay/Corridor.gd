@@ -3,7 +3,8 @@ extends Node2D
 ## Corredor endless: el héroe avanza sala a sala y lucha contra un enemigo por sala.
 ## El estado de juego vive en GameManager; aquí va la presentación del combate:
 ## cámara (héroe al tercio izquierdo), escenario por biomas, puertas numeradas, despertar de enemigos,
-## hit-stop local (nunca congela los minijuegos), botín visible y transiciones de muerte/reaparición.
+## hit-stop local (nunca congela los minijuegos), botín visible, transiciones de muerte/reaparición y
+## viajes del selector de sala.
 
 signal room_entered(room: int, is_boss: bool)
 signal biome_entered(biome_index: int, display_name: String)
@@ -12,6 +13,7 @@ signal boss_slain(room: int, boss_name: String)
 signal loot_dropped(kind: StringName, world_pos: Vector2, payload: Dictionary)
 signal hero_fell(room: int)
 signal hero_returned
+signal room_traveled(room: int)  # viaje del selector o reintento del muro (el HUD funde desde negro)
 
 @onready var hero: Node = $Hero
 @onready var enemy: Node = $Enemy
@@ -84,6 +86,8 @@ func _ready():
 		_game_manager.enemy_level_changed.connect(_on_enemy_level_changed)
 		if _game_manager.has_signal("blueprint_unlocked"):
 			_game_manager.blueprint_unlocked.connect(_on_blueprint_unlocked)
+		if _game_manager.has_signal("room_travel"):
+			_game_manager.room_travel.connect(_on_room_travel)
 
 	camera.position = Vector2(0, VIEW_H * 0.5)
 	reset_combat(true)
@@ -168,6 +172,9 @@ func _begin_fight() -> void:
 
 
 func _enter_room(room: int) -> void:
+	# Cada sala es un duelo: Tico entra con la vida llena (spec de rangos, apartado 7)
+	if hero.alive:
+		hero.heal(hero.max_hp - hero.hp)
 	backdrop.set_room(room, true)
 	room_entered.emit(room, Biomes.is_boss_room(room))
 
@@ -200,9 +207,9 @@ func _boss_intro() -> void:
 
 
 func advance_enemy():
-	# Endless: siempre avanza al siguiente nivel
-	if _game_manager and _game_manager.has_method("advance_enemy_level"):
-		_game_manager.advance_enemy_level()
+	# La sala siguiente la decide GameManager: avanzar, repetir la sala o volver al muro
+	if _game_manager and _game_manager.has_method("room_cleared"):
+		_game_manager.room_cleared()
 	else:
 		level += 1
 		spawn_enemy(level, hero.position.x + SPAWN_AHEAD)
@@ -336,6 +343,17 @@ func _perform_respawn():
 	fx.ring(hero.position + Vector2(0, -1), Color(0.7, 0.9, 1.0, 0.9), 2.0, 18.0, 0.5, 1.0)
 	Sfx.play(&"hero_respawn", 2.0)
 	hero_returned.emit()
+
+
+## Selector de sala o reintento del muro (GameManager.room_travel): viaje instantáneo. Un combate a medias
+## se abandona sin premio ni castigo. Con Tico caído no hace nada: la reaparición ya usa la sala nueva.
+func _on_room_travel(room: int) -> void:
+	if state == State.DEAD:
+		return
+	_set_frozen(false)
+	_hitstop = 0.0
+	reset_combat(false)
+	room_traveled.emit(room)
 
 
 func _on_enemy_stats_reset():

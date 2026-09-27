@@ -347,3 +347,236 @@ func test_hud_shows_each_active_effect_with_its_time_left() -> void:
 	overlay._process(0.0)
 	check(not luck.visible, "sin efectos no se ve ninguno")
 	overlay.free()
+
+
+# ─── Muro, farmeo y selector de sala (spec de rangos, apartado 7) ─────
+
+## Estado de la partida en GameManager, para devolverlo al acabar cada prueba (las pruebas del muro lo
+## cambian con load_save_data, la misma entrada que usa el guardado).
+func _gm_snapshot() -> Dictionary:
+	var gm := _gm()
+	var snap: Dictionary = gm.to_save_data()
+	snap["_dungeon_state"] = gm.dungeon_state
+	return snap
+
+
+func _gm_restore(snap: Dictionary) -> void:
+	var gm := _gm()
+	gm.dungeon_state = snap["_dungeon_state"]  # antes de cargar: sin partida en marcha no se mueve ningún pasillo
+	gm.load_save_data(snap)
+	gm.clear_buffs()
+
+
+## Partida de prueba con su sala, su récord y, si se dan, muro y candado. La deja en marcha.
+func _gm_setup(current: int, best: int, wall: int = 0, locked: bool = false) -> void:
+	var gm := _gm()
+	gm.load_save_data({"current_enemy_level": current, "best_enemy_level": best, "wall_room": wall, "room_locked": locked})
+	gm.dungeon_state = gm.DungeonState.RUNNING
+
+
+## Pasillo de prueba sobre la partida de GameManager (empieza en su sala actual).
+func _new_corridor() -> Node2D:
+	var corridor: Node2D = load("res://scenes/Corridor.tscn").instantiate()
+	add_child(corridor)
+	return corridor
+
+
+func test_losing_leaves_a_wall_and_farms_the_room_before() -> void:
+	var gm := _gm()
+	var snap := _gm_snapshot()
+	_gm_setup(12, 12)
+	gm.register_hero_death()
+	check(gm.current_enemy_level == 11 and gm.wall_room == 12, "cae en la 12: reaparece en la 11 y la 12 es el muro (%d, %d)" % [gm.current_enemy_level, gm.wall_room])
+	gm.request_respawn()
+	gm.room_cleared()
+	gm.room_cleared()
+	check(gm.current_enemy_level == 11, "las dos primeras victorias farmea la 11 (%d)" % gm.current_enemy_level)
+	gm.room_cleared()
+	check(gm.current_enemy_level == 12, "a la tercera vuelve al muro (%d)" % gm.current_enemy_level)
+	gm.register_hero_death()
+	gm.request_respawn()
+	gm.room_cleared()
+	gm.room_cleared()
+	check(gm.current_enemy_level == 11, "tras otra caída la cuenta vuelve a empezar (%d)" % gm.current_enemy_level)
+	_im().equipment_changed.emit({})
+	check(gm.current_enemy_level == 12, "con equipo nuevo prueba el muro al momento (%d)" % gm.current_enemy_level)
+	gm.register_hero_death()
+	gm.request_respawn()
+	gm.apply_buff(&"luck", 60.0)
+	check(gm.current_enemy_level == 12, "y también al beber una poción de efecto (%d)" % gm.current_enemy_level)
+	gm.room_cleared()
+	check(gm.wall_room == 0 and gm.current_enemy_level == 13 and gm.best_enemy_level == 13, "vencer el muro lo quita y sube el récord (muro %d, sala %d, récord %d)" % [gm.wall_room, gm.current_enemy_level, gm.best_enemy_level])
+	_gm_restore(snap)
+	await _flush_deferred_saves()
+
+
+func test_a_wall_in_room_one_is_retried_on_every_respawn() -> void:
+	var gm := _gm()
+	var snap := _gm_snapshot()
+	_gm_setup(1, 1)
+	gm.register_hero_death()
+	check(gm.current_enemy_level == 1 and gm.wall_room == 1, "cae en la 1: reaparece en la 1, delante del muro (%d, %d)" % [gm.current_enemy_level, gm.wall_room])
+	gm.request_respawn()
+	gm.room_cleared()
+	check(gm.wall_room == 0 and gm.current_enemy_level == 2 and gm.best_enemy_level == 2, "al vencerlo sigue a la 2 (muro %d, sala %d, récord %d)" % [gm.wall_room, gm.current_enemy_level, gm.best_enemy_level])
+	_gm_restore(snap)
+	await _flush_deferred_saves()
+
+
+func test_room_selector_and_lock() -> void:
+	var gm := _gm()
+	var snap := _gm_snapshot()
+	_gm_setup(30, 30)
+	gm.travel_to_room(99)
+	check(gm.current_enemy_level == 30 and not gm.room_locked, "no pasa del récord, y el récord no pone el candado (%d)" % gm.current_enemy_level)
+	gm.travel_to_room(5)
+	check(gm.current_enemy_level == 5 and gm.room_locked, "una sala por debajo del récord pone el candado (%d)" % gm.current_enemy_level)
+	gm.room_cleared()
+	check(gm.current_enemy_level == 5, "con candado repite la sala (%d)" % gm.current_enemy_level)
+	gm.register_hero_death()
+	gm.request_respawn()
+	check(gm.current_enemy_level == 4 and gm.wall_room == 5 and gm.room_locked, "si cae con candado, el candado baja con él (sala %d, muro %d)" % [gm.current_enemy_level, gm.wall_room])
+	gm.room_cleared()
+	gm.room_cleared()
+	gm.room_cleared()
+	check(gm.current_enemy_level == 4, "con candado no reintenta el muro (%d)" % gm.current_enemy_level)
+	gm.set_room_locked(false)
+	check(gm.current_enemy_level == 4 and not gm.room_locked, "sin candado sigue delante del muro (%d)" % gm.current_enemy_level)
+	gm.travel_to_room(0)
+	check(gm.current_enemy_level == 1, "tampoco baja de la sala 1 (%d)" % gm.current_enemy_level)
+	gm.travel_to_room(5)
+	check(gm.current_enemy_level == 5 and not gm.room_locked, "elegir el muro es probarlo, sin candado (%d)" % gm.current_enemy_level)
+	_gm_setup(7, 30, 0, true)
+	gm.set_room_locked(false)
+	check(gm.current_enemy_level == 29, "sin muro, quitar el candado lo lleva delante del récord (%d)" % gm.current_enemy_level)
+	_gm_setup(30, 30)
+	gm.set_room_locked(true)
+	gm.room_cleared()
+	check(gm.current_enemy_level == 30 and gm.best_enemy_level == 31, "vencer el récord con candado lo sube aunque Tico se quede (sala %d, récord %d)" % [gm.current_enemy_level, gm.best_enemy_level])
+	check(gm.selector_target(25, -1, true) == 11, "mantener atrás desde la 25: principio del bioma anterior (%d)" % gm.selector_target(25, -1, true))
+	check(gm.selector_target(25, 1, true) == 31, "mantener adelante: principio del siguiente (%d)" % gm.selector_target(25, 1, true))
+	check(gm.selector_target(5, -1, true) == 1, "desde el primer bioma, la 1 (%d)" % gm.selector_target(5, -1, true))
+	check(gm.selector_target(31, 1, false) == 31, "sin pasar del récord (%d)" % gm.selector_target(31, 1, false))
+	_gm_restore(snap)
+	await _flush_deferred_saves()
+
+
+func test_wall_and_lock_are_saved() -> void:
+	var gm := _gm()
+	var snap := _gm_snapshot()
+	_gm_setup(11, 12, 12, true)
+	var data: Dictionary = gm.to_save_data()
+	check(int(data.get("wall_room", 0)) == 12 and bool(data.get("room_locked", false)), "el guardado lleva el muro y el candado (%s)" % data)
+	gm.load_save_data({"current_enemy_level": 3, "best_enemy_level": 9})
+	check(gm.wall_room == 0 and not gm.room_locked, "una partida sin esos campos carga sin muro ni candado")
+	gm.load_save_data({"current_enemy_level": 3, "best_enemy_level": 9, "wall_room": 50})
+	check(gm.wall_room == 9, "un muro más allá del récord se queda en el récord (%d)" % gm.wall_room)
+	_gm_restore(snap)
+	await _flush_deferred_saves()
+
+
+func test_each_room_starts_with_full_health_and_travel_abandons_the_fight() -> void:
+	var gm := _gm()
+	var snap := _gm_snapshot()
+	_gm_setup(3, 12)
+	var start: Dictionary = _im().get_materials()
+	var corridor := _new_corridor()
+	var hero: Node2D = corridor.get_node("Hero")
+	var enemy: Node2D = corridor.get_node("Enemy")
+	hero.hp = maxi(1, hero.max_hp / 2)
+	corridor._enter_room(3)
+	check(hero.hp == hero.max_hp, "al entrar en una sala, Tico tiene la vida llena (%d/%d)" % [hero.hp, hero.max_hp])
+	corridor._begin_fight()
+	hero.hp = maxi(1, hero.max_hp / 2)
+	gm.travel_to_room(7)
+	check(not corridor.combat_controller.combat_active, "viajar abandona el combate a medias")
+	check(corridor.level == 7 and enemy.level == 7 and enemy.alive, "el pasillo pasa a la sala 7 con su enemigo (%d, %d)" % [corridor.level, enemy.level])
+	check(hero.alive and hero.hp == hero.max_hp, "Tico llega con la vida llena (%d/%d)" % [hero.hp, hero.max_hp])
+	check(_gained_since(start).is_empty(), "sin premio: no entra botín (%s)" % _gained_since(start))
+	corridor.queue_free()
+	_gm_restore(snap)
+	await _flush_deferred_saves()
+	await _silence_loot_sounds()
+
+
+func test_farming_puts_another_enemy_of_the_same_room_ahead() -> void:
+	var gm := _gm()
+	var snap := _gm_snapshot()
+	_gm_setup(11, 12, 12)
+	gm.enemies_defeated[11] = true  # sin plano de primera victoria
+	var start: Dictionary = _im().get_materials()
+	var corridor := _new_corridor()
+	var enemy: Node2D = corridor.get_node("Enemy")
+	enemy.take_damage(enemy.hp)
+	check(gm.current_enemy_level == 11, "tras vencer delante del muro sigue en la 11 (%d)" % gm.current_enemy_level)
+	check(enemy.alive and enemy.level == 11, "el pasillo pone otro enemigo de la 11 por delante (%d)" % enemy.level)
+	check(corridor._next_gate_room == 11, "con su puerta de la sala 11 (%d)" % corridor._next_gate_room)
+	corridor.queue_free()
+	_gm_restore(snap)
+	_im().consume_materials(_gained_since(start))  # devuelve el botín de prueba
+	await _flush_deferred_saves()
+	await _silence_loot_sounds()
+
+
+func test_losing_in_the_corridor_respawns_in_the_room_before() -> void:
+	var gm := _gm()
+	var snap := _gm_snapshot()
+	_gm_setup(12, 12)
+	var corridor := _new_corridor()
+	var hero: Node2D = corridor.get_node("Hero")
+	hero.take_damage(hero.hp * 10, true)  # el pulso no mira la armadura
+	check(gm.wall_room == 12 and gm.current_enemy_level == 11, "cae en la 12: muro en la 12 y vuelta a la 11 (%d, %d)" % [gm.wall_room, gm.current_enemy_level])
+	corridor._respawn_timer.stop()
+	corridor._on_respawn_timeout()  # sin esperar el segundo y medio de la reaparición
+	check(corridor.level == 11 and corridor.enemy.level == 11, "reaparece en la 11 con su enemigo (%d, %d)" % [corridor.level, corridor.enemy.level])
+	check(hero.alive and hero.hp == hero.max_hp, "con la vida llena (%d/%d)" % [hero.hp, hero.max_hp])
+	corridor.queue_free()
+	_gm_restore(snap)
+	await _flush_deferred_saves()
+	await _silence_loot_sounds()
+
+
+func test_travel_while_fallen_waits_for_the_respawn() -> void:
+	var gm := _gm()
+	var snap := _gm_snapshot()
+	_gm_setup(12, 12)
+	var corridor := _new_corridor()
+	var hero: Node2D = corridor.get_node("Hero")
+	hero.take_damage(hero.hp * 10, true)
+	gm.travel_to_room(5)
+	check(corridor.state == corridor.State.DEAD and not hero.alive, "con Tico caído, el viaje espera a la reaparición")
+	corridor._respawn_timer.stop()
+	corridor._on_respawn_timeout()
+	check(corridor.level == 5 and corridor.enemy.level == 5 and hero.alive, "reaparece en la sala elegida (%d, %d)" % [corridor.level, corridor.enemy.level])
+	check(gm.room_locked, "con el candado de haberla elegido")
+	corridor.queue_free()
+	_gm_restore(snap)
+	await _flush_deferred_saves()
+	await _silence_loot_sounds()
+
+
+func test_room_selector_in_the_strip() -> void:
+	var gm := _gm()
+	var snap := _gm_snapshot()
+	_gm_setup(11, 12, 12)
+	var overlay: Control = load("res://scripts/ui/HeroViewOverlay.gd").new()
+	add_child(overlay)
+	check(overlay._record_label.text == "Muro: sala 12", "con muro, el indicador dice «Muro: sala 12» (%s)" % overlay._record_label.text)
+	for b in [overlay._prev_button, overlay._lock_button, overlay._next_button]:
+		check(b.size.x >= 88.0 and b.size.y >= 88.0, "botón del selector con tamaño de dedo (%s)" % b.size)
+	overlay._on_arrow_down(1)
+	overlay._on_arrow_up(1)
+	check(gm.current_enemy_level == 12 and not gm.room_locked, "toque corto adelante: la 12, probar el muro sin candado (%d)" % gm.current_enemy_level)
+	check(overlay._next_button.disabled, "en el récord, la flecha adelante se apaga")
+	_gm_setup(25, 40)
+	overlay._on_arrow_down(-1)
+	overlay._process(overlay.LONG_PRESS + 0.05)
+	check(gm.current_enemy_level == 11 and gm.room_locked, "mantener pulsado atrás: principio del bioma anterior, con candado (%d)" % gm.current_enemy_level)
+	overlay._on_arrow_up(-1)
+	check(gm.current_enemy_level == 11, "soltar tras el salto no mueve otra sala (%d)" % gm.current_enemy_level)
+	overlay._on_lock_pressed()
+	check(not gm.room_locked and gm.current_enemy_level == 39, "quitar el candado lo lleva delante del récord (%d)" % gm.current_enemy_level)
+	check(overlay._record_label.text == "Récord: sala 40", "sin muro vuelve a decir el récord (%s)" % overlay._record_label.text)
+	overlay.queue_free()
+	_gm_restore(snap)
+	await _flush_deferred_saves()

@@ -15,6 +15,9 @@ signal blueprint_unlocked(blueprint_id)  # Plano desbloqueado al matar un enemig
 signal record_changed(best_level)  # Nueva sala máxima alcanzada (base del leaderboard)
 signal progress_loaded  # La partida guardada ya está aplicada (para refrescar HUDs)
 signal buffs_changed(active: Dictionary)  # Un efecto temporal empieza, se renueva o caduca (id → segundos)
+signal room_travel(room: int)  # el selector o un reintento mandan a Tico a otra sala (viaje instantáneo)
+signal wall_changed(wall_room: int)  # aparece o cae el muro (0 = sin muro)
+signal room_lock_changed(locked: bool)  # candado del selector de sala
 
 enum DungeonState { IDLE, RUNNING, HERO_DEAD }
 
@@ -39,7 +42,14 @@ const ITEM_BONUSES := {
 }
 
 var current_enemy_level: int = 1  # Nivel del enemigo actual (infinito)
-var best_enemy_level: int = 1  # Sala más profunda alcanzada nunca (récord / leaderboard)
+var best_enemy_level: int = 1  # Récord: la sala más profunda alcanzada que Tico aún no ha vencido
+
+## Muro, farmeo y selector de sala (spec de rangos, apartado 7)
+const WALL_RETRY_WINS := 3  # delante del muro, Tico lo reintenta cada 3 victorias
+var wall_room: int = 0  # sala donde Tico perdió por última vez, hasta que la vence (0 = sin muro)
+var room_locked: bool = false  # candado: Tico repite su sala y no reintenta el muro
+var _wins_since_retry: int = 0
+
 var inventory := {}
 var blueprints_unlocked := {}
 var enemies_defeated := {}  # Track niveles de enemigo derrotados para desbloqueo de blueprints
@@ -121,6 +131,7 @@ func apply_buff(id: StringName, duration: float) -> void:
 		return
 	_buffs[id] = duration
 	buffs_changed.emit(get_active_buffs())
+	retry_wall_now()  # una poción de efecto manda a Tico a probar el muro
 
 ## Segundos que le quedan a un efecto (0 si no está activo).
 func buff_remaining(id: StringName) -> float:
@@ -169,11 +180,15 @@ func get_hero() -> Node:
 func register_hero(hero_node: Node) -> void:
 	_hero = hero_node
 	# Aplicar stats de equipo actual al registrar héroe
-	_on_equipment_changed({})
+	_refresh_hero_stats()
 
 func _on_equipment_changed(_equipment_stats: Dictionary) -> void:
-	"""Cuando cambia el equipamiento, recalcular stats del héroe"""
-	if _hero and _hero.has_method("reset_stats"):
+	"""Cuando cambia el equipamiento, recalcular stats del héroe y, delante de un muro, probarlo ya"""
+	_refresh_hero_stats()
+	retry_wall_now()
+
+func _refresh_hero_stats() -> void:
+	if is_instance_valid(_hero) and _hero.has_method("reset_stats"):
 		_hero.reset_stats()
 		DebugManager.log_msg(&"game", "Hero stats recalculated after equipment change")
 
@@ -183,6 +198,9 @@ func start_run():
 		current_enemy_level = 1
 		death_count = 0
 		enemies_defeated.clear()
+		_set_wall(0)
+		_set_room_locked(false)
+	_wins_since_retry = 0
 	boss_defeated_flag = false
 	dungeon_state = DungeonState.RUNNING
 	DebugManager.log_msg(&"game", "Starting endless run at enemy level %d" % current_enemy_level)
@@ -198,6 +216,99 @@ func advance_enemy_level():
 	emit_signal("enemy_level_changed", current_enemy_level)
 	# TODO: Boss cada X niveles (ej. cada 10)
 	emit_signal("enemy_spawned", current_enemy_level)
+
+
+## Tico ha vencido al enemigo de su sala: decide adónde va (spec de rangos, apartado 7).
+## - Vencer la sala del récord lo sube, aunque Tico se quede (con el candado puesto).
+## - Vencer el muro, o una sala más honda, lo quita.
+## - Con candado repite la sala. En la sala anterior al muro la farmea y a las WALL_RETRY_WINS
+##   victorias pasa al muro. Si no, avanza.
+func room_cleared() -> void:
+	var cleared := current_enemy_level
+	if cleared >= best_enemy_level:
+		best_enemy_level = cleared + 1
+		emit_signal("record_changed", best_enemy_level)
+	if wall_room > 0 and cleared >= wall_room:
+		_set_wall(0)
+	var repeat := room_locked
+	if not repeat and wall_room > 0 and cleared + 1 == wall_room:
+		_wins_since_retry += 1
+		repeat = _wins_since_retry < WALL_RETRY_WINS
+		if not repeat:
+			_wins_since_retry = 0
+	if repeat:
+		# Otro enemigo de la misma sala: el pasillo lo pone por delante, como al avanzar
+		emit_signal("enemy_level_changed", current_enemy_level)
+		emit_signal("enemy_spawned", current_enemy_level)
+	else:
+		advance_enemy_level()
+
+
+## Selector de sala: manda a Tico a una sala entre la 1 y el récord. Por debajo del récord pone el
+## candado, salvo en el muro: elegir el muro o el récord es probarlo. Si ya está en esa sala, solo
+## cambia el candado.
+func travel_to_room(room: int) -> void:
+	var target := clampi(room, 1, best_enemy_level)
+	_set_room_locked(target < best_enemy_level and target != wall_room)
+	if target != current_enemy_level:
+		_travel(target)
+
+
+## Candado del selector. Quitarlo lleva a Tico a la sala anterior al muro (o al récord si no hay muro).
+func set_room_locked(locked: bool) -> void:
+	if locked == room_locked:
+		return
+	_set_room_locked(locked)
+	if locked:
+		return
+	var front := maxi(1, (wall_room if wall_room > 0 else best_enemy_level) - 1)
+	if front != current_enemy_level:
+		_travel(front)
+
+
+## Con muro y sin candado, Tico lo prueba ya (equipo nuevo o poción de efecto). Solo con la partida en marcha.
+func retry_wall_now() -> void:
+	if wall_room <= 0 or room_locked or dungeon_state != DungeonState.RUNNING:
+		return
+	if current_enemy_level != wall_room:
+		_travel(wall_room)
+
+
+## Sala a la que lleva el selector desde `from_room`: la de al lado (dir = −1 o 1) o, con by_biome, el
+## principio del bioma anterior o del siguiente. Siempre entre la 1 y el récord.
+func selector_target(from_room: int, dir: int, by_biome: bool) -> int:
+	var target := from_room + dir
+	if by_biome:
+		var biome_start := from_room - Biomes.room_in_biome(from_room) + 1
+		target = biome_start + Biomes.ROOMS_PER_BIOME * dir
+	return clampi(target, 1, best_enemy_level)
+
+
+## Viaje instantáneo. El pasillo (room_travel) abandona el combate a medias, sin premio ni castigo, y pone
+## a Tico en la sala nueva con la vida llena; con Tico caído, la reaparición ya lo deja ahí. room_travel va
+## antes que enemy_level_changed: el pasillo ya recolocado ignora la segunda.
+func _travel(room: int) -> void:
+	current_enemy_level = room
+	_wins_since_retry = 0
+	emit_signal("room_travel", room)
+	emit_signal("enemy_level_changed", room)
+
+
+func _set_wall(room: int) -> void:
+	if wall_room == room:
+		return
+	wall_room = room
+	emit_signal("wall_changed", wall_room)
+
+
+func _set_room_locked(locked: bool) -> void:
+	if room_locked == locked:
+		return
+	room_locked = locked
+	emit_signal("room_lock_changed", room_locked)
+	_on_trigger_save()
+
+
 func register_enemy_defeat(level: int) -> void:
 	if dungeon_state != DungeonState.RUNNING:
 		return
@@ -229,10 +340,14 @@ func register_hero_death():
 		return
 	death_count += 1
 	dungeon_state = DungeonState.HERO_DEAD
-	DebugManager.log_msg(&"game", "Hero died (total: %d) - will respawn at enemy level 1" % death_count)
+	var fell_at := current_enemy_level
+	DebugManager.log_msg(&"game", "Hero died (total: %d) at room %d - it becomes the wall" % [death_count, fell_at])
 	emit_signal("hero_died", death_count)
-	# Reset a nivel de enemigo 1 cuando muere (endless: sin límite)
-	current_enemy_level = 1
+	# La sala donde cae es el muro y reaparece en la anterior (spec de rangos, apartado 7). Con candado,
+	# el candado baja con él: su sala es la actual.
+	current_enemy_level = maxi(1, fell_at - 1)
+	_wins_since_retry = 0
+	_set_wall(fell_at)
 func request_respawn() -> bool:
 	if not can_respawn():
 		return false
@@ -320,6 +435,8 @@ func to_save_data() -> Dictionary:
 	return {
 		"current_enemy_level": current_enemy_level,
 		"best_enemy_level": best_enemy_level,
+		"wall_room": wall_room,
+		"room_locked": room_locked,
 		"death_count": death_count,
 		"enemies_defeated": enemies_str,
 		"hero_loadout": loadout_str,
@@ -328,6 +445,9 @@ func to_save_data() -> Dictionary:
 func load_save_data(data: Dictionary) -> void:
 	current_enemy_level = int(data.get("current_enemy_level", 1))
 	best_enemy_level = maxi(int(data.get("best_enemy_level", 1)), current_enemy_level)
+	wall_room = clampi(int(data.get("wall_room", 0)), 0, best_enemy_level)
+	room_locked = bool(data.get("room_locked", false))
+	_wins_since_retry = 0
 	death_count = int(data.get("death_count", 0))
 
 	enemies_defeated.clear()

@@ -17,6 +17,7 @@ extends Node
 ##   potions → compra Velocidad, Suerte y Vida en la tienda, fuerza el botín doble y adelanta el
 ##             final de la Velocidad para ver su parpadeo y cómo desaparece (sala 2, combate normal)
 ##   shop   → abre la tienda y enseña sus pestañas una a una (materiales, pociones y venta)
+##   wall   → muro y farmeo: cae en la sala 14, farmea la 13 con «Muro: sala 14» y el selector lo lleva a la 4
 
 const MAIN_SCENE := preload("res://scenes/Main.tscn")
 const START_SCENE := preload("res://scenes/UI/StartScreen.tscn")
@@ -60,6 +61,8 @@ func _ready() -> void:
 			_run_potions_plan()
 		"shop":
 			_run_shop_plan()
+		"wall":
+			_run_wall_plan()
 
 
 func _hud() -> Node:
@@ -249,3 +252,21 @@ func _run_title_plan() -> void:
 	var hud := _hud()
 	if hud and hud.has_method("_on_request_slot_clicked"):
 		hud._on_request_slot_clicked(0)
+
+
+func _run_wall_plan() -> void:
+	# Muro y farmeo (spec de rangos, apartado 7): Tico cae en la sala 14 y farmea la 13 con el candado
+	# abierto; después el selector lo lleva a la 4, con el candado cerrado
+	await get_tree().create_timer(1.5).timeout
+	var gm := get_node_or_null("/root/GameManager")
+	var hero: Node = gm.get_hero() if gm else null
+	if gm == null or hero == null:
+		return
+	gm.best_enemy_level = maxi(gm.best_enemy_level, 14)
+	gm.travel_to_room(14)
+	await get_tree().create_timer(2.5).timeout
+	hero.take_damage(hero.hp * 10, true)
+	await get_tree().create_timer(3.5).timeout
+	gm.set_room_locked(false)
+	await get_tree().create_timer(4.0).timeout
+	gm.travel_to_room(4)

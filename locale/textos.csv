@@ -85,12 +85,13 @@ VELOCIDAD,VELOCIDAD,SPEED
 SUERTE,SUERTE,LUCK
 Sala %d,Sala %d,Room %d
 Récord: sala %d,Récord: sala %d,Record: room %d
+Muro: sala %d,Muro: sala %d,Wall: room %d
 Profundidad %d,Profundidad %d,Depth %d
 ¡JEFE!,¡JEFE!,BOSS!
 %s · Sala %d,%s · Sala %d,%s · Room %d
 %s ha caído,%s ha caído,%s has fallen
 El héroe ha caído,El héroe ha caído,The hero has fallen
-Llegó a la sala %d · vuelve con su equipo,Llegó a la sala %d · vuelve con su equipo,Reached room %d · back with his gear
+Muro en la sala %d,Muro en la sala %d,Wall at room %d
 ¡Nuevo récord de profundidad!,¡Nuevo récord de profundidad!,New depth record!
 ¡Nuevo plano: %s!,¡Nuevo plano: %s!,New blueprint: %s!
 Tú forjas. Él desciende.,Tú forjas. Él desciende.,You forge. He descends.

@@ -11,6 +11,9 @@ extends Control
 ## La de Suerte da un latido cuando sale un botín doble.
 ## Todo lo que enseña pasa por tr() al ponerlo (locale/textos.csv): los nombres que llegan por señal
 ## (jefes, planos) vienen en español, que es el texto base.
+## Selector de sala (spec de rangos, apartado 7), bajo la banda superior, a la derecha: flecha atrás,
+## candado y flecha adelante, con tamaño de dedo. Toque corto: la sala de al lado; mantener pulsado
+## LONG_PRESS: el principio del bioma anterior o del siguiente. Con muro, el récord dice "Muro: sala N".
 
 const SK := preload("res://scripts/gameplay/visual/ShapeKit.gd")
 
@@ -28,6 +31,11 @@ const BUFF_ROW := 36.0
 const BUFF_FONT_SIZE := 28
 const BUFF_BLINK_TIME := 5.0
 
+const SELECTOR_POS := Vector2(776, 100)
+const SELECTOR_BUTTON := Vector2(96, 96)
+const SELECTOR_GAP := 4.0
+const LONG_PRESS := 0.45
+
 var _corridor: Node
 var _game_manager: Node
 var _inventory: Node
@@ -43,6 +51,13 @@ var _banner_sub: Label
 var _toast: Label
 var _fade: ColorRect
 var _buff_labels: Dictionary = {}  # efecto → Label
+
+var _prev_button: Button
+var _lock_button: Button
+var _next_button: Button
+var _held_dir := 0  # flecha que se mantiene pulsada (−1, 1 o 0)
+var _held_time := 0.0
+var _held_jumped := false  # ya saltó de bioma en esta pulsación
 
 var _gold_shown := 0.0
 var _gold_target := 0
@@ -73,6 +88,10 @@ func _ready() -> void:
 			_game_manager.record_changed.connect(_on_record_changed)
 		if _game_manager.has_signal("progress_loaded"):
 			_game_manager.progress_loaded.connect(_refresh_all)
+		if _game_manager.has_signal("wall_changed"):
+			_game_manager.wall_changed.connect(func(_w): _refresh_room())
+			_game_manager.room_lock_changed.connect(func(_l): _refresh_room())
+		_game_manager.enemy_level_changed.connect(func(_l): _refresh_selector())
 	if _inventory and _inventory.has_signal("inventory_changed"):
 		_inventory.inventory_changed.connect(func(_inv): _refresh_gold())
 	_refresh_all()
@@ -91,6 +110,7 @@ func bind_corridor(corridor: Node) -> void:
 	corridor.hero_fell.connect(_on_hero_fell)
 	corridor.hero_returned.connect(_on_hero_returned)
 	corridor.loot_dropped.connect(_on_loot_dropped)
+	corridor.room_traveled.connect(_on_room_traveled)
 	_room = corridor.level
 	_refresh_room()
 
@@ -160,12 +180,32 @@ func _build() -> void:
 	_toast.size = Vector2(1080, 40)
 	_toast.modulate.a = 0.0
 
+	_prev_button = _make_selector_button(0)
+	_lock_button = _make_selector_button(1)
+	_next_button = _make_selector_button(2)
+	_prev_button.button_down.connect(_on_arrow_down.bind(-1))
+	_prev_button.button_up.connect(_on_arrow_up.bind(-1))
+	_next_button.button_down.connect(_on_arrow_down.bind(1))
+	_next_button.button_up.connect(_on_arrow_up.bind(1))
+	_lock_button.pressed.connect(_on_lock_pressed)
+
 	_fade = ColorRect.new()
 	_fade.color = Color(0, 0, 0, 0)
 	_fade.visible = false  # solo visible mientras funde (un rect transparente también cuesta)
 	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_fade)
+
+
+func _make_selector_button(index: int) -> Button:
+	var b := Button.new()
+	b.flat = true
+	b.focus_mode = Control.FOCUS_NONE
+	b.mouse_filter = Control.MOUSE_FILTER_STOP
+	b.position = SELECTOR_POS + Vector2((SELECTOR_BUTTON.x + SELECTOR_GAP) * index, 0)
+	b.size = SELECTOR_BUTTON
+	add_child(b)
+	return b
 
 
 # ─── Actualización ─────────────────────────────────────────────────────
@@ -188,6 +228,12 @@ func _process(delta: float) -> void:
 	if not _toast_queue.is_empty() and _t >= _banner_until and not (_toast_tween and _toast_tween.is_valid() and _toast_tween.is_running()):
 		var next: Array = _toast_queue.pop_front()
 		_play_toast(next[0], next[1])
+	# Selector: mantener pulsada una flecha salta de bioma, una sola vez por pulsación
+	if _held_dir != 0 and not _held_jumped:
+		_held_time += delta
+		if _held_time >= LONG_PRESS:
+			_held_jumped = true
+			_travel_selector(_held_dir, true)
 	queue_redraw()
 
 
@@ -233,7 +279,18 @@ func _refresh_room() -> void:
 	var idx := Biomes.biome_index_for_room(_room)
 	_biome_label.text = Biomes.display_name(idx)  # ya traducido
 	_record = maxi(_record, _room)
-	_record_label.text = tr("Récord: sala %d") % _record
+	var wall: int = int(_game_manager.wall_room) if _game_manager and "wall_room" in _game_manager else 0
+	_record_label.text = tr("Muro: sala %d") % wall if wall > 0 else tr("Récord: sala %d") % _record
+	_refresh_selector()
+
+
+## Flechas apagadas en los extremos (la sala 1 y el récord). El candado siempre se puede tocar.
+func _refresh_selector() -> void:
+	if _prev_button == null or _game_manager == null or not ("room_locked" in _game_manager):
+		return
+	var room: int = int(_game_manager.current_enemy_level)
+	_prev_button.disabled = room <= 1
+	_next_button.disabled = room >= int(_game_manager.best_enemy_level)
 
 
 func _draw() -> void:
@@ -242,6 +299,7 @@ func _draw() -> void:
 	_draw_coin(Vector2(38, 38), 17.0)
 	_draw_skull(Vector2(512, 38), 15.0, _death_pop)
 	_draw_boss_pips()
+	_draw_selector()
 	# Franja oscura tras los carteles: se leen aunque pasen por encima de placas de nombre
 	var ribbon_a := _banner_title.modulate.a
 	if ribbon_a > 0.01:
@@ -290,6 +348,41 @@ func _draw_boss_pips() -> void:
 		var r := 7.0 + (2.0 * (0.5 + 0.5 * sin(_t * 6.0)) if current else 0.0)
 		var fill := Color("ffd76a") if cleared else (Color("fff2c9") if current else Color(0.25, 0.2, 0.22, 0.9))
 		SK.outlined_poly(self, SK.diamond_pts(c, r, r * 1.25), fill, SK.OUTLINE, 2.5)
+
+
+func _draw_selector() -> void:
+	_draw_arrow(_prev_button, -1)
+	_draw_lock(_lock_button)
+	_draw_arrow(_next_button, 1)
+
+
+func _selector_color(button: Button, lit: bool) -> Color:
+	if button.disabled:
+		return Color(0.5, 0.45, 0.42, 0.45)
+	return Color("fff2c9") if lit else Color("f3d9a4")
+
+
+func _draw_arrow(button: Button, dir: int) -> void:
+	var c := button.position + button.size * 0.5
+	draw_colored_polygon(SK.ellipse_pts(c, 40.0, 40.0, 24), Color(0, 0, 0, 0.45))
+	var s := 20.0 * float(dir)
+	var tri := PackedVector2Array([c + Vector2(s, 0), c + Vector2(-s * 0.7, 20), c + Vector2(-s * 0.7, -20)])
+	if dir < 0:
+		tri.reverse()  # el mismo sentido de giro en las dos flechas
+	SK.outlined_poly(self, tri, _selector_color(button, _held_dir == dir), SK.OUTLINE, 3.0)
+
+
+## Candado: cerrado y dorado con el candado puesto; abierto (el arco levantado a un lado) sin él.
+func _draw_lock(button: Button) -> void:
+	var c := button.position + button.size * 0.5
+	draw_colored_polygon(SK.ellipse_pts(c, 40.0, 40.0, 24), Color(0, 0, 0, 0.45))
+	var locked: bool = _game_manager != null and "room_locked" in _game_manager and bool(_game_manager.room_locked)
+	var col := Color("ffd76a") if locked else Color("c9b8a0")
+	var arc_c := c + (Vector2(0, -8) if locked else Vector2(-10, -14))
+	draw_arc(arc_c, 11.0, PI, TAU, 16, SK.OUTLINE, 9.0, true)
+	draw_arc(arc_c, 11.0, PI, TAU, 16, col, 5.0, true)
+	var body := PackedVector2Array([c + Vector2(-16, -8), c + Vector2(16, -8), c + Vector2(16, 18), c + Vector2(-16, 18)])
+	SK.outlined_poly(self, body, col, SK.OUTLINE, 3.0)
 
 
 # ─── Carteles ──────────────────────────────────────────────────────────
@@ -370,7 +463,7 @@ func _on_boss_slain(_room_num: int, boss_name: String) -> void:
 
 
 func _on_hero_fell(room: int) -> void:
-	show_banner(tr("El héroe ha caído"), tr("Llegó a la sala %d · vuelve con su equipo") % room, Color("ff8a7a"), 0.7)
+	show_banner(tr("El héroe ha caído"), tr("Muro en la sala %d") % room, Color("ff8a7a"), 0.7)
 	_fade_to(0.85, 0.35, 0.95)
 
 
@@ -391,7 +484,7 @@ func _on_deaths_changed(death_count: int) -> void:
 func _on_record_changed(best: int) -> void:
 	var was := _record
 	_record = maxi(_record, best)
-	_record_label.text = tr("Récord: sala %d") % _record
+	_refresh_room()
 	if best > was and best > 2 and not _record_announced:
 		_record_announced = true
 		show_toast(tr("¡Nuevo récord de profundidad!"), Color("ffd76a"))
@@ -402,3 +495,37 @@ func _on_loot_dropped(kind: StringName, _world_pos: Vector2, payload: Dictionary
 		show_toast(tr("¡Nuevo plano: %s!") % tr(String(payload.get("name", ""))), Color("9fe0ff"))
 	elif payload.get("bonus", false):
 		_luck_pop = 1.0  # botín doble de la Poción de Suerte
+
+
+func _on_arrow_down(dir: int) -> void:
+	_held_dir = dir
+	_held_time = 0.0
+	_held_jumped = false
+
+
+func _on_arrow_up(dir: int) -> void:
+	if _held_dir != dir:
+		return
+	_held_dir = 0
+	if not _held_jumped:
+		_travel_selector(dir, false)
+
+
+func _travel_selector(dir: int, by_biome: bool) -> void:
+	if _game_manager == null or not _game_manager.has_method("travel_to_room"):
+		return
+	_game_manager.travel_to_room(_game_manager.selector_target(_game_manager.current_enemy_level, dir, by_biome))
+
+
+func _on_lock_pressed() -> void:
+	if _game_manager and _game_manager.has_method("set_room_locked"):
+		_game_manager.set_room_locked(not _game_manager.room_locked)
+
+
+## Fundido desde negro: tapa el salto de sala del selector o del reintento del muro.
+func _on_room_traveled(_room_num: int) -> void:
+	if _fade_tween and _fade_tween.is_valid():
+		_fade_tween.kill()
+	_fade.color.a = 0.9
+	_fade.visible = true
+	_fade_to(0.0, 0.3)
