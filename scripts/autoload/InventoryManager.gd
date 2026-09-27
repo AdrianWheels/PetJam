@@ -24,19 +24,19 @@ func _ready() -> void:
 	else:
 		print("InventoryManager: Save detectado, esperando load_save_data()")
 
+## Materiales generosos al inicio para evitar softlocks. Solo materiales que pide algún plano.
+const STARTING_MATERIALS := {
+	"wood": 40,
+	"iron": 40,
+	"leather": 40,
+	"cloth": 40,
+	"fire": 20,
+	"water": 20,
+}
+
 func _give_starting_materials() -> void:
-	"""Materiales generosos al inicio para evitar softlocks"""
-	var starting_materials := {
-		"wood": 40,
-		"iron": 40,
-		"leather": 40,
-		"cloth": 40,
-		"herb": 30,
-		"fire": 20,
-		"water": 20
-	}
-	for mat_id in starting_materials:
-		add_item(StringName(mat_id), starting_materials[mat_id])
+	for mat_id in STARTING_MATERIALS:
+		add_item(StringName(mat_id), STARTING_MATERIALS[mat_id])
 	print("InventoryManager: Inicializado con materiales de inicio")
 
 func add_item(item_id: StringName, quantity: int) -> void:

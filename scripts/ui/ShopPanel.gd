@@ -27,7 +27,6 @@ const MATERIAL_CATALOG := {
 	&"iron": {"display_name": "Hierro", "price": 25, "quantity": 5},
 	&"leather": {"display_name": "Cuero", "price": 20, "quantity": 5},
 	&"cloth": {"display_name": "Tela", "price": 15, "quantity": 5},
-	&"herb": {"display_name": "Hierba", "price": 30, "quantity": 3},
 	&"fire": {"display_name": "Fuego", "price": 40, "quantity": 3},
 	&"water": {"display_name": "Agua", "price": 40, "quantity": 3},
 	&"ice": {"display_name": "Hielo", "price": 50, "quantity": 2},
