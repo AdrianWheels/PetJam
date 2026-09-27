@@ -21,17 +21,17 @@ signal pulse_hit(amount: int, target_pos: Vector2)  # Pulso mágico aplicado (po
 const SPRITE_SHADER := preload("res://shaders/pixel_sprite.gdshader")
 const HERO_NAME := "Tico"
 
-const BASE_HP := 60
-const BASE_DMG := 6.0
-const BASE_APS := 1.0
-const BASE_STR := 10
-const BASE_AGI := 10
-const BASE_INT := 8
-const PULSE_INTERVAL := 2.5
+const BASE_HP := CombatMath.HERO_BASE_HP
+const BASE_DMG := CombatMath.HERO_BASE_DMG
+const BASE_APS := CombatMath.HERO_BASE_APS
+const BASE_STR := CombatMath.HERO_BASE_STR
+const BASE_AGI := CombatMath.HERO_BASE_AGI
+const BASE_INT := CombatMath.HERO_BASE_INT
+const PULSE_INTERVAL := CombatMath.PULSE_INTERVAL
 
-# Armadura: reducción con rendimientos decrecientes (armor / (armor + K)), con tope.
-const ARMOR_K := 40.0
-const MAX_MITIGATION := 0.6
+# Armadura: reducción con rendimientos decrecientes (CombatMath.armor_mitigation)
+const ARMOR_K := CombatMath.ARMOR_K
+const MAX_MITIGATION := CombatMath.MAX_MITIGATION
 
 const WINDUP_TIME := 0.16
 const HURT_TIME := 0.2
@@ -173,24 +173,18 @@ func reset_stats():
 	if inv_manager and inv_manager.has_method("calculate_total_stats"):
 		equipment_stats = inv_manager.calculate_total_stats()
 
-	STR = BASE_STR + int(equipment_stats.get("str", 0))
-	AGI = BASE_AGI + int(equipment_stats.get("agi", 0))
-	INT = BASE_INT + int(equipment_stats.get("int", 0))
-
-	var bonus_hp: int = int(equipment_stats.get("hp", 0))
-	var bonus_dmg: float = float(equipment_stats.get("damage", 0))
-	var bonus_aps: float = float(equipment_stats.get("aps", 0.0))
-	var bonus_crit_p: float = float(equipment_stats.get("crit", 0.0))
-	var bonus_armor: int = int(equipment_stats.get("armor", 0))
-
-	max_hp = BASE_HP + STR * 10 + bonus_hp
+	var s := CombatMath.hero_stats(equipment_stats)
+	STR = s.STR
+	AGI = s.AGI
+	INT = s.INT
+	max_hp = s.max_hp
 	hp = _hp_for_ratio(hp_ratio)
-	dmg = BASE_DMG + STR * 1.5 + bonus_dmg
-	base_aps = clamp(BASE_APS + AGI * 0.02 + bonus_aps, 0.3, 5.0)
+	dmg = s.dmg
+	base_aps = s.aps
 	aps = base_aps * _attack_speed_multiplier()
-	crit_p = clamp(AGI * 0.005 + bonus_crit_p, 0.0, 0.75)
-	crit_m = clamp(1.5 + INT * 0.01, 1.0, 3.0)
-	armor = bonus_armor
+	crit_p = s.crit_p
+	crit_m = s.crit_m
+	armor = s.armor
 	atk_timer = 1.0 / aps
 	pulse_timer = PULSE_INTERVAL
 	# `alive` no se toca aquí: equipar durante la caída no debe resucitarlo (lo hace respawn())
@@ -250,16 +244,12 @@ func refresh_gear() -> void:
 
 
 func expected_dps() -> float:
-	var hit := dmg * (1.0 + crit_p * (crit_m - 1.0))
-	var pulse_dmg := (INT * 3.0) / PULSE_INTERVAL
-	return aps * hit + pulse_dmg
+	return CombatMath.expected_dps({"dmg": dmg, "crit_p": crit_p, "crit_m": crit_m, "aps": aps, "INT": INT})
 
 
 ## Fracción de daño físico que absorbe la armadura (0..MAX_MITIGATION).
 func armor_mitigation() -> float:
-	if armor <= 0:
-		return 0.0
-	return minf(MAX_MITIGATION, float(armor) / (float(armor) + ARMOR_K))
+	return CombatMath.armor_mitigation(armor)
 
 
 # --- Combate ----------------------------------------------------------

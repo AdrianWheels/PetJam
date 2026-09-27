@@ -21,7 +21,6 @@ const BASE_HP := 40
 const BASE_DMG := 5.0
 const BASE_APS := 0.8
 const PULSE_INTERVAL := 2.5
-const BOSS_LEVEL_MULTIPLIER := 1.6
 const HURT_TIME := 0.18
 const INTRO_TIME := 0.5
 const IDLE_FRAME_TIME := 0.5
@@ -209,34 +208,27 @@ func alert() -> void:
 
 
 func reset_stats():
-	var exp_factor := pow(1.04, level - 1)
-	var lin_factor := 1.0 + 0.15 * (level - 1)
-	var stat_scale := lin_factor * exp_factor
-	var multiplier := (BOSS_LEVEL_MULTIPLIER if is_boss else 1.0)
 	var d: Dictionary = EnemyArchetypes.get_data(archetype)
-
-	STR = (3.0 + level * 1.5) * exp_factor
-	AGI = (1.5 + level * 0.8) * sqrt(exp_factor)
-	INT = (1.5 + level * 0.6) * sqrt(exp_factor)
-
-	max_hp = maxi(1, int(BASE_HP * stat_scale * multiplier * float(d.hp)))
+	var s := EnemyScaling.enemy_stats(level, d, is_boss)
+	STR = s.STR
+	AGI = s.AGI
+	INT = s.INT
+	max_hp = s.max_hp
 	hp = max_hp
-	dmg = (BASE_DMG + STR * 1.5) * multiplier * float(d.dmg)
-	aps = clamp(BASE_APS + AGI * 0.02, 0.3, 4.0) * float(d.aps)
-	crit_p = min(0.5, AGI * 0.006)
-	crit_m = clamp(1.5 + INT * 0.012, 1.0, 3.0)
+	dmg = s.dmg
+	aps = s.aps
+	crit_p = s.crit_p
+	crit_m = s.crit_m
 	atk_timer = 1.0 / aps
 	pulse_timer = PULSE_INTERVAL
 	alive = true
 	is_attacking = false
-	DebugManager.log_msg(&"combat", "Enemy Lv%d %s: HP=%d, DMG=%.1f, APS=%.2f, scale=%.2f" % [level, archetype, max_hp, dmg, aps, stat_scale])
+	DebugManager.log_msg(&"combat", "Enemy Lv%d %s: HP=%d, DMG=%.1f, APS=%.2f, scale=%.2f" % [level, archetype, max_hp, dmg, aps, EnemyScaling.stat_scale(level)])
 	emit_signal("stats_reset")
 
 
 func expected_dps() -> float:
-	var hit := dmg * (1.0 + crit_p * (crit_m - 1.0))
-	var pulse_dmg := (INT * 3.0) / PULSE_INTERVAL
-	return aps * hit + pulse_dmg
+	return CombatMath.expected_dps({"dmg": dmg, "crit_p": crit_p, "crit_m": crit_m, "aps": aps, "INT": INT})
 
 
 # ─── Combate ───────────────────────────────────────────────────────────
