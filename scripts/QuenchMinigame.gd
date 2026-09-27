@@ -77,9 +77,9 @@ func _ready():
 	
 	# Crear pantalla de título
 	setup_title_screen(
-		"💧 QUENCH - Temple",
-	"Release at optimal moment for tempering",
-	"Hold and release in green zone"
+		"¡A TEMPLAR!",
+		"Mantén pulsado para sumergir la pieza",
+		"Suelta en la zona verde"
 	)
 
 func _exit_tree():
@@ -360,6 +360,7 @@ func _judge_release() -> void:
 	MinigameFX.full_feedback(feedback_pos, quality, self)
 	MinigameFX.create_floating_label(feedback_pos, "%d°C" % int(_current_temperature), quality, self)
 	MinigameAudio.play_feedback(quality)
+	emit_signal("hit_scored", quality, int(score))
 	
 	await get_tree().create_timer(1.5).timeout
 	_finish_minigame(quality, score, success)

@@ -53,9 +53,9 @@ func _ready():
 	
 	# Crear pantalla de título (sistema original)
 	setup_title_screen(
-		"🔥 FORGE - Precisión",
-		"Stop the hammer at the right spot",
-		"Pulsa ESPACIO o CLIC para empezar"
+		"¡A LA FORJA!",
+		"Detén el calor en la zona justa",
+		"Toca en el momento exacto"
 	)
 
 func _exit_tree():
@@ -216,6 +216,7 @@ func _finish_attempt():
 	_progress_label.text = "Soplidos: %d/%d" % [_current_trial, _total_trials]
 	
 	print("  🔥 [FORGE] Trial %d: %.1f pts (%s)" % [_current_trial, score, quality])
+	emit_signal("hit_scored", quality, int(score))
 	
 	# ¿Terminamos todos los trials?
 	if _current_trial >= _total_trials:

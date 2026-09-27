@@ -30,6 +30,8 @@ config = SubResource("1")
 [resource]
 resource_name = "boots_advanced"
 script = ExtResource("1")
+blueprint_id = &"boots_advanced"
+result_item = &"boots_advanced"
 display_name = "Advanced Boots"
 description = "Quality reinforced boots."
 icon_path = "res://data/items/boots_advanced.tres"

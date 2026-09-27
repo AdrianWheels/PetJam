@@ -1,14 +1,28 @@
-[gd_scene load_steps=4 format=3 uid="uid://c3xqr8wmgn6vf"]
+[gd_scene load_steps=6 format=3 uid="uid://c3xqr8wmgn6vf"]
 
 [ext_resource type="Script" path="res://scripts/ui/StartScreen.gd" id="1"]
 [ext_resource type="Texture2D" path="res://art/assets/Imagenes/Menu/main_tittle_screen.png" id="2"]
 
-[sub_resource type="LabelSettings" id="LabelSettings_echo"]
-font_size = 96
-font_color = Color(1, 1, 1, 1)
-shadow_size = 23
-shadow_color = Color(0, 0, 0, 0.5)
-shadow_offset = Vector2(23, 23)
+[sub_resource type="LabelSettings" id="LabelSettings_title"]
+font_size = 150
+font_color = Color(1, 0.85, 0.54, 1)
+outline_size = 18
+outline_color = Color(0.1, 0.05, 0.03, 1)
+shadow_size = 28
+shadow_color = Color(1, 0.55, 0.15, 0.35)
+shadow_offset = Vector2(0, 0)
+
+[sub_resource type="LabelSettings" id="LabelSettings_sub"]
+font_size = 40
+font_color = Color(0.93, 0.86, 0.74, 1)
+outline_size = 10
+outline_color = Color(0.08, 0.04, 0.03, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_record"]
+font_size = 32
+font_color = Color(1, 0.84, 0.42, 1)
+outline_size = 8
+outline_color = Color(0.08, 0.04, 0.03, 1)
 
 [node name="StartScreen" type="Control"]
 layout_mode = 3
@@ -24,50 +38,68 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = -40.0
+offset_top = -40.0
+offset_right = 40.0
+offset_bottom = 40.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 texture = ExtResource("2")
 expand_mode = 1
-stretch_mode = 5
+stretch_mode = 6
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="TitleBox" type="VBoxContainer" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -200.0
-offset_top = -150.0
-offset_right = 200.0
-offset_bottom = 150.0
+anchors_preset = -1
+anchor_top = 0.14
+anchor_right = 1.0
+anchor_bottom = 0.36
 grow_horizontal = 2
-grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+alignment = 1
 
-[node name="Spacer1" type="Control" parent="VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="TitleLabel" type="Label" parent="VBoxContainer"]
+[node name="TitleLabel" type="Label" parent="TitleBox"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "AFK ARMORY"
-label_settings = SubResource("LabelSettings_echo")
+label_settings = SubResource("LabelSettings_title")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Spacer2" type="Control" parent="VBoxContainer"]
+[node name="SubtitleLabel" type="Label" parent="TitleBox"]
+unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(0, 80)
+text = "Tú forjas. Él desciende."
+label_settings = SubResource("LabelSettings_sub")
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="StartButton" type="Button" parent="VBoxContainer"]
-custom_minimum_size = Vector2(200, 60)
+[node name="BottomBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.68
+anchor_right = 1.0
+anchor_bottom = 0.86
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 28
+alignment = 1
+
+[node name="StartButton" type="Button" parent="BottomBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(540, 136)
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 32
-text = "START"
+theme_override_font_sizes/font_size = 64
+text = "JUGAR"
 
-[node name="Spacer3" type="Control" parent="VBoxContainer"]
+[node name="RecordLabel" type="Label" parent="BottomBox"]
+unique_name_in_owner = true
 layout_mode = 2
-size_flags_vertical = 3
+text = "El héroe te espera en la mazmorra"
+label_settings = SubResource("LabelSettings_record")
+horizontal_alignment = 1
 
-[connection signal="pressed" from="VBoxContainer/StartButton" to="." method="_on_start_button_pressed"]
+[connection signal="pressed" from="BottomBox/StartButton" to="." method="_on_start_button_pressed"]

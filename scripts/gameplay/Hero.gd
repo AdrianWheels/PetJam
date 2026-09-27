@@ -1,9 +1,22 @@
 extends CharacterBody2D
 
+## Héroe del corredor (IA) en pixel art. La lógica es la de siempre (stats del equipo + ataques por cooldown):
+##  - sprite de 32x32 con reposo de 2 fotogramas. Provisional hasta la fase 2 del spec
+##    doc/specs/2026-09-27-franja-combate-pixel-art.md: la tira se elige según la espada que lleva,
+##  - carga, estocada y retroceso como desplazamientos en píxeles enteros; destello al recibir daño y
+##    disolución al reaparecer con shaders/pixel_sprite.gdshader,
+##  - barra de vida y nombre en fuente pixel,
+##  - la armadura reduce el daño físico.
+## Unidades: píxeles del arte (la franja mide 216x96). El origen del nodo es el centro de los pies.
+
 signal stats_reset
 signal died
 signal respawned
-signal hit_frame_reached  # Emitida cuando se alcanza el frame de golpe en animación
+signal attack_triggered  # Emitida cuando el cooldown de ataque llega a 0
+signal pulse_hit(amount: int, target_pos: Vector2)  # Pulso mágico aplicado (posición previa al daño)
+
+const SPRITE_SHADER := preload("res://shaders/pixel_sprite.gdshader")
+const HERO_NAME := "Tico"
 
 const BASE_HP := 60
 const BASE_DMG := 6.0
@@ -12,6 +25,27 @@ const BASE_STR := 10
 const BASE_AGI := 10
 const BASE_INT := 8
 const PULSE_INTERVAL := 2.5
+
+# Armadura: reducción con rendimientos decrecientes (armor / (armor + K)), con tope.
+const ARMOR_K := 40.0
+const MAX_MITIGATION := 0.6
+
+const WINDUP_TIME := 0.16
+const HURT_TIME := 0.2
+const MATERIALIZE_TIME := 0.5
+const IDLE_FRAME_TIME := 0.5
+
+## Colores de Tico para los fragmentos al morir (chaleco, bufanda, piel, pelo)
+const DEATH_COLORS := [Color("c8905a"), Color("c23644"), Color("f7d2ae"), Color("8f4f2c")]
+
+## Color de cada tier de calidad (más suave que los colores puros de CraftedItem)
+const TIER_COLORS := {
+	"common": Color("cfd6dc"),
+	"uncommon": Color("6ad16a"),
+	"rare": Color("4ea3ff"),
+	"epic": Color("b46bff"),
+	"legendary": Color("ffa629"),
+}
 
 var STR: int = BASE_STR
 var AGI: int = BASE_AGI
@@ -23,202 +57,121 @@ var dmg: float = BASE_DMG
 var aps: float = BASE_APS
 var crit_p: float = 0.0
 var crit_m: float = 1.5
-var armor: int = 0  # Armadura del héroe (proveniente de equipamiento)
+var armor: int = 0
 var atk_timer: float = 0.0
 var pulse_timer: float = PULSE_INTERVAL
 var alive: bool = true
-var is_attacking: bool = false  # Flag para mostrar animación de ataque
-var debug_invincible: bool = false  # Toggle de invencibilidad para debug
-var stored_hp: int = 0  # Backup de HP pre-invencibilidad
-var stored_dmg: float = 0.0  # Backup de DMG pre-invencibilidad
+var is_attacking: bool = false
+var debug_invincible: bool = false
+var stored_hp: int = 0
+var stored_dmg: float = 0.0
 
-var size: Vector2 = Vector2(280, 380)  # Tamaño del CollisionShape2D
+var size: Vector2 = Vector2(12, 28)  # Compatibilidad
+var half_width: float = 6.0
+var reach: float = 9.0  # Alcance del arma (para decidir cuándo se engancha el combate)
 
-# Animación
-enum AnimState { IDLE, WALK, ATTACK, DEATH }
-var current_anim_state: AnimState = AnimState.WALK
-var animation_timer: float = 0.0
-var current_frame: int = 0
-var death_hold_timer: float = 0.0
-const DEATH_HOLD_DURATION: float = 2.5  # Pausa de 2.5s antes de reiniciar loop de muerte
-var _hit_frame_triggered: bool = false  # Flag para evitar múltiples hits por ciclo
+## Lo actualiza el Corridor
+var walking: bool = false
+var walk_speed: float = 0.0
+var fx: Node = null
+var look_target: Vector2 = Vector2(1, 0)  # Compatibilidad: el sprite no mueve los ojos
 
-# Configuración de animaciones (usar 12fps para balance calidad/tamaño)
-# Nota: Las texturas se cargarán dinámicamente en _ready()
-var anim_config := {}
+## Equipo visible: slot → {"tier": String, "rarity": String}
+var gear: Dictionary = {}
+## false en el héroe de muestra del panel de Equipo (sin barra de vida)
+var show_hud: bool = true
 
-@onready var health_bar: ProgressBar = $HealthBar if has_node("HealthBar") else null
-@onready var sprite: Sprite2D = $Sprite if has_node("Sprite") else null
+# Estado visual
+var _t := 0.0
+var _walk_phase := 0.0
+var _last_step_sign := 1.0
+var _windup := 0.0
+var _strike := 0.0
+var _strike_time := 0.22
+var _hurt := 0.0
+var _materialize := 1.0
+var _hp_ghost := 1.0
+var _ghost_delay := 0.0
+var _block_flash := 0.0
+var _sprite: Sprite2D
+var _hud: Node2D
+var _sprite_key := ""
+var _metrics: Dictionary = {}
+
+
+## Pinta barra y nombre por encima del sprite (los hijos se dibujan después que el padre).
+class HudDrawer extends Node2D:
+	var hero  # sin tipo: llama a métodos del script del héroe
+
+	func _draw() -> void:
+		if hero:
+			hero._draw_hud(self)
+
 
 func _ready():
-	_setup_animations()
-	respawn()
-	_update_health_bar()
-	_change_animation(AnimState.WALK)
-	print("Hero: Ready at position %v, z_index=%d, visible=%s" % [position, z_index, visible])
+	_sprite = Sprite2D.new()
+	_sprite.centered = false
+	var mat := ShaderMaterial.new()
+	mat.shader = SPRITE_SHADER
+	_sprite.material = mat
+	add_child(_sprite)
+	_hud = HudDrawer.new()
+	_hud.hero = self
+	add_child(_hud)
+	respawn(position)
 
-func _setup_animations() -> void:
-	"""Cargar texturas de animaciones dinámicamente"""
-	anim_config = {
-		AnimState.IDLE: {
-			"texture": load("res://art/assets/Spritesheets/Hero/hero_walk_01_12fps.png"),
-			"hframes": 63,
-			"fps": 24.0,  # Reproducir a 24fps para animación más fluida
-			"start_frame": 10,  # Recortar primeros 10 frames
-			"end_frame": 52  # Recortar últimos 10 frames (63-10-1)
-		},
-		AnimState.WALK: {
-			"texture": load("res://art/assets/Spritesheets/Hero/hero_walk_01_12fps.png"),
-			"hframes": 63,
-			"fps": 24.0,
-			"start_frame": 10,  # Recortar primeros 10 frames
-			"end_frame": 52  # Recortar últimos 10 frames
-		},
-		AnimState.ATTACK: {
-			"texture": load("res://art/assets/Spritesheets/Hero/hero_attack_01_12fps.png"),
-			"hframes": 62,
-			"fps": 24.0,  # Se ajustará dinámicamente según APS
-			"hit_frame": 29,  # Frame donde ocurre el golpe visual (frames 28-30)
-			"start_frame": 0,
-			"end_frame": 61
-		},
-		AnimState.DEATH: {
-			"texture": load("res://art/assets/Spritesheets/Hero/hero_death_12fps.png"),
-			"hframes": 64,
-			"fps": 24.0,  # Muerte fluida
-			"start_frame": 0,
-			"end_frame": 63
-		}
-	}
 
 func _process(delta: float) -> void:
-	# Sistema de animación con múltiples estados
-	if not sprite or anim_config.is_empty():
-		return
-	
-	# DEBUG: Estado de animación
-	var debug_state = "alive=%s, is_attacking=%s, current_anim=%s" % [alive, is_attacking, AnimState.keys()[current_anim_state]]
-	if Engine.get_frames_drawn() % 60 == 0:  # Cada 60 frames (~1 segundo)
-		if has_node("/root/DebugManager"):
-			get_node("/root/DebugManager").log_dungeon("Hero Animation State: %s" % debug_state)
-	
-	# Actualizar estado de animacion segun contexto
-	if not alive:
-		if current_anim_state != AnimState.DEATH:
-			_change_animation(AnimState.DEATH)
-	elif is_attacking:
-		if current_anim_state != AnimState.ATTACK:
-			_change_animation(AnimState.ATTACK)
+	_t += delta
+	_hurt = maxf(0.0, _hurt - delta)
+	_block_flash = maxf(0.0, _block_flash - delta * 3.0)
+	if _strike > 0.0:
+		_strike = maxf(0.0, _strike - delta / _strike_time)
+	if not is_attacking:
+		_windup = move_toward(_windup, 0.0, delta * 6.0)
+	if _materialize < 1.0:
+		_materialize = minf(1.0, _materialize + delta / MATERIALIZE_TIME)
+	if walking and alive:
+		# Misma cadencia de pasos que a 1080: 190 / 26 = 38 / 5.2
+		_walk_phase += delta * maxf(walk_speed, 12.0) / 5.2
+		var s := signf(sin(_walk_phase))
+		if s != _last_step_sign:
+			_last_step_sign = s
+			if fx and s > 0.0:
+				fx.dust_puff(position + Vector2(-1, 0), Color(0.7, 0.66, 0.6, 0.35), 2, 0.5)
 	else:
-		var target_anim = AnimState.IDLE if velocity.length() < 1.0 else AnimState.WALK
-		if current_anim_state != target_anim:
-			_change_animation(target_anim)
-	
-	# Animar el spritesheet actual
-	var config = anim_config[current_anim_state]
-	animation_timer += delta
-	var frame_duration = 1.0 / config["fps"]
-	
-	if animation_timer >= frame_duration:
-		animation_timer -= frame_duration
-		
-		var prev_frame = current_frame
-		var start_frame = config.get("start_frame", 0)
-		var end_frame = config.get("end_frame", config["hframes"] - 1)
-		
-		# Caso especial: muerte con pausa antes de loop
-		if current_anim_state == AnimState.DEATH:
-			if current_frame < end_frame:
-				current_frame += 1
-			else:
-				# Esperar 2.5s en el último frame antes de reiniciar
-				death_hold_timer += frame_duration
-				if death_hold_timer >= DEATH_HOLD_DURATION:
-					current_frame = start_frame
-					death_hold_timer = 0.0
-		else:
-			# Loop con respeto a start_frame y end_frame
-			current_frame += 1
-			if current_frame > end_frame:
-				current_frame = start_frame
-		
-		sprite.frame = current_frame
-		
-		# Detectar hit frame y emitir señal (solo en ATTACK, una vez por animación)
-		if current_anim_state == AnimState.ATTACK and "hit_frame" in config:
-			var hit_frame = config["hit_frame"]
-			
-			# Si alcanzamos hit_frame y no hemos disparado aún
-			if prev_frame != hit_frame and current_frame == hit_frame and not _hit_frame_triggered:
-				emit_signal("hit_frame_reached")
-				_hit_frame_triggered = true
-			
-			if current_frame == start_frame and _hit_frame_triggered:
-				_hit_frame_triggered = false
-				if is_attacking:
-					is_attacking = false
+		_walk_phase = 0.0
+	# Barra fantasma
+	var ratio := _hp_ratio()
+	if _ghost_delay > 0.0:
+		_ghost_delay -= delta
+	elif _hp_ghost > ratio:
+		_hp_ghost = move_toward(_hp_ghost, ratio, delta * 1.2)
+	_hp_ghost = maxf(_hp_ghost, ratio)
+	_update_sprite()
+	queue_redraw()
+	if _hud:
+		_hud.queue_redraw()
 
-func _change_animation(new_state: AnimState) -> void:
-	"""Cambia la animación actual y resetea el frame"""
-	if current_anim_state == new_state or anim_config.is_empty():
-		return
-	
-	current_anim_state = new_state
-	var config = anim_config[new_state]
-	current_frame = config.get("start_frame", 0)  # Iniciar en start_frame
-	animation_timer = 0.0
-	death_hold_timer = 0.0
-	_hit_frame_triggered = false  # Resetear flag al cambiar animación
-	
-	# Ajustar FPS dinámicamente para ATTACK según APS
-	if new_state == AnimState.ATTACK:
-		config["fps"] = _calculate_attack_fps()
-	
-	if sprite:
-		sprite.texture = config["texture"]
-		sprite.hframes = config["hframes"]
-		sprite.frame = current_frame  # Usar start_frame
-		
-		# Calcular escala del sprite para que ocupe ~20% del viewport height (1920*0.20 = 384px)
-		# Hero target: 226x345px en pantalla
-		if config["texture"]:
-			var frame_width = float(config["texture"].get_width()) / float(config["hframes"])
-			var frame_height = float(config["texture"].get_height())
-			var target_size = Vector2(226, 345)  # 20% viewport para Hero
-			var sprite_scale = Vector2(target_size.x / frame_width, target_size.y / frame_height)
-			sprite.scale = sprite_scale
-		
-		# DEBUG: Activado permanentemente
-		print("Hero: Changed animation to %s (hframes=%d, fps=%.1f, sprite.scale=%v)" % [AnimState.keys()[new_state], config["hframes"], config["fps"], sprite.scale])
 
-func _calculate_attack_fps() -> float:
-	"""Calcula FPS de animación de ataque para que coincida con APS.
-	La animación debe durar exactamente 1/APS segundos para sincronizar con el daño."""
-	var attack_duration = 1.0 / aps  # Duración de 1 golpe en segundos
-	var total_frames = float(anim_config[AnimState.ATTACK]["hframes"])
-	var required_fps = total_frames / attack_duration
-	# Clampear entre 12fps (mínimo legible) y 60fps (máximo smooth)
-	return clamp(required_fps, 12.0, 60.0)
+# --- Stats ------------------------------------------------------------
 
 func reset_stats():
-	# Obtener bonuses del equipamiento (sistema unificado via InventoryManager)
 	var equipment_stats := {}
 	var inv_manager = get_node_or_null("/root/InventoryManager")
 	if inv_manager and inv_manager.has_method("calculate_total_stats"):
 		equipment_stats = inv_manager.calculate_total_stats()
-	
-	# Stats primarios con bonuses de equipamiento
+
 	STR = BASE_STR + int(equipment_stats.get("str", 0))
 	AGI = BASE_AGI + int(equipment_stats.get("agi", 0))
 	INT = BASE_INT + int(equipment_stats.get("int", 0))
-	
-	# Stats derivados
+
 	var bonus_hp: int = int(equipment_stats.get("hp", 0))
 	var bonus_dmg: float = float(equipment_stats.get("damage", 0))
 	var bonus_aps: float = float(equipment_stats.get("aps", 0.0))
 	var bonus_crit_p: float = float(equipment_stats.get("crit", 0.0))
 	var bonus_armor: int = int(equipment_stats.get("armor", 0))
-	
+
 	max_hp = BASE_HP + STR * 10 + bonus_hp
 	hp = max_hp
 	dmg = BASE_DMG + STR * 1.5 + bonus_dmg
@@ -228,146 +181,241 @@ func reset_stats():
 	armor = bonus_armor
 	atk_timer = 1.0 / aps
 	pulse_timer = PULSE_INTERVAL
-	alive = true
-	
+	# `alive` no se toca aquí: equipar durante la caída no debe resucitarlo (lo hace respawn())
+	_hp_ghost = 1.0
+	_strike_time = clampf(0.6 / aps, 0.12, 0.24)
+	refresh_gear()
+
 	emit_signal("stats_reset")
-	print("Hero: Stats reset - HP:%d DMG:%.1f APS:%.2f CRIT:%.1f%% ARMOR:%d" % [max_hp, dmg, aps, crit_p * 100, armor])
+	DebugManager.log_msg(&"combat", "Hero stats — HP:%d DMG:%.1f APS:%.2f CRIT:%.0f%% ARM:%d (-%d%%)" % [max_hp, dmg, aps, crit_p * 100, armor, int(armor_mitigation() * 100.0)])
+
+
+## Lee el equipo actual (espada, escudo, casco, botas) y elige el sprite.
+func refresh_gear() -> void:
+	gear.clear()
+	var inv_manager = get_node_or_null("/root/InventoryManager")
+	if inv_manager != null and "equipped_items" in inv_manager:
+		for slot in inv_manager.equipped_items.keys():
+			var item = inv_manager.equipped_items[slot]
+			if item == null:
+				continue
+			var rarity := "basic"
+			if item.item_resource:
+				rarity = String(item.item_resource.rarity)
+			gear[String(slot)] = {"tier": item.get_quality_tier(), "rarity": rarity}
+	_apply_sprite()
+
 
 func expected_dps() -> float:
-		var hit = dmg * (1.0 + crit_p * (crit_m - 1.0))
-		var pulse_dmg = (INT * 3.0) / PULSE_INTERVAL
-		return aps * hit + pulse_dmg
+	var hit := dmg * (1.0 + crit_p * (crit_m - 1.0))
+	var pulse_dmg := (INT * 3.0) / PULSE_INTERVAL
+	return aps * hit + pulse_dmg
 
-func take_damage(amount: int, _is_pulse: bool = false):
-	# Debug: invencibilidad activa ignora daño (10k HP lo absorbe todo)
-	if debug_invincible:
-		return
-	if not alive:
-		return
-	hp = max(0, hp - amount)
-	_update_health_bar()
+
+## Fracción de daño físico que absorbe la armadura (0..MAX_MITIGATION).
+func armor_mitigation() -> float:
+	if armor <= 0:
+		return 0.0
+	return minf(MAX_MITIGATION, float(armor) / (float(armor) + ARMOR_K))
+
+
+# --- Combate ----------------------------------------------------------
+
+## Aplica daño y devuelve el daño real recibido (tras armadura). El pulso mágico ignora la armadura.
+func take_damage(amount: int, is_pulse: bool = false) -> int:
+	if debug_invincible or not alive:
+		return 0
+	var final := amount
+	if not is_pulse:
+		final = maxi(1, int(round(float(amount) * (1.0 - armor_mitigation()))))
+		if final < amount and armor_mitigation() >= 0.15:
+			_block_flash = 1.0
+	hp = max(0, hp - final)
+	_hurt = HURT_TIME
+	_ghost_delay = 0.35
 	if hp == 0:
 		alive = false
+		_spawn_death_fx()
 		emit_signal("died")
+	return final
 
-## Activa/desactiva invencibilidad (solo debug)
+
 func set_invincible(invincible: bool) -> void:
 	debug_invincible = invincible
 	if invincible:
-		# Backup stats y setear 10k HP + 10k ATK
 		stored_hp = hp
 		stored_dmg = dmg
 		hp = 10000
 		max_hp = 10000
 		dmg = 10000.0
-		_update_health_bar()
-		print("Hero: Invincibility ENABLED (10k HP, 10k ATK)")
 	else:
-		# Restaurar stats originales
 		hp = stored_hp if stored_hp > 0 else BASE_HP
 		max_hp = BASE_HP
 		dmg = stored_dmg if stored_dmg > 0 else BASE_DMG
-		_update_health_bar()
-		print("Hero: Invincibility DISABLED (stats restored)")
+		reset_stats()
 
-func attack(target, _particles: Array) -> void:
-	"""Gestiona timer de ataque. Cuando llega a 0, lanza animación ATTACK."""
+
+func attack(target, _particles: Array = []) -> void:
+	"""Gestiona el timer de ataque. Emite attack_triggered cuando el cooldown llega a 0."""
 	if not alive or target == null or not target.alive:
 		is_attacking = false
 		return
-	
+	is_attacking = true
+	look_target = target.position
 	atk_timer -= get_process_delta_time()
-	
+	# Anticipación ligada al cooldown: el ritmo de ataque no cambia
+	var windup := minf(WINDUP_TIME, 0.45 / aps)
+	if atk_timer <= windup:
+		_windup = clampf(1.0 - atk_timer / windup, 0.0, 1.0)
 	if atk_timer <= 0.0:
-		if not is_attacking:
-			is_attacking = true
-			_change_animation(AnimState.ATTACK)
-		# Resetear timer para próximo ataque
+		_strike = 1.0
+		_windup = 0.0
+		emit_signal("attack_triggered")
 		atk_timer = 1.0 / aps
 
-func pulse(target, particles: Array) -> void:
-		if not alive or target == null or not target.alive:
-				return
-		pulse_timer -= get_process_delta_time()
-		if pulse_timer <= 0.0:
-				pulse_timer += PULSE_INTERVAL
-				target.take_damage(INT * 3, true)
-				particles.append(_create_pulse_particle(target.position))
+
+func pulse(target, _particles: Array = []) -> void:
+	if not alive or target == null or not target.alive:
+		return
+	pulse_timer -= get_process_delta_time()
+	if pulse_timer <= 0.0:
+		pulse_timer += PULSE_INTERVAL
+		# La posición se toma antes del daño: si el enemigo muere, se recoloca en la sala siguiente
+		var target_pos: Vector2 = target.body_center() if target.has_method("body_center") else target.position
+		var dealt = target.take_damage(INT * 3, true)
+		emit_signal("pulse_hit", int(dealt) if dealt != null else INT * 3, target_pos)
+
 
 func prepare_for_combat() -> void:
-	# Timer empieza lleno, fuerza espera antes del primer ataque
 	atk_timer = 1.0 / aps
 	pulse_timer = PULSE_INTERVAL
-	is_attacking = false  # Reset explícito
+	is_attacking = false
 
-func respawn(start_position: Vector2 = Vector2(2100, 1120)) -> void:
+
+func respawn(start_position: Vector2 = PixelView.HERO_START) -> void:
 	reset_stats()
 	position = start_position
 	velocity = Vector2.ZERO
 	alive = true
-	# CRÍTICO: Resetear animación a WALK tras morir
-	current_anim_state = AnimState.IDLE  # Forzar cambio
-	_change_animation(AnimState.WALK)
-	animation_timer = 0.0
-	current_frame = 0
-	death_hold_timer = 0.0
+	is_attacking = false
+	_windup = 0.0
+	_strike = 0.0
+	_hurt = 0.0
+	_materialize = 0.0
 	emit_signal("respawned")
 
+
 func apply_loadout(_loadout: Dictionary) -> void:
-	# Legacy: ya no se usa loadout_bonus, stats vienen de InventoryManager
 	reset_stats()
 
-func _create_spark_particle(pos: Vector2) -> Dictionary:
-		var angle := randf() * PI * 2.0
-		var speed := 80.0 + randf() * 80.0
-		return {
-				"type": "spark",
-				"position": pos,
-				"velocity": Vector2(cos(angle), sin(angle)) * speed,
-				"timer": 0.35
-		}
 
-func _create_pulse_particle(pos: Vector2) -> Dictionary:
-		return {
-				"type": "pulse",
-				"position": pos,
-				"timer": 0.35
-		}
+func body_center() -> Vector2:
+	return position + Vector2(0, float(_metrics.get("center_y", -14.0)))
 
-func _spawn_floating_number(damage: int, is_crit: bool):
-	"""Spawner floating number con animación Tween"""
-	var floating_label = Label.new()
-	floating_label.text = str(damage)
-	floating_label.set_script(preload("res://scripts/gameplay/FloatingNumber.gd"))
-	
-	# Configuración visual
-	if is_crit:
-		floating_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.0))  # Dorado para crits
-		floating_label.add_theme_font_size_override("font_size", 28)
-	else:
-		floating_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))  # Blanco para daño normal
-		floating_label.add_theme_font_size_override("font_size", 20)
-	
-	# Posicionar sobre el personaje
-	floating_label.global_position = global_position + Vector2(randf_range(-20, 20), -40)
-	
-	# Añadir al árbol (en root para que no se mueva con el personaje)
-	var tree = get_tree()
-	if tree and tree.root:
-		tree.root.add_child(floating_label)
-	else:
-		floating_label.queue_free()
 
-func _update_health_bar() -> void:
-		if health_bar:
-				health_bar.max_value = max_hp
-				health_bar.value = hp
-				
-				# Color según vida restante
-				var hp_ratio = float(hp) / float(max_hp) if max_hp > 0 else 0.0
-				if hp_ratio > 0.6:
-						health_bar.modulate = Color(0.3, 1.0, 0.3)  # Verde
-				elif hp_ratio > 0.3:
-						health_bar.modulate = Color(1.0, 0.7, 0.3)  # Naranja
-				else:
-						health_bar.modulate = Color(1.0, 0.3, 0.3)  # Rojo
+func _spawn_death_fx() -> void:
+	if fx == null:
+		return
+	var c := body_center()
+	fx.shatter(c, DEATH_COLORS, 16, Vector2(1, 3), position.y)
+	fx.ring(c, Color(0.75, 0.9, 1.0, 0.9), 2.0, 24.0, 0.45, 1.0)
+	fx.spark_burst(c, Vector2.UP, Color("9fd0ff"), 16, Vector2(32, 84), PI)
+
+
+# --- Dibujo -----------------------------------------------------------
+
+func _hp_ratio() -> float:
+	return clampf(float(hp) / float(max_hp), 0.0, 1.0) if max_hp > 0 else 0.0
+
+
+func _rarity(slot: String) -> String:
+	return String(gear[slot].get("rarity", "basic")) if gear.has(slot) else ""
+
+
+## Provisional (fase 1): la tira de Tico según la espada. La fase 2 compone una capa por pieza.
+func _hero_sprite_key() -> String:
+	match _rarity("main_hand"):
+		"":
+			return "hero/tico_0"
+		"master":
+			return "hero/tico_2"
+		_:
+			return "hero/tico_1"
+
+
+func _apply_sprite() -> void:
+	if _sprite == null:
+		return
+	var key := _hero_sprite_key()
+	if key == _sprite_key:
+		return
+	_sprite_key = key
+	_metrics = PixelSprites.metrics(key)
+	_sprite.texture = PixelSprites.texture(key)
+	_sprite.hframes = maxi(1, int(_metrics.get("frames", 1)))
+
+
+func _update_sprite() -> void:
+	if _sprite == null:
+		return
+	_sprite.visible = alive
+	if not alive:
+		return
+	_sprite.frame = int(_t / IDLE_FRAME_TIME) % _sprite.hframes
+	var flash := clampf(_hurt / HURT_TIME, 0.0, 1.0)
+	var lunge := -1.6 * _windup + 5.2 * pow(_strike, 1.4) - 2.4 * flash
+	var bob := 1.0 if walking and absf(sin(_walk_phase)) > 0.5 else 0.0
+	_sprite.position = _sprite_origin() + Vector2(roundf(lunge), -bob)
+	var mat := _sprite.material as ShaderMaterial
+	mat.set_shader_parameter("flash", flash * 0.8)
+	mat.set_shader_parameter("dissolve", 1.0 - clampf(_materialize * 1.6, 0.0, 1.0))
+
+
+## Esquina superior izquierda del fotograma para que los pies apoyen en el origen del nodo.
+func _sprite_origin() -> Vector2:
+	var fw := float(_metrics.get("frame_w", 32))
+	var ground := float(_metrics.get("ground_row", 28))
+	return Vector2(-fw * 0.5, -(ground + 1.0))
+
+
+## Barra de vida relativa al nodo: 1 px por encima de la cabeza y 2 px hacia atrás para no
+## chocar con la del enemigo en combate.
+func hud_bar_rect() -> Rect2:
+	var top := roundf(float(_metrics.get("center_y", -14.0)) - float(_metrics.get("body_height", 28)) * 0.5)
+	return Rect2(-13, top - 5, 22, 3)
+
+
+## Nombre centrado sobre la barra, relativo al nodo.
+func hud_label_rect() -> Rect2:
+	var bar := hud_bar_rect()
+	var w := PixelFont.width(HERO_NAME)
+	return Rect2(roundf(bar.get_center().x - w * 0.5), bar.position.y - PixelFont.SMALL_SIZE, w, PixelFont.SMALL_SIZE)
+
+
+func _draw() -> void:
+	if not alive:
+		return
+	PixelHud.draw_shadow(self, Vector2.ZERO, 14, clampf(_materialize * 1.6, 0.0, 1.0))
+
+
+func _draw_hud(canvas: CanvasItem) -> void:
+	if not show_hud or not alive:
+		return
+	var a := clampf(_materialize * 1.6, 0.0, 1.0)
+	var bar := hud_bar_rect()
+	PixelHud.draw_bar(canvas, bar, _hp_ratio(), _hp_ghost, _bar_color(), a)
+	PixelFont.draw(canvas, hud_label_rect().position, HERO_NAME, Color("fef6e4"), a)
+	if armor > 0:
+		var icon_pos := bar.position + Vector2(-6, -1)
+		PixelHud.draw_armor_icon(canvas, icon_pos, a)
+		if _block_flash > 0.0:
+			PixelHud.draw_armor_icon(canvas, icon_pos, a * _block_flash, Color.WHITE)
+
+
+func _bar_color() -> Color:
+	var ratio := _hp_ratio()
+	if ratio <= 0.3:
+		return Color("e5433b").lerp(Color.WHITE, 0.25 + 0.25 * sin(_t * 12.0))
+	if ratio <= 0.6:
+		return Color("f0b43c")
+	return Color("54d162")

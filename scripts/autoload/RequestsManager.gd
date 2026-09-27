@@ -121,7 +121,8 @@ func accept_request(index: int) -> bool:
 	# Encolar en CraftingManager
 	var cm := get_node_or_null("/root/CraftingManager")
 	if cm and cm.has_method("enqueue"):
-		var success: bool = cm.enqueue(blueprint_id)
+		var gold_reward: int = request.get("gold_reward", 50)
+		var success: bool = cm.enqueue(blueprint_id, gold_reward)
 		if success:
 			# Decrementar contador de pedidos gratis
 			if is_free:
@@ -202,7 +203,7 @@ func _calculate_reward(blueprint: BlueprintResource) -> int:
 	base_reward += num_materials * 10
 	
 	# Increase based on number of trials
-	var num_trials := blueprint.trial_sequence.size() if blueprint.has_method("has_trials") and blueprint.has_trials() else 1
+	var num_trials := blueprint.trial_sequence.size() if blueprint.has_trials() else 1
 	base_reward += num_trials * 15
 	
 	return base_reward
@@ -238,10 +239,17 @@ func _on_request_timer_timeout() -> void:
 		_schedule_next_request()
 	else:
 		print("RequestsManager: Pool completo (%d/%d pedidos)" % [active_requests.size(), MAX_ACTIVE_REQUESTS])
-	
-	# Si aún no hemos llegado al máximo, programar otro
-	if active_requests.size() < MAX_ACTIVE_REQUESTS:
-		_schedule_next_request()
-	else:
-		print("RequestsManager: Pool completo (%d/%d pedidos)" % [active_requests.size(), MAX_ACTIVE_REQUESTS])
+
+# ═══════════════════════════════════════════════════════════════════
+#  PERSISTENCIA
+# ═══════════════════════════════════════════════════════════════════
+
+func to_save_data() -> Dictionary:
+	return {
+		"free_requests_remaining": free_requests_remaining,
+	}
+
+func load_save_data(data: Dictionary) -> void:
+	free_requests_remaining = int(data.get("free_requests_remaining", FREE_REQUESTS_COUNT))
+	print("RequestsManager: Loaded free_requests_remaining=%d" % free_requests_remaining)
 

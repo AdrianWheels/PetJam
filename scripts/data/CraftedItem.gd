@@ -38,19 +38,19 @@ func get_quality_tier() -> String:
 	else:
 		return "common"  # Blanco (0-39%)
 
-## Retorna color de outline según tier
+## Retorna color de outline según tier (mismos tonos que el equipo dibujado en el héroe)
 func get_quality_color() -> Color:
 	match get_quality_tier():
 		"legendary":
-			return Color.ORANGE  # FF6A00
+			return Color("ffa629")  # naranja
 		"epic":
-			return Color.PURPLE  # A020F0
+			return Color("b46bff")  # morado
 		"rare":
-			return Color.DODGER_BLUE  # 1E90FF
+			return Color("4ea3ff")  # azul
 		"uncommon":
-			return Color.GREEN  # 00FF00
+			return Color("6ad16a")  # verde
 		_:
-			return Color.WHITE  # FFFFFF
+			return Color("cfd6dc")  # acero
 
 ## Retorna label de calidad
 func get_quality_label() -> String:

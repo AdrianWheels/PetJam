@@ -98,6 +98,26 @@ func get_locked_blueprints() -> Array:
 			result.append(bp_id)
 	return result
 
+# ═══════════════════════════════════════════════════════════════════
+#  PERSISTENCIA
+# ═══════════════════════════════════════════════════════════════════
+
+func to_save_data() -> Dictionary:
+	var unlocked_str := {}
+	for bp_id in unlocked_blueprints:
+		unlocked_str[String(bp_id)] = unlocked_blueprints[bp_id]
+	return {
+		"unlocked_blueprints": unlocked_str,
+	}
+
+func load_save_data(data: Dictionary) -> void:
+	var saved_unlocked: Dictionary = data.get("unlocked_blueprints", {})
+	for bp_id_str in saved_unlocked:
+		var bp_id := StringName(bp_id_str)
+		if bp_id in unlocked_blueprints:
+			unlocked_blueprints[bp_id] = bool(saved_unlocked[bp_id_str])
+	print("DataManager: Loaded %d unlocked blueprints from save" % get_unlocked_blueprints().size())
+
 ## Obtiene un ItemResource por ID desde el blueprint
 func get_item_resource(item_id: StringName) -> ItemResource:
 	# Buscar en todos los blueprints el que tenga este result_item

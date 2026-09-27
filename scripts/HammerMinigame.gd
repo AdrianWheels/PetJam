@@ -57,9 +57,9 @@ func _ready():
 	
 	# Crear pantalla de título
 	setup_title_screen(
-		"🔨 HAMMER - Timing",
+		"¡A MARTILLAR!",
 		"Golpea al ritmo con precisión",
-		"Pulsa ESPACIO o CLIC cuando la nota llegue"
+		"Toca cuando la nota llegue"
 	)
 
 func _exit_tree():
@@ -230,6 +230,7 @@ func _judge_hit(time_diff_ms: float) -> void:
 	# Avanzar
 	_hit_index += 1
 	_update_ui()
+	emit_signal("hit_scored", quality, points)
 	
 	if _hit_index >= TOTAL_HITS:
 		await get_tree().create_timer(0.6).timeout

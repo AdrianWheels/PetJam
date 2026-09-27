@@ -36,14 +36,17 @@ layout_mode = 2
 [node name="Title" type="Label" parent="PanelContainer/VBox/TitleBar"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 24
-text = "Blueprint Library"
+theme_override_colors/font_color = Color(0.91, 0.72, 0.29, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 42
+text = "Biblioteca de planos"
 horizontal_alignment = 1
 
 [node name="CloseBtn" type="Button" parent="PanelContainer/VBox/TitleBar"]
-custom_minimum_size = Vector2(40, 40)
+custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
-text = "✕"
+theme_override_font_sizes/font_size = 34
+text = "X"
 
 [node name="ScrollContainer" type="ScrollContainer" parent="PanelContainer/VBox"]
 layout_mode = 2

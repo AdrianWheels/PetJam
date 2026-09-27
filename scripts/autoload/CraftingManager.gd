@@ -4,6 +4,7 @@ signal craft_enqueued(slot_idx, recipe_id)
 signal task_started(task_id, config)
 signal task_updated(task_id, payload)
 signal task_completed(slot_idx: int, crafted_item: Dictionary)
+signal forjamagia_changed(value: int, max_value: int)
 
 const MAX_SLOTS := 5
 const STATUS_QUEUED := &"queued"
@@ -36,15 +37,32 @@ class CraftingTask:
 	var max_score_accumulated: float = 0.0
 	var trial_results: Array = []
 	var grade: String = ""
+	var gold_reward: int = 0  ## Recompensa base del request (calculado por RequestsManager)
 
-	func _init(task_id: int, blueprint_res: BlueprintResource, slot: int) -> void:
+	func _init(task_id: int, blueprint_res: BlueprintResource, slot: int, reward: int = 0) -> void:
 		id = task_id
 		blueprint = blueprint_res
 		slot_index = slot
+		gold_reward = reward
 
 var queue: Array = []
 var heat := 0
 var forjamagia := 0
+
+## Forjamagia — constantes de incremento por grado de trial
+const MAX_FORJAMAGIA := 10
+const FORJAMAGIA_PERFECT := 3    ## Ratio >= 0.9
+const FORJAMAGIA_GOOD := 1       ## Ratio >= 0.7
+const FORJAMAGIA_REGULAR := 0    ## Ratio >= 0.4
+const FORJAMAGIA_MISS := -1      ## Ratio < 0.4
+
+## Bonus de calidad según nivel de forjamagia
+const FORJAMAGIA_BONUS := {
+	0: 0.0,    # 0-3: sin bonus
+	4: 0.05,   # 4-6: +5%
+	7: 0.10,   # 7-9: +10%
+	10: 0.15,  # 10 (overclock): +15%
+}
 
 var _next_task_id: int = 1
 
@@ -76,7 +94,7 @@ func _enqueue_defaults() -> void:
 	# print("CraftingManager: Default blueprints enqueued")
 	pass
 
-func enqueue(recipe_id) -> bool:
+func enqueue(recipe_id, gold_reward: int = 0) -> bool:
 	var blueprint := _resolve_blueprint(StringName(str(recipe_id)))
 	if blueprint == null:
 		push_warning("CraftingManager: Cannot enqueue recipe '%s' without blueprint" % recipe_id)
@@ -93,11 +111,11 @@ func enqueue(recipe_id) -> bool:
 
 	for i in range(MAX_SLOTS):
 		if queue[i] == null:
-			var task := CraftingTask.new(_generate_task_id(), blueprint, i)
+			var task := CraftingTask.new(_generate_task_id(), blueprint, i, gold_reward)
 			queue[i] = task
 			task.status = STATUS_QUEUED  # Wait for player click
 			emit_signal("craft_enqueued", i, recipe_id)
-			print("CraftingManager: Enqueued recipe '%s' in slot %d (waiting for player)" % [recipe_id, i])
+			print("CraftingManager: Enqueued recipe '%s' in slot %d (reward: %d gold)" % [recipe_id, i, gold_reward])
 			_emit_task_update(task)
 			# Do NOT auto-start trials - wait for player to click blueprint
 			return true
@@ -139,6 +157,7 @@ func start_task(slot_idx: int) -> bool:
 	
 	if task.blueprint.has_trials():
 		print("CraftingManager: Player starting task %d (slot %d)" % [task.id, slot_idx])
+		reset_forjamagia()
 		_start_next_trial(task)
 		return true
 	else:
@@ -179,6 +198,45 @@ func promote(slot_idx: int) -> bool:
 	print("CraftingManager: Promoted slot %d to front, heat now %d" % [slot_idx, heat])
 	return true
 
+# ═══════════════════════════════════════════════════════════════════
+#  FORJAMAGIA
+# ═══════════════════════════════════════════════════════════════════
+
+## Añade (o resta) forjamagia, clampeado a [0, MAX_FORJAMAGIA]
+func add_forjamagia(amount: int) -> void:
+	var old := forjamagia
+	forjamagia = clampi(forjamagia + amount, 0, MAX_FORJAMAGIA)
+	if forjamagia != old:
+		print("CraftingManager: Forjamagia %d → %d" % [old, forjamagia])
+		forjamagia_changed.emit(forjamagia, MAX_FORJAMAGIA)
+
+## Resetea la forjamagia a 0
+func reset_forjamagia() -> void:
+	forjamagia = 0
+	forjamagia_changed.emit(forjamagia, MAX_FORJAMAGIA)
+
+## Calcula el bonus de calidad por nivel de forjamagia actual
+func get_forjamagia_bonus() -> float:
+	if forjamagia >= 10:
+		return FORJAMAGIA_BONUS[10]
+	elif forjamagia >= 7:
+		return FORJAMAGIA_BONUS[7]
+	elif forjamagia >= 4:
+		return FORJAMAGIA_BONUS[4]
+	return FORJAMAGIA_BONUS[0]
+
+## Determina cuánta forjamagia aporta un resultado de trial
+func _calc_forjamagia_from_trial(trial_result: TrialResult) -> int:
+	var ratio := trial_result.get_score_ratio()
+	if ratio >= 0.9:
+		return FORJAMAGIA_PERFECT
+	elif ratio >= 0.7:
+		return FORJAMAGIA_GOOD
+	elif ratio >= 0.4:
+		return FORJAMAGIA_REGULAR
+	else:
+		return FORJAMAGIA_MISS
+
 func report_trial_result(task_id: int, result: TrialResult) -> Dictionary:
 	var task := _find_task(task_id)
 	if task == null:
@@ -196,6 +254,10 @@ func report_trial_result(task_id: int, result: TrialResult) -> Dictionary:
 	task.score_accumulated += result.score
 	task.max_score_accumulated += result.max_score
 	task.trial_results.append(result)
+
+	# Forjamagia ya se actualiza per-hit via hit_scored signal
+	# (no se añade aquí para evitar duplicación)
+
 	_emit_task_update(task)
 
 	task.current_trial_index += 1
@@ -316,6 +378,14 @@ func _finalize_task(task: CraftingTask) -> Dictionary:
 
 	task.status = STATUS_COMPLETED
 	var ratio := 1.0 if task.max_score_accumulated <= 0.0 else task.score_accumulated / task.max_score_accumulated
+
+	# Aplicar bonus de forjamagia a la calidad
+	var fm_bonus := get_forjamagia_bonus()
+	var boosted_ratio := clampf(ratio + fm_bonus, 0.0, 1.0)
+	if fm_bonus > 0.0:
+		print("CraftingManager: Forjamagia bonus +%.0f%% (ratio %.2f → %.2f)" % [fm_bonus * 100, ratio, boosted_ratio])
+	ratio = boosted_ratio
+
 	var grade := _determine_grade(ratio)
 	task.grade = grade
 	_emit_task_update(task)
@@ -342,6 +412,19 @@ func _finalize_task(task: CraftingTask) -> Dictionary:
 						crafted_item.get_quality_label()
 					])
 
+	# Calcular oro final: reward base × multiplicador por grado
+	var gold_multiplier := 1.0
+	match grade:
+		"gold":
+			gold_multiplier = 3.0
+		"silver":
+			gold_multiplier = 2.0
+		"bronze":
+			gold_multiplier = 1.0
+		_:
+			gold_multiplier = 0.5
+	var final_gold := int(task.gold_reward * gold_multiplier) if task.gold_reward > 0 else int(50 * gold_multiplier)
+
 	var result := {
 		"status": STATUS_COMPLETED,
 		"task_id": task.id,
@@ -352,7 +435,10 @@ func _finalize_task(task: CraftingTask) -> Dictionary:
 		"blueprint_id": task.blueprint.blueprint_id if task.blueprint else StringName(),
 		"result_item": task.blueprint.result_item if task.blueprint else StringName(),
 		"materials": task.blueprint.materials if task.blueprint else {},
-		"crafted_item": crafted_item
+		"crafted_item": crafted_item,
+		"gold_reward": final_gold,
+		"forjamagia": forjamagia,
+		"forjamagia_bonus": fm_bonus,
 	}
 
 	var slot := task.slot_index
