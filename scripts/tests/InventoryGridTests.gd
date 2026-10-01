@@ -218,6 +218,23 @@ func test_bonus_is_capped() -> void:
 	check(is_equal_approx(b[center].hp, GearAuras.CAP), "cuatro cascos legendarios dan +80 %%, pero el tope lo deja en +50 %% (%s)" % b[center])
 
 
+func test_a_bonus_on_a_stat_the_piece_lacks_does_nothing() -> void:
+	# Spec 4.1: "el casco no da vida a una espada". La espada solo tiene daño, crítico y velocidad.
+	var g := GearGrid.new(Vector2i(5, 5))
+	var helmet := _piece(&"helmet_basic", 0.8)  # Raro: +10 % de vida a las vecinas
+	var sword := _piece(&"sword_basic", 0.2)
+	g.place(helmet, Vector2i(2, 1), 0)  # fuera de la fila de arriba: sin zona
+	g.place(sword, Vector2i(3, 1), 0)  # pegada al casco y fuera de su zona (columna 4)
+	var b := GearAuras.bonuses(g)
+	check(not b[sword].has("hp"), "el casco no da vida a una espada, que no tiene (%s)" % b[sword])
+	check(b[sword].is_empty(), "y fuera de su zona la espada no sube nada (%s)" % b[sword])
+	g.place(sword, Vector2i(4, 1), 0)  # ahora en su zona (columna derecha), con el casco pegado
+	g.place(helmet, Vector2i(3, 1), 0)
+	b = GearAuras.bonuses(g)
+	check(not b[sword].has("hp") and not b[sword].has("armor"), "en su zona tampoco sube la vida ni la armadura que no tiene (%s)" % b[sword])
+	check(is_equal_approx(b[sword].get("damage", 0.0), GearAuras.ZONE_BONUS) and is_equal_approx(b[sword].get("aps", 0.0), GearAuras.ZONE_BONUS), "pero sí el daño y la velocidad que tiene (%s)" % b[sword])
+
+
 func test_zone_follows_the_grid_edge() -> void:
 	var g := GearGrid.new(Vector2i(4, 4))
 	var sword := _piece(&"sword_basic", 0.2)
@@ -240,4 +257,4 @@ func test_totals_match_a_hand_count() -> void:
 	var hp := float(s.hp) * (1.0 + 0.10 + 0.10) + float(h.hp)
 	var armor := float(s.armor) * 1.10 + float(h.armor) * 1.10
 	check(t.hp == roundi(hp) and t.armor == roundi(armor), "vida %d (espera %d) y armadura %d (espera %d)" % [t.hp, roundi(hp), t.armor, roundi(armor)])
-	check(t.keys().size() == GearAuras.STATS.size(), "las mismas claves que calculate_total_stats")
+	check(t.keys() == ["damage", "str", "agi", "int", "hp", "armor", "crit", "aps"], "las claves de InventoryManager.calculate_total_stats() (%s)" % [t.keys()])

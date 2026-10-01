@@ -65,6 +65,12 @@ static func in_zone(grid: GearGrid, item: CraftedItem) -> bool:
 	return false
 
 
+## true si la pieza tiene esa estadística (por encima de 0). Un aumento sobre una estadística que le
+## falta no hace nada (spec, apartado 4.1: el casco no da vida a una espada), así que no se apunta.
+static func _has_stat(item: CraftedItem, stat: String) -> bool:
+	return float(item.calculated_stats.get(stat, 0)) > 0.0
+
+
 ## Aumento de cada estadística de cada pieza de la rejilla, con el tope ya aplicado:
 ## pieza → {estadística: fracción}. Solo aparecen las estadísticas que suben.
 static func bonuses(grid: GearGrid) -> Dictionary:
@@ -73,7 +79,8 @@ static func bonuses(grid: GearGrid) -> Dictionary:
 		var pct := {}
 		if in_zone(grid, item):
 			for s in STATS:
-				pct[s] = ZONE_BONUS
+				if _has_stat(item, s):
+					pct[s] = ZONE_BONUS
 		out[item] = pct
 	for emitter in grid.items:
 		var strength := aura_strength(emitter)
@@ -82,6 +89,8 @@ static func bonuses(grid: GearGrid) -> Dictionary:
 			continue
 		for receiver in grid.neighbors(emitter):
 			if aura.to != &"any" and kind(receiver) != aura.to:
+				continue
+			if not _has_stat(receiver, aura.stat):
 				continue
 			var pct: Dictionary = out[receiver]
 			pct[aura.stat] = float(pct.get(aura.stat, 0.0)) + strength
