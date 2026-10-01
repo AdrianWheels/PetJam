@@ -3,6 +3,13 @@ extends "res://scripts/tests/TestSuite.gd"
 ## solo desarrollo, sin ventana:
 ##   D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/RankTests.tscn
 
+const BalanzaBinding := preload("res://scripts/tests/BalanzaBinding.gd")
+const BALANZA_TIERS := {
+	&"basic": [&"sword_basic", &"shield_basic", &"helmet_basic", &"boots_basic"],
+	&"advanced": [&"sword_advanced", &"shield_advanced", &"helmet_advanced", &"boots_advanced"],
+	&"master": [&"sword_masterwork", &"shield_master", &"helmet_master", &"boots_master"],
+}
+
 
 func _new_hero() -> Node2D:
 	var hero: Node2D = load("res://scenes/Hero.tscn").instantiate()
@@ -165,3 +172,78 @@ func test_rank_names() -> void:
 	check(Ranks.biome_material_for_room(5) == &"bone" and Ranks.biome_material_for_room(45) == &"void_shard" and Ranks.biome_material_for_room(55) == &"bone", "material de cada bioma")
 	var t := Ranks.milestone_text(2, Ranks.TIER_ADVANCED)
 	check(t.contains("II") and not t.is_empty(), "el texto del hito lleva el numeral (%s)" % t)
+
+
+# ─── Piloto de Balanza: el enlace (spec del kit, apartado 11.1) ──────────
+
+## Un conjunto como los que manda el arnés: las 4 piezas de un nivel a una calidad (estadísticas sin redondear y bandas).
+static func _balanza_build(tier: StringName, quality: float, rank: int) -> Dictionary:
+	var items := []
+	for id in BALANZA_TIERS[tier]:
+		var res: ItemResource = load("res://data/items/%s.tres" % id)
+		var stats := {}
+		var bands := {}
+		for stat in ["damage", "hp", "armor", "crit", "aps"]:
+			var lo := float(res.get("base_%s_min" % stat))
+			var hi := float(res.get("base_%s_max" % stat))
+			stats[stat] = lerpf(lo, hi, quality)
+			bands[stat] = {"min": lo, "max": hi}
+		items.append({"id": String(id), "slot": res.equipment_slot, "stats": stats, "bands": bands, "effects": []})
+	return {"items": items, "params": {"rank": rank, "quality": quality}}
+
+
+func test_balanza_gear_matches_the_game() -> void:
+	var totals := BalanzaBinding.gear_totals(_balanza_build(&"advanced", 0.55, 2).items, 2)
+	var expected := {}
+	for id in BALANZA_TIERS[&"advanced"]:
+		var res: ItemResource = load("res://data/items/%s.tres" % id)
+		var stats := Ranks.scale_stats(res.calculate_stats(0.55), 2)
+		for k in stats:
+			expected[k] = expected.get(k, 0) + stats[k]
+	for k in ["damage", "hp", "armor", "crit", "aps"]:
+		check(is_equal_approx(float(totals[k]), float(expected[k])), "%s del avanzado II como en el juego (%s y %s)" % [k, totals[k], expected[k]])
+	var delta := BalanzaBinding.gear_totals([{"id": "@delta:hp", "virtual": true, "stats": {"hp": 7.0}, "bands": {}, "effects": []}], 2)
+	check(is_equal_approx(float(delta.hp), 7.0), "un objeto virtual del arnés se suma tal cual, sin rango")
+
+
+func test_balanza_wall_is_the_first_lost_duel() -> void:
+	var hero := CombatMath.hero_stats({})
+	var dps := CombatMath.expected_dps(hero)
+	var w: Dictionary = BalanzaBinding.wall_of(hero)
+	var wall := int(w.wall)
+	check(wall >= 2, "Tico sin equipo gana la sala 1 (muro en la %d)" % wall)
+	check(not BalanzaBinding.duel(hero, dps, wall).won and BalanzaBinding.duel(hero, dps, wall - 1).won, "pierde en el muro y gana en la anterior")
+	check(w.progress >= wall - 1 and w.progress < wall, "el progreso va de muro − 1 a muro (%.2f)" % w.progress)
+
+
+func test_balanza_quality_and_rank_move_progress() -> void:
+	var b = BalanzaBinding.new()
+	var low: Dictionary = b.evaluate(_balanza_build(&"basic", 0.4, 1), "duel", 1)
+	var high: Dictionary = b.evaluate(_balanza_build(&"basic", 1.0, 1), "duel", 1)
+	check(high.progress > low.progress, "más calidad, más progreso (%.2f > %.2f)" % [high.progress, low.progress])
+	var rank2: Dictionary = b.evaluate(_balanza_build(&"basic", 0.4, 2), "duel", 1)
+	check(rank2.progress > low.progress, "más rango, más progreso (%.2f > %.2f)" % [rank2.progress, low.progress])
+
+
+func test_balanza_set_param_reaches_the_levers() -> void:
+	var b = BalanzaBinding.new()
+	var saved := [EnemyScaling.EXP, EnemyScaling.STEP, EnemyScaling.BOSS_MULT, CombatMath.ARMOR_K, Ranks.RANK_POWER_BONUS]
+	b.set_param("exp", 1.03)
+	b.set_param("step", 5.0)
+	b.set_param("boss", 2.0)
+	b.set_param("armor_k", 33.0)
+	b.set_param("rank_bonus", 1.5)
+	check(is_equal_approx(EnemyScaling.EXP, 1.03) and is_equal_approx(EnemyScaling.STEP, 5.0) and is_equal_approx(EnemyScaling.BOSS_MULT, 2.0), "set_param llega a la curva")
+	check(is_equal_approx(CombatMath.ARMOR_K, 33.0) and is_equal_approx(Ranks.RANK_POWER_BONUS, 1.5), "set_param llega a la armadura y al bono de rango")
+	EnemyScaling.EXP = saved[0]
+	EnemyScaling.STEP = saved[1]
+	EnemyScaling.BOSS_MULT = saved[2]
+	CombatMath.ARMOR_K = saved[3]
+	Ranks.RANK_POWER_BONUS = saved[4]
+
+
+## Review Focus 5: un equipo que nunca pierde llega al tope sin colgarse.
+func test_balanza_wall_has_a_ceiling() -> void:
+	var titan := CombatMath.hero_stats({"damage": 1e12, "hp": 1e15})
+	var w: Dictionary = BalanzaBinding.wall_of(titan)
+	check(int(w.wall) == BalanzaBinding.MAX_ROOM + 1 and is_equal_approx(w.progress, float(BalanzaBinding.MAX_ROOM)), "sin muro: wall = MAX_ROOM + 1 y progress = MAX_ROOM")

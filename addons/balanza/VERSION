@@ -1,0 +1,12 @@
+{
+  "kit": "0.1.0",
+  "engine": "godot",
+  "files": {
+    "json_io.gd": "482489af37f81fb850c60d21765fdd604040e1fdb22805f12f6efbd856be5a01",
+    "rng.gd": "8e6956b35fba8f45ea9dbef01aafe0dabce632c37a3a554d16cb2e4ae762f3f8",
+    "error_logger.gd": "7bdc3c0d894c8b9fc0157351a4af6e5bd5ed4e63c6ccefb7e2d62cab7f6bd99d",
+    "harness.gd": "363892b462615a94b2591ba4fbe442b9b761f028651e1116bdb57cd6400a3f6c",
+    "run.gd": "fc525cc75da8b7b75b59cd30a538b1955b80da2928586f3cf3ec305f72297e8d",
+    "run.tscn": "c0f64169d3449f5523fe04211f68772b350f4540191a0abf8913454225159962"
+  }
+}
