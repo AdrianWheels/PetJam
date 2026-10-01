@@ -623,3 +623,112 @@ func test_forging_rolls_aristas_by_quality() -> void:
 	cm.forjamagia = fm_before
 	cm.rng.randomize()  # el sorteo vuelve a ser libre tras sembrarlo
 	await _restore_inventory(saved)
+
+
+# ─── Tarea 7: guardado versión 2 y migración ───────────────────────────
+
+## Partida de la versión 1 (antes de la rejilla): 4 piezas equipadas y 40 sueltas, con récord 35.
+func _v1_save() -> Dictionary:
+	var items := []
+	var equipped := {"main_hand": 0, "off_hand": 1, "head": 2, "feet": 3}
+	var gear := [[&"sword_masterwork", 0.93], [&"shield_master", 0.5], [&"helmet_advanced", 0.6], [&"boots_master", 0.3]]
+	for i in 44:
+		var id: StringName = gear[i][0] if i < 4 else ITEM_IDS[i % ITEM_IDS.size()]
+		var q: float = gear[i][1] if i < 4 else 0.2 + 0.018 * i
+		var d := CraftedItem.new(_res(id), q).to_dict()
+		for k in ["rank", "place", "x", "y", "rot", "aristas"]:
+			d.erase(k)
+		d["equipped"] = i < 4
+		d["timestamp"] = 1000 + i
+		items.append(d)
+	return {
+		"version": 1,
+		"timestamp": 1790000000.0,
+		"game": {"current_enemy_level": 7, "best_enemy_level": 35, "death_count": 2, "enemies_defeated": {}, "hero_loadout": {}},
+		"data": {"unlocked_blueprints": {}},
+		"inventory": {"materials": {"iron": 50, "gold": 300}, "crafted_items": items, "equipped_slots": equipped},
+		"requests": {"free_requests_remaining": 0},
+	}
+
+
+func _load_save_dict(data: Dictionary) -> bool:
+	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	f.store_string(JSON.stringify(data))
+	f.close()
+	return SaveManager.load_game()
+
+
+## Vuelve a cargar la partida de antes de la prueba (TestSuite solo restaura el fichero al terminar).
+func _reload_user_save() -> void:
+	if _had_save:
+		var back := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+		back.store_buffer(_save_backup)
+		back.close()
+		SaveManager.load_game()
+	else:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+	await get_tree().process_frame
+
+
+func test_v1_save_migrates_without_losing_pieces() -> void:
+	var im := _im()
+	check(_load_save_dict(_v1_save()), "la partida de la versión 1 carga")
+	check(im.get_crafted_items().size() == 44, "ninguna pieza perdida (%d de 44)" % im.get_crafted_items().size())
+	check(im.hero_grid_size() == Vector2i(6, 5) and im.expansions.size() == 3, "récord 35: jefes 10, 20 y 30 vencidos, 3 ampliaciones y rejilla de 6×5 (%s)" % im.hero_grid_size())
+	var hero_ids: Array = im.get_hero_items().map(func(it): return it.item_resource.item_id)
+	check(&"sword_masterwork" in hero_ids and &"shield_master" in hero_ids, "lo que estaba equipado entra en la rejilla, las mejores primero (%s)" % [hero_ids])
+	check(im.get_hero_items().size() + im.get_loot().size() == 44 and im.get_bag_items().is_empty(), "lo demás, al botín")
+	var first: CraftedItem = im.get_loot()[0]
+	check(im.get_loot().all(func(it): return InventoryManager.gear_score(it) <= InventoryManager.gear_score(first)), "el botín empieza por la mejor pieza")
+	var aristas_a: Array = im.get_crafted_items().map(func(it): return it.aristas)
+	check(_load_save_dict(_v1_save()), "se vuelve a cargar la misma partida")
+	var aristas_b: Array = im.get_crafted_items().map(func(it): return it.aristas)
+	check(aristas_a == aristas_b, "las aristas migradas salen siempre iguales")
+	check(SaveManager.save_game(), "se guarda en la versión nueva")
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
+	check(int(data.version) == 2 and data.inventory.has("hero_grid") and not data.inventory.has("equipped_slots"), "guardado versión 2, sin huecos fijos")
+	await _reload_user_save()
+
+
+func test_v2_save_round_trip() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var a := _piece(&"shield_master", 0.5, [Vector2i(2, 1)])
+	var b := _piece(&"boots_advanced", 0.7)
+	var c := _piece(&"sword_basic", 0.3)
+	for p in [a, b, c]:
+		im.add_crafted_item(p)
+	im.move_item(a, &"hero", Vector2i(0, 0), 0)
+	im.move_item(b, &"bag", Vector2i(2, 1), 3)
+	var data: Dictionary = im.to_save_data()
+	im.load_save_data(data, 1)
+	var by_id := {}
+	for it in im.get_crafted_items():
+		by_id[it.item_resource.item_id] = it
+	check(by_id[&"shield_master"].place == &"hero" and by_id[&"shield_master"].aristas == [Vector2i(2, 1)], "el escudo vuelve a Tico con su arista")
+	check(by_id[&"boots_advanced"].place == &"bag" and by_id[&"boots_advanced"].cell == Vector2i(2, 1) and by_id[&"boots_advanced"].rot == 3, "las botas vuelven a su casilla y giro de la mochila")
+	check(by_id[&"sword_basic"].place == &"loot", "la espada sigue en el botín")
+	await _restore_inventory(saved)
+
+
+func test_impossible_saved_position_goes_to_loot() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var a := _piece(&"shield_master")
+	var b := _piece(&"helmet_basic")
+	im.add_crafted_item(a)
+	im.add_crafted_item(b)
+	im.move_item(a, &"hero", Vector2i(0, 0), 0)
+	im.move_item(b, &"bag", Vector2i(5, 3), 0)
+	var data: Dictionary = im.to_save_data()
+	for d in data.crafted_items:
+		if d.item_id == "shield_master":
+			d.x = 3  # un escudo de 2×3 desde la columna 3 de una rejilla de 4×4 se sale
+	im.load_save_data(data, 1)
+	var by_id := {}
+	for it in im.get_crafted_items():
+		by_id[it.item_resource.item_id] = it
+	check(by_id.size() == 2, "las dos piezas siguen ahí")
+	check(by_id[&"shield_master"].place == &"loot", "el escudo con una posición imposible pasa al botín")
+	check(by_id[&"helmet_basic"].place == &"bag" and by_id[&"helmet_basic"].cell == Vector2i(5, 3), "el casco sigue en su sitio de la mochila")
+	await _restore_inventory(saved)

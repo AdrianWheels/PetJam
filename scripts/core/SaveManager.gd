@@ -6,7 +6,7 @@ extends RefCounted
 class_name SaveManager
 
 const SAVE_PATH := "user://save.json"
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2
 
 ## Guarda el estado completo del juego a disco
 static func save_game() -> bool:
@@ -82,9 +82,11 @@ static func load_game() -> bool:
 	if dm and dm.has_method("load_save_data") and save_data.has("data"):
 		dm.load_save_data(save_data["data"])
 
-	# InventoryManager (materiales + items crafteados + equipo)
+	# InventoryManager (materiales y piezas). Con una partida anterior a la rejilla, el récord decide las
+	# ampliaciones que ya tenía ganadas (spec del inventario en rejilla, apartado 10)
 	if im and im.has_method("load_save_data") and save_data.has("inventory"):
-		im.load_save_data(save_data["inventory"])
+		var record := int(save_data.get("game", {}).get("best_enemy_level", 1))
+		im.load_save_data(save_data["inventory"], record)
 
 	# GameManager (nivel enemigo, muertes, loadout)
 	if gm and gm.has_method("load_save_data") and save_data.has("game"):
