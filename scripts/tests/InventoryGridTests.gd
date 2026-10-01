@@ -1011,3 +1011,210 @@ func test_dropping_a_piece_on_its_own_place_does_not_rematerialize_tico() -> voi
 	await _silence_sounds()
 	panel.queue_free()
 	await _restore_inventory(saved)
+
+
+# ─── Tarea 9, revisión: Atrás, destino bajo la pieza y detalles del arrastre ───
+
+## Atrás en Android llega como NOTIFICATION_WM_GO_BACK_REQUEST, no como tecla, y el árbol cierra el juego si
+## quit_on_go_back es true: mientras el panel está abierto, Atrás lo cierra a él y solo a él.
+func test_android_back_closes_the_panel_and_not_the_game() -> void:
+	var tree := get_tree()
+	var before := tree.quit_on_go_back
+	check(before, "antes de abrir el panel, Atrás cierra el juego, como siempre (ningún panel de otra prueba lo dejó retenido)")
+	var closed := {"count": 0}
+	var panel := _new_panel()
+	panel.panel_closed.connect(func(): closed.count += 1)
+	check(not tree.quit_on_go_back, "con el panel abierto, Atrás no cierra el juego")
+	panel.notification(NOTIFICATION_WM_GO_BACK_REQUEST)
+	check(not panel.visible and closed.count == 1, "Atrás cierra el panel (avisos: %d)" % closed.count)
+	check(not tree.quit_on_go_back, "y en ese mismo Atrás el juego sigue abierto: lo de antes se devuelve después")
+	await get_tree().process_frame
+	check(tree.quit_on_go_back == before, "un fotograma después, Atrás vuelve a ser lo de antes (%s)" % tree.quit_on_go_back)
+	panel.notification(NOTIFICATION_WM_GO_BACK_REQUEST)
+	check(closed.count == 1 and tree.quit_on_go_back == before, "con el panel cerrado, Atrás no hace nada del panel")
+	panel.open()
+	check(not tree.quit_on_go_back, "abierto otra vez, vuelve a retener Atrás")
+	panel.open()  # abrirlo dos veces no pierde lo guardado
+	panel.close()
+	await get_tree().process_frame
+	check(tree.quit_on_go_back == before, "y al cerrarlo lo devuelve, aunque se abriera dos veces (%s)" % tree.quit_on_go_back)
+	panel.queue_free()
+
+
+## Si el panel se oculta sin pasar por close(), o desaparece abierto, Atrás se devuelve igualmente.
+func test_back_is_given_back_if_the_panel_goes_away_open() -> void:
+	var tree := get_tree()
+	var before := tree.quit_on_go_back
+	var hidden := _new_panel()
+	hidden.visible = false  # algo lo oculta sin pasar por close()
+	await get_tree().process_frame
+	check(tree.quit_on_go_back == before, "oculto sin close(), Atrás se devuelve (%s)" % tree.quit_on_go_back)
+	hidden.queue_free()
+	var freed := _new_panel()
+	check(not tree.quit_on_go_back, "otro panel abierto vuelve a retener Atrás")
+	freed.queue_free()
+	await get_tree().process_frame
+	check(tree.quit_on_go_back == before, "y si desaparece abierto, lo devuelve (%s)" % tree.quit_on_go_back)
+
+
+## Manda la pieza, no el dedo: con la rejilla de 6×6, una pieza sobre su última fila, con el dedo ya dentro de la
+## tira del botín, cae en la rejilla.
+func test_dropping_on_the_last_row_of_a_full_grid_places_the_piece() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var data: Dictionary = im.to_save_data()
+	data["expansions"] = GridExpansions.ids().map(func(id): return String(id))
+	im.load_save_data(data, 1)  # las cuatro ampliaciones forjadas: 6×6
+	check(im.hero_grid_size() == Vector2i(6, 6), "Tico tiene la rejilla de 6×6 (%s)" % im.hero_grid_size())
+	var helmet := _piece(&"helmet_basic")  # 1×1
+	im.add_crafted_item(helmet)
+	var panel := _new_panel()
+	var start: Vector2 = panel._loot_view.global_position + Vector2(60, 165)
+	_mouse(panel, start, true)
+	_move(panel, start + Vector2(0, -30))
+	var finger := _finger_for(panel, panel._hero_view, Vector2i(2, 5))
+	check(panel._loot_view.get_global_rect().has_point(finger), "el dedo ya está dentro de la tira del botín (%s)" % finger)
+	_move(panel, finger)
+	check(panel._target.get("place") == &"hero" and panel._target.get("cell") == Vector2i(2, 5) and panel._target.get("ok", false), "el destino es la casilla de Tico bajo la pieza (%s)" % [panel._target])
+	_mouse(panel, finger, false)
+	check(helmet.place == &"hero" and helmet.cell == Vector2i(2, 5), "y al soltar la pieza queda ahí")
+	await _silence_sounds()
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+## En una rejilla pequeña, las filas punteadas (aún sin abrir) no se llevan lo que se suelta sobre el botín.
+func test_dashed_rows_do_not_steal_a_drop_meant_for_the_loot() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var helmet := _piece(&"helmet_basic")  # 1×1
+	im.add_crafted_item(helmet)
+	im.move_item(helmet, &"hero", Vector2i(0, 0), 0)
+	var panel := _new_panel()
+	var start := _cell_center(panel._hero_view, Vector2i(0, 0))
+	_mouse(panel, start, true)
+	_move(panel, start + Vector2(30, 30))
+	var finger := _finger_for(panel, panel._hero_view, Vector2i(2, 5))  # la pieza sobre la fila 5, que en 4×4 aún no existe
+	check(panel._loot_view.get_global_rect().has_point(finger), "el dedo está dentro de la tira del botín (%s)" % finger)
+	_move(panel, finger)
+	check(panel._target.get("place") == &"loot", "sobre una casilla que no existe manda el botín (%s)" % [panel._target])
+	_mouse(panel, finger, false)
+	check(helmet.place == &"loot", "y la pieza sale de Tico al botín")
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+## Mantener R pulsada repite la tecla (echo): la pieza gira una sola vez.
+func test_holding_r_rotates_only_once() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var sword := _piece(&"sword_advanced")
+	im.add_crafted_item(sword)
+	im.move_item(sword, &"bag", Vector2i(0, 0), 0)
+	var panel := _new_panel()
+	var start := _cell_center(panel._bag_view, Vector2i(0, 1))
+	_mouse(panel, start, true)
+	_move(panel, start + Vector2(40, 40))
+	var key := InputEventKey.new()
+	key.keycode = KEY_R
+	key.pressed = true
+	panel._input(key)
+	check(panel._drag_rot == 1, "R gira una vez (%d)" % panel._drag_rot)
+	var repeat := InputEventKey.new()
+	repeat.keycode = KEY_R
+	repeat.pressed = true
+	repeat.echo = true
+	panel._input(repeat)
+	panel._input(repeat)
+	check(panel._drag_rot == 1, "las repeticiones de la tecla mantenida no la giran más (%d)" % panel._drag_rot)
+	_move(panel, Vector2(540, 60))
+	_mouse(panel, Vector2(540, 60), false)
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+## Si llega una pieza a mitad de un arrastre, la vista previa del cambio no se pierde.
+func test_new_loot_while_dragging_keeps_the_stats_preview() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var sword := _piece(&"sword_advanced")
+	im.add_crafted_item(sword)
+	var panel := _new_panel()
+	var start: Vector2 = panel._loot_view.global_position + Vector2(60, 165)
+	_mouse(panel, start, true)
+	_move(panel, start + Vector2(0, -30))
+	var finger := _finger_for(panel, panel._hero_view, Vector2i(0, 0))
+	_move(panel, finger)
+	check(panel._target.get("ok", false) and "[color=" in panel._stats_label.text, "sobre Tico vacío, la barra enseña el cambio (%s)" % panel._stats_label.text)
+	im.add_crafted_item(_piece(&"boots_basic"))  # llega una pieza de la forja a mitad del arrastre
+	check(panel._dragging and panel._target.get("ok", false) and "[color=" in panel._stats_label.text, "y la barra sigue enseñándolo (%s)" % panel._stats_label.text)
+	_move(panel, Vector2(540, 60))
+	_mouse(panel, Vector2(540, 60), false)
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+## Si crece la rejilla a mitad de un arrastre, el destino y sus casillas se calculan de nuevo.
+func test_grid_growing_while_dragging_recalculates_the_target() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var shield := _piece(&"shield_advanced")  # 2×2
+	im.add_crafted_item(shield)
+	var panel := _new_panel()
+	var start: Vector2 = panel._loot_view.global_position + Vector2(60, 165)
+	_mouse(panel, start, true)
+	_move(panel, start + Vector2(0, -30))
+	var finger := _finger_for(panel, panel._hero_view, Vector2i(3, 0))  # en 4×4 se sale por la derecha
+	_move(panel, finger)
+	check(not panel._target.get("ok", true) and panel._hero_view.drop_cells.size() == 2 and panel._hero_view.drop_cells.values().all(func(c): return c == GearGridView.COLOR_BAD), "en 4×4 no cabe: dos casillas en rojo (%s)" % [panel._hero_view.drop_cells])
+	im.hero_grid.resize(Vector2i(5, 4))
+	im.grid_resized.emit(Vector2i(5, 4))  # la ampliación llega a mitad del arrastre
+	check(panel._target.get("ok", false), "con la columna nueva ya cabe (%s)" % [panel._target])
+	check(panel._hero_view.drop_cells.size() == 4 and panel._hero_view.drop_cells.values().all(func(c): return c == GearGridView.COLOR_OK), "y las cuatro casillas pasan a verde (%s)" % [panel._hero_view.drop_cells])
+	_move(panel, Vector2(540, 60))
+	_mouse(panel, Vector2(540, 60), false)
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+## Si algo oculta el panel sin pasar por close() en mitad de un arrastre, al abrirlo otra vez no queda nada a medias.
+func test_open_cancels_a_drag_left_over() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var helmet := _piece(&"helmet_basic")
+	im.add_crafted_item(helmet)
+	var panel := _new_panel()
+	var start: Vector2 = panel._loot_view.global_position + Vector2(60, 165)
+	_mouse(panel, start, true)
+	_move(panel, start + Vector2(0, -40))
+	check(panel._dragging and panel._loot_view.hidden_item == helmet, "se arrastra el casco y la tira deja de dibujarlo")
+	panel.visible = false  # algo lo oculta sin pasar por close()
+	panel.open()
+	check(not panel._dragging and panel._press.is_empty() and panel._loot_view.hidden_item == null, "al abrirlo otra vez el arrastre queda cancelado y el casco vuelve a verse")
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+## Con un ancestro oculto el panel no se ve aunque su visible sea true: no tiene que leer el dedo.
+func test_a_hidden_ancestor_stops_the_panel_reading_the_finger() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var sword := _piece(&"sword_advanced")
+	im.add_crafted_item(sword)
+	im.move_item(sword, &"hero", Vector2i(1, 0), 0)
+	var holder := Control.new()
+	add_child(holder)
+	var panel: Control = load("res://scenes/UI/EquipmentPanel.tscn").instantiate()
+	holder.add_child(panel)
+	panel.open()
+	var p := _cell_center(panel._hero_view, Vector2i(1, 1))
+	holder.visible = false
+	check(panel.visible and not panel.is_visible_in_tree(), "el panel sigue abierto pero no se ve")
+	_mouse(panel, p, true)
+	check(panel._press.is_empty(), "y no lee el dedo")
+	holder.visible = true
+	_mouse(panel, p, true)
+	check(not panel._press.is_empty(), "al volver a verse, sí")
+	_mouse(panel, p, false)
+	holder.queue_free()
+	await _restore_inventory(saved)

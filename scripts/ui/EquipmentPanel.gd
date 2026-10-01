@@ -10,6 +10,8 @@ extends ColorRect
 ##  - arrastrar la mueve: la pieza va una casilla por encima del dedo y un segundo dedo la gira;
 ##  - en el botín, de lado se desplaza la tira; hacia arriba o abajo se coge la pieza.
 ## En el ordenador el ratón hace lo mismo, y la rueda o la tecla R giran la pieza que se arrastra.
+## Atrás (Android) llega como NOTIFICATION_WM_GO_BACK_REQUEST, no como tecla, y el árbol cierra el juego si
+## quit_on_go_back es true: mientras el panel está abierto lo apaga y Atrás cierra el panel (ver _notification).
 
 signal panel_closed
 
@@ -55,6 +57,11 @@ var _drag_rot := 0
 var _drag_pos := Vector2.ZERO
 ## Destino del arrastre: {"place", "cell", "ok", "swap", "view"}; {} si no hay ninguno.
 var _target := {}
+## Atrás en Android: el quit_on_go_back de antes de abrir el panel, si el panel lo tiene apagado ahora y si aún
+## no ha devuelto lo que cambió (la devolución se hace en diferido).
+var _go_back_saved := true
+var _go_back_held := false
+var _go_back_owed := false
 
 
 func _ready() -> void:
@@ -131,7 +138,10 @@ func _puppet_setup() -> void:
 
 
 func open() -> void:
+	if is_node_ready():
+		_cancel_press()  # por si algo ocultó el panel sin pasar por close() en mitad de un arrastre
 	visible = true
+	_hold_go_back()
 	_refresh()
 	if _puppet:
 		_puppet.process_mode = Node.PROCESS_MODE_INHERIT
@@ -141,9 +151,58 @@ func open() -> void:
 func close() -> void:
 	_cancel_press()
 	visible = false
+	_release_go_back()
 	if _puppet:
 		_puppet.process_mode = Node.PROCESS_MODE_DISABLED
 	emit_signal("panel_closed")
+
+# ═══════════════════════════════════════════════════════════════════
+#  ATRÁS (ANDROID)
+# ═══════════════════════════════════════════════════════════════════
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		if is_visible_in_tree():
+			close()
+	elif what == NOTIFICATION_VISIBILITY_CHANGED:
+		# También si algo oculta el panel sin pasar por close(), o lo oculta un ancestro suyo
+		if is_visible_in_tree():
+			_hold_go_back()
+		else:
+			_release_go_back()
+
+
+func _exit_tree() -> void:
+	# Si el panel sale del árbol abierto, Atrás se devuelve ya: en diferido llegaría tarde para quien abra otro
+	if _go_back_owed:
+		_go_back_owed = false
+		_go_back_held = false
+		get_tree().quit_on_go_back = _go_back_saved
+
+
+## Con el panel abierto, Atrás lo cierra a él y no al juego (spec, apartado 9.1).
+func _hold_go_back() -> void:
+	if _go_back_held or not is_inside_tree():
+		return
+	_go_back_held = true
+	if not _go_back_owed:  # si queda una devolución sin hacer, lo guardado sigue siendo lo de antes del panel
+		_go_back_saved = get_tree().quit_on_go_back
+		_go_back_owed = true
+	get_tree().quit_on_go_back = false
+
+
+## Devuelve lo de antes en diferido: el aviso de Atrás que cierra el panel aún tiene que pasar por el árbol, que
+## mira quit_on_go_back cuando los nodos ya han terminado, y cerraría el juego.
+func _release_go_back() -> void:
+	if _go_back_held:
+		_go_back_held = false
+		call_deferred("_give_back_go_back")
+
+
+func _give_back_go_back() -> void:
+	if _go_back_owed and not _go_back_held:  # si se ha abierto otra vez mientras tanto, no
+		_go_back_owed = false
+		get_tree().quit_on_go_back = _go_back_saved
 
 # ═══════════════════════════════════════════════════════════════════
 #  REFRESCO
@@ -163,7 +222,12 @@ func _refresh() -> void:
 	loot_title.text = tr("Botín · %d") % _im.get_loot_count()
 	if _selected and not (_selected in _im.get_crafted_items()):
 		_selected = null
-	_refresh_stats({})
+	if _dragging:
+		# Llegó una pieza, creció la rejilla...: el destino, sus casillas y la vista previa se calculan de nuevo
+		_target = {"refreshed": true}  # distinto de cualquier destino: fuerza a enseñarlo otra vez
+		_update_target()
+	else:
+		_refresh_stats({})
 	_refresh_ficha()
 	_refresh_next()
 	if _puppet and _puppet.has_method("refresh_gear"):
@@ -260,7 +324,7 @@ func _refresh_next() -> void:
 # ═══════════════════════════════════════════════════════════════════
 
 func _input(event: InputEvent) -> void:
-	if not visible:
+	if not is_visible_in_tree():
 		return
 	if event.is_action_pressed("ui_cancel"):
 		close()
@@ -279,7 +343,7 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventScreenTouch and event.pressed and event.index >= 1 and _dragging:
 		_rotate_drag()  # segundo dedo
 		get_viewport().set_input_as_handled()
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_R and _dragging:
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R and _dragging:
 		_rotate_drag()
 		get_viewport().set_input_as_handled()
 
@@ -417,23 +481,26 @@ func _ghost_origin() -> Vector2:
 	return _drag_pos + grab + Vector2(0.0, -CELL)
 
 
-## Busca el destino bajo la pieza (el centro de la primera casilla de su caja) y lo enseña.
+## Busca el destino bajo la pieza (el centro de la primera casilla de su caja) y lo enseña. Manda la pieza, no el
+## dedo: primero las rejillas, por la casilla que hay bajo ella (solo cuentan las que ya existen, no las punteadas,
+## que sobre una rejilla pequeña taparían el botín); si no hay ninguna, el botín, por el dedo.
 func _update_target() -> void:
 	var item: CraftedItem = _press.item
 	var t := {}
-	if _loot_view.get_global_rect().has_point(_drag_pos):
+	var anchor := _ghost_origin() + Vector2(CELL, CELL) * 0.5
+	for view in [_hero_view, _bag_view]:
+		var local: Vector2 = anchor - view.global_position
+		if not Rect2(Vector2.ZERO, view.size).has_point(local):
+			continue
+		var cell: Vector2i = view.cell_at(local)
+		if not view.grid.in_bounds(cell):
+			continue
+		var place: StringName = InventoryManager.PLACE_HERO if view == _hero_view else InventoryManager.PLACE_BAG
+		var res: Dictionary = _im.drop_result(item, place, cell, _drag_rot)
+		t = {"place": place, "cell": cell, "ok": res.ok, "swap": res.swap, "view": view}
+		break
+	if t.is_empty() and _loot_view.get_global_rect().has_point(_drag_pos):
 		t = {"place": InventoryManager.PLACE_LOOT, "ok": true}
-	else:
-		var anchor := _ghost_origin() + Vector2(CELL, CELL) * 0.5
-		for view in [_hero_view, _bag_view]:
-			var local: Vector2 = anchor - view.global_position
-			if not Rect2(Vector2.ZERO, view.size).has_point(local):
-				continue
-			var place: StringName = InventoryManager.PLACE_HERO if view == _hero_view else InventoryManager.PLACE_BAG
-			var cell: Vector2i = view.cell_at(local)
-			var res: Dictionary = _im.drop_result(item, place, cell, _drag_rot)
-			t = {"place": place, "cell": cell, "ok": res.ok, "swap": res.swap, "view": view}
-			break
 	if t != _target:
 		_target = t
 		_show_target()
