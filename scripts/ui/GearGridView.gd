@@ -6,7 +6,7 @@ extends Control
 ## lo lleva el panel. Las casillas que aún no existen (ampliaciones pendientes) se dibujan punteadas.
 
 const CELL := 110.0  ## 22 píxeles de arte a ×5, el tamaño de píxel de la franja
-const COLOR_CELL := Color(0.16, 0.11, 0.09, 0.8)
+const COLOR_CELL := Color(0.16, 0.11, 0.09, 0.45)
 const COLOR_LINE := Color(0.45, 0.33, 0.21, 0.9)
 const COLOR_LOCKED := Color(0.6, 0.5, 0.38, 0.55)
 const COLOR_WEAPON := Color("d85a30")
