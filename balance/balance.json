@@ -23,7 +23,29 @@
     "avanzado": { "items": ["sword_advanced", "shield_advanced", "helmet_advanced", "boots_advanced"] },
     "maestro": { "items": ["sword_masterwork", "shield_master", "helmet_master", "boots_master"] }
   },
-  "targets": [],
+  "targets": [
+    {
+      "id": "escalera", "type": "order", "for": { "N": [1, 5] }, "params": { "rank": "N" },
+      "scenario": "duel", "metric": "wall", "step": { "min": 0, "max": 7 },
+      "sequence": [
+        { "build": "basico", "params": { "quality": 0.4 } }, { "build": "basico", "params": { "quality": 0.55 } },
+        { "build": "basico", "params": { "quality": 0.7 } }, { "build": "basico", "params": { "quality": 0.85 } },
+        { "build": "basico", "params": { "quality": 1 } },
+        { "build": "avanzado", "params": { "quality": 0.4 } }, { "build": "avanzado", "params": { "quality": 0.55 } },
+        { "build": "avanzado", "params": { "quality": 0.7 } }, { "build": "avanzado", "params": { "quality": 0.85 } },
+        { "build": "avanzado", "params": { "quality": 1 } },
+        { "build": "maestro", "params": { "quality": 0.4 } }, { "build": "maestro", "params": { "quality": 0.55 } },
+        { "build": "maestro", "params": { "quality": 0.7 } }, { "build": "maestro", "params": { "quality": 0.85 } },
+        { "build": "maestro", "params": { "quality": 1 } }
+      ]
+    },
+    { "id": "hito-basico", "type": "band", "for": { "N": [1, 5] }, "build": "basico", "params": { "rank": "N", "quality": 0.85 }, "scenario": "duel", "metric": "wall", "min": "50*(N-1)+21" },
+    { "id": "hito-avanzado", "type": "band", "for": { "N": [1, 5] }, "build": "avanzado", "params": { "rank": "N", "quality": 0.85 }, "scenario": "duel", "metric": "wall", "min": "50*(N-1)+41" },
+    { "id": "hito-maestro", "type": "band", "for": { "N": [1, 5] }, "build": "maestro", "params": { "rank": "N", "quality": 0.85 }, "scenario": "duel", "metric": "wall", "min": "50*N+1" },
+    { "id": "cota-basico", "type": "band", "for": { "N": [1, 5] }, "build": "basico", "params": { "rank": "N", "quality": 1 }, "scenario": "duel", "metric": "wall", "max": "50*(N-1)+41" },
+    { "id": "cota-avanzado", "type": "band", "for": { "N": [1, 5] }, "build": "avanzado", "params": { "rank": "N", "quality": 1 }, "scenario": "duel", "metric": "wall", "max": "50*N+1" },
+    { "id": "cota-maestro", "type": "band", "for": { "N": [1, 5] }, "build": "maestro", "params": { "rank": "N", "quality": 1 }, "scenario": "duel", "metric": "wall", "max": "50*N+11" }
+  ],
   "measure": { "seeds": 1, "reference": [{ "level": 1, "build": "avanzado", "params": { "quality": 0.55, "rank": 1 } }] },
   "fit": { "fixRarity": "basic", "fixSlot": "main_hand" },
   "godot": {

@@ -4,7 +4,57 @@ Balanza 0.1.0 · 2026-10-01 · carpeta `balance`
 
 ## Avisos
 
-Ninguno.
+- measured.json se midió con el plan anterior: si el catálogo cambió mucho, vuelve a medir
+
+## Objetivos
+
+15 de 35 cumplidos.
+
+| Objetivo | Tipo | Valores | Límites | Margen |  |
+|---|---|---|---|---|---|
+| escalera[N=1] | order | 51 · 51 · 51 · 51 · 51 · 51 · 51 · 51 · 51 · 51 · 60 · 60 · 60 · 60 · 70 | paso 0 ≤ · < 7 | -42,9 % | ✘ |
+| escalera[N=2] | order | 101 · 101 · 101 · 101 · 101 · 101 · 101 · 101 · 101 · 102 · 110 · 110 · 110 · 110 · 120 | paso 0 ≤ · < 7 | -42,9 % | ✘ |
+| escalera[N=3] | order | 151 · 151 · 151 · 151 · 151 · 151 · 151 · 151 · 151 · 151 · 160 · 160 · 160 · 160 · 170 | paso 0 ≤ · < 7 | -42,9 % | ✘ |
+| escalera[N=4] | order | 201 · 201 · 201 · 201 · 201 · 201 · 201 · 201 · 201 · 202 · 210 · 210 · 210 · 210 · 220 | paso 0 ≤ · < 7 | -42,9 % | ✘ |
+| escalera[N=5] | order | 251 · 251 · 251 · 251 · 251 · 251 · 251 · 251 · 251 · 251 · 260 · 260 · 260 · 260 · 270 | paso 0 ≤ · < 7 | -42,9 % | ✘ |
+| hito-basico[N=1] | band | 51 | ≥ 21 | 142,9 % | ✔ |
+| hito-basico[N=2] | band | 101 | ≥ 71 | 42,3 % | ✔ |
+| hito-basico[N=3] | band | 151 | ≥ 121 | 24,8 % | ✔ |
+| hito-basico[N=4] | band | 201 | ≥ 171 | 17,5 % | ✔ |
+| hito-basico[N=5] | band | 251 | ≥ 221 | 13,6 % | ✔ |
+| hito-avanzado[N=1] | band | 51 | ≥ 41 | 24,4 % | ✔ |
+| hito-avanzado[N=2] | band | 101 | ≥ 91 | 11 % | ✔ |
+| hito-avanzado[N=3] | band | 151 | ≥ 141 | 7,1 % | ✔ |
+| hito-avanzado[N=4] | band | 201 | ≥ 191 | 5,2 % | ✔ |
+| hito-avanzado[N=5] | band | 251 | ≥ 241 | 4,1 % | ✔ |
+| hito-maestro[N=1] | band | 60 | ≥ 51 | 17,6 % | ✔ |
+| hito-maestro[N=2] | band | 110 | ≥ 101 | 8,9 % | ✔ |
+| hito-maestro[N=3] | band | 160 | ≥ 151 | 6 % | ✔ |
+| hito-maestro[N=4] | band | 210 | ≥ 201 | 4,5 % | ✔ |
+| hito-maestro[N=5] | band | 260 | ≥ 251 | 3,6 % | ✔ |
+| cota-basico[N=1] | band | 51 | < 41 | -24,4 % | ✘ |
+| cota-basico[N=2] | band | 101 | < 91 | -11 % | ✘ |
+| cota-basico[N=3] | band | 151 | < 141 | -7,1 % | ✘ |
+| cota-basico[N=4] | band | 201 | < 191 | -5,2 % | ✘ |
+| cota-basico[N=5] | band | 251 | < 241 | -4,1 % | ✘ |
+| cota-avanzado[N=1] | band | 51 | < 51 | 0 % | ✘ |
+| cota-avanzado[N=2] | band | 102 | < 101 | -1 % | ✘ |
+| cota-avanzado[N=3] | band | 151 | < 151 | 0 % | ✘ |
+| cota-avanzado[N=4] | band | 202 | < 201 | -0,5 % | ✘ |
+| cota-avanzado[N=5] | band | 251 | < 251 | 0 % | ✘ |
+| cota-maestro[N=1] | band | 70 | < 61 | -14,8 % | ✘ |
+| cota-maestro[N=2] | band | 120 | < 111 | -8,1 % | ✘ |
+| cota-maestro[N=3] | band | 170 | < 161 | -5,6 % | ✘ |
+| cota-maestro[N=4] | band | 220 | < 211 | -4,3 % | ✘ |
+| cota-maestro[N=5] | band | 270 | < 261 | -3,4 % | ✘ |
+
+Peor paso de cada orden:
+
+- escalera[N=1]: maestro (quality 0,85) → maestro (quality 1): +10
+- escalera[N=2]: maestro (quality 0,85) → maestro (quality 1): +10
+- escalera[N=3]: maestro (quality 0,85) → maestro (quality 1): +10
+- escalera[N=4]: maestro (quality 0,85) → maestro (quality 1): +10
+- escalera[N=5]: maestro (quality 0,85) → maestro (quality 1): +10
 
 ## Medidas
 
