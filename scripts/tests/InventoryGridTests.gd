@@ -286,3 +286,23 @@ func test_multipliers_apply_after_hero_stats_with_caps() -> void:
 	check(with.max_hp == base.max_hp, "la vida no cambia")
 	var fx := LegendaryPowers.effects([&"boots_master", &"shield_advanced"])
 	check(fx.first_strike == 3.0 and fx.block == 0.15 and fx.dodge == 0.0, "efectos de combate juntos (%s)" % fx)
+
+
+# ─── Tarea 5: colocación automática (migración y simulación) ───────────
+
+func test_packer_prefers_each_piece_zone() -> void:
+	var g := GearGrid.new(Vector2i(4, 4))
+	var pieces := [_piece(&"sword_advanced"), _piece(&"helmet_advanced"), _piece(&"boots_basic"), _piece(&"shield_basic")]
+	check(GearPacker.pack(g, pieces).is_empty(), "las cuatro caben en 4×4")
+	for item in pieces:
+		check(GearAuras.in_zone(g, item), "%s queda en su zona" % item.item_resource.item_id)
+
+
+func test_packer_returns_what_does_not_fit() -> void:
+	var g := GearGrid.new(Vector2i(4, 4))
+	var towers := []
+	for i in 4:
+		towers.append(_piece(&"shield_master"))  # 2×3 cada uno
+	var left := GearPacker.pack(g, towers)
+	check(left.size() == 2 and g.items.size() == 2, "en 4×4 caben 2 escudos torre; los otros 2 se devuelven (%d)" % left.size())
+	check(GearPacker.find_spot(g, left[0]).is_empty(), "no queda sitio")
