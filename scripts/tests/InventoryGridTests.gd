@@ -670,23 +670,43 @@ func _reload_user_save() -> void:
 	await get_tree().process_frame
 
 
+## Una propiedad de cada pieza por marca de tiempo (única en la partida de prueba). El fichero de la versión 2
+## guarda el botín primero, así que al cargarlo cambia el orden de la lista de piezas.
+func _by_timestamp(im: Node, read: Callable) -> Dictionary:
+	var out := {}
+	for it in im.get_crafted_items():
+		out[int(it.crafted_timestamp)] = read.call(it)
+	return out
+
+
 func test_v1_save_migrates_without_losing_pieces() -> void:
 	var im := _im()
 	check(_load_save_dict(_v1_save()), "la partida de la versión 1 carga")
 	check(im.get_crafted_items().size() == 44, "ninguna pieza perdida (%d de 44)" % im.get_crafted_items().size())
 	check(im.hero_grid_size() == Vector2i(6, 5) and im.expansions.size() == 3, "récord 35: jefes 10, 20 y 30 vencidos, 3 ampliaciones y rejilla de 6×5 (%s)" % im.hero_grid_size())
-	var hero_ids: Array = im.get_hero_items().map(func(it): return it.item_resource.item_id)
-	check(&"sword_masterwork" in hero_ids and &"shield_master" in hero_ids, "lo que estaba equipado entra en la rejilla, las mejores primero (%s)" % [hero_ids])
+	check(im.get_hero_items().size() == 4, "con la rejilla de 6×5 caben las cuatro piezas equipadas (%d)" % im.get_hero_items().size())
+	var hero_stamps: Array = im.get_hero_items().map(func(it): return int(it.crafted_timestamp))
+	hero_stamps.sort()
+	check(hero_stamps == [1000, 1001, 1002, 1003], "y son las que estaban equipadas en la partida antigua (%s)" % [hero_stamps])
 	check(im.get_hero_items().size() + im.get_loot().size() == 44 and im.get_bag_items().is_empty(), "lo demás, al botín")
 	var first: CraftedItem = im.get_loot()[0]
 	check(im.get_loot().all(func(it): return InventoryManager.gear_score(it) <= InventoryManager.gear_score(first)), "el botín empieza por la mejor pieza")
 	var aristas_a: Array = im.get_crafted_items().map(func(it): return it.aristas)
+	check(aristas_a.any(func(a): return not a.is_empty()), "la migración sortea aristas: no salen todas vacías")
 	check(_load_save_dict(_v1_save()), "se vuelve a cargar la misma partida")
 	var aristas_b: Array = im.get_crafted_items().map(func(it): return it.aristas)
 	check(aristas_a == aristas_b, "las aristas migradas salen siempre iguales")
+	var migrated_aristas := _by_timestamp(im, func(it): return it.aristas.duplicate())
+	var migrated_places := _by_timestamp(im, func(it): return [it.place, it.cell, it.rot])
 	check(SaveManager.save_game(), "se guarda en la versión nueva")
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
-	check(int(data.version) == 2 and data.inventory.has("hero_grid") and not data.inventory.has("equipped_slots"), "guardado versión 2, sin huecos fijos")
+	check(int(data.version) == SaveManager.SAVE_VERSION and data.inventory.has("hero_grid") and not data.inventory.has("equipped_slots"), "guardado versión 2, sin huecos fijos")
+	# El fichero de la versión 2 también se carga: x, y y giro vuelven de JSON como decimales y las aristas como pares
+	check(SaveManager.load_game(), "se carga el fichero de la versión 2")
+	check(im.get_crafted_items().size() == 44, "ninguna pieza perdida al recargarlo (%d de 44)" % im.get_crafted_items().size())
+	check(im.hero_grid_size() == Vector2i(6, 5) and im.expansions.size() == 3, "la rejilla de 6×5 y las 3 ampliaciones vuelven (%s)" % im.hero_grid_size())
+	check(_by_timestamp(im, func(it): return it.aristas.duplicate()) == migrated_aristas, "las aristas vuelven iguales del fichero")
+	check(_by_timestamp(im, func(it): return [it.place, it.cell, it.rot]) == migrated_places, "cada pieza vuelve a su sitio, casilla y giro")
 	await _reload_user_save()
 
 
@@ -732,3 +752,30 @@ func test_impossible_saved_position_goes_to_loot() -> void:
 	check(by_id[&"shield_master"].place == &"loot", "el escudo con una posición imposible pasa al botín")
 	check(by_id[&"helmet_basic"].place == &"bag" and by_id[&"helmet_basic"].cell == Vector2i(5, 3), "el casco sigue en su sitio de la mochila")
 	await _restore_inventory(saved)
+
+
+## Recoge lo que se escribe en el registro mientras está puesto: los avisos (push_warning) se cuentan y los
+## mensajes (print) se guardan.
+class LogCapture extends Logger:
+	var warnings := 0
+	var messages: Array[String] = []
+
+	func _log_error(_function: String, _file: String, _line: int, _code: String, _rationale: String, _editor_notify: bool, error_type: int, _script_backtraces: Array[ScriptBacktrace]) -> void:
+		if error_type == ERROR_TYPE_WARNING:
+			warnings += 1
+
+	func _log_message(message: String, _error: bool) -> void:
+		messages.append(message)
+
+
+## Una partida más antigua es una migración prevista (spec, apartado 10): se avisa con un mensaje normal, no con
+## un aviso. Solo una más nueva que el juego avisa. El mensaje hace de control: sin él, un registro que no
+## recibiera nada también daría cero avisos.
+func test_older_save_migrates_without_a_warning() -> void:
+	var captured := LogCapture.new()
+	OS.add_logger(captured)
+	check(_load_save_dict(_v1_save()), "carga una partida de la versión 1")
+	OS.remove_logger(captured)
+	check(captured.messages.any(func(m): return "versión 1" in m and "se migra" in m), "el registro dice que la migra (%d mensajes)" % captured.messages.size())
+	check(captured.warnings == 0, "y no avisa (%d avisos)" % captured.warnings)
+	await _reload_user_save()

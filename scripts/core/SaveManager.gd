@@ -68,9 +68,11 @@ static func load_game() -> bool:
 		push_error("SaveManager: Save data no es Dictionary")
 		return false
 
-	var version: int = save_data.get("version", 0)
-	if version != SAVE_VERSION:
-		push_warning("SaveManager: Versión de save %d != %d (actual). Intentando cargar igualmente." % [version, SAVE_VERSION])
+	var version: int = int(save_data.get("version", 0))
+	if version < SAVE_VERSION:
+		print("SaveManager: partida de la versión %d; se migra a la %d al cargar" % [version, SAVE_VERSION])
+	elif version > SAVE_VERSION:
+		push_warning("SaveManager: partida de una versión más nueva (%d > %d). Se intenta cargar igualmente." % [version, SAVE_VERSION])
 
 	# Distribuir datos a cada autoload
 	var dm := _get_autoload("DataManager")
