@@ -1,0 +1,138 @@
+{
+  "format": 1,
+  "kitVersion": "0.1.0",
+  "planId": "c3f5873e68700f359421cf9b4cf12420969b0d9505a280361a6c0f6c0f2729c7",
+  "catalog": {
+    "kind": "current",
+    "hash": "36502374dd56049120585adf4822977e87cc2051b7830e489a34f4e005cc2c90"
+  },
+  "reference": "damage",
+  "scenarios": {
+    "duel": 1
+  },
+  "seeds": 1,
+  "targets": [],
+  "measure": {
+    "levels": [
+      1
+    ],
+    "delta": 0.05,
+    "maxNoise": 0.2,
+    "stats": [
+      {
+        "id": "damage",
+        "step": 1
+      },
+      {
+        "id": "hp",
+        "step": 1
+      },
+      {
+        "id": "armor",
+        "step": 1
+      },
+      {
+        "id": "crit",
+        "step": 0.01
+      },
+      {
+        "id": "aps",
+        "step": 0.005
+      }
+    ],
+    "references": [
+      {
+        "level": 1,
+        "build": {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.55
+            }
+          ],
+          "params": {
+            "level": 1,
+            "quality": 0.55,
+            "rank": 1
+          }
+        }
+      }
+    ],
+    "effects": [],
+    "items": [
+      {
+        "id": "boots_advanced",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "boots_basic",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "boots_master",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "helmet_advanced",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "helmet_basic",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "helmet_master",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "shield_advanced",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "shield_basic",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "shield_master",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "sword_advanced",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "sword_basic",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "sword_masterwork",
+        "level": 1,
+        "quality": 0.55
+      }
+    ],
+    "challenge": false
+  }
+}
