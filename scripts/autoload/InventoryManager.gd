@@ -189,10 +189,13 @@ func drop_result(item: CraftedItem, place: StringName, cell: Vector2i = Vector2i
 
 
 ## Mueve una pieza. Encima de una sola pieza se intercambian: la otra va al sitio de donde salió la
-## primera (con su propio giro) si cabe allí; si no, al botín. true si se ha movido.
+## primera (con su propio giro) si cabe allí; si no, al botín. true si la suelta vale. Soltarla donde ya
+## está (misma casilla y giro de su rejilla, o del botín al botín) no mueve nada ni avisa de nada.
 func move_item(item: CraftedItem, place: StringName, cell: Vector2i = Vector2i.ZERO, rot: int = 0) -> bool:
 	if item == null or not (item in crafted_items):
 		return false
+	if _is_in_place(item, place, cell, rot):
+		return true
 	var res := drop_result(item, place, cell, rot)
 	if not res.ok:
 		return false
@@ -374,6 +377,15 @@ func _try_put(item: CraftedItem, place: StringName, cell: Vector2i, rot: int) ->
 func _put_in_loot(item: CraftedItem, index: int) -> void:
 	loot.insert(clampi(index, 0, loot.size()), item)
 	item.place = PLACE_LOOT
+
+
+## true si soltar `item` en ese sitio, casilla y giro lo dejaría como está: en su rejilla, en su casilla y
+## con su giro, o en el botín estando ya en él.
+func _is_in_place(item: CraftedItem, place: StringName, cell: Vector2i, rot: int) -> bool:
+	if place == PLACE_LOOT:
+		return item in loot
+	var grid := grid_for(place)
+	return grid != null and grid.has(item) and grid.cell_of(item) == cell and grid.rot_of(item) == posmod(rot, 4)
 
 
 ## Avisa de un cambio de piezas; si ha cambiado la rejilla de Tico, también de su equipo.

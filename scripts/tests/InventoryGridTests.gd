@@ -326,6 +326,42 @@ func _restore_inventory(saved: Dictionary) -> void:
 	await get_tree().process_frame  # deja pasar los guardados diferidos del cambio de equipo
 
 
+var _events := {"equipment": 0, "crafted": 0, "loot": 0}  # avisos contados desde la última vez
+
+
+func _count_equipment(_stats: Dictionary) -> void:
+	_events.equipment += 1
+
+
+func _count_crafted(_items) -> void:
+	_events.crafted += 1
+
+
+func _count_loot(_count: int) -> void:
+	_events.loot += 1
+
+
+## Empieza a contar los avisos del inventario (equipo de Tico, piezas y botín). Se acaba con _stop_listening().
+func _listen_to_inventory() -> void:
+	_take_events()
+	_im().equipment_changed.connect(_count_equipment)
+	_im().crafted_items_changed.connect(_count_crafted)
+	_im().loot_changed.connect(_count_loot)
+
+
+func _stop_listening() -> void:
+	_im().equipment_changed.disconnect(_count_equipment)
+	_im().crafted_items_changed.disconnect(_count_crafted)
+	_im().loot_changed.disconnect(_count_loot)
+
+
+## Los avisos contados desde la última vez, y vuelta a cero.
+func _take_events() -> Dictionary:
+	var taken := _events
+	_events = {"equipment": 0, "crafted": 0, "loot": 0}
+	return taken
+
+
 func test_grid_expansion_sizes_and_bosses() -> void:
 	check(GridExpansions.size_after(0) == Vector2i(4, 4) and GridExpansions.size_after(1) == Vector2i(5, 4), "de 4×4 a 5×4")
 	check(GridExpansions.size_after(4) == Vector2i(6, 6) and GridExpansions.size_after(9) == Vector2i(6, 6), "el máximo es 6×6")
@@ -391,6 +427,85 @@ func test_rotate_in_place_needs_room() -> void:
 	im.add_crafted_item(helmet)
 	check(im.move_item(helmet, &"hero", Vector2i(1, 3), 0), "un casco debajo")
 	check(not im.rotate_in_place(sword) and sword.rot == 1, "de pie ya no cabe: no gira")
+	await _restore_inventory(saved)
+
+
+func test_dropping_a_piece_where_it_already_is_changes_nothing() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var sword := _piece(&"sword_basic")  # 1×2
+	var helmet := _piece(&"helmet_basic")
+	var loot_a := _piece(&"boots_basic")
+	var loot_b := _piece(&"boots_advanced")
+	var loot_c := _piece(&"shield_basic")
+	for p in [loot_a, loot_b, loot_c, sword, helmet]:
+		im.add_crafted_item(p)
+	check(im.move_item(sword, &"hero", Vector2i(1, 1), 1), "la espada tumbada en Tico")
+	check(im.move_item(helmet, &"bag", Vector2i(2, 2), 0), "el casco en la mochila")
+	var order: Array = im.get_loot().duplicate()
+	check(order == [loot_c, loot_b, loot_a], "el botín, lo más nuevo delante (%s)" % [order])
+	_listen_to_inventory()
+	check(im.move_item(sword, &"hero", Vector2i(1, 1), 1), "soltar la espada en su casilla y con su giro vale")
+	check(im.move_item(sword, &"hero", Vector2i(1, 1), 5) and im.move_item(sword, &"hero", Vector2i(1, 1), -3), "con más vueltas, el mismo giro")
+	check(im.move_item(helmet, &"bag", Vector2i(2, 2), 0), "lo mismo con el casco en la mochila")
+	check(im.move_item(loot_b, &"loot") and im.move_item(loot_c, &"loot") and im.move_item(loot_a, &"loot"), "y con las del botín, en el botín")
+	var ev := _take_events()
+	check(ev.equipment == 0 and ev.crafted == 0 and ev.loot == 0, "ningún aviso (%s)" % [ev])
+	check(im.get_loot() == order, "el botín conserva su orden (%s)" % [im.get_loot()])
+	check(sword.place == &"hero" and sword.cell == Vector2i(1, 1) and sword.rot == 1 and helmet.place == &"bag" and helmet.cell == Vector2i(2, 2), "y las piezas siguen donde estaban")
+	check(im.move_item(sword, &"hero", Vector2i(1, 2), 1), "mover la espada a otra casilla sí la mueve")
+	ev = _take_events()
+	check(ev.equipment == 1 and ev.crafted == 1, "y esa sí avisa (%s)" % [ev])
+	_stop_listening()
+	await _restore_inventory(saved)
+
+
+## Spec, apartado 3.2: colocar, quitar, girar o intercambiar una pieza de la rejilla de Tico cuenta como
+## cambiarle el equipo (el muro vuelve a probarse con ese aviso). Nada más lo cuenta.
+func test_equipment_changed_only_when_tico_grid_changes() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var sword := _piece(&"sword_basic")  # 1×2
+	var shield := _piece(&"shield_basic")  # 1×2
+	var helmet := _piece(&"helmet_basic")  # 1×1
+	var boots := _piece(&"boots_basic")  # 1×1
+	var big := _piece(&"shield_advanced")  # 2×2
+	var long_sword := _piece(&"sword_masterwork")  # 1×4
+	var stranger := _piece(&"sword_basic")  # no entra en el inventario
+	for p in [sword, shield, helmet, boots, big, long_sword]:
+		im.add_crafted_item(p)
+	_listen_to_inventory()
+	# Avisa una vez: colocar, girar, intercambiar, quitar y vender en la rejilla de Tico
+	check(im.move_item(sword, &"hero", Vector2i(1, 1), 0), "la espada de pie en Tico")
+	check(_take_events().equipment == 1, "colocar en Tico avisa una vez")
+	check(im.rotate_in_place(sword) and sword.rot == 1, "la espada se tumba")
+	check(_take_events().equipment == 1, "girar en Tico avisa una vez")
+	im.move_item(helmet, &"hero", Vector2i(0, 0), 0)
+	im.move_item(boots, &"hero", Vector2i(1, 2), 0)
+	_take_events()
+	# No avisa: lo rechazado no toca nada
+	check(not im.move_item(big, &"hero", Vector2i(0, 0), 0), "el escudo de 2×2 no cabe encima de dos piezas")
+	check(not im.move_item(long_sword, &"hero", Vector2i(3, 1), 0), "la espada de 1×4 se sale por abajo")
+	check(not im.move_item(stranger, &"hero", Vector2i(3, 0), 0), "una pieza ajena no se mueve")
+	check(not im.rotate_in_place(long_sword), "una pieza del botín no gira")
+	check(not im.rotate_in_place(sword) and sword.rot == 1, "la espada tumbada no cabe de pie sobre las botas: no gira")
+	check(_take_events().equipment == 0, "lo rechazado no avisa")
+	# Avisa una vez
+	check(im.move_item(helmet, &"hero", Vector2i(1, 2), 0) and boots.cell == Vector2i(0, 0) and boots.place == &"hero", "el casco encima de las botas: se intercambian y las botas ocupan el sitio del casco")
+	check(_take_events().equipment == 1, "intercambiar en Tico avisa una vez")
+	check(im.move_item(helmet, &"loot"), "el casco al botín")
+	check(_take_events().equipment == 1, "quitar de Tico avisa una vez")
+	check(im.sell_item(boots) > 0, "vender las botas de Tico")
+	check(_take_events().equipment == 1, "vender de Tico avisa una vez")
+	# No avisa: el botín y la mochila no son de Tico
+	check(im.move_item(shield, &"bag", Vector2i(0, 0), 0) and im.rotate_in_place(shield) and im.move_item(shield, &"loot"), "el escudo del botín a la mochila, girado allí y de vuelta al botín")
+	check(_take_events().equipment == 0, "botín, mochila y giros en la mochila no avisan del equipo")
+	# Avisa una vez: el intercambio entre la mochila y Tico
+	im.move_item(shield, &"bag", Vector2i(0, 0), 0)
+	_take_events()
+	check(im.move_item(shield, &"hero", Vector2i(1, 1), 0) and sword.place == &"bag", "el escudo de la mochila encima de la espada de Tico: la espada pasa a la mochila")
+	check(_take_events().equipment == 1, "intercambiar con la mochila avisa una vez")
+	_stop_listening()
 	await _restore_inventory(saved)
 
 
@@ -488,6 +603,7 @@ func test_hero_stats_include_legendary_multipliers() -> void:
 
 
 func test_forging_rolls_aristas_by_quality() -> void:
+	var saved := _fresh_inventory()
 	var cm := get_node("/root/CraftingManager")
 	var im := _im()
 	var Task = cm.get_script().CraftingTask  # clase interna del autoload (no tiene class_name)
@@ -496,12 +612,14 @@ func test_forging_rolls_aristas_by_quality() -> void:
 	task.score_accumulated = 50.0
 	task.max_score_accumulated = 100.0
 	var fm_before: int = cm.forjamagia
+	var queue_before: Array = cm.queue.duplicate()  # _finalize_task vacía su hueco y compacta la cola
 	cm.forjamagia = 0  # sin bonus de Forjamagia: calidad 0,5 (Bueno)
 	cm.rng.seed = 99
 	var result: Dictionary = cm._finalize_task(task)
 	var item: CraftedItem = result.crafted_item
 	check(item != null and item.get_quality_tier() == "uncommon" and item.aristas.size() == 2, "una espada al 50 %% sale con 2 aristas (%s)" % (str(item.aristas) if item else "sin pieza"))
 	check(item != null and item.place == &"loot" and im.get_loot()[0] == item, "y llega al botín, delante")
-	if item:
-		im.remove_crafted_item(item)
+	cm.queue = queue_before
 	cm.forjamagia = fm_before
+	cm.rng.randomize()  # el sorteo vuelve a ser libre tras sembrarlo
+	await _restore_inventory(saved)
