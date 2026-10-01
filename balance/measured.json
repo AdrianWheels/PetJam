@@ -2,7 +2,7 @@
   "format": 1,
   "kitVersion": "0.1.0",
   "harness": "godot",
-  "planId": "c3f5873e68700f359421cf9b4cf12420969b0d9505a280361a6c0f6c0f2729c7",
+  "planId": "1f1a5983289006de2f5c6d669e51d3f6d487509f066c5af86bc86b421f450264",
   "seeds": 1,
   "stats": {
     "1": {
@@ -14,31 +14,31 @@
         }
       },
       "hp": {
-        "value": 0.12782549314479275,
+        "value": 0.12745467304013985,
         "noise": 0.0,
         "byScenario": {
-          "duel": 0.12782549314479275
+          "duel": 0.12745467304013985
         }
       },
       "armor": {
-        "value": 0.065447024430512563,
+        "value": 0.07899829459473949,
         "noise": 0.0,
         "byScenario": {
-          "duel": 0.065447024430512563
+          "duel": 0.07899829459473949
         }
       },
       "crit": {
-        "value": 18.227857194168678,
+        "value": 18.181736311476829,
         "noise": 0.0,
         "byScenario": {
-          "duel": 18.227857194168678
+          "duel": 18.181736311476829
         }
       },
       "aps": {
-        "value": 23.972602739729879,
+        "value": 24.059083424155663,
         "noise": 0.0,
         "byScenario": {
-          "duel": 23.972602739729879
+          "duel": 24.059083424155663
         }
       }
     }
@@ -47,100 +47,100 @@
 
   },
   "items": {
-    "boots_advanced": {
+    "sword_basic": {
       "level": 1.0,
-      "points": 4.5226827088385022,
+      "points": 8.6707031313652827,
       "noise": 0.0,
       "byScenario": {
-        "duel": 4.5226827088385022
-      }
-    },
-    "boots_basic": {
-      "level": 1.0,
-      "points": 2.1131273002374336,
-      "noise": 0.0,
-      "byScenario": {
-        "duel": 2.1131273002374336
-      }
-    },
-    "boots_master": {
-      "level": 1.0,
-      "points": 9.3846420520780498,
-      "noise": 0.0,
-      "byScenario": {
-        "duel": 9.3846420520780498
-      }
-    },
-    "helmet_advanced": {
-      "level": 1.0,
-      "points": 9.2673709595564837,
-      "noise": 0.0,
-      "byScenario": {
-        "duel": 9.2673709595564837
-      }
-    },
-    "helmet_basic": {
-      "level": 1.0,
-      "points": 4.1892374834945523,
-      "noise": 0.0,
-      "byScenario": {
-        "duel": 4.1892374834945523
-      }
-    },
-    "helmet_master": {
-      "level": 1.0,
-      "points": 18.295342120112746,
-      "noise": 0.0,
-      "byScenario": {
-        "duel": 18.295342120112746
-      }
-    },
-    "shield_advanced": {
-      "level": 1.0,
-      "points": 12.691106949198256,
-      "noise": 0.0,
-      "byScenario": {
-        "duel": 12.691106949198256
+        "duel": 8.6707031313652827
       }
     },
     "shield_basic": {
       "level": 1.0,
-      "points": 5.8574748203135591,
+      "points": 5.517364349550764,
       "noise": 0.0,
       "byScenario": {
-        "duel": 5.8574748203135591
+        "duel": 5.517364349550764
       }
     },
-    "shield_master": {
+    "helmet_basic": {
       "level": 1.0,
-      "points": 24.97517012486535,
+      "points": 3.8532995919159716,
       "noise": 0.0,
       "byScenario": {
-        "duel": 24.97517012486535
+        "duel": 3.8532995919159716
+      }
+    },
+    "boots_basic": {
+      "level": 1.0,
+      "points": 2.0916832567385422,
+      "noise": 0.0,
+      "byScenario": {
+        "duel": 2.0916832567385422
       }
     },
     "sword_advanced": {
       "level": 1.0,
-      "points": 25.087664399099786,
+      "points": 18.68515045747781,
       "noise": 0.0,
       "byScenario": {
-        "duel": 25.087664399099786
+        "duel": 18.68515045747781
       }
     },
-    "sword_basic": {
+    "shield_advanced": {
       "level": 1.0,
-      "points": 9.3141417638507011,
+      "points": 11.336891202659974,
       "noise": 0.0,
       "byScenario": {
-        "duel": 9.3141417638507011
+        "duel": 11.336891202659974
+      }
+    },
+    "helmet_advanced": {
+      "level": 1.0,
+      "points": 8.173498855506061,
+      "noise": 0.0,
+      "byScenario": {
+        "duel": 8.173498855506061
+      }
+    },
+    "boots_advanced": {
+      "level": 1.0,
+      "points": 4.433434400585754,
+      "noise": 0.0,
+      "byScenario": {
+        "duel": 4.433434400585754
       }
     },
     "sword_masterwork": {
       "level": 1.0,
-      "points": 603.68068143746962,
+      "points": 33.400305109536482,
       "noise": 0.0,
       "byScenario": {
-        "duel": 603.68068143746962
+        "duel": 33.400305109536482
+      }
+    },
+    "shield_master": {
+      "level": 1.0,
+      "points": 20.45516652020676,
+      "noise": 0.0,
+      "byScenario": {
+        "duel": 20.45516652020676
+      }
+    },
+    "helmet_master": {
+      "level": 1.0,
+      "points": 15.022600142282766,
+      "noise": 0.0,
+      "byScenario": {
+        "duel": 15.022600142282766
+      }
+    },
+    "boots_master": {
+      "level": 1.0,
+      "points": 8.4396006404232899,
+      "noise": 0.0,
+      "byScenario": {
+        "duel": 8.4396006404232899
       }
     }
   },

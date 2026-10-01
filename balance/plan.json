@@ -1,10 +1,10 @@
 {
   "format": 2,
   "kitVersion": "0.1.0",
-  "planId": "41f3c87978ca989c31226418aa7c7e68d40faf36ce0baac1a23b454e6e111f5f",
+  "planId": "49120ce094301dd51902e4f89e2dd2f3b98aaa5837a669fea06426459d862004",
   "catalog": {
-    "kind": "current",
-    "hash": "36502374dd56049120585adf4822977e87cc2051b7830e489a34f4e005cc2c90"
+    "kind": "generated",
+    "hash": "76da913010f95d0ed3975f7aea9e0bdfd760d615f23324d9fd5ff966719f30b6"
   },
   "reference": "damage",
   "scenarios": {
@@ -2864,37 +2864,7 @@
     "effects": [],
     "items": [
       {
-        "id": "boots_advanced",
-        "level": 1,
-        "quality": 0.55
-      },
-      {
-        "id": "boots_basic",
-        "level": 1,
-        "quality": 0.55
-      },
-      {
-        "id": "boots_master",
-        "level": 1,
-        "quality": 0.55
-      },
-      {
-        "id": "helmet_advanced",
-        "level": 1,
-        "quality": 0.55
-      },
-      {
-        "id": "helmet_basic",
-        "level": 1,
-        "quality": 0.55
-      },
-      {
-        "id": "helmet_master",
-        "level": 1,
-        "quality": 0.55
-      },
-      {
-        "id": "shield_advanced",
+        "id": "sword_basic",
         "level": 1,
         "quality": 0.55
       },
@@ -2904,7 +2874,12 @@
         "quality": 0.55
       },
       {
-        "id": "shield_master",
+        "id": "helmet_basic",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "boots_basic",
         "level": 1,
         "quality": 0.55
       },
@@ -2914,12 +2889,37 @@
         "quality": 0.55
       },
       {
-        "id": "sword_basic",
+        "id": "shield_advanced",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "helmet_advanced",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "boots_advanced",
         "level": 1,
         "quality": 0.55
       },
       {
         "id": "sword_masterwork",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "shield_master",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "helmet_master",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "boots_master",
         "level": 1,
         "quality": 0.55
       }

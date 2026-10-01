@@ -7,9 +7,9 @@ extends RefCounted
 ## el crítico no cambian. Los jefes, ×BOSS_MULT. EXP, STEP y BOSS_MULT son static var porque son las palancas de la
 ## calibración (balance/ con Balanza); sus valores los fija esa calibración.
 
-static var EXP := 1.006
-static var STEP := 8.0
-static var BOSS_MULT := 1.6
+static var EXP := 1.0455
+static var STEP := 10.5
+static var BOSS_MULT := 1.15
 const CYCLE_ROOMS := 50  # igual que Ranks.ROOMS_PER_CYCLE (Ranks depende de esta clase, no al revés)
 const BASE_HP := 40
 const DMG_AT_ROOM_1 := 11.75  # daño de un esqueleto en la sala 1 con la fórmula anterior

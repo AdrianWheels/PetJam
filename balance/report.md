@@ -4,57 +4,74 @@ Balanza 0.1.0 · 2026-10-01 · carpeta `balance`
 
 ## Avisos
 
-- measured.json se midió con el plan anterior: si el catálogo cambió mucho, vuelve a medir
+Ninguno.
 
 ## Objetivos
 
-15 de 35 cumplidos.
+35 de 35 cumplidos.
 
 | Objetivo | Tipo | Valores | Límites | Margen |  |
 |---|---|---|---|---|---|
-| escalera[N=1] | order | 51 · 51 · 51 · 51 · 51 · 51 · 51 · 51 · 51 · 51 · 60 · 60 · 60 · 60 · 70 | paso 0 ≤ · < 7 | -42,9 % | ✘ |
-| escalera[N=2] | order | 101 · 101 · 101 · 101 · 101 · 101 · 101 · 101 · 101 · 102 · 110 · 110 · 110 · 110 · 120 | paso 0 ≤ · < 7 | -42,9 % | ✘ |
-| escalera[N=3] | order | 151 · 151 · 151 · 151 · 151 · 151 · 151 · 151 · 151 · 151 · 160 · 160 · 160 · 160 · 170 | paso 0 ≤ · < 7 | -42,9 % | ✘ |
-| escalera[N=4] | order | 201 · 201 · 201 · 201 · 201 · 201 · 201 · 201 · 201 · 202 · 210 · 210 · 210 · 210 · 220 | paso 0 ≤ · < 7 | -42,9 % | ✘ |
-| escalera[N=5] | order | 251 · 251 · 251 · 251 · 251 · 251 · 251 · 251 · 251 · 251 · 260 · 260 · 260 · 260 · 270 | paso 0 ≤ · < 7 | -42,9 % | ✘ |
-| hito-basico[N=1] | band | 51 | ≥ 21 | 142,9 % | ✔ |
-| hito-basico[N=2] | band | 101 | ≥ 71 | 42,3 % | ✔ |
-| hito-basico[N=3] | band | 151 | ≥ 121 | 24,8 % | ✔ |
-| hito-basico[N=4] | band | 201 | ≥ 171 | 17,5 % | ✔ |
-| hito-basico[N=5] | band | 251 | ≥ 221 | 13,6 % | ✔ |
-| hito-avanzado[N=1] | band | 51 | ≥ 41 | 24,4 % | ✔ |
-| hito-avanzado[N=2] | band | 101 | ≥ 91 | 11 % | ✔ |
-| hito-avanzado[N=3] | band | 151 | ≥ 141 | 7,1 % | ✔ |
-| hito-avanzado[N=4] | band | 201 | ≥ 191 | 5,2 % | ✔ |
-| hito-avanzado[N=5] | band | 251 | ≥ 241 | 4,1 % | ✔ |
-| hito-maestro[N=1] | band | 60 | ≥ 51 | 17,6 % | ✔ |
-| hito-maestro[N=2] | band | 110 | ≥ 101 | 8,9 % | ✔ |
-| hito-maestro[N=3] | band | 160 | ≥ 151 | 6 % | ✔ |
-| hito-maestro[N=4] | band | 210 | ≥ 201 | 4,5 % | ✔ |
-| hito-maestro[N=5] | band | 260 | ≥ 251 | 3,6 % | ✔ |
-| cota-basico[N=1] | band | 51 | < 41 | -24,4 % | ✘ |
-| cota-basico[N=2] | band | 101 | < 91 | -11 % | ✘ |
-| cota-basico[N=3] | band | 151 | < 141 | -7,1 % | ✘ |
-| cota-basico[N=4] | band | 201 | < 191 | -5,2 % | ✘ |
-| cota-basico[N=5] | band | 251 | < 241 | -4,1 % | ✘ |
-| cota-avanzado[N=1] | band | 51 | < 51 | 0 % | ✘ |
-| cota-avanzado[N=2] | band | 102 | < 101 | -1 % | ✘ |
-| cota-avanzado[N=3] | band | 151 | < 151 | 0 % | ✘ |
-| cota-avanzado[N=4] | band | 202 | < 201 | -0,5 % | ✘ |
-| cota-avanzado[N=5] | band | 251 | < 251 | 0 % | ✘ |
-| cota-maestro[N=1] | band | 70 | < 61 | -14,8 % | ✘ |
-| cota-maestro[N=2] | band | 120 | < 111 | -8,1 % | ✘ |
-| cota-maestro[N=3] | band | 170 | < 161 | -5,6 % | ✘ |
-| cota-maestro[N=4] | band | 220 | < 211 | -4,3 % | ✘ |
-| cota-maestro[N=5] | band | 270 | < 261 | -3,4 % | ✘ |
+| escalera[N=1] | order | 35 · 37 · 37 · 37 · 38 · 40 · 44 · 45 · 47 · 48 · 50 · 51 · 52 · 55 · 57 | paso 0 ≤ · < 7 | 0 % | ✔ |
+| escalera[N=2] | order | 86 · 87 · 88 · 88 · 88 · 90 · 94 · 95 · 97 · 98 · 100 · 102 · 103 · 105 · 106 | paso 0 ≤ · < 7 | 0 % | ✔ |
+| escalera[N=3] | order | 136 · 137 · 137 · 137 · 138 · 140 · 144 · 145 · 147 · 148 · 150 · 151 · 153 · 154 · 156 | paso 0 ≤ · < 7 | 0 % | ✔ |
+| escalera[N=4] | order | 185 · 187 · 188 · 188 · 189 · 190 · 194 · 195 · 197 · 198 · 200 · 202 · 203 · 205 · 207 | paso 0 ≤ · < 7 | 0 % | ✔ |
+| escalera[N=5] | order | 235 · 236 · 238 · 238 · 239 · 240 · 243 · 245 · 247 · 248 · 250 · 251 · 253 · 255 · 256 | paso 0 ≤ · < 7 | 0 % | ✔ |
+| hito-basico[N=1] | band | 37 | ≥ 21 | 76,2 % | ✔ |
+| hito-basico[N=2] | band | 88 | ≥ 71 | 23,9 % | ✔ |
+| hito-basico[N=3] | band | 137 | ≥ 121 | 13,2 % | ✔ |
+| hito-basico[N=4] | band | 188 | ≥ 171 | 9,9 % | ✔ |
+| hito-basico[N=5] | band | 238 | ≥ 221 | 7,7 % | ✔ |
+| hito-avanzado[N=1] | band | 47 | ≥ 41 | 14,6 % | ✔ |
+| hito-avanzado[N=2] | band | 97 | ≥ 91 | 6,6 % | ✔ |
+| hito-avanzado[N=3] | band | 147 | ≥ 141 | 4,3 % | ✔ |
+| hito-avanzado[N=4] | band | 197 | ≥ 191 | 3,1 % | ✔ |
+| hito-avanzado[N=5] | band | 247 | ≥ 241 | 2,5 % | ✔ |
+| hito-maestro[N=1] | band | 55 | ≥ 51 | 7,8 % | ✔ |
+| hito-maestro[N=2] | band | 105 | ≥ 101 | 4 % | ✔ |
+| hito-maestro[N=3] | band | 154 | ≥ 151 | 2 % | ✔ |
+| hito-maestro[N=4] | band | 205 | ≥ 201 | 2 % | ✔ |
+| hito-maestro[N=5] | band | 255 | ≥ 251 | 1,6 % | ✔ |
+| cota-basico[N=1] | band | 38 | < 41 | 7,3 % | ✔ |
+| cota-basico[N=2] | band | 88 | < 91 | 3,3 % | ✔ |
+| cota-basico[N=3] | band | 138 | < 141 | 2,1 % | ✔ |
+| cota-basico[N=4] | band | 189 | < 191 | 1 % | ✔ |
+| cota-basico[N=5] | band | 239 | < 241 | 0,8 % | ✔ |
+| cota-avanzado[N=1] | band | 48 | < 51 | 5,9 % | ✔ |
+| cota-avanzado[N=2] | band | 98 | < 101 | 3 % | ✔ |
+| cota-avanzado[N=3] | band | 148 | < 151 | 2 % | ✔ |
+| cota-avanzado[N=4] | band | 198 | < 201 | 1,5 % | ✔ |
+| cota-avanzado[N=5] | band | 248 | < 251 | 1,2 % | ✔ |
+| cota-maestro[N=1] | band | 57 | < 61 | 6,6 % | ✔ |
+| cota-maestro[N=2] | band | 106 | < 111 | 4,5 % | ✔ |
+| cota-maestro[N=3] | band | 156 | < 161 | 3,1 % | ✔ |
+| cota-maestro[N=4] | band | 207 | < 211 | 1,9 % | ✔ |
+| cota-maestro[N=5] | band | 256 | < 261 | 1,9 % | ✔ |
 
 Peor paso de cada orden:
 
-- escalera[N=1]: maestro (quality 0,85) → maestro (quality 1): +10
-- escalera[N=2]: maestro (quality 0,85) → maestro (quality 1): +10
-- escalera[N=3]: maestro (quality 0,85) → maestro (quality 1): +10
-- escalera[N=4]: maestro (quality 0,85) → maestro (quality 1): +10
-- escalera[N=5]: maestro (quality 0,85) → maestro (quality 1): +10
+- escalera[N=1]: basico (quality 0,55) → basico (quality 0,7): +0
+- escalera[N=2]: basico (quality 0,7) → basico (quality 0,85): +0
+- escalera[N=3]: basico (quality 0,55) → basico (quality 0,7): +0
+- escalera[N=4]: basico (quality 0,7) → basico (quality 0,85): +0
+- escalera[N=5]: basico (quality 0,7) → basico (quality 0,85): +0
+
+## Catálogo
+
+| Objeto | Rareza | Ranura | Nivel | Presupuesto | Estadísticas (nominal) | Efectos | Redondeo |
+|---|---|---|---|---|---|---|---|
+| sword_basic | basic | main_hand | 1 | 9,85 | damage 6 · crit 0,07 · aps 0,115 | — | 1,9 % |
+| shield_basic | basic | off_hand | 1 | 4,35 | hp 33 · armor 3 | — | 2,2 % |
+| helmet_basic | basic | head | 1 | 3,38 | hp 25 · armor 2 | — | -1,1 % |
+| boots_basic | basic | feet | 1 | 1,84 | hp 14 · armor 1 | — | 1,4 % |
+| sword_advanced | advanced | main_hand | 1 | 22,13 | damage 13 · crit 0,15 · aps 0,255 | — | -1,2 % |
+| shield_advanced | advanced | off_hand | 1 | 9,77 | hp 73 · armor 6 | — | 0,1 % |
+| helmet_advanced | advanced | head | 1 | 7,6 | hp 57 · armor 4 | — | -0,2 % |
+| boots_advanced | advanced | feet | 1 | 4,13 | hp 30 · armor 3 | — | -1,6 % |
+| sword_masterwork | master | main_hand | 1 | 44,51 | damage 27 · crit 0,3 · aps 0,51 | — | 0,5 % |
+| shield_master | master | off_hand | 1 | 19,65 | hp 147 · armor 11 | — | -0,2 % |
+| helmet_master | master | head | 1 | 15,28 | hp 115 · armor 9 | — | 0,6 % |
+| boots_master | master | feet | 1 | 8,3 | hp 61 · armor 6 | — | -0,6 % |
 
 ## Medidas
 
@@ -64,24 +81,24 @@ Peor paso de cada orden:
 
 | Nivel | damage | hp | armor | crit | aps |
 |---|---|---|---|---|---|
-| 1 | 1 | 0,1278 | 0,0654 | 18,2279 | 23,9726 |
+| 1 | 1 | 0,1275 | 0,079 | 18,1817 | 24,0591 |
 
 ### Poder medido de los objetos
 
 | Objeto | Nivel | Puntos | Por escenario |
 |---|---|---|---|
-| boots_advanced | 1 | 4,523 | duel 4,52 |
-| boots_basic | 1 | 2,113 | duel 2,11 |
-| boots_master | 1 | 9,385 | duel 9,38 |
-| helmet_advanced | 1 | 9,267 | duel 9,27 |
-| helmet_basic | 1 | 4,189 | duel 4,19 |
-| helmet_master | 1 | 18,295 | duel 18,3 |
-| shield_advanced | 1 | 12,691 | duel 12,69 |
-| shield_basic | 1 | 5,857 | duel 5,86 |
-| shield_master | 1 | 24,975 | duel 24,98 |
-| sword_advanced | 1 | 25,088 | duel 25,09 |
-| sword_basic | 1 | 9,314 | duel 9,31 |
-| sword_masterwork | 1 | 603,681 | duel 603,68 |
+| sword_basic | 1 | 8,671 | duel 8,67 |
+| shield_basic | 1 | 5,517 | duel 5,52 |
+| helmet_basic | 1 | 3,853 | duel 3,85 |
+| boots_basic | 1 | 2,092 | duel 2,09 |
+| sword_advanced | 1 | 18,685 | duel 18,69 |
+| shield_advanced | 1 | 11,337 | duel 11,34 |
+| helmet_advanced | 1 | 8,173 | duel 8,17 |
+| boots_advanced | 1 | 4,433 | duel 4,43 |
+| sword_masterwork | 1 | 33,4 | duel 33,4 |
+| shield_master | 1 | 20,455 | duel 20,46 |
+| helmet_master | 1 | 15,023 | duel 15,02 |
+| boots_master | 1 | 8,44 | duel 8,44 |
 
 ## Ajuste
 

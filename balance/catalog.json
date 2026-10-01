@@ -1,0 +1,359 @@
+{
+  "format": 1,
+  "kind": "generated",
+  "kitVersion": "0.1.0",
+  "inputsHash": "76da913010f95d0ed3975f7aea9e0bdfd760d615f23324d9fd5ff966719f30b6",
+  "provisional": false,
+  "items": [
+    {
+      "id": "sword_basic",
+      "archetype": "espada",
+      "slot": "main_hand",
+      "rarity": "basic",
+      "level": 1,
+      "budget": 9.85,
+      "stats": {
+        "damage": {
+          "min": 3,
+          "max": 8,
+          "nominal": 6
+        },
+        "crit": {
+          "min": 0.04,
+          "max": 0.09,
+          "nominal": 0.07
+        },
+        "aps": {
+          "min": 0.065,
+          "max": 0.15,
+          "nominal": 0.115
+        }
+      },
+      "effects": [],
+      "roundingError": 0.0192402168102823
+    },
+    {
+      "id": "shield_basic",
+      "archetype": "escudo",
+      "slot": "off_hand",
+      "rarity": "basic",
+      "level": 1,
+      "budget": 4.348775,
+      "stats": {
+        "hp": {
+          "min": 19,
+          "max": 44,
+          "nominal": 33
+        },
+        "armor": {
+          "min": 1,
+          "max": 3,
+          "nominal": 3
+        }
+      },
+      "effects": [],
+      "roundingError": 0.02166681286312448
+    },
+    {
+      "id": "helmet_basic",
+      "archetype": "casco",
+      "slot": "head",
+      "rarity": "basic",
+      "level": 1,
+      "budget": 3.3815049999999998,
+      "stats": {
+        "hp": {
+          "min": 15,
+          "max": 34,
+          "nominal": 25
+        },
+        "armor": {
+          "min": 1,
+          "max": 3,
+          "nominal": 2
+        }
+      },
+      "effects": [],
+      "roundingError": -0.010983743867604714
+    },
+    {
+      "id": "boots_basic",
+      "archetype": "botas",
+      "slot": "feet",
+      "rarity": "basic",
+      "level": 1,
+      "budget": 1.837025,
+      "stats": {
+        "hp": {
+          "min": 8,
+          "max": 18,
+          "nominal": 14
+        },
+        "armor": {
+          "min": 1,
+          "max": 2,
+          "nominal": 1
+        }
+      },
+      "effects": [],
+      "roundingError": 0.0143377020762905
+    },
+    {
+      "id": "sword_advanced",
+      "archetype": "espada",
+      "slot": "main_hand",
+      "rarity": "advanced",
+      "level": 1,
+      "budget": 22.127039999999997,
+      "stats": {
+        "damage": {
+          "min": 8,
+          "max": 18,
+          "nominal": 13
+        },
+        "crit": {
+          "min": 0.09,
+          "max": 0.2,
+          "nominal": 0.15
+        },
+        "aps": {
+          "min": 0.15,
+          "max": 0.34,
+          "nominal": 0.255
+        }
+      },
+      "effects": [],
+      "roundingError": -0.011963338978859359
+    },
+    {
+      "id": "shield_advanced",
+      "archetype": "escudo",
+      "slot": "off_hand",
+      "rarity": "advanced",
+      "level": 1,
+      "budget": 9.769088159999999,
+      "stats": {
+        "hp": {
+          "min": 43,
+          "max": 97,
+          "nominal": 73
+        },
+        "armor": {
+          "min": 3,
+          "max": 8,
+          "nominal": 6
+        }
+      },
+      "effects": [],
+      "roundingError": 0.0009307664492044029
+    },
+    {
+      "id": "helmet_advanced",
+      "archetype": "casco",
+      "slot": "head",
+      "rarity": "advanced",
+      "level": 1,
+      "budget": 7.596212831999999,
+      "stats": {
+        "hp": {
+          "min": 34,
+          "max": 76,
+          "nominal": 57
+        },
+        "armor": {
+          "min": 3,
+          "max": 6,
+          "nominal": 4
+        }
+      },
+      "effects": [],
+      "roundingError": -0.002014594729179104
+    },
+    {
+      "id": "boots_advanced",
+      "archetype": "botas",
+      "slot": "feet",
+      "rarity": "advanced",
+      "level": 1,
+      "budget": 4.12669296,
+      "stats": {
+        "hp": {
+          "min": 18,
+          "max": 41,
+          "nominal": 30
+        },
+        "armor": {
+          "min": 2,
+          "max": 4,
+          "nominal": 3
+        }
+      },
+      "effects": [],
+      "roundingError": -0.01600746303441621
+    },
+    {
+      "id": "sword_masterwork",
+      "archetype": "espada",
+      "slot": "main_hand",
+      "rarity": "master",
+      "level": 1,
+      "budget": 44.51215,
+      "stats": {
+        "damage": {
+          "min": 17,
+          "max": 35,
+          "nominal": 27
+        },
+        "crit": {
+          "min": 0.19,
+          "max": 0.38,
+          "nominal": 0.3
+        },
+        "aps": {
+          "min": 0.33,
+          "max": 0.66,
+          "nominal": 0.51
+        }
+      },
+      "effects": [],
+      "roundingError": 0.0047740547190471844
+    },
+    {
+      "id": "shield_master",
+      "archetype": "escudo",
+      "slot": "off_hand",
+      "rarity": "master",
+      "level": 1,
+      "budget": 19.652114225,
+      "stats": {
+        "hp": {
+          "min": 95,
+          "max": 190,
+          "nominal": 147
+        },
+        "armor": {
+          "min": 7,
+          "max": 15,
+          "nominal": 11
+        }
+      },
+      "effects": [],
+      "roundingError": -0.0024066645967862404
+    },
+    {
+      "id": "helmet_master",
+      "archetype": "casco",
+      "slot": "head",
+      "rarity": "master",
+      "level": 1,
+      "budget": 15.281021095,
+      "stats": {
+        "hp": {
+          "min": 74,
+          "max": 148,
+          "nominal": 115
+        },
+        "armor": {
+          "min": 5,
+          "max": 11,
+          "nominal": 9
+        }
+      },
+      "effects": [],
+      "roundingError": 0.0057097595393862
+    },
+    {
+      "id": "boots_master",
+      "archetype": "botas",
+      "slot": "feet",
+      "rarity": "master",
+      "level": 1,
+      "budget": 8.301515975,
+      "stats": {
+        "hp": {
+          "min": 40,
+          "max": 79,
+          "nominal": 61
+        },
+        "armor": {
+          "min": 4,
+          "max": 8,
+          "nominal": 6
+        }
+      },
+      "effects": [],
+      "roundingError": -0.006359218261099779
+    }
+  ],
+  "history": [
+    "18b25f617a0846fb18039ef40334bf35b18adbef5fa4fe9672b473a0df54746c",
+    "ada7499d7f633f6ed9b840b46a1dfb9664f061e55faf8fc8c918932c2ba7110d",
+    "e562e711e3219f715982081c231603ffc22ac1884542ec8f24aecb0f5cda0601",
+    "27a78224df08ee655018f33e1b13c059242fe096fbf488c4337986ae3604f89e",
+    "26b4f45f598361ea9a293084ec9c45b1378ef135d35060393792d0cb7445cf13",
+    "419648c33f9fea4d0f59e903a4a93c6ccab125e5d63abb0fe54ef9e668250558",
+    "ff6d38e61ea976aa7781d18acb211ddd60cc35f3b89ee4b3f4e59273d095e1b8",
+    "aca72a09bc816b74202a870d31d08e71e41c97191bcca30cad30a950eeedd9c4"
+  ],
+  "trail": [
+    {
+      "sword_basic.damage": 6,
+      "sword_basic.crit": 0.07,
+      "sword_basic.aps": 0.115,
+      "shield_basic.hp": 33,
+      "shield_basic.armor": 3,
+      "helmet_basic.hp": 26,
+      "helmet_basic.armor": 2,
+      "boots_basic.hp": 14,
+      "boots_basic.armor": 1,
+      "sword_advanced.damage": 13,
+      "sword_advanced.crit": 0.15,
+      "sword_advanced.aps": 0.255,
+      "shield_advanced.hp": 74,
+      "shield_advanced.armor": 6,
+      "helmet_advanced.hp": 57,
+      "helmet_advanced.armor": 4,
+      "boots_advanced.hp": 31,
+      "boots_advanced.armor": 3,
+      "sword_masterwork.damage": 27,
+      "sword_masterwork.crit": 0.3,
+      "sword_masterwork.aps": 0.515,
+      "shield_master.hp": 148,
+      "shield_master.armor": 12,
+      "helmet_master.hp": 115,
+      "helmet_master.armor": 9,
+      "boots_master.hp": 62,
+      "boots_master.armor": 6
+    },
+    {
+      "sword_basic.damage": 6,
+      "sword_basic.crit": 0.07,
+      "sword_basic.aps": 0.115,
+      "shield_basic.hp": 33,
+      "shield_basic.armor": 3,
+      "helmet_basic.hp": 25,
+      "helmet_basic.armor": 2,
+      "boots_basic.hp": 14,
+      "boots_basic.armor": 1,
+      "sword_advanced.damage": 13,
+      "sword_advanced.crit": 0.15,
+      "sword_advanced.aps": 0.255,
+      "shield_advanced.hp": 73,
+      "shield_advanced.armor": 6,
+      "helmet_advanced.hp": 57,
+      "helmet_advanced.armor": 4,
+      "boots_advanced.hp": 31,
+      "boots_advanced.armor": 3,
+      "sword_masterwork.damage": 27,
+      "sword_masterwork.crit": 0.3,
+      "sword_masterwork.aps": 0.51,
+      "shield_master.hp": 148,
+      "shield_master.armor": 11,
+      "helmet_master.hp": 115,
+      "helmet_master.armor": 9,
+      "boots_master.hp": 62,
+      "boots_master.armor": 6
+    }
+  ],
+  "stableRounds": 4
+}
