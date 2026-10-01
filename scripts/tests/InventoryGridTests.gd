@@ -258,3 +258,31 @@ func test_totals_match_a_hand_count() -> void:
 	var armor := float(s.armor) * 1.10 + float(h.armor) * 1.10
 	check(t.hp == roundi(hp) and t.armor == roundi(armor), "vida %d (espera %d) y armadura %d (espera %d)" % [t.hp, roundi(hp), t.armor, roundi(armor)])
 	check(t.keys() == ["damage", "str", "agi", "int", "hp", "armor", "crit", "aps"], "las claves de InventoryManager.calculate_total_stats() (%s)" % [t.keys()])
+
+
+# ─── Tarea 4: habilidades legendarias (datos y multiplicadores) ────────
+
+func test_every_piece_has_one_power() -> void:
+	for id in ITEM_IDS:
+		check(LegendaryPowers.POWERS.has(id), "%s tiene habilidad legendaria" % id)
+	var priced := LegendaryPowers.POWERS.keys().filter(func(id): return LegendaryPowers.POWERS[id].price != "")
+	check(priced.size() == 4 and priced.all(func(id): return String(_res(id).rarity) == "master"), "las 4 con precio son las maestras (%s)" % [priced])
+
+
+func test_only_legendaries_count_and_only_once() -> void:
+	var a := _piece(&"sword_basic", 1.0)
+	var b := _piece(&"sword_basic", 1.0)
+	var epic := _piece(&"shield_advanced", 0.95)
+	check(LegendaryPowers.active([a, b, epic]) == [&"sword_basic"], "dos iguales cuentan como una y la épica no tiene habilidad")
+
+
+func test_multipliers_apply_after_hero_stats_with_caps() -> void:
+	var equip := {"damage": 20, "hp": 100, "armor": 10, "crit": 0.6, "aps": 1.0}
+	var base := CombatMath.hero_stats(equip)
+	var with := CombatMath.hero_stats_with_powers(equip, [&"sword_basic", &"helmet_basic", &"boots_master"])
+	check(is_equal_approx(with.dmg, base.dmg * 1.25), "Filo perfecto: daño ×1,25 (%.2f)" % with.dmg)
+	check(is_equal_approx(with.crit_p, 0.75), "Ojo de halcón multiplica el crítico, con el tope del 75 %% (%.3f)" % with.crit_p)
+	check(with.armor == roundi(base.armor * 0.8), "Ímpetu cuesta un 20 %% de armadura (%d)" % with.armor)
+	check(with.max_hp == base.max_hp, "la vida no cambia")
+	var fx := LegendaryPowers.effects([&"boots_master", &"shield_advanced"])
+	check(fx.first_strike == 3.0 and fx.block == 0.15 and fx.dodge == 0.0, "efectos de combate juntos (%s)" % fx)

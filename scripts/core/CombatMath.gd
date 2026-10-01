@@ -32,6 +32,11 @@ static func hero_stats(equipment: Dictionary) -> Dictionary:
 	}
 
 
+## hero_stats con los multiplicadores de las habilidades legendarias activas (LegendaryPowers.active).
+static func hero_stats_with_powers(equipment: Dictionary, powers: Array) -> Dictionary:
+	return LegendaryPowers.apply_multipliers(hero_stats(equipment), powers)
+
+
 ## Fracción de daño físico que absorbe la armadura (0..MAX_MITIGATION).
 static func armor_mitigation(armor: int) -> float:
 	if armor <= 0:

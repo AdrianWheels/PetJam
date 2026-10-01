@@ -182,6 +182,11 @@ func _code_table_texts() -> Array:
 		out.append([String(GearAuras.AURA_TEXTS[slot]), "GearAuras.AURA_TEXTS"])
 	for slot in GearAuras.ZONE_TEXTS:
 		out.append([String(GearAuras.ZONE_TEXTS[slot]), "GearAuras.ZONE_TEXTS"])
+	for id in LegendaryPowers.POWERS:
+		var p: Dictionary = LegendaryPowers.POWERS[id]
+		for key in ["name", "text", "price"]:
+			if String(p[key]) != "":
+				out.append([String(p[key]), "LegendaryPowers.POWERS.%s.%s" % [id, key]])
 	return out
 
 

@@ -235,3 +235,31 @@ Rinde más en la fila de arriba,Rinde más en la fila de arriba,Stronger in the 
 Rinde más en la fila de abajo,Rinde más en la fila de abajo,Stronger in the bottom row
 Rinde más en la columna izquierda,Rinde más en la columna izquierda,Stronger in the left column
 Rinde más en la columna derecha,Rinde más en la columna derecha,Stronger in the right column
+Filo perfecto,Filo perfecto,Perfect Edge
+Golpe doble,Golpe doble,Double Strike
+Filo ígneo,Filo ígneo,Fiery Edge
+Aguante,Aguante,Endurance
+Parada,Parada,Parry
+Espinas,Espinas,Thorns
+Ojo de halcón,Ojo de halcón,Hawk Eye
+Regeneración,Regeneración,Regeneration
+Segunda oportunidad,Segunda oportunidad,Second Chance
+Paso ligero,Paso ligero,Light Step
+Esquiva,Esquiva,Dodge
+Ímpetu,Ímpetu,Momentum
+"Daño ×1,25","Daño ×1,25","Damage ×1.25"
+25 % de golpear dos veces,25 % de golpear dos veces,25 % chance to strike twice
+"Cada golpe quema: el 40 % de su daño en 3 s, sin contar la armadura","Cada golpe quema: el 40 % de su daño en 3 s, sin contar la armadura","Each hit burns: 40 % of its damage over 3 s, ignoring armor"
+"Vida máxima ×1,2","Vida máxima ×1,2","Max health ×1.2"
+15 % de parar un golpe entero,15 % de parar un golpe entero,15 % chance to block a whole hit
+Devuelve el 30 % del daño recibido,Devuelve el 30 % del daño recibido,Returns 30 % of damage taken
+"Probabilidad de crítico ×1,5","Probabilidad de crítico ×1,5","Critical chance ×1.5"
+"Recupera el 1,5 % de la vida máxima por segundo","Recupera el 1,5 % de la vida máxima por segundo","Recovers 1.5 % of max health per second"
+"Una vez por duelo, al caer vuelve con el 40 % de la vida","Una vez por duelo, al caer vuelve con el 40 % de la vida","Once per fight, gets back up with 40 % health"
+"Velocidad de ataque ×1,15","Velocidad de ataque ×1,15","Attack speed ×1.15"
+12 % de esquivar un golpe,12 % de esquivar un golpe,12 % chance to dodge a hit
+El primer golpe contra cada enemigo hace ×3,El primer golpe contra cada enemigo hace ×3,The first hit on each enemy deals ×3
+"Probabilidad de crítico ×0,5","Probabilidad de crítico ×0,5","Critical chance ×0.5"
+"Velocidad de ataque ×0,85","Velocidad de ataque ×0,85","Attack speed ×0.85"
+"Vida máxima ×0,85","Vida máxima ×0,85","Max health ×0.85"
+"Armadura ×0,8","Armadura ×0,8","Armor ×0.8"
