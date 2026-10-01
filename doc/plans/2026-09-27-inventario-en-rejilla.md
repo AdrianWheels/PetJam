@@ -4423,7 +4423,7 @@ func test_first_boss_kill_grows_the_grid() -> void:
 
 
 func test_result_screen_shows_aristas_and_the_legendary_power() -> void:
-	var screen: Control = load("res://scenes/UI/CraftResultScreen.tscn").instantiate()
+	var screen := CraftResultScreen.new()  # sin escena: el script construye la interfaz en _ready
 	add_child(screen)
 	await get_tree().process_frame
 	var rough: Array[Vector2i] = [Vector2i(1, 1)]
@@ -4437,8 +4437,6 @@ func test_result_screen_shows_aristas_and_the_legendary_power() -> void:
 	screen.queue_free()
 	await get_tree().process_frame
 ```
-
-(Si la escena de la pantalla de resultado tiene otra ruta, búscala con `grep -rln "CraftResultScreen.gd" scenes`.)
 
 Run InventoryGridTests. Expected: errores (`apply_grid_expansion`, `grid_expanded` y `_result_line` no existen).
 
