@@ -4573,7 +4573,7 @@ func test_potion_slots_hold_two_kinds_up_to_five() -> void:
 	check(not im.add_potion(&"potion_heal"), "la Vida no tiene hueco: los dos están ocupados")
 	check(im.take_potion(&"potion_luck") and im.potion_count(&"potion_luck") == 0, "al beberse la última, el hueco queda libre")
 	check(im.add_potion(&"potion_heal"), "y ya entra la Vida")
-	var gold := im.sell_potion_slot(0)
+	var gold: int = im.sell_potion_slot(0)  # im es un Node: el tipo no se puede deducir
 	check(gold == roundi(5 * Potions.CATALOG[&"potion_speed"].price * 0.5) and im.potion_count(&"potion_speed") == 0, "vender un hueco da la mitad de lo que costó (%d)" % gold)
 	var data: Dictionary = im.to_save_data()
 	im.load_save_data(data, 1)
