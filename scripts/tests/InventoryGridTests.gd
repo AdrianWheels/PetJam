@@ -119,3 +119,60 @@ func test_crafted_item_saves_its_place() -> void:
 	var before := CraftedItem.from_dict(old, item.item_resource)
 	check(before.place == &"loot" and before.aristas.is_empty() and before.rank == 1, "una pieza de una partida anterior empieza en el botín, sin aristas y en el rango I")
 	check(not before.get_name_with_rank().ends_with(" I"), "sin numeral en el rango I (%s)" % before.get_name_with_rank())
+
+
+# ─── Tarea 2: la rejilla ───────────────────────────────────────────────
+
+func test_grid_fits_and_places() -> void:
+	var g := GearGrid.new(Vector2i(4, 4))
+	var sword := _piece(&"sword_masterwork")  # 1×4
+	check(g.fits(sword, Vector2i(0, 0), 0), "la espada de 1×4 cabe de pie en 4×4")
+	check(not g.fits(sword, Vector2i(0, 1), 0), "una casilla más abajo se sale")
+	check(g.fits(sword, Vector2i(0, 3), 1), "tumbada en la última fila cabe")
+	check(g.place(sword, Vector2i(3, 0), 0) and g.cell_of(sword) == Vector2i(3, 0) and g.rot_of(sword) == 0, "se coloca en la columna derecha")
+	var shield := _piece(&"shield_advanced")  # 2×2
+	check(not g.fits(shield, Vector2i(2, 0), 0), "no puede pisar la espada")
+	check(g.overlapping(shield, Vector2i(2, 0), 0) == [sword], "sabe a quién pisaría")
+	check(g.fits(shield, Vector2i(2, 0), 0, [sword]), "si se ignora la espada, cabe (para intercambiar)")
+	check(g.item_at(Vector2i(3, 2)) == sword and g.item_at(Vector2i(0, 0)) == null, "casillas ocupadas y libres")
+	g.remove(sword)
+	check(not g.has(sword) and g.item_at(Vector2i(3, 2)) == null, "al quitarla deja libres sus casillas")
+
+
+func test_aristas_take_room_but_are_not_neighbors() -> void:
+	var g := GearGrid.new(Vector2i(4, 4))
+	var rough: Array[Vector2i] = [Vector2i(1, 0)]  # rebaba a la derecha de la punta
+	var sword := _piece(&"sword_basic", 0.5, rough)
+	check(g.place(sword, Vector2i(0, 0), 0), "la espada con arista ocupa 2 de ancho")
+	var helmet := _piece(&"helmet_basic")
+	check(not g.fits(helmet, Vector2i(1, 0), 0), "la arista ocupa su casilla")
+	check(g.place(helmet, Vector2i(2, 0), 0), "el casco al lado de la arista")
+	check(g.neighbors(helmet).is_empty() and g.neighbors(sword).is_empty(), "tocar solo la arista no es ser vecinas")
+	var boots := _piece(&"boots_basic")
+	check(g.place(boots, Vector2i(1, 1), 0), "las botas junto a la empuñadura")
+	check(g.neighbors(sword) == [boots] and g.neighbors(boots) == [sword], "vecinas por un lado limpio")
+	var diag := _piece(&"helmet_basic")
+	check(g.place(diag, Vector2i(2, 2), 0) and not (diag in g.neighbors(boots)), "en diagonal no son vecinas")
+
+
+func test_neighbors_count_each_piece_once() -> void:
+	var g := GearGrid.new(Vector2i(4, 4))
+	var a := _piece(&"sword_advanced")  # 1×3
+	var b := _piece(&"sword_advanced")
+	g.place(a, Vector2i(0, 0), 0)
+	g.place(b, Vector2i(1, 0), 0)
+	check(g.neighbors(a) == [b], "dos espadas pegadas por 3 casillas son vecinas una vez")
+
+
+func test_grid_copy_does_not_touch_pieces() -> void:
+	var g := GearGrid.new(Vector2i(4, 4))
+	var s := _piece(&"shield_basic")
+	g.place(s, Vector2i(0, 0), 0)
+	var copy := g.duplicate_grid()
+	copy.remove(s)
+	copy.place(s, Vector2i(2, 2), 1)
+	check(g.cell_of(s) == Vector2i(0, 0) and g.rot_of(s) == 0 and s.cell == Vector2i.ZERO, "mover en la copia no cambia la rejilla ni la pieza")
+	g.resize(Vector2i(5, 4))
+	check(g.size == Vector2i(5, 4) and g.cell_of(s) == Vector2i(0, 0), "crecer no mueve las piezas")
+	g.resize(Vector2i(3, 3))
+	check(g.size == Vector2i(5, 4), "nunca encoge")
