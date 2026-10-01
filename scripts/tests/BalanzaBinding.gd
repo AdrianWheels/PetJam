@@ -4,7 +4,9 @@ extends RefCounted
 ## contra el enemigo de esa sala, con el daño esperado por segundo de cada lado (CombatMath.expected_dps), la armadura
 ## y el tiempo hasta matar, sin azar. Métricas:
 ##   wall: la primera sala cuyo duelo pierde (para comprobar los objetivos);
-##   progress: wall − 1 más la parte de la vida de ese enemigo que le quita (continua, para medir).
+##   progress: para medir, la sala con decimales en la que deja de ganar a un esqueleto de la curva (progress_of).
+##   Es continuo y no tiene los escalones de los jefes, en los que caían las medidas. El anterior, wall − 1 más la
+##   parte de la vida del enemigo del muro, saltaba casi una sala cada vez que ganaba otra.
 ## Parámetros del conjunto: rank (rango de las piezas, que es también el rango del equipo) y quality.
 
 ## Hasta dónde se busca el muro: un equipo que no pierde antes tiene wall = MAX_ROOM + 1
@@ -73,25 +75,58 @@ static func gear_totals(items: Array, rank: int) -> Dictionary:
 	return totals
 
 
-## Muro de un Tico: la primera sala cuyo duelo pierde, y el progreso continuo hasta él.
+## Muro de un Tico (la primera sala cuyo duelo pierde) y su progreso (progress_of).
 static func wall_of(hero: Dictionary) -> Dictionary:
 	var hero_dps := CombatMath.expected_dps(hero)
+	var wall := MAX_ROOM + 1
 	for room in range(1, MAX_ROOM + 1):
-		var d := duel(hero, hero_dps, room)
+		if not duel(hero, hero_dps, room).won:
+			wall = room
+			break
+	return {"wall": float(wall), "progress": progress_of(hero, hero_dps)}
+
+
+## Progreso para medir: la sala, con decimales, en la que Tico deja de ganar a un esqueleto de la curva (sin jefes ni
+## otros arquetipos). Es continuo y sin escalones: con los jefes del muro, ganar a un jefe regala de golpe las salas
+## siguientes, que son más fáciles, y una medida que cae en ese tramo da valores falsos. Hasta MAX_ROOM.
+static func progress_of(hero: Dictionary, hero_dps: float) -> float:
+	var skeleton := EnemyArchetypes.get_data(&"skeleton")
+	# La sala ganada más justa (la de menor margen; con empate, la última): de ella parte el progreso
+	var tight_room := 0
+	var tight_margin := INF
+	for room in range(1, MAX_ROOM + 1):
+		var d := duel_against(hero, hero_dps, EnemyScaling.enemy_stats(room, skeleton, false), room)
 		if not d.won:
-			return {"wall": float(room), "progress": room - 1 + float(d.fraction)}
-	return {"wall": float(MAX_ROOM + 1), "progress": float(MAX_ROOM)}
+			return progress_between(tight_room, tight_margin, room, d.margin)
+		if d.margin <= tight_margin:
+			tight_room = room
+			tight_margin = d.margin
+	return float(MAX_ROOM)
 
 
-## Un duelo con la vida llena contra el enemigo de `room`: gana si lo mata antes de que su daño acabe con la vida de
-## Tico (un empate lo pierde). `fraction` es la parte de la vida del enemigo que le quita (1 si gana).
+## Progreso continuo hasta la sala perdida `lost_room` (margen `lost_margin` ≤ 1) desde la sala ganada más justa,
+## `tight_room` (margen `tight_margin` > 1; 0 si no ganó ninguna). Interpola con el logaritmo de los márgenes: vale
+## `tight_room` justo al ganarla y llega a `lost_room` cuando ese duelo se empata, así que no salta al ganar una sala más.
+## Sin salas ganadas, es el margen de la sala 1.
+static func progress_between(tight_room: int, tight_margin: float, lost_room: int, lost_margin: float) -> float:
+	if tight_room == 0:
+		return lost_margin
+	var won := log(tight_margin)
+	var lost := log(maxf(lost_margin, 1e-12))
+	return tight_room + (lost_room - tight_room) * won / (won - lost)
+
+
+## Un duelo con la vida llena contra el enemigo de `room` (Biomes y EnemyArchetypes deciden cuál).
 static func duel(hero: Dictionary, hero_dps: float, room: int) -> Dictionary:
 	var boss := Biomes.is_boss_room(room)
 	var arch := EnemyArchetypes.get_data(&"boss" if boss else EnemyArchetypes.pick_for_room(room))
-	var enemy := EnemyScaling.enemy_stats(room, arch, boss)
+	return duel_against(hero, hero_dps, EnemyScaling.enemy_stats(room, arch, boss), room)
+
+
+## Un duelo con la vida llena contra `enemy` en la sala `room`: gana si lo mata antes de que su daño acabe con la vida
+## de Tico (un empate lo pierde). `margin` es el tiempo hasta morir entre el tiempo hasta matar (gana si pasa de 1).
+static func duel_against(hero: Dictionary, hero_dps: float, enemy: Dictionary, room: int) -> Dictionary:
 	var time_to_kill: float = float(enemy.max_hp) / maxf(hero_dps, 0.001)
 	var incoming := CombatMath.expected_dps(enemy, CombatMath.armor_mitigation(int(hero.armor), room))
 	var time_to_die: float = float(hero.max_hp) / maxf(incoming, 0.001)
-	if time_to_kill < time_to_die:
-		return {"won": true, "fraction": 1.0}
-	return {"won": false, "fraction": time_to_die / time_to_kill}
+	return {"won": time_to_kill < time_to_die, "margin": time_to_die / time_to_kill}

@@ -213,7 +213,21 @@ func test_balanza_wall_is_the_first_lost_duel() -> void:
 	var wall := int(w.wall)
 	check(wall >= 2, "Tico sin equipo gana la sala 1 (muro en la %d)" % wall)
 	check(not BalanzaBinding.duel(hero, dps, wall).won and BalanzaBinding.duel(hero, dps, wall - 1).won, "pierde en el muro y gana en la anterior")
-	check(w.progress >= wall - 1 and w.progress < wall, "el progreso va de muro − 1 a muro (%.2f)" % w.progress)
+	# El progreso se mide contra los esqueletos de la curva: va de la sala anterior a la primera que pierde contra ellos
+	var skeleton := EnemyArchetypes.get_data(&"skeleton")
+	var lost := 1
+	while lost <= BalanzaBinding.MAX_ROOM and BalanzaBinding.duel_against(hero, dps, EnemyScaling.enemy_stats(lost, skeleton, false), lost).won:
+		lost += 1
+	check(w.progress >= lost - 1 and w.progress < lost, "el progreso va de la sala %d a la %d (%.2f)" % [lost - 1, lost, w.progress])
+
+
+## El progreso no salta al ganar una sala más: vale la sala ganada más justa al ganarla y la perdida al empatarla.
+func test_balanza_progress_is_continuous() -> void:
+	check(absf(BalanzaBinding.progress_between(7, 1.0 + 1e-9, 9, 0.8) - 7.0) < 1e-6, "recién ganada la sala 7, el progreso es 7")
+	check(absf(BalanzaBinding.progress_between(7, 1.3, 9, 1.0) - 9.0) < 1e-6, "con la sala 9 empatada, el progreso es 9")
+	var mid := BalanzaBinding.progress_between(7, 1.3, 9, 0.8)
+	check(mid > 7.0 and mid < 9.0, "entre las dos, en medio (%.2f)" % mid)
+	check(is_equal_approx(BalanzaBinding.progress_between(0, INF, 1, 0.4), 0.4), "si pierde la sala 1, su margen")
 
 
 func test_balanza_quality_and_rank_move_progress() -> void:
