@@ -187,6 +187,8 @@ func _code_table_texts() -> Array:
 		for key in ["name", "text", "price"]:
 			if String(p[key]) != "":
 				out.append([String(p[key]), "LegendaryPowers.POWERS.%s.%s" % [id, key]])
+	for id in GridExpansions.RECIPES:
+		out.append([String(GridExpansions.RECIPES[id].name), "GridExpansions.RECIPES"])
 	return out
 
 

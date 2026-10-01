@@ -306,3 +306,202 @@ func test_packer_returns_what_does_not_fit() -> void:
 	var left := GearPacker.pack(g, towers)
 	check(left.size() == 2 and g.items.size() == 2, "en 4×4 caben 2 escudos torre; los otros 2 se devuelven (%d)" % left.size())
 	check(GearPacker.find_spot(g, left[0]).is_empty(), "no queda sitio")
+
+
+# ─── Tarea 6: los tres sitios del inventario ───────────────────────────
+
+func _im() -> Node:
+	return get_node("/root/InventoryManager")
+
+
+## Deja el inventario vacío (rejilla de 4×4) y devuelve lo que había para restaurarlo.
+func _fresh_inventory() -> Dictionary:
+	var saved: Dictionary = _im().to_save_data()
+	_im().clear()
+	return saved
+
+
+func _restore_inventory(saved: Dictionary) -> void:
+	_im().load_save_data(saved, int(get_node("/root/GameManager").best_enemy_level))
+	await get_tree().process_frame  # deja pasar los guardados diferidos del cambio de equipo
+
+
+func test_grid_expansion_sizes_and_bosses() -> void:
+	check(GridExpansions.size_after(0) == Vector2i(4, 4) and GridExpansions.size_after(1) == Vector2i(5, 4), "de 4×4 a 5×4")
+	check(GridExpansions.size_after(4) == Vector2i(6, 6) and GridExpansions.size_after(9) == Vector2i(6, 6), "el máximo es 6×6")
+	check(GridExpansions.recipe_for_boss_room(10) == &"grid_bone_straps" and GridExpansions.recipe_for_boss_room(50) == &"", "jefes 10-40 del ciclo I")
+	check(GridExpansions.unlocked_for_record(10).is_empty() and GridExpansions.unlocked_for_record(11) == [&"grid_bone_straps"], "récord mayor que la sala del jefe")
+
+
+func test_new_pieces_arrive_at_the_front_of_the_loot() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var a := _piece(&"sword_basic")
+	var b := _piece(&"shield_basic")
+	im.add_crafted_item(a)
+	im.add_crafted_item(b)
+	check(im.get_loot() == [b, a] and a.place == &"loot", "lo más nuevo delante (%s)" % [im.get_loot()])
+	check(im.hero_grid_size() == Vector2i(4, 4) and im.get_hero_items().is_empty(), "rejilla de 4×4 vacía: nada se coloca solo")
+	check(im.get_unequipped_items().size() == 2, "botín y mochila se pueden vender")
+	await _restore_inventory(saved)
+
+
+func test_move_place_swap_and_back_to_loot() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var old_sword := _piece(&"sword_basic", 0.5)
+	var new_sword := _piece(&"sword_advanced", 0.95)
+	im.add_crafted_item(old_sword)
+	im.add_crafted_item(new_sword)
+	check(im.move_item(old_sword, &"hero", Vector2i(3, 0), 0), "la espada vieja a la columna derecha")
+	check(old_sword.place == &"hero" and old_sword.cell == Vector2i(3, 0), "la pieza guarda su sitio")
+	check(not im.move_item(new_sword, &"hero", Vector2i(3, 2), 0), "la nueva no cabe si se sale por abajo")
+	var res: Dictionary = im.drop_result(new_sword, &"hero", Vector2i(3, 0), 0)
+	check(res.ok and res.swap == old_sword, "encima de la vieja: intercambio")
+	check(im.move_item(new_sword, &"hero", Vector2i(3, 0), 0), "se intercambian")
+	check(new_sword.place == &"hero" and old_sword.place == &"loot", "la vieja va al botín, de donde salió la nueva")
+	check(im.get_loot()[0] == old_sword, "en el sitio del botín que tenía la nueva")
+	check(im.move_item(new_sword, &"loot"), "de vuelta al botín")
+	check(im.get_hero_items().is_empty(), "la rejilla queda vacía")
+	await _restore_inventory(saved)
+
+
+func test_swap_sends_the_other_to_loot_if_it_does_not_fit_back() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var tower := _piece(&"shield_master")  # 2×3
+	var small := _piece(&"helmet_basic")   # 1×1
+	im.add_crafted_item(tower)
+	im.add_crafted_item(small)
+	check(im.move_item(small, &"bag", Vector2i(5, 3), 0), "el casco en la esquina de la mochila")
+	check(im.move_item(tower, &"hero", Vector2i(0, 0), 0), "el escudo torre en Tico")
+	check(im.move_item(small, &"hero", Vector2i(0, 0), 0), "el casco encima del escudo: intercambio")
+	check(small.place == &"hero" and tower.place == &"loot", "el escudo no cabe en la esquina de la mochila: va al botín y no se pierde")
+	await _restore_inventory(saved)
+
+
+func test_rotate_in_place_needs_room() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var sword := _piece(&"sword_masterwork")  # 1×4
+	im.add_crafted_item(sword)
+	check(im.move_item(sword, &"hero", Vector2i(1, 0), 0), "de pie en la columna 1")
+	check(im.rotate_in_place(sword) and sword.rot == 1 and sword.cell == Vector2i(0, 1), "gira sobre su centro: tumbada en la fila 1 (%s)" % sword.cell)
+	var helmet := _piece(&"helmet_basic")
+	im.add_crafted_item(helmet)
+	check(im.move_item(helmet, &"hero", Vector2i(1, 3), 0), "un casco debajo")
+	check(not im.rotate_in_place(sword) and sword.rot == 1, "de pie ya no cabe: no gira")
+	await _restore_inventory(saved)
+
+
+func test_sell_and_sell_all_keep_the_best() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var common := _piece(&"boots_basic", 0.2)
+	var epic := _piece(&"boots_basic", 0.95)
+	var legend := _piece(&"boots_basic", 1.0)
+	var kept := _piece(&"helmet_basic", 0.5)
+	for p in [common, epic, legend, kept]:
+		im.add_crafted_item(p)
+	check(im.move_item(kept, &"bag", Vector2i(0, 0), 0), "una pieza en la mochila")
+	var gold: int = im.sell_all_loot()
+	check(gold == common.get_sell_price(), "Vender todo solo vende lo que no es Épico ni Legendario (%d)" % gold)
+	check(im.get_loot().size() == 2 and epic in im.get_loot() and legend in im.get_loot(), "la épica y la legendaria siguen en el botín")
+	check(kept.place == &"bag", "la mochila no se toca")
+	check(im.sell_item(legend) == legend.get_sell_price() and not (legend in im.get_crafted_items()), "vender una suelta")
+	check(im.get_quantity(&"gold") == gold + legend.get_sell_price(), "el oro sube lo vendido")
+	await _restore_inventory(saved)
+
+
+func test_totals_and_preview_use_the_hero_grid_only() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var shield := _piece(&"shield_basic", 0.8)
+	var helmet := _piece(&"helmet_basic", 0.8)
+	im.add_crafted_item(shield)
+	im.add_crafted_item(helmet)
+	im.move_item(shield, &"hero", Vector2i(0, 1), 0)
+	im.move_item(helmet, &"bag", Vector2i(0, 0), 0)
+	check(im.calculate_total_stats() == GearAuras.totals(im.hero_grid), "las estadísticas de Tico son las de su rejilla")
+	var before: Dictionary = im.calculate_total_stats()
+	var preview: Dictionary = im.preview_stats(helmet, &"hero", Vector2i(1, 1), 0)
+	check(preview.hp > before.hp, "la vista previa suma el casco con su aura (%d → %d)" % [before.hp, preview.hp])
+	check(im.calculate_total_stats() == before and helmet.place == &"bag", "la vista previa no mueve nada")
+	await _restore_inventory(saved)
+
+
+func test_hero_sprite_shows_the_best_piece_of_each_kind() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var weak := _piece(&"sword_masterwork", 0.3)
+	var strong := _piece(&"sword_advanced", 0.9)
+	strong.rank = 2
+	for p in [weak, strong]:
+		im.add_crafted_item(p)
+	im.move_item(weak, &"hero", Vector2i(0, 0), 0)
+	im.move_item(strong, &"hero", Vector2i(1, 0), 0)
+	check(im.best_hero_item("main_hand") == strong, "el rango manda sobre el nivel")
+	var hero: Node2D = load("res://scenes/Hero.tscn").instantiate()
+	hero.remove_from_group("hero")
+	add_child(hero)
+	await get_tree().process_frame
+	hero.refresh_gear()
+	check(hero.gear.get("main_hand", {}).get("rarity", "") == "advanced", "Tico dibuja la espada de rango II (%s)" % hero.gear)
+	hero.queue_free()
+	await _restore_inventory(saved)
+
+
+func test_equipment_rank_is_the_weakest_best_piece() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	check(im.equipment_rank() == 1, "sin piezas, rango I")
+	var sword3 := _piece(&"sword_basic")
+	sword3.rank = 3
+	var sword1 := _piece(&"sword_basic")
+	var helmet2 := _piece(&"helmet_basic")
+	helmet2.rank = 2
+	for p in [sword3, sword1, helmet2]:
+		im.add_crafted_item(p)
+	im.move_item(sword3, &"hero", Vector2i(3, 0), 0)
+	check(im.equipment_rank() == 3, "una espada de rango III: rango III")
+	im.move_item(sword1, &"hero", Vector2i(2, 0), 0)
+	check(im.equipment_rank() == 3, "otra espada de rango I no lo baja: cuenta la mejor espada")
+	im.move_item(helmet2, &"hero", Vector2i(0, 0), 0)
+	check(im.equipment_rank() == 2, "un casco de rango II sí: el menor entre los tipos")
+	await _restore_inventory(saved)
+
+
+func test_hero_stats_include_legendary_multipliers() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var shield := _piece(&"shield_basic", 1.0)  # Aguante: vida máxima ×1,2
+	im.add_crafted_item(shield)
+	im.move_item(shield, &"hero", Vector2i(0, 0), 0)
+	var hero: Node2D = load("res://scenes/Hero.tscn").instantiate()
+	hero.remove_from_group("hero")
+	add_child(hero)
+	await get_tree().process_frame
+	var expected := CombatMath.hero_stats_with_powers(im.calculate_total_stats(), [&"shield_basic"])
+	check(hero.max_hp == expected.max_hp and hero.max_hp > CombatMath.hero_stats(im.calculate_total_stats()).max_hp, "Aguante sube la vida de Tico (%d)" % hero.max_hp)
+	hero.queue_free()
+	await _restore_inventory(saved)
+
+
+func test_forging_rolls_aristas_by_quality() -> void:
+	var cm := get_node("/root/CraftingManager")
+	var im := _im()
+	var Task = cm.get_script().CraftingTask  # clase interna del autoload (no tiene class_name)
+	var bp: BlueprintResource = get_node("/root/DataManager").get_blueprint(&"sword_masterwork")
+	var task = Task.new(9100, bp, 0)
+	task.score_accumulated = 50.0
+	task.max_score_accumulated = 100.0
+	var fm_before: int = cm.forjamagia
+	cm.forjamagia = 0  # sin bonus de Forjamagia: calidad 0,5 (Bueno)
+	cm.rng.seed = 99
+	var result: Dictionary = cm._finalize_task(task)
+	var item: CraftedItem = result.crafted_item
+	check(item != null and item.get_quality_tier() == "uncommon" and item.aristas.size() == 2, "una espada al 50 %% sale con 2 aristas (%s)" % (str(item.aristas) if item else "sin pieza"))
+	check(item != null and item.place == &"loot" and im.get_loot()[0] == item, "y llega al botín, delante")
+	if item:
+		im.remove_crafted_item(item)
+	cm.forjamagia = fm_before

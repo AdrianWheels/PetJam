@@ -3,6 +3,9 @@ extends RefCounted
 ## Representa un item crafteado con calidad y stats calculados
 class_name CraftedItem
 
+## Precio de venta según la calidad (antes en ShopPanel), por el multiplicador de oro de su rango.
+const SELL_PRICE_BY_TIER := {"legendary": 500, "epic": 250, "rare": 120, "uncommon": 60, "common": 25}
+
 # Referencias
 var item_resource: ItemResource
 var quality: float = 0.5  # 0.0 - 1.0 (normalizado)
@@ -10,7 +13,6 @@ var calculated_stats: Dictionary = {}
 
 # Metadatos
 var crafted_timestamp: int = 0
-var is_equipped: bool = false
 var rank: int = 1  # rango del plano con que se forjó (1 = rango I)
 # Sitio en el inventario (spec del inventario en rejilla, apartado 3). Lo mantiene InventoryManager.
 var place: StringName = &"loot"  ## &"hero" (rejilla de Tico), &"bag" (mochila) o &"loot" (botín)
@@ -72,6 +74,9 @@ func get_quality_label() -> String:
 			return tr("BUENO")
 		_:
 			return tr("BÁSICO")
+
+func get_sell_price() -> int:
+	return roundi(SELL_PRICE_BY_TIER.get(get_quality_tier(), 25) * Ranks.gold_mult(rank))
 
 ## Nombre del objeto con su calidad, en el idioma del jugador ("Espada básica (93%)")
 func get_display_name() -> String:

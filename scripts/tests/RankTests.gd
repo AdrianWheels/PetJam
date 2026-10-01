@@ -46,7 +46,7 @@ func test_hero_and_enemy_nodes_use_the_shared_formulas() -> void:
 	var hero := _new_hero()
 	await get_tree().process_frame
 	var inv := get_node("/root/InventoryManager")
-	var expected := CombatMath.hero_stats(inv.calculate_total_stats())
+	var expected := CombatMath.hero_stats_with_powers(inv.calculate_total_stats(), inv.active_legendary_powers())
 	check(hero.max_hp == expected.max_hp and is_equal_approx(hero.dmg, expected.dmg),
 		"Hero.reset_stats usa CombatMath.hero_stats (%d/%d, %.1f/%.1f)" % [hero.max_hp, expected.max_hp, hero.dmg, expected.dmg])
 	check(is_equal_approx(hero.base_aps, expected.aps), "Hero.base_aps es el ritmo de CombatMath")

@@ -8,15 +8,6 @@ signal shop_closed
 signal item_purchased(item_id: StringName, quantity: int, cost: int)
 signal item_sold(item: CraftedItem, gold_earned: int)
 
-## Precio base de venta por tier de calidad
-const SELL_PRICE_BY_TIER := {
-	"legendary": 500,
-	"epic": 250,
-	"rare": 120,
-	"uncommon": 60,
-	"common": 25,
-}
-
 # ═══════════════════════════════════════════════════════════════════
 #  CATÁLOGO DE LA TIENDA
 # ═══════════════════════════════════════════════════════════════════
@@ -446,8 +437,7 @@ func _on_crafted_items_changed(_items: Array) -> void:
 # ═══════════════════════════════════════════════════════════════════
 
 func _get_sell_price(item: CraftedItem) -> int:
-	var tier := item.get_quality_tier()
-	return SELL_PRICE_BY_TIER.get(tier, 25)
+	return item.get_sell_price()
 
 
 func _populate_sell_items() -> void:

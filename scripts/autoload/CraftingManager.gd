@@ -48,6 +48,7 @@ class CraftingTask:
 var queue: Array = []
 var heat := 0
 var forjamagia := 0
+var rng := RandomNumberGenerator.new()  ## sorteo de aristas al forjar (las pruebas pueden sembrarlo)
 
 ## Forjamagia — constantes de incremento por grado de trial
 const MAX_FORJAMAGIA := 10
@@ -67,6 +68,7 @@ const FORJAMAGIA_BONUS := {
 var _next_task_id: int = 1
 
 func _ready():
+	rng.randomize()
 	for i in range(MAX_SLOTS):
 		queue.append(null)
 
@@ -401,6 +403,8 @@ func _finalize_task(task: CraftingTask) -> Dictionary:
 			var item_res = dm.get_item_resource(task.blueprint.result_item)
 			if item_res:
 				crafted_item = CraftedItem.new(item_res, quality_normalized)
+				# Aristas según la calidad (spec del inventario en rejilla, apartado 2.3)
+				crafted_item.aristas = PieceShape.roll_aristas(item_res, crafted_item.get_quality_tier(), rng)
 				
 				# Añadir al inventario
 				var inv = get_node_or_null("/root/InventoryManager")

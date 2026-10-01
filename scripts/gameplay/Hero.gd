@@ -173,7 +173,10 @@ func reset_stats():
 	if inv_manager and inv_manager.has_method("calculate_total_stats"):
 		equipment_stats = inv_manager.calculate_total_stats()
 
-	var s := CombatMath.hero_stats(equipment_stats)
+	var powers: Array = []
+	if inv_manager and inv_manager.has_method("active_legendary_powers"):
+		powers = inv_manager.active_legendary_powers()
+	var s := CombatMath.hero_stats_with_powers(equipment_stats, powers)
 	STR = s.STR
 	AGI = s.AGI
 	INT = s.INT
@@ -227,19 +230,19 @@ func refresh_attack_speed() -> void:
 	_strike_time = clampf(0.6 / aps, 0.12, 0.24)
 
 
-## Lee el equipo actual (espada, escudo, casco, botas) y elige el sprite.
+## Lee la rejilla de Tico y elige el sprite: la mejor pieza de cada tipo (InventoryManager.best_hero_item).
 func refresh_gear() -> void:
 	gear.clear()
 	var inv_manager = get_node_or_null("/root/InventoryManager")
-	if inv_manager != null and "equipped_items" in inv_manager:
-		for slot in inv_manager.equipped_items.keys():
-			var item = inv_manager.equipped_items[slot]
+	if inv_manager != null and inv_manager.has_method("best_hero_item"):
+		for slot in ["main_hand", "off_hand", "head", "feet"]:
+			var item = inv_manager.best_hero_item(slot)
 			if item == null:
 				continue
 			var rarity := "basic"
 			if item.item_resource:
 				rarity = String(item.item_resource.rarity)
-			gear[String(slot)] = {"tier": item.get_quality_tier(), "rarity": rarity}
+			gear[slot] = {"tier": item.get_quality_tier(), "rarity": rarity}
 	_apply_sprite()
 
 
