@@ -47,6 +47,7 @@ func test_enemy_curve_is_a_staircase() -> void:
 	check(is_equal_approx(EnemyScaling.stat_scale(50), pow(EnemyScaling.EXP, 49)), "dentro del ciclo, EXP por sala")
 	check(is_equal_approx(EnemyScaling.stat_scale(51), EnemyScaling.STEP), "la sala 51 es STEP veces la 1")
 	check(is_equal_approx(EnemyScaling.stat_scale(101), EnemyScaling.STEP * EnemyScaling.STEP), "la 101, STEP al cuadrado")
+	check(EnemyScaling.stat_scale(51) > EnemyScaling.stat_scale(50), "la sala 51 es más dura que la 50 (STEP > EXP^49)")
 	var a := EnemyScaling.enemy_stats(30, EnemyArchetypes.get_data(&"skeleton"), false)
 	var b := EnemyScaling.enemy_stats(31, EnemyArchetypes.get_data(&"skeleton"), false)
 	check(b.max_hp >= a.max_hp and b.dmg > a.dmg, "cada sala es al menos tan dura como la anterior")

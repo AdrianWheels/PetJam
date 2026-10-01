@@ -15,7 +15,7 @@ El rango viaja como un entero junto al plano:
 - objeto forjado (`CraftedItem.rank`);
 - guardado, que pasa a la versión 2.
 
-Para calibrar hay una escena de pruebas sin ventana, `BalanceSim`, que simula los duelos de Tico sala a sala con las fórmulas reales y comprueba los objetivos del spec (la calibración está en pausa: ver el orden de ejecución). No se crean ficheros de plano por rango: el rango se aplica al forjar.
+La calibración (tarea 3) está hecha con Balanza: el enlace `scripts/tests/BalanzaBinding.gd` simula los duelos de Tico sala a sala con las fórmulas reales y `bash balance/arnes.sh check` comprueba los objetivos del spec; ver el spec, apartado 6. No se crean ficheros de plano por rango: el rango se aplica al forjar.
 
 **Tech Stack:** Godot 4.5.1 (GDScript con tabuladores), Python 3 + Pillow para los iconos pixel, escenas de pruebas sin ventana sobre `scripts/tests/TestSuite.gd`.
 

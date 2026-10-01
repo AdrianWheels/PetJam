@@ -129,7 +129,7 @@ Criterios:
 
 ## 6. Balance
 
-**Objetivos: pequeños muros.** Decisión del usuario: "cada bicho es un pequeño muro, que te obligue a farmear un poco el anterior". Se miden en duelos (apartado 7): un equipo llega hasta la última sala en la que Tico gana el duelo con la vida llena, y la siguiente es su muro. Propuesta para cada rango N, que se confirma con el usuario al calibrar:
+**Objetivos: pequeños muros.** Decisión del usuario: "cada bicho es un pequeño muro, que te obligue a farmear un poco el anterior". Se miden en duelos (apartado 7): un equipo llega hasta la última sala en la que Tico gana el duelo con la vida llena, y la siguiente es su muro. Objetivos para cada rango N, confirmados con el usuario el 2026-10-01 tal cual:
 - **Escalera:** 15 estados, que son las piezas básicas, avanzadas y maestras con calidad 0,40, 0,55, 0,70, 0,85 y 1,00, con las 4 piezas equipadas. De un estado al siguiente, el muro avanza de 0 a 6 salas: mejorar siempre se nota, pero ningún salto se come medio bioma.
 - **Hitos, con calidad 0,85:** el básico vence al jefe de la sala 50·(N−1)+20, el avanzado al de la +40 y el maestro al de la 50·N (acaba el ciclo).
 - **Cotas, con calidad 1,00:** el básico no vence al jefe +40, el avanzado no acaba el ciclo y el maestro no vence al jefe 50·N+10.
@@ -239,7 +239,7 @@ Criterios:
   - Botín: la cantidad crece con el ciclo; el material de bioma cae solo en su bioma; el jefe siempre suelta el suyo.
   - Guardado: una partida de versión 1 (fichero de prueba) carga en la versión 2 sin perder objetos ni planos, con los hitos del récord aplicados.
   - Botín del jefe: el extra solo cae cuando su muerte sube el récord.
-- **`BalanceSim`:** los objetivos del apartado 6 para los ciclos I a V, medidos en duelos, como comprobaciones.
+- **Arnés de Balanza** (`bash balance/arnes.sh check`): los 35 objetivos de `balance/balance.json` (los del apartado 6 para los ciclos I a V), medidos en duelos, como comprobaciones.
 - **`GameplayTests`**, además de seguir en verde:
   - Muro y farmeo: al perder en la sala X, Tico reaparece en la X−1 con el muro en la X; vuelve al muro tras 3 victorias y en cuanto cambia el equipo o bebe una poción de efecto; con el muro en la sala 1 lo reintenta; entra en cada sala con la vida llena.
   - Selector y candado: no pasa del récord; elegir sala pone el candado (salvo el muro); con candado repite la sala; morir con candado lo baja una sala; quitarlo lo lleva delante del muro; cambiar de sala a mitad de un combate lo abandona sin premio; con Tico caído, el viaje espera a la reaparición.
@@ -253,7 +253,7 @@ Criterios:
   - `scripts/core/Ranks.gd`, `scripts/core/EnemyScaling.gd` y `scripts/core/TrialDifficulty.gd`;
   - `data/materials/{bone,moss,obsidian,frost,void_shard}.tres`;
   - iconos en `tools/pixel_art` → `art/sprites/pixel/materials/`;
-  - `scenes/tests/RankTests.tscn` y `scenes/tests/BalanceSim.tscn`, con sus scripts.
+  - `scenes/tests/RankTests.tscn` con su script, y el enlace de Balanza (`scripts/tests/BalanzaBinding.gd`, con `balance/` y `addons/balanza/`).
 - **Modificados:**
   - Autoloads y núcleo: `DataManager`, `GameManager`, `RequestsManager`, `CraftingManager`, `CraftedItem` y `SaveManager`.
   - Pasillo: `Enemy` (curva y botín, con el extra de jefe solo con récord nuevo), `Corridor` y `Hero` (duelos con la vida llena, reaparición delante del muro y viaje entre salas).
@@ -263,7 +263,7 @@ Criterios:
 
 ## 12. Fases
 
-1. **Simulación y curva:** `EnemyScaling`, `Ranks` (solo multiplicadores), `BalanceSim` y la calibración. El juego cambia solo en la curva de enemigos.
+1. **Simulación y curva:** `EnemyScaling`, `Ranks` (solo multiplicadores), el enlace de Balanza (`BalanzaBinding`) y la calibración. El juego cambia solo en la curva de enemigos.
 2. **Rango en los datos:** `CraftedItem`, `DataManager`, el guardado versión 2 y su migración.
 3. **Hitos, pedidos y oro por rango.**
 4. **Materiales de bioma:** datos, iconos, botín y recetas.

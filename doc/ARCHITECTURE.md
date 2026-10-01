@@ -160,7 +160,7 @@ El pulso mágico emite `pulse_hit(amount, target_pos)` (posición tomada antes d
 
 **Flujo de combate**:
 1. Héroe camina (RUN); entra en combate cuando el enemigo está a `reach + half_width` (no por solape de rects)
-2. CombatController gestiona intercambio de golpes por cooldowns (FIGHT). La armadura del héroe reduce el daño físico: `armor / (armor + 40)`, máximo 60 %
+2. CombatController gestiona intercambio de golpes por cooldowns (FIGHT). La armadura del héroe reduce el daño físico: `armor / (armor + ARMOR_K · escala del enemigo)` con `ARMOR_K` 60 (`CombatMath`), máximo 60 %
 3. Enemigo muere → rellena `death_info` → CombatController registra la victoria y avanza sala → Corridor muestra botín y celebración
 4. Héroe muere → `GameManager.register_hero_death()`: la sala donde cae pasa a ser el muro → fundido → reaparición en la sala anterior con haz de luz. Delante del muro farmea y lo reintenta cada 3 victorias, o al momento con equipo nuevo o una poción de efecto (`GameManager.room_cleared()`, `retry_wall_now()`). Cada sala es un duelo: al cruzar su puerta, Tico recupera toda la vida. Selector de sala con candado en `HeroViewOverlay` (`GameManager.travel_to_room()`, `set_room_locked()`); spec de rangos, apartado 7
 5. Hit-stop: `Corridor.hitstop(s)` congela héroe, enemigo y combate (nunca los minijuegos)
