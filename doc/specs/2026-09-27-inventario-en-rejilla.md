@@ -355,7 +355,7 @@ Medidas: casillas de 22×22 píxeles de arte a ×5 (110 px de pantalla), el mism
   - rango del equipo: el menor entre las mejores piezas de cada tipo;
   - ampliaciones: la rejilla crece una sola vez por jefe, al vencerlo por primera vez, y no en el ciclo II (provisional; con los rangos, las recetas);
   - consumibles: compra al hueco, "No hay hueco" sin cobrar, Vida por debajo del 30 %, y Velocidad y Suerte al aparecer un jefe;
-  - guardar y cargar la versión 3;
+  - guardar y cargar la versión 2;
   - migración con una partida de la versión 1 que genera la propia prueba (4 piezas equipadas, 40 sueltas y récord 35): ninguna pieza perdida, rejilla de 6×5 y aristas deterministas;
   - posiciones imposibles al cargar: la pieza pasa al botín.
 - **Simulación de balance** (`BalanceSim`, y Balanza si los rangos la usan): duelos con rejillas llenas, los objetivos y la escalera del spec de rangos, el poder por casilla y la cuenta de materiales.
@@ -388,7 +388,7 @@ Medidas: casillas de 22×22 píxeles de arte a ×5 (110 px de pantalla), el mism
     - `InventoryManager`: los tres sitios, consumibles, ampliaciones, rango del equipo, guardado y migración;
     - `CraftingManager`: aristas al forjar y recetas de ampliación;
     - `GameManager`: recetas desbloqueadas por jefes y consumibles automáticos;
-    - `SaveManager`: versión 3;
+    - `SaveManager`: versión 2;
     - `RequestsManager` no cambia: las recetas de ampliación no están en `BlueprintLibrary`, así que nunca salen en los pedidos;
     - `CombatMath`: aplica los multiplicadores legendarios después de `hero_stats()`.
   - Combate:
@@ -404,7 +404,7 @@ Medidas: casillas de 22×22 píxeles de arte a ×5 (110 px de pantalla), el mism
 
 Cada fase deja el juego funcionando.
 1. **Reglas sin interfaz** y sus pruebas: `PieceShape`, `GearGrid`, `GearAuras`, `LegendaryPowers` (multiplicadores) y `GearPacker`.
-2. **Datos,** `InventoryManager` con sus tres sitios, guardado versión 3 y migración. Mientras llega el panel nuevo, unas funciones de compatibilidad provisionales mantienen el panel viejo: equipar coloca con `GearPacker`.
+2. **Datos,** `InventoryManager` con sus tres sitios, guardado versión 2 y migración. Mientras llega el panel nuevo, unas funciones de compatibilidad provisionales mantienen el panel viejo: equipar coloca con `GearPacker`.
 3. **Panel nuevo y controles,** con dibujos provisionales (casillas de color). Se quitan las funciones de compatibilidad.
 4. **Habilidades legendarias** en combate y sus efectos en la franja.
 5. **Ampliación de la rejilla y consumibles:** la ampliación es provisional, al vencer a los jefes; las recetas llegan con los rangos.
