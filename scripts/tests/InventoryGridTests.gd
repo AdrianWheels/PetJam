@@ -176,3 +176,68 @@ func test_grid_copy_does_not_touch_pieces() -> void:
 	check(g.size == Vector2i(5, 4) and g.cell_of(s) == Vector2i(0, 0), "crecer no mueve las piezas")
 	g.resize(Vector2i(3, 3))
 	check(g.size == Vector2i(5, 4), "nunca encoge")
+
+
+# ─── Tarea 3: auras, zonas y tope ──────────────────────────────────────
+
+func test_shield_aura_reaches_armor_neighbors_only() -> void:
+	var g := GearGrid.new(Vector2i(5, 5))
+	var shield := _piece(&"shield_advanced", 0.8)  # Raro: aura del 10 %
+	var helmet := _piece(&"helmet_advanced", 0.2)  # Básico: sin aura propia
+	var sword := _piece(&"sword_advanced", 0.2)
+	g.place(shield, Vector2i(1, 1), 0)  # 2×2, lejos de los bordes
+	g.place(helmet, Vector2i(1, 0), 0)  # 2×1 encima, en la fila de arriba (su zona)
+	g.place(sword, Vector2i(3, 1), 0)   # 1×3 a la derecha del escudo, fuera de su zona (columna 4)
+	var b := GearAuras.bonuses(g)
+	check(is_equal_approx(b[helmet].get("armor", 0.0), 0.10 + GearAuras.ZONE_BONUS), "el casco recibe el 10 %% de armadura del escudo más su zona (%s)" % b[helmet])
+	check(b[sword].get("armor", 0.0) == 0.0, "la espada no es armadura: no recibe el aura del escudo (%s)" % b[sword])
+	check(b[shield].is_empty(), "el escudo no se potencia a sí mismo ni está en su zona (%s)" % b[shield])
+
+
+func test_sword_and_boots_auras_go_to_weapons() -> void:
+	var g := GearGrid.new(Vector2i(5, 5))
+	var legendary_sword := _piece(&"sword_basic", 1.0)  # Legendario: 20 %
+	var other_sword := _piece(&"sword_basic", 0.2)
+	var boots := _piece(&"boots_basic", 0.95)  # Épico: 15 %
+	g.place(legendary_sword, Vector2i(1, 1), 0)
+	g.place(other_sword, Vector2i(2, 1), 0)
+	g.place(boots, Vector2i(2, 3), 0)  # debajo de la segunda espada
+	var b := GearAuras.bonuses(g)
+	check(is_equal_approx(b[other_sword].get("damage", 0.0), 0.20), "+20 %% de daño de la espada legendaria vecina (%s)" % b[other_sword])
+	check(is_equal_approx(b[other_sword].get("aps", 0.0), 0.15), "+15 %% de velocidad de las botas épicas (%s)" % b[other_sword])
+	check(b[legendary_sword].get("damage", 0.0) == 0.0, "una espada de calidad Básico no da aura (%s)" % b[legendary_sword])
+
+
+func test_bonus_is_capped() -> void:
+	var g := GearGrid.new(Vector2i(3, 3))
+	var center := _piece(&"helmet_basic", 0.2)
+	g.place(center, Vector2i(1, 1), 0)
+	for c in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(2, 1), Vector2i(1, 2)]:
+		g.place(_piece(&"helmet_basic", 1.0), c, 0)
+	var b := GearAuras.bonuses(g)
+	check(is_equal_approx(b[center].hp, GearAuras.CAP), "cuatro cascos legendarios dan +80 %%, pero el tope lo deja en +50 %% (%s)" % b[center])
+
+
+func test_zone_follows_the_grid_edge() -> void:
+	var g := GearGrid.new(Vector2i(4, 4))
+	var sword := _piece(&"sword_basic", 0.2)
+	g.place(sword, Vector2i(3, 0), 0)
+	check(GearAuras.in_zone(g, sword), "la espada en la columna derecha está en su zona")
+	g.resize(Vector2i(5, 4))
+	check(not GearAuras.in_zone(g, sword), "al crecer la rejilla, la columna derecha es la nueva")
+
+
+func test_totals_match_a_hand_count() -> void:
+	var g := GearGrid.new(Vector2i(4, 4))
+	var shield := _piece(&"shield_basic", 0.8)  # Raro
+	var helmet := _piece(&"helmet_basic", 0.8)  # Raro
+	g.place(shield, Vector2i(0, 1), 0)  # columna izquierda: su zona
+	g.place(helmet, Vector2i(1, 1), 0)  # vecino del escudo, fuera de la fila de arriba
+	var t := GearAuras.totals(g)
+	var s: Dictionary = shield.calculated_stats
+	var h: Dictionary = helmet.calculated_stats
+	# Escudo: zona +10 % en todo y +10 % de vida del casco. Casco: +10 % de armadura del escudo.
+	var hp := float(s.hp) * (1.0 + 0.10 + 0.10) + float(h.hp)
+	var armor := float(s.armor) * 1.10 + float(h.armor) * 1.10
+	check(t.hp == roundi(hp) and t.armor == roundi(armor), "vida %d (espera %d) y armadura %d (espera %d)" % [t.hp, roundi(hp), t.armor, roundi(armor)])
+	check(t.keys().size() == GearAuras.STATS.size(), "las mismas claves que calculate_total_stats")

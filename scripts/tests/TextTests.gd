@@ -178,6 +178,10 @@ func _code_table_texts() -> Array:
 	var mat_names: Dictionary = _consts("res://scripts/ui/MaterialRow.gd").get("MATERIAL_NAMES", {})
 	for id in mat_names:
 		out.append([String(mat_names[id]), "MaterialRow.MATERIAL_NAMES"])
+	for slot in GearAuras.AURA_TEXTS:
+		out.append([String(GearAuras.AURA_TEXTS[slot]), "GearAuras.AURA_TEXTS"])
+	for slot in GearAuras.ZONE_TEXTS:
+		out.append([String(GearAuras.ZONE_TEXTS[slot]), "GearAuras.ZONE_TEXTS"])
 	return out
 
 

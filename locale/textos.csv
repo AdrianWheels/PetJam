@@ -227,3 +227,11 @@ MÁX,MÁX,MAX
 ¡Planos básicos%s!,¡Planos básicos%s!,Basic blueprints%s!
 ¡Planos avanzados%s!,¡Planos avanzados%s!,Advanced blueprints%s!
 ¡Planos maestros%s!,¡Planos maestros%s!,Master blueprints%s!
++%d %% de daño a las armas vecinas,+%d %% de daño a las armas vecinas,+%d %% damage to adjacent weapons
++%d %% de armadura a las armaduras vecinas,+%d %% de armadura a las armaduras vecinas,+%d %% armor to adjacent armor
++%d %% de vida a todas las piezas vecinas,+%d %% de vida a todas las piezas vecinas,+%d %% health to all adjacent pieces
++%d %% de velocidad de ataque a las armas vecinas,+%d %% de velocidad de ataque a las armas vecinas,+%d %% attack speed to adjacent weapons
+Rinde más en la fila de arriba,Rinde más en la fila de arriba,Stronger in the top row
+Rinde más en la fila de abajo,Rinde más en la fila de abajo,Stronger in the bottom row
+Rinde más en la columna izquierda,Rinde más en la columna izquierda,Stronger in the left column
+Rinde más en la columna derecha,Rinde más en la columna derecha,Stronger in the right column
