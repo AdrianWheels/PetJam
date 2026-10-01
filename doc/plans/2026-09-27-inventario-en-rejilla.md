@@ -22,7 +22,7 @@
 
 `InventoryManager` guarda los tres sitios de las piezas (rejilla de Tico, mochila y botín) y mantiene `calculate_total_stats()`, así que `Hero`, `CombatMath` y `BalanceSim` no cambian de interfaz. El panel de Equipo se rehace a pantalla completa. Cada rejilla es un control que se dibuja a sí mismo (`GearGridView`), el botín es una tira (`LootStripView`), y el panel lleva el dedo en `_input`.
 
-**Tech Stack:** Godot 4.5.1 (GDScript con tabuladores), Python 3 + Pillow para el pixel art, suites sin ventana sobre `scripts/tests/TestSuite.gd`.
+**Tech Stack:** Godot 4.5.1 (GDScript con tabuladores) y suites sin ventana sobre `scripts/tests/TestSuite.gd`.
 
 **Spec:** `doc/specs/2026-09-27-inventario-en-rejilla.md`
 
@@ -43,10 +43,10 @@
   - la función que da el rango del equipo, que la tarea 6 redefine para la rejilla, y cómo se aplica la base de Tico por rango;
   - ya en la rama base (commit 5c05938): los duelos (Tico entra en cada sala con la vida llena, en `Corridor._enter_room`) y el muro (`GameManager.retry_wall_now()`, que llaman `apply_buff` y `_on_equipment_changed`, con `wall_room` y `room_locked`);
   - la simulación de duelos (`BalanceSim`, o el enlace de Balanza en `balance/` y `addons/balanza/`) con sus objetivos: hitos, cotas y escalera.
-- **Fase 2 del pixel art (Tico por capas, rama `franja-pixel-fase-2`):** no hace falta, pero si está integrada el plan usa lo suyo:
-  - `recolor.py`: la rampa de acento `+ * #`, las rampas de calidad y la fuerza del destello (tarea 14);
+- **Franja con pegatinas** (rama `franja-pegatinas`): no hace falta, pero si está integrada el plan usa lo suyo:
   - `Hero.read_equipped_gear()`: la única lectura del equipo para el dibujo (tarea 6);
-  - `HeroPreview`: el Tico grande y tenue del panel (tarea 9).
+  - el Tico de pegatina, que también es la marioneta del panel (tarea 9).
+  La fase 2 del pixel art quedó sin usar: este plan ya no depende de ella.
 - **Si al rebasar algo de esto se llama distinto,** la tarea 0 lo anota en "Equivalencias tras los rangos" y cada tarea usa el nombre real.
 
 ## Global Constraints
@@ -63,7 +63,8 @@
   - Los textos de la franja (scripts de `TextTests.STRIP_SCRIPTS`) usan solo caracteres de `PixelFont`: A-Z, ÁÉÍÓÚÜÑ, cifras y ! ¡ ? ¿ . , : ; - + / ( ) % ' · ×.
 - **Partida del usuario:** ejecutar el juego o `--write-movie` escribe `%APPDATA%/Godot/app_userdata/PetJam/save.json`. Cópialo antes y restáuralo después; las suites ya lo hacen solas (`TestSuite`).
 - **Commits:** sin Co-Authored-By, añadiendo los ficheros por su ruta (nunca `git add -A`).
-- **Medidas:** casilla de 22×22 píxeles de arte, pintada a ×5 (110 px de pantalla).
+- **Arte:** aplazado al final, por decisión del usuario (2026-10-01): es un prototipo personal y los estilos pueden mezclarse mientras tanto. Las piezas se dibujan con casillas de color (tarea 8) y las tareas 14 y 15 no tienen nada que hacer.
+- **Medidas:** casillas de 110 px de pantalla.
   - La rejilla de Tico empieza en 4×4 (ancho × alto) y crece 4×4 → 5×4 → 5×5 → 6×5 → 6×6: columna a la derecha y fila abajo, alternando.
   - La mochila es de 6×4, fija.
 - **Aristas por calidad:** Básico 2, Bueno 2, Raro 1, Épico 0 y Legendario 0.
@@ -111,7 +112,6 @@
 | `scripts/core/GearPacker.gd` | crear | colocación automática (migración y BalanceSim) |
 | `scripts/core/GridExpansions.gd` | crear | recetas de ampliación: tamaños, jefes, planos |
 | `scripts/core/Potions.gd` | crear | catálogo de pociones y reglas de los huecos |
-| `scripts/core/GearSprites.gd` | crear | textura de cada pieza: pixel art girado, recoloreado y con aristas |
 | `scripts/data/ItemResource.gd`, `data/items/*.tres` | modificar | forma y sitios de arista; estadísticas por casilla (tarea 16) |
 | `scripts/data/CraftedItem.gd` | modificar | sitio, casilla, giro, aristas y precio de venta |
 | `scripts/autoload/InventoryManager.gd` | modificar | tres sitios, mover/intercambiar/vender, totales, ampliaciones, consumibles, guardado v3 |
@@ -123,8 +123,6 @@
 | `scripts/ui/GearGridView.gd`, `scripts/ui/LootStripView.gd` | crear | vistas de rejilla y botín |
 | `scenes/UI/EquipmentPanel.tscn`, `scripts/ui/EquipmentPanel.gd` | rehacer | panel a pantalla completa y el dedo |
 | `scripts/ui/HUDMain.gd`, `ShopPanel.gd`, `CraftResultScreen.gd`, `BlueprintLibraryPanel.gd`, `HeroViewOverlay.gd` | modificar | insignia, venta, pociones, resultado, recetas y avisos |
-| `tools/pixel_art/gear.py`, `tools/pixel_art/tests/test_gear.py`, `tools/pixel_art/export.py` | crear / modificar | pixel art de piezas, aristas, pociones, zonas e interfaz |
-| `art/sprites/pixel/gear/*` | generados | sprites de piezas e interfaz |
 | `scripts/tests/InventoryGridTests.gd`, `scenes/tests/InventoryGridTests.tscn` | crear | pruebas de este plan (la partida de la versión 2 se genera en la propia prueba) |
 | `scripts/tests/GameplayTests.gd`, `RankTests.gd`, `TextTests.gd`, `BalanceSim.gd`, `VisualCapture.gd` | modificar | pruebas y capturas afectadas; duelos con rejillas en `BalanceSim` |
 | `balance/` y el enlace de PetJam con Balanza | modificar, si los rangos se calibraron con Balanza | calibración con rejillas (tarea 16) |
@@ -209,11 +207,10 @@ Anota en "Equivalencias tras los rangos":
 - **Tanda de botín:** el valor de `Enemy.MATERIAL_DROP_QTY` tras los rangos (la tarea 16 lo usa de referencia).
 
 ```bash
-ls tools/pixel_art/recolor.py scripts/ui/HeroPreview.gd
-grep -n "func read_equipped_gear" scripts/gameplay/Hero.gd
+grep -n "func read_equipped_gear\|func play_materialize" scripts/gameplay/Hero.gd
 ```
 
-- **Fase 2 del pixel art:** anota si está integrada. Si lo está, la tarea 6 cambia `read_equipped_gear()` y la tarea 9 usa `HeroPreview`. La tarea 14 lo detecta sola.
+- **Franja con pegatinas:** anota si está integrada (`Hero` tiene `read_equipped_gear()` y `play_materialize()`). Si lo está, la tarea 6 cambia `read_equipped_gear()` y la tarea 9 trata la marioneta como pegatina.
 
 - [ ] **Step 4: La batería está en verde antes de empezar**
 
@@ -439,7 +436,7 @@ extends RefCounted
 
 ## Formas de las piezas en la rejilla de equipo (spec doc/specs/2026-09-27-inventario-en-rejilla.md,
 ## apartado 2). Casillas en (columna, fila), con la fila hacia abajo. Sin nodos: lo usan GearGrid,
-## InventoryManager, las vistas, GearSprites y BalanceSim.
+## InventoryManager, las vistas y BalanceSim.
 
 ## Aristas que trae una pieza según su calidad (CraftedItem.get_quality_tier()).
 const ARISTAS_BY_TIER := {"common": 2, "uncommon": 2, "rare": 1, "epic": 0, "legendary": 0}
@@ -2128,7 +2125,7 @@ En `_ready()`, `rng.randomize()`. En `_finalize_task`, después de `crafted_item
 
 - [ ] **Step 6: `Hero.gd`: la mejor pieza de cada tipo y las habilidades**
 
-Si la fase 2 del pixel art está integrada (tarea 0), la lectura del equipo para el dibujo vive en `read_equipped_gear()`. En ese caso, esa función devuelve, con su misma forma, la mejor pieza de cada tipo (`inv_manager.best_hero_item(slot)`) y `refresh_gear()` se queda como esté. Si no está integrada, sustituye `refresh_gear()`:
+Si la franja con pegatinas está integrada (tarea 0), la lectura del equipo para el dibujo vive en `read_equipped_gear()`, que hoy lee `equipped_items`. En ese caso, esa función devuelve, con su misma forma, la mejor pieza de cada tipo (`inv_manager.best_hero_item(slot)`) y `refresh_gear()` se queda como esté. Si no está integrada, sustituye `refresh_gear()`:
 
 ```gdscript
 ## Lee la rejilla de Tico y elige el sprite: la mejor pieza de cada tipo (InventoryManager.best_hero_item).
@@ -2428,7 +2425,7 @@ git commit -m "feat: guardado versión 3 con la rejilla; la migración usa el r�
     - `slot_at_local(local: Vector2) -> Dictionary` (`item`, `rot`, `rect`);
     - `content_width() -> float` y `max_scroll() -> float`.
 - Las vistas no guardan estado de juego ni leen el dedo: `mouse_filter = IGNORE`, y el panel (tarea 9) decide.
-- Sin `sprite_for` dibujan las piezas con casillas de color: coral las armas, verde las armaduras, con el borde del color de la calidad y las aristas en gris. La tarea 15 le da el pixel art.
+- Sin `sprite_for` dibujan las piezas con casillas de color: coral las armas, verde las armaduras, con el borde del color de la calidad y las aristas en gris. Así se quedan hasta que llegue el arte (aplazado al final).
 
 - [ ] **Step 1: Pruebas que fallan**
 
@@ -2579,7 +2576,7 @@ func _draw() -> void:
 
 
 ## Dibuja una pieza con la esquina de su caja en `top_left` y casillas de `cell_px`. Lo usan la rejilla,
-## el botín y la pieza que se arrastra. Con `sprite_fn` válido pinta su pixel art; si no, casillas de color.
+## el botín y la pieza que se arrastra. Con `sprite_fn` válido pinta su textura (cuando haya arte); si no, casillas de color.
 static func draw_piece_at(canvas: CanvasItem, item: CraftedItem, top_left: Vector2, rot: int, cell_px: float, alpha: float, sprite_fn: Callable = Callable()) -> void:
 	var fp := PieceShape.of_item(item, rot)
 	if sprite_fn.is_valid():
@@ -2599,7 +2596,7 @@ static func draw_piece_at(canvas: CanvasItem, item: CraftedItem, top_left: Vecto
 
 
 ## Zona de un tipo de pieza: una franja tenue por dentro de su borde de la rejilla (que sigue al borde al
-## ampliarla). Las piezas se dibujan encima. La tarea 15 le añade el icono del tipo.
+## ampliarla). Las piezas se dibujan encima.
 func _draw_zone(_slot: String, zone: StringName) -> void:
 	var w := float(grid.size.x) * CELL
 	var h := float(grid.size.y) * CELL
@@ -3084,8 +3081,8 @@ func _rich(rect: Rect2, font_size: int) -> RichTextLabel:
 	return label
 
 
-## Tico a gran tamaño y tenue detrás de su rejilla (el mismo dibujo que en la mazmorra). Con la fase 2 del
-## pixel art integrada, usa HeroPreview (ver la nota después de este bloque).
+## Tico a gran tamaño y tenue detrás de su rejilla (el mismo dibujo que en la mazmorra; con la franja de
+## pegatinas integrada, ver la nota después de este bloque).
 func _puppet_setup() -> void:
 	_puppet = HERO_SCENE.instantiate()
 	_puppet.remove_from_group("hero")  # que no lo confundan con el héroe de la partida
@@ -3475,12 +3472,10 @@ func _draw_ghost() -> void:
 	GearGridView.draw_piece_at(_ghost_layer, _press.item, _ghost_origin(), _drag_rot, CELL, 0.85, _hero_view.sprite_for)
 ```
 
-**Con la fase 2 del pixel art integrada** (tarea 0), el Tico grande es un `HeroPreview` en lugar de la marioneta, en el mismo sitio del árbol (detrás de las rejillas):
-- `_puppet` pasa a ser `CanvasItem`, y `_puppet_setup()` crea `HeroPreview.new(18)`;
-- va centrado en la rejilla, con los pies al fondo: `position = HERO_GRID_POS + Vector2((660.0 - 32.0 * 18.0) / 2.0, 660.0 - HeroPreview.FEET.y * 18.0)`;
-- lleva `modulate.a = 0.35` y `mouse_filter = Control.MOUSE_FILTER_IGNORE`;
-- `open()` y `close()` llaman a `set_active(true)` y `set_active(false)`, en lugar de tocar `process_mode` y `respawn`;
-- donde se llama a `refresh_gear()` va `refresh()`, y donde se pone `_materialize` va `play_materialize()`.
+**Con la franja de pegatinas integrada** (tarea 0), la marioneta ya es el Tico de pegatina:
+- quita la línea del filtro `TEXTURE_FILTER_NEAREST`, que es para pixel art;
+- donde se pone `_materialize`, llama a `play_materialize()`;
+- la escala ×18 vale igual: va en unidades del mundo, como en la franja.
 
 - [ ] **Step 4: Textos**
 
@@ -5474,1062 +5469,19 @@ git commit -m "feat: consumibles: 2 huecos, pociones que se beben solas (Vida ba
 
 ---
 
-### Task 14: Pixel art de las piezas, las aristas, las pociones y el panel (herramienta)
+### Task 14: Arte de las piezas (aplazada)
 
-**Files:**
-- Create: `tools/pixel_art/gear.py`, `tools/pixel_art/tests/test_gear.py`
-- Modify: `tools/pixel_art/export.py`
-- Generated: `art/sprites/pixel/gear/*.png`, `art/sprites/pixel/gear/gear.json` y `tools/pixel_art/out/gear_review.png` (este último, ignorado por git)
+Aplazada por decisión del usuario (2026-10-01): el arte se decide al final, en la tarjeta "Arte del inventario en rejilla" del tablero. Es un prototipo personal y los estilos pueden mezclarse mientras tanto.
 
-**Interfaces:**
-- Consumes:
-  - de la fase 2 del pixel art, si está integrada: `recolor.ACCENT`, `recolor.QUALITY_RAMPS` y `recolor.SHINE`;
-  - si no lo está, los mismos valores, copiados en `gear.py`. `gear.py` no toca `pixel_kit.py`: sin la fase 2, añade a `pixel_kit.PALETTE` en memoria las letras de acento que le faltan, con los colores de la fase 2. Así las dos ramas no chocan al integrarse.
-- Produces (consume la tarea 15):
-  - `gear/<item_id>.png`: las 12 piezas con su forma limpia (22 px por casilla), sin girar, con el acento en la rampa reservada de la fase 2: `+` claro (`#ff80ff`), `*` base (`#ff00ff`) y `#` oscuro (`#800080`);
-  - `gear/arista_metal_{0,1,2}.png` y `gear/arista_leather_{0,1,2}.png`: rebabas de 22×22 pegadas a su borde izquierdo;
-  - `gear/potion_heal.png`, `potion_speed.png` y `potion_luck.png` (22×22);
-  - `gear/zone_head.png`, `zone_feet.png`, `zone_off_hand.png` y `zone_main_hand.png`: iconos de las zonas (11×11);
-  - `gear/ui_cell.png` y `gear/ui_cell_locked.png` (22×22), y `gear/ui_frame.png`: un marco de 12×12 para 9 partes, con bordes de 4 px;
-  - `gear/gear.json`: `shapes`, `accent` (los 3 colores reservados), `accent_px` (pieza → sus píxeles de acento como `[x, y, tono]`, con el tono 0 claro, 1 base y 2 oscuro), `quality_ramps` (calidad → claro, base y oscuro) y `shine` (calidad → fuerza del destello). Los colores van en hexadecimal sin `#`, como en el `hero.json` de la fase 2. Con `accent_px`, el juego recolorea sin recorrer cada píxel.
-- Las piezas se dibujan con primitivas del kit (`put`, `rect`, `fill_poly`, `fill_ellipse` y `line`) a partir del tamaño de su forma, y al final se recortan a sus casillas. Es un punto de partida: la hoja de revisión sirve para retocarlas a mano en sus funciones, igual que el resto del elenco.
+Mientras tanto, las piezas se dibujan con casillas de color (tarea 8). No hay nada que hacer en esta tarea: el ejecutor la marca como completa sin dispatch.
 
-- [ ] **Step 1: Pruebas de la herramienta (fallan)**
-
-`tools/pixel_art/tests/test_gear.py`:
-
-```python
-import json
-import sys
-import unittest
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-import gear  # noqa: E402
-
-
-class GearArtTest(unittest.TestCase):
-    def test_every_piece_fits_its_shape(self):
-        for item_id, cells in gear.SHAPES.items():
-            s = gear.PIECES[item_id]()
-            w = (max(x for x, _ in cells) + 1) * gear.CELL
-            h = (max(y for _, y in cells) + 1) * gear.CELL
-            self.assertEqual((s.w, s.h), (w, h), item_id)
-            painted = set()
-            for y in range(s.h):
-                for x in range(s.w):
-                    if s.px[y][x] != ".":
-                        self.assertIn((x // gear.CELL, y // gear.CELL), cells, f"{item_id}: píxel fuera de la forma en {(x, y)}")
-                        painted.add((x // gear.CELL, y // gear.CELL))
-            self.assertEqual(painted, set(cells), f"{item_id}: cada casilla de la forma lleva dibujo")
-
-    def test_every_piece_has_its_accent(self):
-        for item_id in gear.SHAPES:
-            chars = [c for row in gear.PIECES[item_id]().px for c in row]
-            self.assertGreaterEqual(sum(c in gear.ACCENT for c in chars), 4, f"{item_id}: sin acento no se vería la calidad")
-
-    def test_shapes_match_the_game_data(self):
-        for item_id, cells in gear.SHAPES.items():
-            self.assertEqual(sorted(cells), sorted(gear.tres_shape(item_id)), item_id)
-
-    def test_arista_tiles_hang_from_their_left_edge(self):
-        for name, draw in gear.ARISTAS.items():
-            s = draw()
-            self.assertEqual((s.w, s.h), (gear.CELL, gear.CELL), name)
-            self.assertTrue(any(s.px[y][0] != "." for y in range(s.h)), f"{name}: no toca su borde izquierdo")
-
-    def test_ui_sizes(self):
-        for name, draw in gear.ZONES.items():
-            self.assertEqual((draw().w, draw().h), (11, 11), name)
-        for name, draw in gear.UI.items():
-            size = (12, 12) if name == "ui_frame" else (gear.CELL, gear.CELL)
-            self.assertEqual((draw().w, draw().h), size, name)
-
-    def test_export_writes_everything(self):
-        out = gear.export_gear()
-        for name in list(gear.PIECES) + list(gear.ARISTAS) + list(gear.POTIONS) + list(gear.ZONES) + list(gear.UI):
-            self.assertTrue((out / f"{name}.png").exists(), name)
-        data = json.loads((out / "gear.json").read_text(encoding="utf-8"))
-        self.assertEqual(len(data["accent"]), 3)
-        self.assertEqual(data["quality_ramps"]["legendary"][1], "ffa629")
-        self.assertEqual(sorted(data["shapes"]), sorted(gear.SHAPES))
-        for item_id in gear.PIECES:
-            px = gear.PIECES[item_id]().px
-            listed = data["accent_px"][item_id]
-            self.assertGreaterEqual(len(listed), 4, item_id)
-            for x, y, tone in listed:
-                self.assertEqual(px[y][x], gear.ACCENT[tone], f"{item_id}: ({x}, {y}) no es acento de tono {tone}")
-
-
-if __name__ == "__main__":
-    unittest.main()
-```
-
-Run: `python -m unittest discover tools/pixel_art/tests`
-Expected: `ModuleNotFoundError: No module named 'gear'`.
-
-- [ ] **Step 2: `tools/pixel_art/gear.py`**
-
-```python
-"""Pixel art del inventario en rejilla (spec doc/specs/2026-09-27-inventario-en-rejilla.md, apartado 9.5).
-
-Lo llama export.py. Escribe a escala 1 en art/sprites/pixel/gear/ (el juego lo pinta a ×5):
-  <item_id>.png                                  las 12 piezas con su forma limpia, 22 px por casilla
-  arista_metal_<n>.png, arista_leather_<n>.png   rebabas de 22×22 pegadas a su borde izquierdo
-  potion_heal.png, potion_speed.png, potion_luck.png
-  zone_<tipo>.png                                iconos de 11×11 de las 4 zonas
-  ui_cell.png, ui_cell_locked.png, ui_frame.png  casilla, casilla por abrir y marco de 12×12 (9 partes)
-  gear.json                                      formas, colores de acento, rampas de calidad y destello
-y la hoja de revisión tools/pixel_art/out/gear_review.png (a ×4, con el acento en naranja legendario).
-
-El acento de cada pieza (acanalado, banda, emblema, penacho) va en la rampa reservada de la fase 2 del
-pixel art (recolor.ACCENT: claro, base y oscuro). El juego la cambia por la rampa de la calidad
-(GearSprites, con las rampas de gear.json). Todo se dibuja con margen para el contorno y al final se
-borra lo que se salga de las casillas de la forma.
-"""
-import json
-import re
-from pathlib import Path
-
-from PIL import Image
-
-from pixel_kit import PALETTE, Sprite, hex_to_rgba
-
-try:  # fase 2 del pixel art: rampas reservadas y de calidad
-    from recolor import ACCENT, QUALITY_RAMPS, SHINE
-except ImportError:  # sin la fase 2: los mismos valores (su plan, tarea 1)
-    ACCENT = ("+", "*", "#")
-    QUALITY_RAMPS = {
-        "common": ("#f4f7fa", "#cfd6dc", "#8a93a3"),
-        "uncommon": ("#b8f5a0", "#6ad16a", "#2f8a4a"),
-        "rare": ("#a8e0ff", "#4ea3ff", "#2a5cc2"),
-        "epic": ("#e0b8ff", "#b46bff", "#6a35b8"),
-        "legendary": ("#ffe08a", "#ffa629", "#c2581c"),
-    }
-    SHINE = {"epic": 0.6, "legendary": 1.0}
-    for _letter, _hex in zip(ACCENT, ("#ff80ff", "#ff00ff", "#800080")):
-        PALETTE.setdefault(_letter, _hex)
-
-LIGHT, BASE, DARK = ACCENT
-
-HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
-OUT = REPO / "art" / "sprites" / "pixel" / "gear"
-ITEMS = REPO / "data" / "items"
-REVIEW = HERE / "out" / "gear_review.png"
-CELL = 22
-
-# Casillas limpias de cada pieza, sin girar (las mismas que data/items/*.tres)
-SHAPES = {
-    "sword_basic": [(0, 0), (0, 1)],
-    "sword_advanced": [(0, 0), (0, 1), (0, 2)],
-    "sword_masterwork": [(0, 0), (0, 1), (0, 2), (0, 3)],
-    "shield_basic": [(0, 0), (0, 1)],
-    "shield_advanced": [(0, 0), (1, 0), (0, 1), (1, 1)],
-    "shield_master": [(0, 0), (1, 0), (0, 1), (1, 1), (0, 2), (1, 2)],
-    "helmet_basic": [(0, 0)],
-    "helmet_advanced": [(0, 0), (1, 0)],
-    "helmet_master": [(1, 0), (0, 1), (1, 1), (2, 1)],
-    "boots_basic": [(0, 0)],
-    "boots_advanced": [(0, 0), (0, 1), (1, 1)],
-    "boots_master": [(0, 0), (0, 1), (0, 2), (1, 2)],
-}
-
-
-def blank(item_id):
-    cells = SHAPES[item_id]
-    return Sprite((max(x for x, _ in cells) + 1) * CELL, (max(y for _, y in cells) + 1) * CELL)
-
-
-def finish(s, item_id):
-    """Contorno de 1 px y fuera todo lo que se salga de las casillas de la pieza."""
-    s.outline()
-    cells = SHAPES[item_id]
-    for y in range(s.h):
-        for x in range(s.w):
-            if (x // CELL, y // CELL) not in cells:
-                s.px[y][x] = "."
-    return s
-
-
-def ramp(t):
-    """Tono de acento para una fracción 0..1: claro al principio, oscuro al final."""
-    return LIGHT if t < 0.34 else BASE if t < 0.67 else DARK
-
-
-def shade(s, base, light, dark, left, right):
-    """Luz a la izquierda de `left` y sombra a la derecha de `right` sobre los píxeles `base`."""
-    for y in range(s.h):
-        for x in range(s.w):
-            if s.px[y][x] == base:
-                s.px[y][x] = light if x < left else dark if x > right else base
-
-
-# ── Espadas ────────────────────────────────────────────────────────────
-# Nivel → hoja (luz, medio, sombra), guarda (claro, oscuro), empuñadura (claro, oscuro) y pomo
-SWORD_LOOK = {
-    "basic": ("M", "i", "I", "i", "I", "W", "v", "i"),
-    "advanced": ("m", "M", "i", "M", "i", "L", "d", "M"),
-    "master": ("m", "M", "i", "g", "G", "L", "d", "G"),
-}
-
-
-def sword(item_id, level):
-    """De pie: punta arriba, hoja con el acanalado de acento, guarda, empuñadura y pomo en la última casilla."""
-    light, mid, dark, guard, guard_d, grip, grip_d, pommel = SWORD_LOOK[level]
-    s = blank(item_id)
-    h = s.h
-    gy = h - 17  # fila de la guarda
-    s.put(2, 10, light + mid)
-    s.put(3, 9, light + light + mid + dark)
-    for y in range(4, gy):
-        s.put(y, 9, light + ramp((y - 4) / max(1, gy - 5)) + mid + dark)
-    s.put(gy, 4, guard * 14)
-    s.put(gy + 1, 3, guard_d + guard * 14 + guard_d)
-    s.put(gy + 2, 4, guard_d * 14)
-    for y in range(gy + 3, h - 6):
-        s.put(y, 9, grip * 3 + grip_d if y % 2 else grip_d + grip * 2 + grip_d)
-    for y in range(h - 6, h - 2):
-        s.put(y, 8, pommel * 6)
-    if level == "master":
-        s.put(h - 5, 10, "bb")  # gema en el pomo
-    return finish(s, item_id)
-
-
-# ── Escudos ────────────────────────────────────────────────────────────
-def shield_basic(item_id):
-    """Escudo de tablas: madera con canto de hierro y una banda pintada de acento."""
-    s = blank(item_id)
-    for y in range(3, 41):
-        for x in range(3, 19):
-            s.px[y][x] = "v" if (x - 3) % 4 == 0 and x > 3 else ("w" if (x - 3) // 4 % 2 == 0 else "W")
-    for x in range(3, 19):
-        s.px[3][x] = "i"
-        s.px[40][x] = "I"
-    for y in range(3, 41):
-        s.px[y][3] = "i"
-        s.px[y][18] = "I"
-    for y, ch in ((19, LIGHT), (20, BASE), (21, BASE), (22, DARK)):
-        s.put(y, 4, ch * 14)
-    for x, y in ((3, 3), (18, 3), (3, 40), (18, 40)):
-        s.px[y][x] = "."  # esquinas redondeadas
-    return finish(s, item_id)
-
-
-def shield_advanced(item_id):
-    """Escudo redondo de acero: canto oscuro, cruz de acento y umbo."""
-    s = blank(item_id)
-
-    def steel(x, y, nx, ny):
-        if nx * nx + ny * ny > 0.8:
-            return "I"
-        return "m" if nx + ny < -0.6 else "i" if nx + ny > 0.7 else "M"
-
-    s.fill_ellipse(21.5, 21.5, 19, 19, steel)
-    for i in range(9, 35):
-        c = ramp((i - 9) / 25)
-        for d in (20, 21, 22, 23):
-            if s.px[d][i] != "I":
-                s.px[d][i] = c
-            if s.px[i][d] != "I":
-                s.px[i][d] = c
-    s.fill_ellipse(21.5, 21.5, 3, 3, "m")
-    return finish(s, item_id)
-
-
-def shield_master(item_id):
-    """Escudo torre de acero con ribete de oro y un chevrón de acento."""
-    s = blank(item_id)
-    s.fill_poly([(4, 3), (39, 3), (39, 50), (21.5, 62), (4, 50)], "M")
-    shade(s, "M", "m", "i", 9, 34)
-    s.line([(4, 3), (39, 3), (39, 50), (21, 62), (4, 50), (4, 3)], "G")
-    s.fill_poly([(12, 20), (21.5, 29), (31, 20), (31, 27), (21.5, 37), (12, 27)], BASE)
-    s.line([(12, 20), (21, 29), (31, 20)], LIGHT)
-    s.line([(12, 27), (21, 37), (31, 27)], DARK)
-    return finish(s, item_id)
-
-
-# ── Cascos ─────────────────────────────────────────────────────────────
-def helmet_basic(item_id):
-    """Gorro de cuero con banda de acento."""
-    s = blank(item_id)
-    s.fill_ellipse(10.5, 13, 8, 9, lambda x, y, nx, ny: None if y > 14 else ("l" if nx < -0.4 else "d" if nx > 0.5 else "L"))
-    s.put(13, 3, BASE * 16)
-    s.put(14, 3, DARK * 16)
-    s.put(15, 2, "d" * 18)
-    return finish(s, item_id)
-
-
-def helmet_advanced(item_id):
-    """Yelmo de hierro con cuernos de hueso, banda de acento y visera."""
-    s = blank(item_id)
-    s.fill_ellipse(21.5, 15, 11, 11, lambda x, y, nx, ny: None if y > 18 else ("m" if nx < -0.5 else "i" if nx > 0.5 else "M"))
-    s.put(11, 11, LIGHT * 22)
-    s.put(12, 11, BASE * 22)
-    s.put(16, 13, "K" * 18)
-    s.fill_poly([(11, 12), (3, 3), (6, 2), (13, 9)], "e")
-    s.fill_poly([(32, 12), (40, 3), (37, 2), (30, 9)], "e")
-    for y in (17, 18):
-        s.put(y, 12, "iiii")
-        s.put(y, 28, "iiii")
-    return finish(s, item_id)
-
-
-def helmet_master(item_id):
-    """Gran yelmo: penacho de acento en la casilla de arriba (forma en T) y alas en las de los lados."""
-    s = blank(item_id)
-    s.fill_poly([(27, 21), (25, 8), (29, 3), (37, 4), (40, 11), (36, 21)], BASE)
-    s.line([(26, 20), (25, 9), (29, 4)], LIGHT)
-    s.line([(37, 5), (39, 11), (35, 20)], DARK)
-    for y in (19, 20, 21):
-        s.put(y, 30, "GGGG")
-    s.fill_poly([(9, 25), (56, 25), (59, 32), (56, 41), (9, 41), (6, 32)], "M")
-    for y in range(22, 44):
-        for x in range(s.w):
-            if s.px[y][x] == "M":
-                s.px[y][x] = "m" if y < 29 else "i" if y > 37 else "M"
-    s.put(27, 9, "G" * 48)
-    for y in (32, 33):
-        s.put(y, 16, "K" * 13)
-        s.put(y, 37, "K" * 13)
-    return finish(s, item_id)
-
-
-# ── Botas ──────────────────────────────────────────────────────────────
-def boots_basic(item_id):
-    """Bota de cuero con banda de acento."""
-    s = blank(item_id)
-    for y in range(3, 15):
-        s.put(y, 7, "lLLLLd")
-    s.put(15, 7, "lLLLLLLLLLd")
-    s.put(16, 7, "LLLLLLLLLLL")
-    s.put(17, 7, "LLLLLLLLLLd")
-    s.put(18, 7, "ddddddddddd")
-    s.put(6, 7, BASE * 6)
-    s.put(7, 7, DARK * 6)
-    return finish(s, item_id)
-
-
-def boots_advanced(item_id):
-    """Bota alta con placas de hierro (L de 3: caña en la columna izquierda, pie hacia la derecha)."""
-    s = blank(item_id)
-    for y in range(3, 41):
-        s.put(y, 5, "mMMMMMMMMMMi")
-    for y in range(30, 41):
-        s.put(y, 17, "M" * 21 + "i")
-    s.put(41, 5, "I" * 34)
-    for y in (8, 24):
-        s.put(y, 5, BASE * 12)
-        s.put(y + 1, 5, DARK * 12)
-    s.put(14, 5, LIGHT * 12)
-    return finish(s, item_id)
-
-
-def boots_master(item_id):
-    """Greba de acero con rodillera de acento y puntera de oro (L de 4)."""
-    s = blank(item_id)
-    for y in range(3, 63):
-        s.put(y, 5, "mmMMMMMMMMii")
-    for y in range(52, 63):
-        s.put(y, 17, "M" * 16 + "GGGGGG")
-    s.put(63, 5, "I" * 34)
-    for y, ch in ((22, LIGHT), (23, BASE), (24, BASE), (25, BASE), (26, DARK)):
-        s.put(y, 4, ch * 14)
-    return finish(s, item_id)
-
-
-PIECES = {
-    "sword_basic": lambda: sword("sword_basic", "basic"),
-    "sword_advanced": lambda: sword("sword_advanced", "advanced"),
-    "sword_masterwork": lambda: sword("sword_masterwork", "master"),
-    "shield_basic": lambda: shield_basic("shield_basic"),
-    "shield_advanced": lambda: shield_advanced("shield_advanced"),
-    "shield_master": lambda: shield_master("shield_master"),
-    "helmet_basic": lambda: helmet_basic("helmet_basic"),
-    "helmet_advanced": lambda: helmet_advanced("helmet_advanced"),
-    "helmet_master": lambda: helmet_master("helmet_master"),
-    "boots_basic": lambda: boots_basic("boots_basic"),
-    "boots_advanced": lambda: boots_advanced("boots_advanced"),
-    "boots_master": lambda: boots_master("boots_master"),
-}
-
-
-# ── Aristas: rebaba pegada al borde izquierdo (el juego la gira hacia la pieza) ──
-def _arista(poly, base, light, dark):
-    s = Sprite(CELL, CELL)
-    s.fill_poly(poly, base)
-    for y in range(CELL):
-        for x in range(CELL):
-            if s.px[y][x] == base:
-                up = y > 0 and s.px[y - 1][x] == "."
-                down = y < CELL - 1 and s.px[y + 1][x] == "."
-                s.px[y][x] = light if up else dark if down else base
-    return s.outline()
-
-
-ARISTAS = {
-    "arista_metal_0": lambda: _arista([(0, 5), (8, 3), (13, 7), (10, 11), (15, 15), (7, 17), (0, 16)], "I", "i", "U"),
-    "arista_metal_1": lambda: _arista([(0, 8), (11, 6), (16, 10), (9, 13), (12, 17), (0, 15)], "I", "i", "U"),
-    "arista_metal_2": lambda: _arista([(0, 4), (6, 6), (14, 4), (11, 10), (16, 14), (5, 18), (0, 17)], "I", "i", "U"),
-    "arista_leather_0": lambda: _arista([(0, 8), (10, 8), (13, 11), (10, 14), (0, 13)], "L", "l", "d"),
-    "arista_leather_1": lambda: _arista([(0, 7), (12, 7), (17, 12), (14, 14), (11, 10), (0, 10)], "L", "l", "d"),
-    "arista_leather_2": lambda: _arista([(0, 10), (8, 9), (11, 12), (8, 15), (0, 14)], "L", "l", "d"),
-}
-
-
-# ── Pociones ───────────────────────────────────────────────────────────
-def _potion(body, body_dark):
-    s = Sprite(CELL, CELL)
-    s.put(2, 9, "WWWW")
-    s.put(3, 9, "vvvv")
-    for y in range(4, 8):
-        s.put(y, 9, "ffff")
-    s.fill_ellipse(10.5, 13.5, 7, 6, lambda x, y, nx, ny: body_dark if nx + ny > 0.6 else body)
-    s.put(10, 7, "Y")
-    s.put(11, 7, "Y")
-    return s.outline()
-
-
-POTIONS = {
-    "potion_heal": lambda: _potion("r", "R"),
-    "potion_speed": lambda: _potion("b", "B"),
-    "potion_luck": lambda: _potion("A", "c"),
-}
-
-
-# ── Iconos de las zonas (11×11, en hueso: se leen sobre la casilla oscura) ──
-def zone_head():
-    s = Sprite(11, 11)
-    s.fill_ellipse(5.5, 6.5, 4.5, 5, lambda x, y, nx, ny: None if y > 6 else ("e" if nx < -0.3 else "E"))
-    s.put(7, 1, "uuuuuuuuu")
-    return s.outline()
-
-
-def zone_feet():
-    s = Sprite(11, 11)
-    s.rect(3, 1, 4, 6, "E")
-    s.rect(3, 7, 7, 2, "E")
-    s.put(1, 3, "eeee")
-    s.put(9, 3, "uuuuuuu")
-    return s.outline()
-
-
-def zone_off_hand():
-    s = Sprite(11, 11)
-    s.fill_poly([(1.5, 1.5), (9.5, 1.5), (9.5, 6), (5.5, 10), (1.5, 6)], "E")
-    s.line([(5, 2), (5, 8)], "u")
-    return s.outline()
-
-
-def zone_main_hand():
-    s = Sprite(11, 11)
-    s.line([(2, 8), (8, 2)], "e")
-    s.line([(3, 8), (9, 2)], "E")
-    s.line([(1, 6), (4, 9)], "u")
-    s.put(9, 1, "u")
-    return s.outline()
-
-
-ZONES = {
-    "zone_head": zone_head,
-    "zone_feet": zone_feet,
-    "zone_off_hand": zone_off_hand,
-    "zone_main_hand": zone_main_hand,
-}
-
-
-# ── Interfaz del panel ─────────────────────────────────────────────────
-def ui_cell():
-    """Casilla de la rejilla: fondo oscuro hundido, con la sombra arriba a la izquierda."""
-    s = Sprite(CELL, CELL)
-    s.rect(0, 0, CELL, CELL, "O")
-    s.rect(1, 1, CELL - 2, CELL - 2, "9")
-    s.put(1, 1, "V" * (CELL - 2))
-    for y in range(1, CELL - 1):
-        s.put(y, 1, "V")
-        s.put(y, CELL - 2, "N")
-    s.put(CELL - 2, 1, "N" * (CELL - 2))
-    return s
-
-
-def ui_cell_locked():
-    """Casilla por abrir: borde discontinuo sobre fondo transparente."""
-    s = Sprite(CELL, CELL)
-    for i in range(2, CELL - 2):
-        if (i // 3) % 2 == 0:
-            for x, y in ((i, 2), (i, CELL - 3), (2, i), (CELL - 3, i)):
-                s.put(y, x, "D")
-    return s
-
-
-def ui_frame():
-    """Marco de madera de 12×12 para 9 partes (bordes de 4 px): huecos de consumible y zona de venta."""
-    s = Sprite(12, 12)
-    s.rect(0, 0, 12, 12, "O")
-    s.rect(1, 1, 10, 10, "W")
-    s.put(1, 1, "w" * 10)
-    s.rect(2, 2, 8, 8, "v")
-    s.rect(3, 3, 6, 6, "9")
-    return s
-
-
-UI = {"ui_cell": ui_cell, "ui_cell_locked": ui_cell_locked, "ui_frame": ui_frame}
-
-
-def tres_shape(item_id):
-    """Forma que guarda data/items/<item_id>.tres (shape_cells), como lista de (x, y)."""
-    text = (ITEMS / f"{item_id}.tres").read_text(encoding="utf-8")
-    m = re.search(r"shape_cells = Array\[Vector2i\]\(\[(.*?)\]\)", text)
-    if not m:
-        return []
-    return [(int(a), int(b)) for a, b in re.findall(r"Vector2i\((-?\d+), (-?\d+)\)", m.group(1))]
-
-
-def accent_pixels(sprite):
-    """Píxeles de acento de un sprite: [x, y, tono], con el tono 0 claro, 1 base y 2 oscuro."""
-    return [[x, y, ACCENT.index(ch)] for y, row in enumerate(sprite.px) for x, ch in enumerate(row) if ch in ACCENT]
-
-
-def gear_data():
-    """Lo que necesita GearSprites.gd: formas, colores y píxeles de acento, rampas de calidad y destello."""
-    return {
-        "shapes": {k: [list(c) for c in v] for k, v in SHAPES.items()},
-        "accent": [PALETTE[ch].lstrip("#") for ch in ACCENT],
-        "accent_px": {k: accent_pixels(draw()) for k, draw in PIECES.items()},
-        "quality_ramps": {tier: [c.lstrip("#") for c in r] for tier, r in QUALITY_RAMPS.items()},
-        "shine": SHINE,
-    }
-
-
-def _review_sheet(scale=4, pad=6):
-    """Todo lo exportado en una tira, con el acento en la rampa legendaria."""
-    legendary = {hex_to_rgba(PALETTE[ch])[:3]: hex_to_rgba(c)[:3] for ch, c in zip(ACCENT, QUALITY_RAMPS["legendary"])}
-    ims = []
-    for draw in list(PIECES.values()) + list(ARISTAS.values()) + list(POTIONS.values()) + list(ZONES.values()) + list(UI.values()):
-        im = draw().image()
-        px = im.load()
-        for y in range(im.height):
-            for x in range(im.width):
-                r, g, b, a = px[x, y]
-                if a and (r, g, b) in legendary:
-                    px[x, y] = legendary[(r, g, b)] + (a,)
-        ims.append(im)
-    w = sum(i.width for i in ims) + pad * (len(ims) + 1)
-    h = max(i.height for i in ims) + pad * 2
-    sheet = Image.new("RGBA", (w, h), (52, 38, 44, 255))
-    x = pad
-    for im in ims:
-        sheet.alpha_composite(im, (x, pad))
-        x += im.width + pad
-    REVIEW.parent.mkdir(parents=True, exist_ok=True)
-    sheet.resize((w * scale, h * scale), Image.NEAREST).save(REVIEW)
-
-
-def export_gear():
-    """Escribe los PNG del inventario, gear.json y la hoja de revisión. Devuelve la carpeta de salida."""
-    OUT.mkdir(parents=True, exist_ok=True)
-    for name, draw in {**PIECES, **ARISTAS, **POTIONS, **ZONES, **UI}.items():
-        draw().save(OUT / f"{name}.png")
-    (OUT / "gear.json").write_text(json.dumps(gear_data(), indent=1, sort_keys=True), encoding="utf-8")
-    _review_sheet()
-    return OUT
-```
-
-- [ ] **Step 3: `export.py`**
-
-Añade `import gear` junto a los demás imports y, al final, después de `fonts.export_fonts()`:
-
-```python
-gear.export_gear()
-print("piezas del inventario en", gear.OUT)
-```
-
-- [ ] **Step 4: Ejecutar, exportar y revisar**
-
-Run: `python -m unittest discover tools/pixel_art/tests` y después `python tools/pixel_art/export.py`
-Expected: pruebas en verde. En `art/sprites/pixel/gear/` hay 12 piezas, 6 aristas, 3 pociones, 4 iconos de zona, 3 piezas de interfaz y `gear.json`.
-
-Si la fase 2 está integrada, sus pruebas de colores reservados también pasan. Ninguna letra nueva entra en la paleta: las piezas solo usan las suyas.
-
-Abre con Read `tools/pixel_art/out/gear_review.png` y comprueba:
-- que cada pieza se reconoce: espada, escudo, casco y botas en sus tres niveles;
-- que el acento (naranja en la hoja) queda en el acanalado, la banda, el emblema y el penacho;
-- que las botas en L apoyan el pie en su casilla de abajo a la derecha;
-- que los iconos de zona se leen a ese tamaño.
-
-Si algo se ve mal, retoca su función (no las pruebas) y vuelve a exportar.
-
-Run: `D:/Software/Godot/godot_ver4.5.exe --headless --path . --import` para importar los PNG y el JSON.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add tools/pixel_art/gear.py tools/pixel_art/tests/test_gear.py tools/pixel_art/export.py art/sprites/pixel/gear
-git commit -m "feat: pixel art del inventario: piezas, rebabas, pociones, zonas y casillas (tools/pixel_art/gear.py)"
-```
-
-(`art/sprites/pixel/gear` incluye los `.import` que genera Godot, como el resto de `art/sprites/pixel`.)
+La versión anterior de esta tarea dibujaba las piezas en pixel art con la rampa de la fase 2 pixel. Sirve de referencia para la tarjeta del arte y está en el commit cbcba6d. Ya no aplica: el spec de pegatinas (rama `franja-pegatinas`) dejó la fase 2 pixel sin usar.
 
 ---
 
-### Task 15: El pixel art dentro del juego (`GearSprites`)
+### Task 15: El arte en el juego (aplazada)
 
-**Files:**
-- Create: `scripts/core/GearSprites.gd`
-- Modify: `scripts/ui/GearGridView.gd`, `scripts/ui/LootStripView.gd` (casillas, zonas y destello), `scripts/ui/EquipmentPanel.gd` (arte, pociones y marcos), `scripts/ui/HeroViewOverlay.gd` (iconos de pociones en la franja) y `scripts/ui/CraftResultScreen.gd` (pieza en el medallón)
-- Test: `scripts/tests/InventoryGridTests.gd`
-
-**Interfaces:**
-- Consumes: `PieceShape.of_item`, `CraftedItem.get_quality_tier()`, `GearAuras.ZONES` y lo que exporta la tarea 14 (`art/sprites/pixel/gear/`)
-- Produces (`class_name GearSprites`, estática):
-  - constantes `ART_CELL` (22), `SCALE` (5), `SHINE_FRAMES`, `SHINE_SWEEP` y `SHINE_PERIOD`;
-  - `data() -> Dictionary`, con `accent` (3 `Color`), `accent_px` (pieza → `[x, y, tono]`), `quality_ramps` (calidad → 3 `Color`) y `shine` (calidad → fuerza);
-  - `compose(item: CraftedItem, rot: int, shine_frame: int = -1) -> Image`, sin caché;
-  - `texture(item: CraftedItem, rot: int, shine_frame: int = -1) -> Texture2D`, con caché;
-  - `shine_frame(item: CraftedItem) -> int`: el fotograma del destello ahora, o -1;
-  - `is_shiny(item: CraftedItem) -> bool`;
-  - `potion_icon(id: StringName) -> Texture2D` y `zone_icon(slot: String) -> Texture2D`;
-  - `ui_texture(name: String) -> Texture2D` (`ui_cell` y `ui_cell_locked`) y `frame_style() -> StyleBoxTexture` (el marco a ×5, para huecos y zona de venta).
-- En `GearGridView` y `LootStripView`: `sprite_for` pasa a llamarse con el destello del momento, y el dibujo se repite mientras haya una pieza que brilla. `GearGridView` gana `cell_texture`, `locked_texture` y `zone_icon_for` (tarea 8: `show_zones`).
-
-- [ ] **Step 1: Pruebas que fallan**
-
-```gdscript
-# ─── Tarea 15: el pixel art en el juego ────────────────────────────────
-
-func _has_color(img: Image, c: Color) -> bool:
-	var want := Color(c.r, c.g, c.b).to_rgba32()
-	for y in img.get_height():
-		for x in img.get_width():
-			var p := img.get_pixel(x, y)
-			if p.a > 0.0 and Color(p.r, p.g, p.b).to_rgba32() == want:
-				return true
-	return false
-
-
-func _count_color(img: Image, c: Color) -> int:
-	var want := Color(c.r, c.g, c.b).to_rgba32()
-	var n := 0
-	for y in img.get_height():
-		for x in img.get_width():
-			var p := img.get_pixel(x, y)
-			if p.a > 0.0 and Color(p.r, p.g, p.b).to_rgba32() == want:
-				n += 1
-	return n
-
-
-func test_every_piece_has_its_sprite() -> void:
-	for id in ITEM_IDS:
-		var item := _piece(id, 0.95)
-		var img := GearSprites.compose(item, 0)
-		var fp := PieceShape.of_item(item, 0)
-		check(img != null and img.get_size() == fp.size * GearSprites.ART_CELL, "%s: sprite del tamaño de su caja (%s)" % [id, img.get_size() if img else "nada"])
-
-
-func test_quality_recolors_the_accent() -> void:
-	var d := GearSprites.data()
-	var legend := GearSprites.compose(_piece(&"sword_basic", 1.0), 0)
-	var common := GearSprites.compose(_piece(&"sword_basic", 0.2), 0)
-	check(_has_color(legend, d.quality_ramps["legendary"][1]) and not _has_color(legend, d.accent[1]), "la legendaria lleva el naranja de su calidad y nada de la rampa reservada")
-	check(_has_color(common, d.quality_ramps["common"][1]), "la básica lleva el acero de la suya")
-	check(d.quality_ramps["legendary"][1].to_html(false) == "ffa629", "la rampa sale de gear.json (%s)" % d.quality_ramps["legendary"][1].to_html(false))
-
-
-func test_rotation_and_aristas_shape_the_texture() -> void:
-	var rough: Array[Vector2i] = [Vector2i(1, 1)]
-	var item := _piece(&"sword_masterwork", 0.8, rough)
-	var img := GearSprites.compose(item, 1)
-	check(img.get_size() == Vector2i(4, 2) * GearSprites.ART_CELL, "tumbada y con su arista: 4×2 casillas (%s)" % img.get_size())
-	check(img.get_pixel(2 * GearSprites.ART_CELL + 11, GearSprites.ART_CELL + 1).a > 0.0, "la casilla de la arista lleva su rebaba pegada a la hoja")
-	check(GearSprites.texture(item, 1) == GearSprites.texture(item, 1), "la misma pieza y giro salen de la caché")
-
-
-func test_shine_lights_only_epic_and_legendary() -> void:
-	var d := GearSprites.data()
-	var legend := _piece(&"sword_basic", 1.0)
-	var rare := _piece(&"sword_basic", 0.8)
-	check(GearSprites.is_shiny(legend) and not GearSprites.is_shiny(rare), "brillan las Épicas y las Legendarias")
-	var base_px := _count_color(GearSprites.compose(legend, 0), d.quality_ramps["legendary"][1])
-	var lit := 0
-	for f in GearSprites.SHINE_FRAMES:
-		var img := GearSprites.compose(legend, 0, f)
-		lit = maxi(lit, base_px - _count_color(img, d.quality_ramps["legendary"][1]))
-	check(lit > 0, "el barrido aclara parte del acento en algún fotograma (%d píxeles)" % lit)
-	check(GearSprites.compose(rare, 0, 3).get_data() == GearSprites.compose(rare, 0).get_data(), "una Rara no brilla aunque se le pida")
-```
-
-(En `test_rotation_and_aristas_shape_the_texture`, la arista queda en la casilla (2,1), debajo de la hoja tumbada. La rebaba gira un cuarto de vuelta para pegarse por arriba, hacia la hoja: la prueba mira el píxel del centro de la fila de arriba de esa casilla.)
-
-Run InventoryGridTests. Expected: error de análisis (`GearSprites` no existe).
-
-- [ ] **Step 2: `scripts/core/GearSprites.gd`**
-
-```gdscript
-class_name GearSprites
-extends RefCounted
-
-## Dibujo del inventario en rejilla (spec doc/specs/2026-09-27-inventario-en-rejilla.md, apartado 9.5).
-## Parte del pixel art de tools/pixel_art/gear.py (art/sprites/pixel/gear/, 22 px por casilla):
-##  - cambia la rampa de acento por la de la calidad de la pieza (gear.json, las rampas de la fase 2);
-##  - gira la pieza y le pega sus aristas, giradas hacia ella;
-##  - en Épicas y Legendarias, un destello recorre el acento: SHINE_FRAMES fotogramas en SHINE_SWEEP
-##    segundos, cada SHINE_PERIOD segundos.
-## Cada combinación se compone una vez y se guarda en caché. Las vistas la pintan a ×SCALE con Nearest.
-
-const ART_CELL := 22
-const SCALE := 5
-const DIR := "res://art/sprites/pixel/gear/"
-const ARISTA_VARIANTS := 3
-const SHINE_FRAMES := 8
-const SHINE_SWEEP := 0.6
-const SHINE_PERIOD := 3.0
-const SHINE_HALF_WIDTH := 1.5  ## medio ancho de la franja de luz, en píxeles de arte
-const CACHE_LIMIT := 512
-
-static var _cache: Dictionary = {}
-static var _images: Dictionary = {}
-static var _data: Dictionary = {}
-static var _frame_style: StyleBoxTexture = null
-
-
-## gear.json con los colores como Color: {"accent": [claro, base, oscuro], "accent_px": {pieza: [[x, y,
-## tono], …]}, "quality_ramps": {calidad: [claro, base, oscuro]}, "shine": {calidad: fuerza}}. Vacío si
-## falta (ejecuta tools/pixel_art/export.py).
-static func data() -> Dictionary:
-	if _data.is_empty():
-		var res := load(DIR + "gear.json") as JSON
-		if res == null:
-			push_error("GearSprites: falta %sgear.json (ejecuta python tools/pixel_art/export.py)" % DIR)
-			return {}
-		var raw: Dictionary = res.data
-		var ramps := {}
-		for tier in raw.quality_ramps:
-			ramps[tier] = raw.quality_ramps[tier].map(func(h): return Color(h))
-		_data = {"accent": raw.accent.map(func(h): return Color(h)), "accent_px": raw.accent_px, "quality_ramps": ramps, "shine": raw.shine}
-	return _data
-
-
-static func is_shiny(item: CraftedItem) -> bool:
-	return float(data().get("shine", {}).get(item.get_quality_tier(), 0.0)) > 0.0
-
-
-## Fotograma del destello de una pieza ahora mismo, o -1 entre barridos (y en las que no brillan). Cada
-## pieza empieza su ciclo en un momento distinto.
-static func shine_frame(item: CraftedItem) -> int:
-	if not is_shiny(item):
-		return -1
-	var t := fmod(Time.get_ticks_msec() / 1000.0 + float(item.crafted_timestamp % 997) / 997.0 * SHINE_PERIOD, SHINE_PERIOD)
-	return int(t / SHINE_SWEEP * SHINE_FRAMES) if t < SHINE_SWEEP else -1
-
-
-static func texture(item: CraftedItem, rot: int, shine: int = -1) -> Texture2D:
-	var key := "%s|%s|%s|%d|%d" % [item.item_resource.item_id, item.get_quality_tier(), str(item.aristas), posmod(rot, 4), shine]
-	if not _cache.has(key):
-		if _cache.size() >= CACHE_LIMIT:
-			_cache.clear()
-		var img := compose(item, rot, shine)
-		_cache[key] = ImageTexture.create_from_image(img) if img else null
-	return _cache[key]
-
-
-static func potion_icon(id: StringName) -> Texture2D:
-	return _texture(String(id))
-
-
-static func zone_icon(slot: String) -> Texture2D:
-	return _texture("zone_" + slot)
-
-
-static func ui_texture(file_name: String) -> Texture2D:
-	return _texture(file_name)
-
-
-## Marco de madera (ui_frame.png, 12×12 con bordes de 4 px) ampliado a ×SCALE para 9 partes: huecos de
-## consumible y zona de venta.
-static func frame_style() -> StyleBoxTexture:
-	if _frame_style == null:
-		var img := _image("ui_frame")
-		if img == null:
-			return null
-		var big: Image = img.duplicate()
-		big.resize(img.get_width() * SCALE, img.get_height() * SCALE, Image.INTERPOLATE_NEAREST)
-		_frame_style = StyleBoxTexture.new()
-		_frame_style.texture = ImageTexture.create_from_image(big)
-		_frame_style.set_texture_margin_all(4 * SCALE)
-		_frame_style.set_content_margin_all(4 * SCALE)
-	return _frame_style
-
-
-static func compose(item: CraftedItem, rot: int, shine: int = -1) -> Image:
-	var base := _image(String(item.item_resource.item_id))
-	if base == null or data().is_empty():
-		return null
-	var fp := PieceShape.of_item(item, rot)
-	var piece: Image = base.duplicate()
-	_recolor(piece, String(item.item_resource.item_id), item.get_quality_tier(), shine)
-	for i in posmod(rot, 4):
-		piece.rotate_90(CLOCKWISE)
-	var out := Image.create_empty(fp.size.x * ART_CELL, fp.size.y * ART_CELL, false, Image.FORMAT_RGBA8)
-	out.blend_rect(piece, Rect2i(Vector2i.ZERO, piece.get_size()), _min_cell(fp.clean) * ART_CELL)
-	var leather: bool = GearAuras.ZONES.get(item.get_equipment_slot(), &"") == &"bottom"  # botas: rebaba de cuero
-	for i in fp.aristas.size():
-		var a: Vector2i = fp.aristas[i]
-		var tile := _image("arista_%s_%d" % ["leather" if leather else "metal", posmod(i + hash(item.item_resource.item_id), ARISTA_VARIANTS)])
-		if tile == null:
-			continue
-		var t: Image = tile.duplicate()
-		for r in _turns_toward_piece(a, fp.clean):
-			t.rotate_90(CLOCKWISE)
-		out.blend_rect(t, Rect2i(0, 0, ART_CELL, ART_CELL), a * ART_CELL)
-	return out
-
-
-static func _texture(file_name: String) -> Texture2D:
-	var path := DIR + file_name + ".png"
-	return load(path) if ResourceLoader.exists(path) else null
-
-
-## PNG de la carpeta como Image RGBA8 (en caché); null si no existe.
-static func _image(file_name: String) -> Image:
-	if not _images.has(file_name):
-		var tex := _texture(file_name)
-		var img: Image = null
-		if tex:
-			img = tex.get_image()
-			if img.is_compressed():
-				img.decompress()
-			img.convert(Image.FORMAT_RGBA8)
-		_images[file_name] = img
-	return _images[file_name]
-
-
-## Cambia la rampa de acento por la de la calidad, solo en los píxeles de acento de la pieza (accent_px de
-## gear.json: no recorre la imagen entera). Con `shine` (0..SHINE_FRAMES−1) y una calidad que brilla, la
-## franja de luz de ese fotograma aclara el acento que pisa: recorre la pieza en diagonal.
-static func _recolor(img: Image, item_id: String, tier: String, shine: int) -> void:
-	var d := data()
-	var ramp: Array = d.quality_ramps.get(tier, d.quality_ramps["common"])
-	var strength := float(d.shine.get(tier, 0.0)) if shine >= 0 else 0.0
-	var band := (float(shine) + 0.5) / SHINE_FRAMES * float(img.get_width() + img.get_height())
-	for px in d.accent_px.get(item_id, []):
-		var x := int(px[0])
-		var y := int(px[1])
-		var c: Color = ramp[int(px[2])]
-		if strength > 0.0 and absf(float(x + y) - band) <= SHINE_HALF_WIDTH:
-			c = c.lerp(Color.WHITE, 0.7 * strength)
-		img.set_pixel(x, y, c)
-
-
-static func _min_cell(cells: Array) -> Vector2i:
-	var m := Vector2i(999, 999)
-	for c in cells:
-		m = Vector2i(mini(m.x, c.x), mini(m.y, c.y))
-	return m
-
-
-## Cuartos de vuelta para que el borde izquierdo de la rebaba mire a una casilla limpia vecina: la de la
-## izquierda, 0; la de arriba, 1; la de la derecha, 2; la de abajo, 3.
-static func _turns_toward_piece(a: Vector2i, clean: Array) -> int:
-	var sides := [Vector2i.LEFT, Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN]
-	for i in sides.size():
-		if (a + sides[i]) in clean:
-			return i
-	return 0
-```
-
-- [ ] **Step 3: Las vistas: casillas, zonas y destello**
-
-En `GearGridView.gd`, variables nuevas (junto a `sprite_for`):
-
-```gdscript
-var cell_texture: Texture2D = null  ## casilla en pixel art (GearSprites); sin ella, rectángulos de color
-var locked_texture: Texture2D = null  ## casilla por abrir en pixel art
-var zone_icon_for: Callable = Callable()  ## tipo de pieza → icono de su zona (GearSprites.zone_icon)
-```
-
-En `_draw()`, sustituye el bucle de casillas por:
-
-```gdscript
-	for y in max_size.y:
-		for x in max_size.x:
-			var c := Vector2i(x, y)
-			if grid.in_bounds(c):
-				if cell_texture:
-					draw_texture_rect(cell_texture, cell_rect(c), false)
-				else:
-					var r := cell_rect(c).grow(-1.0)
-					draw_rect(r, COLOR_CELL)
-					draw_rect(r, COLOR_LINE, false, 2.0)
-			elif locked_texture:
-				draw_texture_rect(locked_texture, cell_rect(c), false)
-			else:
-				_draw_dashed(cell_rect(c).grow(-7.0), COLOR_LOCKED)
-```
-
-En `_draw_zone` (tarea 8), renombra el parámetro `_slot` a `slot` y añade, después de la franja:
-
-```gdscript
-	var icon: Texture2D = zone_icon_for.call(slot) if zone_icon_for.is_valid() else null
-	if icon:
-		var icon_size := Vector2(icon.get_size()) * GearSprites.SCALE
-		draw_texture_rect(icon, Rect2(r.get_center() - icon_size * 0.5, icon_size), false, Color(1, 1, 1, 0.8))
-```
-
-`sprite_for` se llama con el destello del momento: su comentario pasa a «(pieza, giro, destello) → Texture2D». En `draw_piece_at`, sustituye `var tex: Texture2D = sprite_fn.call(item, rot)` por:
-
-```gdscript
-		var tex: Texture2D = sprite_fn.call(item, rot, GearSprites.shine_frame(item))
-```
-
-Y en `_process` de `GearGridView`, para que el destello se mueva, al final:
-
-```gdscript
-	if sprite_for.is_valid() and is_visible_in_tree() and grid and grid.items.any(func(it): return GearSprites.is_shiny(it)):
-		queue_redraw()
-```
-
-En `LootStripView.gd`, lo mismo con sus piezas:
-
-```gdscript
-func _process(_delta: float) -> void:
-	if sprite_for.is_valid() and is_visible_in_tree() and items.any(func(it): return GearSprites.is_shiny(it)):
-		queue_redraw()
-```
-
-- [ ] **Step 4: El panel y el resultado de la forja**
-
-En `EquipmentPanel._build()`, después de crear las vistas:
-
-```gdscript
-	var art := func(item: CraftedItem, rot: int, shine: int) -> Texture2D: return GearSprites.texture(item, rot, shine)
-	for view in [_hero_view, _bag_view]:
-		view.sprite_for = art
-		view.cell_texture = GearSprites.ui_texture("ui_cell")
-		view.locked_texture = GearSprites.ui_texture("ui_cell_locked")
-	_hero_view.zone_icon_for = func(slot: String) -> Texture2D: return GearSprites.zone_icon(slot)
-	_loot_view.sprite_for = art
-```
-
-(La pieza que se arrastra ya usa `_hero_view.sprite_for` en `_draw_ghost`.)
-
-Marcos de madera en los huecos de pociones y en la zona de venta. En el bucle de `_build()` que crea los huecos (tarea 13), sustituye `slot.add_theme_stylebox_override("normal", style)` por:
-
-```gdscript
-		var frame := GearSprites.frame_style()
-		slot.add_theme_stylebox_override("normal", frame.duplicate() if frame else style)
-```
-
-Después de `add_child(slot)`, el icono:
-
-```gdscript
-		var icon := TextureRect.new()
-		icon.name = "Icon"
-		icon.position = Vector2(5, 5)
-		icon.size = Vector2(110, 110)
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		slot.add_child(icon)
-```
-
-Sustituye `_refresh_potions()`: el pixel art de la poción a la izquierda y cuántas quedan a la derecha.
-
-```gdscript
-func _refresh_potions() -> void:
-	for i in _potion_slots.size():
-		var s: Dictionary = _im.consumables[i]
-		var full := int(s.count) > 0
-		var icon: TextureRect = _potion_slots[i].get_node("Icon")
-		icon.texture = GearSprites.potion_icon(s.id) if full else null
-		_potion_slots[i].text = ("×%d" % int(s.count)) if full else tr("Hueco libre")
-		# Con poción, el número va a la derecha del icono; libre, el texto va centrado en todo el hueco
-		var style: StyleBox = _potion_slots[i].get_theme_stylebox("normal")
-		style.content_margin_left = 116.0 if full else float(GearSprites.SCALE * 4)
-```
-
-El nombre de la poción sigue en la ficha al tocar el hueco (tarea 13).
-
-La zona de venta (`SellZone`, tarea 10): en `_build()`, si `GearSprites.frame_style()` no es nulo, `sell_zone.add_theme_stylebox_override("panel", GearSprites.frame_style())`.
-
-En la franja (`HeroViewOverlay`, tarea 13), cada hueco con pociones enseña su icono y su número, como pide el spec (apartado 8). `_potion_label` se sustituye por un icono y un número por hueco, creados una vez:
-
-```gdscript
-var _potion_icons: Array[TextureRect] = []
-var _potion_counts: Array[Label] = []
-```
-
-En `_build()`, donde se creaba `_potion_label`:
-
-```gdscript
-	for i in Potions.SLOTS:
-		var icon := TextureRect.new()
-		icon.size = Vector2(44, 44)  # 22 px de arte a ×2
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(icon)
-		_potion_icons.append(icon)
-		_potion_counts.append(_make_label(22, Color("ffe7b0"), HORIZONTAL_ALIGNMENT_LEFT))
-```
-
-En `_refresh_buffs()`, el bloque de pociones de la tarea 13 pasa a:
-
-```gdscript
-	# Pociones que quedan en los huecos (spec del inventario, apartado 8): icono y número, en una fila
-	var x := 0.0
-	for i in _potion_icons.size():
-		var s: Dictionary = _inventory.consumables[i] if _inventory and "consumables" in _inventory else {}
-		var full := int(s.get("count", 0)) > 0
-		_potion_icons[i].visible = full
-		_potion_counts[i].visible = full
-		if not full:
-			continue
-		var at := BUFF_POS + Vector2(x, BUFF_ROW * row)
-		_potion_icons[i].texture = GearSprites.potion_icon(s.id)
-		_potion_icons[i].position = at
-		_potion_counts[i].text = "×%d" % int(s.count)
-		_potion_counts[i].position = at + Vector2(48, 0)
-		_potion_counts[i].size = Vector2(60, 44)
-		x += 116.0
-```
-
-En `CraftResultScreen.show_result`, sustituye la elección del icono (`if crafted_item is CraftedItem: icon = crafted_item.get_icon()`) por:
-
-```gdscript
-	var pixel := false
-	if crafted_item is CraftedItem:
-		icon = GearSprites.texture(crafted_item, 0)
-		pixel = icon != null
-		if icon == null:
-			icon = crafted_item.get_icon()
-```
-
-Y, junto a `_item_icon.texture = icon`:
-
-```gdscript
-	_item_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if pixel else CanvasItem.TEXTURE_FILTER_PARENT_NODE
-```
-
-- [ ] **Step 5: Ejecutar y capturar**
-
-Run: la batería. Expected: 0 fallos.
-
-Captura los planes `panels`, `result` (con `--quality=1.0`, legendaria) y `potions`, copiando y restaurando `save.json`, y ábrelos con Read. Comprueba:
-- las piezas en pixel art en la rejilla, el botín y la mochila, sobre casillas de pixel art;
-- las aristas pegadas a su pieza;
-- el color de calidad en el acento, y el destello en la legendaria (en varios fotogramas seguidos);
-- los iconos de las 4 zonas en los bordes de la rejilla de Tico;
-- los marcos de madera de los huecos y de la zona de venta;
-- en la franja (plan `potions` de la tarea 13), el icono de cada poción con su número;
-- la espada en el medallón del resultado con "Sin aristas" y su habilidad.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add scripts/core/GearSprites.gd scripts/core/GearSprites.gd.uid scripts/ui/GearGridView.gd scripts/ui/LootStripView.gd scripts/ui/EquipmentPanel.gd scripts/ui/HeroViewOverlay.gd scripts/ui/CraftResultScreen.gd scripts/tests/InventoryGridTests.gd
-git commit -m "feat: el inventario en pixel art: piezas, destello, casillas, zonas y marcos (GearSprites)"
-```
+Aplazada con la tarea 14: no hay nada que hacer. Las vistas ya aceptan una textura por pieza (`sprite_for` en `GearGridView` y `LootStripView`, tarea 8) para cuando llegue el arte. La versión anterior (`GearSprites`, casillas, zonas, destello e iconos de pociones) está en el commit cbcba6d.
 
 ---
 
@@ -6956,7 +5908,7 @@ timeout 300 D:/Software/Godot/godot_ver4.5.exe --path . --write-movie <scratchpa
 ```
 
 Abre con Read varios fotogramas y comprueba:
-- la rejilla de 6×6 delante de Tico, con piezas en pixel art y la legendaria con su color;
+- la rejilla de 6×6 delante de Tico, con las piezas en casillas de color y la legendaria con su borde naranja;
 - la pieza que se arrastra una casilla por encima del destino, con el destino en verde o rojo y el cambio de estadísticas;
 - el intercambio al soltar;
 - la ficha completa con la habilidad legendaria;
@@ -6988,20 +5940,15 @@ func test_panel_opens_fast_with_a_full_inventory() -> void:
 	add_child(panel)
 	await get_tree().process_frame
 	var t0 := Time.get_ticks_usec()
-	panel.open()  # en frío: compone las texturas de todas las piezas
-	var cold := (Time.get_ticks_usec() - t0) / 1000.0
-	panel.close()
-	t0 = Time.get_ticks_usec()
-	panel.open()  # con las texturas en caché
-	var warm := (Time.get_ticks_usec() - t0) / 1000.0
-	print("panel de Equipo: %.1f ms en frío, %.1f ms con caché (%d piezas en Tico, %d en el botín)" % [cold, warm, im.get_hero_items().size(), im.get_loot_count()])
-	check(warm < 50.0, "con caché se abre en menos de 50 ms (%.1f)" % warm)
-	check(cold < 150.0, "en frío, en menos de 150 ms (%.1f)" % cold)
+	panel.open()
+	var ms := (Time.get_ticks_usec() - t0) / 1000.0
+	print("panel de Equipo: %.1f ms (%d piezas en Tico, %d en el botín)" % [ms, im.get_hero_items().size(), im.get_loot_count()])
+	check(ms < 50.0, "se abre en menos de 50 ms (%.1f)" % ms)
 	panel.queue_free()
 	await _restore_inventory(saved)
 ```
 
-Run InventoryGridTests. Expected: 0 fallos. Si no llega, mira qué pesa con el perfilador de Godot antes de tocar nada. Lo más probable es el recoloreado (debe recorrer solo `accent_px`) o recalcular auras en cada pieza.
+Run InventoryGridTests. Expected: 0 fallos. Si no llega, mira qué pesa con el perfilador de Godot antes de tocar nada. Lo más probable es recalcular las auras pieza a pieza en vez de una vez por refresco.
 
 - [ ] **Step 3: Batería completa y arranque real**
 
@@ -7017,7 +5964,7 @@ Expected: sin errores. La partida del usuario carga con todas sus piezas.
 
 - [ ] **Step 4: Documentación**
 
-- `doc/ARCHITECTURE.md`: una sección "Inventario en rejilla" con las clases nuevas (`PieceShape`, `GearGrid`, `GearAuras`, `LegendaryPowers`, `GearPacker`, `GridExpansions`, `Potions`, `GearSprites`, `GearGridView` y `LootStripView`), qué hace cada una y quién la usa. Añade también los tres sitios de `InventoryManager` y el guardado versión 3.
+- `doc/ARCHITECTURE.md`: una sección "Inventario en rejilla" con las clases nuevas (`PieceShape`, `GearGrid`, `GearAuras`, `LegendaryPowers`, `GearPacker`, `GridExpansions`, `Potions`, `GearGridView` y `LootStripView`), qué hace cada una y quién la usa. Añade también los tres sitios de `InventoryManager` y el guardado versión 3.
 - `doc/ROADMAP.md`: el inventario en rejilla, hecho, con enlace al spec.
 - Spec: el estado pasa a "implementado (<fecha>)".
 

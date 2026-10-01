@@ -1,6 +1,6 @@
 # Inventario en rejilla
 
-**Fecha:** 2026-09-27 · **Estado:** aprobado. El 2026-09-28, al escribir el plan, se ajustó a la revisión del spec de rangos (duelos con la vida llena, muro y calibración con Balanza) y a la fase 2 del pixel art, en los apartados 3.2, 5, 6, 7, 8, 9.5, 13, 14 y 16
+**Fecha:** 2026-09-27 · **Estado:** aprobado. El 2026-09-28, al escribir el plan, se ajustó a la revisión del spec de rangos (duelos con la vida llena, muro y calibración con Balanza) y a la fase 2 del pixel art, en los apartados 3.2, 5, 6, 7, 8, 9.5, 13, 14 y 16. El 2026-10-01 el usuario aplazó el arte al final (apartado 9.5): es un prototipo personal y los estilos pueden mezclarse mientras tanto
 **Petición:** "Quiero que el inventario del héroe de PetJam funcione como el de Lootbound" (https://store.steampowered.com/app/3091140/Lootbound/). En Lootbound el equipo es una rejilla delante de la silueta del héroe, sin huecos fijos: cada objeto ocupa una forma que se gira y se coloca donde quepa. Hay mochila, botín y 2 consumibles, y algunos objetos dan auras a sus vecinos o se activan por su posición. La tarjeta del tablero pide que colocar lo que se forja sea un puzle con sinergias y dé más razones para forjar. Decisiones del usuario:
 
 | Pregunta | Elegido |
@@ -246,7 +246,7 @@ El spec de rangos se revisó el 2026-09-27 (apartados 6 y 7). Desde entonces, ca
   - Velocidad y Suerte: al aparecer un jefe (sala de jefe según `Biomes.is_boss_room`), si su efecto no está activo.
   - Los efectos no cambian (`GameManager.apply_buff`): Velocidad, ataques ×1,5 durante 30 s; Suerte, 20 % de botín doble durante 60 s.
   - Con el muro de los rangos (su spec, apartado 7), una poción de efecto manda a Tico a probar el muro, y eso abandona el combate en curso. Por eso, delante del muro y sin candado, Velocidad y Suerte no se beben al aparecer un jefe: se guardan para el muro, para los jefes con candado y para cuando no hay muro. La de Vida se bebe siempre, porque no reintenta el muro.
-- **Dónde se ven:** en el panel de Equipo (los 2 huecos con su número), en la franja (icono pequeño y número, junto al indicador de efectos) y en la tienda ("En hueco: 3").
+- **Dónde se ven:** en el panel de Equipo (los 2 huecos con su número), en la franja (su nombre corto y el número, junto al indicador de efectos; el icono llegará con el arte) y en la tienda ("En hueco: 3").
 - **Vaciar un hueco:** manteniéndolo pulsado en el panel se venden sus pociones a mitad de precio. Es la única forma de cambiar de tipo.
 - **Guardado:** los huecos se guardan. Los efectos activos siguen sin guardarse, como hoy.
 
@@ -261,8 +261,8 @@ Se rehace (`scenes/UI/EquipmentPanel.tscn` y `scripts/ui/EquipmentPanel.gd`) a p
    - estadísticas con su aumento ("Daño 38 (+20 %)");
    - el aura que da y su zona;
    - si es legendaria, su habilidad y su precio.
-4. **Rejilla de Tico,** delante de su sprite a gran tamaño y tenue (el mismo Tico compuesto de la fase 2 del pixel art).
-   - Las zonas se marcan con un icono en su borde.
+4. **Rejilla de Tico,** delante de su sprite a gran tamaño y tenue: el mismo Tico de la franja, el de pegatina si ya está integrado o el pixel de hoy.
+   - Las zonas se marcan con una franja de color en su borde (el icono llegará con el arte).
    - Las casillas que aún no existen se dibujan punteadas, con el nombre de su receta.
    - Los 2 huecos de consumibles van al lado.
 5. **Botín:** una tira con desplazamiento lateral y el botón "Vender todo". Las piezas van a tamaño real y tumbadas: giradas para que ocupen la menor altura.
@@ -284,7 +284,7 @@ Medidas: casillas de 22×22 píxeles de arte a ×5 (110 px de pantalla), el mism
 ### 9.3 Resto del juego
 - **Botón Equipo:** su insignia cuenta las piezas del botín.
 - **Pantalla de resultado de la forja** (`CraftResultScreen`):
-  - enseña la forma de la pieza con sus aristas ("Sin aristas" desde Épico);
+  - dice cuántas aristas trae ("Sin aristas" desde Épico);
   - si es legendaria, el nombre y el efecto de su habilidad;
   - con una receta de ampliación, "¡La rejilla crece!".
 - **Tienda** (`ShopPanel`): la pestaña de venta lista el botín y la mochila; lo que lleva Tico no se vende desde la tienda. Las pociones van a los huecos (apartado 8).
@@ -294,17 +294,15 @@ Medidas: casillas de 22×22 píxeles de arte a ×5 (110 px de pantalla), el mism
 
 ### 9.4 Sprite de Tico
 - `Hero.refresh_gear()` elige, entre las piezas de la rejilla de Tico, la mejor de cada tipo: primero por rango, después por nivel y después por calidad.
-- Rellena `gear` como hoy, así que la fase 2 del pixel art no cambia.
+- Rellena `gear` como hoy (con la franja de pegatinas, desde `read_equipped_gear()`), así que el dibujo de Tico no cambia.
 
-### 9.5 Pixel art
-En `tools/pixel_art/` hay un script nuevo, `gear.py`, con sus pruebas, que exporta a `art/sprites/pixel/gear/`:
-- **Las 12 piezas,** con su forma limpia (22 px por casilla) y su aspecto real:
-  - los píxeles de acento van en la rampa reservada de la fase 2 (`+ * #`, de `recolor.py`) y el juego los cambia por la rampa de la calidad. Sin la fase 2 integrada, `gear.py` usa esos mismos valores;
-  - en Épicas y Legendarias, un destello recorre esos píxeles de acento, con la fuerza de `recolor.SHINE`.
-- **Teselas de arista:** rebaba de metal (espada, escudo y casco) y de cuero (botas), con 3 variantes de cada. Se dibujan pegadas a un lado y el código las gira.
-- **Interfaz:** casilla (marco y fondo), casilla por abrir, iconos de las 4 zonas, iconos de las 3 pociones y un marco de madera para 9 partes, que usan el hueco de consumible y la zona de venta.
-- **Giros:** los hace el código; 90° es exacto en pixel art.
-- **Textos del panel:** usan el tema actual hasta que el spec del tablero y la botonera decida la fuente de la interfaz.
+### 9.5 Arte
+- **Aplazado al final**, por decisión del usuario (2026-10-01): es un prototipo personal y lo que importa es el sistema. Mientras tanto pueden mezclarse estilos.
+- **Hasta entonces, todo se dibuja con código:**
+  - las piezas, con casillas de color por tipo (arma o armadura), el borde del color de su calidad y las aristas en gris;
+  - la rejilla, la mochila, la franja de cada zona, los huecos de consumible y la zona de venta, con formas simples.
+- **El arte de las piezas lo decide una tarjeta aparte** ("Arte del inventario en rejilla"). Las vistas ya aceptan una textura por pieza para cuando llegue.
+- **Lo que preveía este apartado ya no aplica:** piezas en pixel art con `gear.py`, la rampa de acento de la fase 2 pixel y el destello. El spec de pegatinas (2026-09-28) dejó la fase 2 pixel sin usar.
 
 ## 10. Guardado y migración
 
@@ -327,7 +325,7 @@ En `tools/pixel_art/` hay un script nuevo, `gear.py`, con sus pruebas, que expor
 ## 11. Rendimiento
 
 - **Controles de dibujo:** cada rejilla (Tico y mochila) es un solo control que se dibuja a sí mismo (`GearGridView`), y el botín es otro (`LootStripView`). No hay un nodo por casilla.
-- **Caché de texturas:** la textura de cada pieza (forma, aristas, recoloreado y giro) se compone una vez y se guarda en caché, como la composición de Tico de la fase 2.
+- **Caché de texturas:** cuando llegue el arte, la textura de cada pieza (forma, aristas, calidad y giro) se compondrá una vez y se guardará en caché.
 - **Recálculo:** las auras y las estadísticas se recalculan cuando cambia algo. Durante un arrastre, solo cuando cambia la casilla de destino o el giro, nunca en cada fotograma.
 - **Empaquetador:** `GearPacker` solo se usa en la migración y en `BalanceSim`.
 - **Objetivo:** abrir el panel en menos de 50 ms y arrastrar a 60 FPS en el móvil de pruebas.
@@ -366,7 +364,8 @@ En `tools/pixel_art/` hay un script nuevo, `gear.py`, con sus pruebas, que expor
 - **Capturas** (`VisualCapture`, plan nuevo `inventory`):
   - el panel con piezas en la rejilla de Tico, en la mochila y en el botín;
   - un arrastre en curso con intercambio y las casillas por abrir;
-  - la ficha de una legendaria y sus textos en la franja.
+  - la ficha de una legendaria y sus textos en la franja;
+  - el panel se abre en menos de 50 ms con la rejilla llena (prueba en `InventoryGridTests`).
 
 ## 14. Qué cambia en el código
 
@@ -379,7 +378,6 @@ En `tools/pixel_art/` hay un script nuevo, `gear.py`, con sus pruebas, que expor
     - `GearPacker.gd`: colocación automática para la migración y la simulación;
     - `GridExpansions.gd`: recetas de ampliación.
   - Interfaz en `scripts/ui/`: `GearGridView.gd` y `LootStripView.gd`. El arrastre vive dentro de `EquipmentPanel.gd`.
-  - Arte: `tools/pixel_art/gear.py` y sus pruebas, que generan `art/sprites/pixel/gear/`.
   - Pruebas: `scripts/tests/InventoryGridTests.gd` y `scenes/tests/InventoryGridTests.tscn`.
 - **Modificados:**
   - Datos: `ItemResource.gd` (`shape_cells` y `arista_spots`) y los 12 `data/items/*.tres` (formas, sitios de arista y estadísticas por casilla).
@@ -408,7 +406,7 @@ Cada fase deja el juego funcionando.
 3. **Panel nuevo y controles,** con dibujos provisionales (casillas de color). Se quitan las funciones de compatibilidad.
 4. **Habilidades legendarias** en combate y sus efectos en la franja.
 5. **Recetas de ampliación y consumibles.**
-6. **Pixel art** de las piezas, las aristas y el panel.
+6. **Arte:** aplazado al final, en su tarjeta.
 7. **Balance:** estadísticas por casilla, duelos con rejillas en la simulación y calibración, con la misma herramienta que los rangos.
 8. **Verificación:** capturas, prueba en un móvil y documentación.
 
@@ -424,10 +422,10 @@ Cada fase deja el juego funcionando.
     - la función del rango del equipo y la simulación de balance.
   - Si al rebasar algo de esto ha cambiado, se ajusta este spec antes de seguir.
 - **Balanza:** si los rangos se calibran con ella, este spec también (apartado 6). Su orden `import` solo cambia las líneas de estadísticas de los `.tres`, así que conserva `shape_cells` y `arista_spots`.
-- **Fase 2 del pixel art** (Tico por capas): no hace falta. Si no está hecha, el panel usa el Tico de hoy. Si lo está, este spec usa lo suyo:
-  - su rampa de acento y sus rampas de calidad (apartado 9.5);
-  - `Hero.read_equipped_gear()`, la única lectura del equipo para el dibujo (apartado 9.4);
-  - `HeroPreview`, para el Tico grande y tenue del panel (apartado 9.1).
+- **Franja con pegatinas** (rama `franja-pegatinas`): no hace falta. Si ya está integrada:
+  - el panel enseña su Tico de pegatina;
+  - la regla de "la mejor pieza de cada tipo" entra por `Hero.read_equipped_gear()`.
+  La fase 2 del pixel art quedó sin usar.
 - **Riesgos:**
   - **Balance:** ahora tiene tres capas (poder por casilla, auras y habilidades). Se contiene con la simulación y con los topes. En el ciclo I, además, la rejilla crece con los jefes (apartado 6).
   - **Casillas de 110 px en móviles pequeños:** se comprueba en el dispositivo. Si no se acierta con el dedo, la mochila baja a 6×3 y las casillas crecen.
@@ -440,4 +438,5 @@ Cada fase deja el juego funcionando.
 - Piezas nuevas (amuletos y otros) y tipos de daño.
 - Auras al azar y piezas a la espalda en el sprite.
 - La fuente de la interfaz, que decide el spec del tablero y la botonera.
+- El arte de las piezas, la rejilla y el panel: aplazado al final (apartado 9.5).
 - La tarjeta "Hueco Pecho sin objetos" queda resuelta: sin huecos fijos, no hay pecho.
