@@ -4,7 +4,7 @@ Balanza 0.1.0 · 2026-10-01 · carpeta `balance`
 
 ## Avisos
 
-Ninguno.
+- measured.json se midió con el plan anterior: si el catálogo cambió mucho, vuelve a medir
 
 ## Objetivos
 

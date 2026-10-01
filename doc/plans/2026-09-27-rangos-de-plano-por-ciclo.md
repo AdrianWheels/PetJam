@@ -24,9 +24,9 @@ Para calibrar hay una escena de pruebas sin ventana, `BalanceSim`, que simula lo
 ## Orden de ejecución (revisión del 2026-09-27)
 
 - Las tareas 1 y 2 están hechas.
-- La 3 (calibración) está en pausa hasta que el motor de balance Balanza esté listo (spec, apartado 6). Lo hecho está en la rama local `rangos-calibracion-aparcada`.
+- La 3 (calibración) está hecha con Balanza (spec, apartado 6). El código que trae más abajo es la versión anterior: no lo ejecutes tal cual.
 - La 12 (muro, farmeo y selector de sala) no depende del balance y va ahora, antes que la 3.
-- Después, de la 3 a la 11 y la 13.
+- Después, de la 4 a la 11 y la 13.
 - Como la 12 va antes, las tareas 4, 6 y 7 encontrarán sus cambios en `GameManager` (muro, candado, `room_cleared` y las claves `wall_room` y `room_locked` del guardado), `Corridor` (vida llena, viaje) y `HeroViewOverlay` (selector). El código de esas tareas se escribió antes y no los muestra: se conservan.
 
 ## Requisitos previos
@@ -735,7 +735,7 @@ git commit -m "feat: Ranks — ciclos, hitos, multiplicadores y recetas por rang
 
 ### Task 3: Simulación de balance y calibración de la curva
 
-> **En pausa (2026-09-27).** Esta tarea se rehace con el motor de balance Balanza y con duelos sala a sala (spec, apartados 6 y 7): la versión de abajo mide carreras sin curarse, que ya no es la regla. Lo hecho está en la rama local `rangos-calibracion-aparcada`. No la ejecutes tal cual.
+> **Hecha con Balanza (commit c029939 para la curva; los objetos y el cierre, en el commit «feat: objetos de los rangos con Balanza…» que le sigue): ver el spec, apartado 6.** La versión de abajo no es la que se ejecutó: mide carreras sin curarse, que ya no es la regla, y la sustituyeron el motor Balanza y los duelos sala a sala (spec, apartados 6 y 7). No la ejecutes tal cual; el intento anterior está en la rama local `rangos-calibracion-aparcada`.
 
 **Files:**
 - Create: `scripts/tests/BalanceSim.gd`, `scenes/tests/BalanceSim.tscn`
@@ -1488,6 +1488,8 @@ git commit -m "feat: materiales de bioma (hueso, musgo, obsidiana, escarcha y va
 
 ### Task 5: Rango en el objeto forjado
 
+> **Nota (2026-10-01):** `Hero.reset_stats` tiene que pasar el rango del equipo a `CombatMath.hero_stats(equipo, rango)` (hoy pasa 1).
+
 **Files:**
 - Modify: `scripts/data/CraftedItem.gd`
 - Test: `scripts/tests/RankTests.gd`
@@ -1605,6 +1607,8 @@ git commit -m "feat: el objeto forjado guarda su rango y escala sus estadística
 ---
 
 ### Task 6: Desbloqueo por rango y guardado versión 2
+
+> **Nota (2026-10-01):** `Hero.reset_stats` tiene que pasar el rango del equipo a `CombatMath.hero_stats(equipo, rango)` (hoy pasa 1).
 
 **Files:**
 - Modify: `scripts/autoload/DataManager.gd`, `scripts/autoload/GameManager.gd` (solo `_on_data_ready_load_save`), `scripts/core/SaveManager.gd`

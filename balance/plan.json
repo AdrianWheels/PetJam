@@ -1,10 +1,10 @@
 {
   "format": 2,
   "kitVersion": "0.1.0",
-  "planId": "49120ce094301dd51902e4f89e2dd2f3b98aaa5837a669fea06426459d862004",
+  "planId": "5041195f958f390ab25997710cf842020d3254b2902f2f70fb624edc316ec2d5",
   "catalog": {
-    "kind": "generated",
-    "hash": "76da913010f95d0ed3975f7aea9e0bdfd760d615f23324d9fd5ff966719f30b6"
+    "kind": "current",
+    "hash": "fb0e2b09e3e81ee7d58964504da3fca923316c24aaa73769348c1905930c6d1f"
   },
   "reference": "damage",
   "scenarios": {
@@ -2864,17 +2864,7 @@
     "effects": [],
     "items": [
       {
-        "id": "sword_basic",
-        "level": 1,
-        "quality": 0.55
-      },
-      {
-        "id": "shield_basic",
-        "level": 1,
-        "quality": 0.55
-      },
-      {
-        "id": "helmet_basic",
+        "id": "boots_advanced",
         "level": 1,
         "quality": 0.55
       },
@@ -2884,12 +2874,7 @@
         "quality": 0.55
       },
       {
-        "id": "sword_advanced",
-        "level": 1,
-        "quality": 0.55
-      },
-      {
-        "id": "shield_advanced",
+        "id": "boots_master",
         "level": 1,
         "quality": 0.55
       },
@@ -2899,17 +2884,7 @@
         "quality": 0.55
       },
       {
-        "id": "boots_advanced",
-        "level": 1,
-        "quality": 0.55
-      },
-      {
-        "id": "sword_masterwork",
-        "level": 1,
-        "quality": 0.55
-      },
-      {
-        "id": "shield_master",
+        "id": "helmet_basic",
         "level": 1,
         "quality": 0.55
       },
@@ -2919,7 +2894,32 @@
         "quality": 0.55
       },
       {
-        "id": "boots_master",
+        "id": "shield_advanced",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "shield_basic",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "shield_master",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "sword_advanced",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "sword_basic",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "sword_masterwork",
         "level": 1,
         "quality": 0.55
       }

@@ -2,7 +2,7 @@
   "format": 1,
   "kind": "current",
   "kitVersion": "0.1.0",
-  "inputsHash": "36502374dd56049120585adf4822977e87cc2051b7830e489a34f4e005cc2c90",
+  "inputsHash": "fb0e2b09e3e81ee7d58964504da3fca923316c24aaa73769348c1905930c6d1f",
   "provisional": false,
   "items": [
     {
@@ -15,11 +15,11 @@
       "stats": {
         "hp": {
           "min": 18,
-          "max": 40
+          "max": 41
         },
         "armor": {
           "min": 2,
-          "max": 5
+          "max": 4
         }
       },
       "effects": []
@@ -53,11 +53,11 @@
       "stats": {
         "hp": {
           "min": 40,
-          "max": 80
+          "max": 79
         },
         "armor": {
-          "min": 5,
-          "max": 10
+          "min": 4,
+          "max": 8
         }
       },
       "effects": []
@@ -71,12 +71,12 @@
       "budget": 0,
       "stats": {
         "hp": {
-          "min": 35,
-          "max": 75
+          "min": 34,
+          "max": 76
         },
         "armor": {
           "min": 3,
-          "max": 7
+          "max": 6
         }
       },
       "effects": []
@@ -91,7 +91,7 @@
       "stats": {
         "hp": {
           "min": 15,
-          "max": 35
+          "max": 34
         },
         "armor": {
           "min": 1,
@@ -109,12 +109,12 @@
       "budget": 0,
       "stats": {
         "hp": {
-          "min": 75,
-          "max": 140
+          "min": 74,
+          "max": 148
         },
         "armor": {
-          "min": 7,
-          "max": 14
+          "min": 5,
+          "max": 11
         }
       },
       "effects": []
@@ -128,12 +128,12 @@
       "budget": 0,
       "stats": {
         "hp": {
-          "min": 45,
-          "max": 95
+          "min": 43,
+          "max": 97
         },
         "armor": {
-          "min": 4,
-          "max": 9
+          "min": 3,
+          "max": 8
         }
       },
       "effects": []
@@ -147,12 +147,12 @@
       "budget": 0,
       "stats": {
         "hp": {
-          "min": 20,
-          "max": 45
+          "min": 19,
+          "max": 44
         },
         "armor": {
-          "min": 2,
-          "max": 4
+          "min": 1,
+          "max": 3
         }
       },
       "effects": []
@@ -167,11 +167,11 @@
       "stats": {
         "hp": {
           "min": 95,
-          "max": 180
+          "max": 190
         },
         "armor": {
-          "min": 9,
-          "max": 18
+          "min": 7,
+          "max": 15
         }
       },
       "effects": []
@@ -189,12 +189,12 @@
           "max": 18
         },
         "crit": {
-          "min": 0.08,
+          "min": 0.09,
           "max": 0.2
         },
         "aps": {
           "min": 0.15,
-          "max": 0.35
+          "max": 0.34
         }
       },
       "effects": []
@@ -212,11 +212,11 @@
           "max": 8
         },
         "crit": {
-          "min": 0.03,
-          "max": 0.08
+          "min": 0.04,
+          "max": 0.09
         },
         "aps": {
-          "min": 0.05,
+          "min": 0.065,
           "max": 0.15
         }
       },
@@ -231,16 +231,16 @@
       "budget": 0,
       "stats": {
         "damage": {
-          "min": 18,
+          "min": 17,
           "max": 35
         },
         "crit": {
-          "min": 0.2,
-          "max": 0.45
+          "min": 0.19,
+          "max": 0.38
         },
         "aps": {
-          "min": 0.35,
-          "max": 0.7
+          "min": 0.33,
+          "max": 0.66
         }
       },
       "effects": []

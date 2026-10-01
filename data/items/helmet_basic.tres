@@ -13,6 +13,6 @@ item_type = "armor"
 equipment_slot = "head"
 rarity = "basic"
 base_hp_min = 15
-base_hp_max = 35
+base_hp_max = 34
 base_armor_min = 1
 base_armor_max = 3
