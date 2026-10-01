@@ -153,11 +153,6 @@ func _code_table_texts() -> Array:
 		out.append([String(t.name), "CraftResultScreen.TIERS"])
 	for key in CraftResultScreen.STAT_NAMES:
 		out.append([String(CraftResultScreen.STAT_NAMES[key]), "CraftResultScreen.STAT_NAMES"])
-	var equipment := _consts("res://scripts/ui/EquipmentPanel.gd")
-	for table in ["TIER_NAMES", "SLOT_NAMES"]:
-		var names: Dictionary = equipment.get(table, {})
-		for key in names:
-			out.append([String(names[key]), "EquipmentPanel.%s" % table])
 	for id in ShopPanel.MATERIAL_CATALOG:
 		out.append([String(ShopPanel.MATERIAL_CATALOG[id].display_name), "ShopPanel.MATERIAL_CATALOG"])
 	for id in ShopPanel.POTION_CATALOG:

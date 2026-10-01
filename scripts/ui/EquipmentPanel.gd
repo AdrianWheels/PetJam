@@ -1,450 +1,512 @@
 # res://scripts/ui/EquipmentPanel.gd
 extends ColorRect
 
-## Panel modal para ver y gestionar el equipo del héroe.
-## Muestra al héroe EN VIVO (el mismo dibujo que en la mazmorra) con lo que lleva puesto:
-## al equipar algo se ve al instante. Huecos con el icono del objeto y marco del color de su calidad.
-## Equipar = tocar un objeto de la mochila. Desequipar = tocar un hueco ocupado.
+## Panel de Equipo a pantalla completa (spec doc/specs/2026-09-27-inventario-en-rejilla.md, apartado 9).
+## De arriba abajo: estadísticas de Tico, ficha de la última pieza tocada, rejilla de Tico delante de su
+## sprite (con los consumibles al lado), botín, mochila y zona de venta.
+## El dedo lo lleva este panel, en _input:
+##  - tocar una pieza de una rejilla la gira (si girada no cabe, tiembla); en el botín solo la enseña;
+##  - mantener pulsado enseña su ficha (la completa, con botones, llega en la tarea 10);
+##  - arrastrar la mueve: la pieza va una casilla por encima del dedo y un segundo dedo la gira;
+##  - en el botín, de lado se desplaza la tira; hacia arriba o abajo se coge la pieza.
+## En el ordenador el ratón hace lo mismo, y la rueda o la tecla R giran la pieza que se arrastra.
 
-signal item_equipped(slot_type: StringName, item)
 signal panel_closed
 
 const HERO_SCENE := preload("res://scenes/Hero.tscn")
+const CELL := GearGridView.CELL
+const HERO_GRID_POS := Vector2(60, 262)
+const BAG_POS := Vector2(60, 1350)
+const LOOT_RECT := Rect2(60, 970, 960, 330)
+const STATS_RECT := Rect2(60, 100, 960, 70)
+const FICHA_RECT := Rect2(60, 174, 960, 84)
+const NEXT_RECT := Rect2(760, 620, 260, 280)
+const DRAG_THRESHOLD := 10.0
+const LONG_PRESS_MS := 400
+const COLOR_UP := "7dff8a"
+const COLOR_DOWN := "ff7a6e"
 
-# Referencias a nodos
-@onready var close_btn: Button = $PanelContainer/MainVBox/TitleBar/CloseBtn
-@onready var wow_layout: HBoxContainer = $PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout
-@onready var inventory_grid: GridContainer = $PanelContainer/MainVBox/ContentHBox/InventoryBG/InventorySection/InventoryScroll/InventoryGrid
-@onready var hero_center: CenterContainer = $PanelContainer/MainVBox/ContentHBox/EquipmentBG/WoWStyleLayout/HeroCenter
+@onready var close_btn: Button = $CloseBtn
+@onready var sell_all_btn: Button = $SellAllBtn
+@onready var sell_zone: Control = $SellZone
+@onready var sell_label: Label = $SellZone/SellLabel
+@onready var loot_title: Label = $LootTitle
 
-# Stats labels
-@onready var hp_label: Label = $PanelContainer/MainVBox/StatsBG/HeroStatsSection/StatsGrid/HPLabel
-@onready var dmg_label: Label = $PanelContainer/MainVBox/StatsBG/HeroStatsSection/StatsGrid/DMGLabel
-@onready var armor_label: Label = $PanelContainer/MainVBox/StatsBG/HeroStatsSection/StatsGrid/ARMORLabel
-@onready var crit_label: Label = $PanelContainer/MainVBox/StatsBG/HeroStatsSection/StatsGrid/CRITLabel
-
-# Slots de equipo (referencias)
-var _equipment_slots: Dictionary = {}
-
-# Managers
-var _inventory_manager: Node
-var _game_manager: Node
-
-# Héroe de muestra (solo dibujo; no combate)
+var _im: Node
+var _gm: Node
+var _hero_view: GearGridView
+var _bag_view: GearGridView
+var _loot_view: LootStripView
+var _stats_label: RichTextLabel
+var _ficha_label: RichTextLabel
+var _next_label: Label
+var _ghost_layer: Control
 var _puppet: Node2D
+var _selected: CraftedItem = null
 
-const EQUIPMENT_SLOT_TYPES := ["head", "main_hand", "off_hand", "body", "feet"]
-## Nombres de hueco y de calidad: texto base en español, se enseñan con tr() (locale/textos.csv)
-const SLOT_NAMES := {"head": "Casco", "main_hand": "Arma", "off_hand": "Escudo", "body": "Pecho", "feet": "Botas"}
-const TIER_NAMES := {"legendary": "Legendario", "epic": "Épico", "rare": "Raro", "uncommon": "Bueno", "common": "Básico"}
-const RARITY_RANK := {"basic": 0, "advanced": 1, "master": 2}
+## Pulsación en curso: {"item", "from", "rot", "origin", "pos", "time", "long_done"}; {} si no hay.
+## "origin" es la esquina de la caja de la pieza en la pantalla al pulsar. "item" es null si se pulsa el
+## botín vacío (solo para desplazarlo).
+var _press := {}
+var _dragging := false
+var _scrolling := false
+var _scroll_start := 0.0
+var _drag_rot := 0
+var _drag_pos := Vector2.ZERO
+## Destino del arrastre: {"place", "cell", "ok", "swap", "view"}; {} si no hay ninguno.
+var _target := {}
 
-# Colores de estado
-const COLOR_SLOT_EMPTY := Color(0.11, 0.075, 0.065, 1.0)
-const COLOR_SLOT_HOVER := Color(0.4, 0.4, 0.5, 1.0)
-const COLOR_FRAME_EMPTY := Color(0.32, 0.24, 0.16, 1.0)
 
 func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	_im = get_node_or_null("/root/InventoryManager")
+	_gm = get_node_or_null("/root/GameManager")
+	close_btn.pressed.connect(close)
+	_build()
+	if _im:
+		_im.crafted_items_changed.connect(func(_items): _refresh_if_open())
+		_im.equipment_changed.connect(func(_stats): _refresh_if_open())
+		_im.grid_resized.connect(func(_size): _refresh_if_open())
 
-	close_btn.pressed.connect(_on_close_pressed)
 
-	_inventory_manager = get_node_or_null("/root/InventoryManager")
-	_game_manager = get_node_or_null("/root/GameManager")
+func _build() -> void:
+	_stats_label = _rich(STATS_RECT, 30)
+	_ficha_label = _rich(FICHA_RECT, 22)
+	_puppet_setup()
+	_hero_view = _grid_view(HERO_GRID_POS)
+	_hero_view.show_zones = true  # la mochila no tiene zonas
+	_bag_view = _grid_view(BAG_POS)
+	_loot_view = LootStripView.new()
+	_loot_view.position = LOOT_RECT.position
+	_loot_view.size = LOOT_RECT.size
+	_loot_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_loot_view)
+	_next_label = Label.new()
+	_next_label.position = NEXT_RECT.position
+	_next_label.size = NEXT_RECT.size
+	_next_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_next_label.add_theme_font_size_override("font_size", 24)
+	_next_label.add_theme_color_override("font_color", Color(0.75, 0.66, 0.54))
+	add_child(_next_label)
+	_ghost_layer = Control.new()
+	_ghost_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_ghost_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ghost_layer.draw.connect(_draw_ghost)
+	add_child(_ghost_layer)  # el último: se dibuja encima de todo
 
-	# Conectar señal de equipamiento para auto-refresh
-	if _inventory_manager and _inventory_manager.has_signal("equipment_changed"):
-		_inventory_manager.equipment_changed.connect(_on_equipment_changed)
 
-	# Mapear slots de equipo
-	_map_equipment_slots()
-	_connect_equipment_slot_clicks()
-	_create_puppet()
+func _grid_view(pos: Vector2) -> GearGridView:
+	var view := GearGridView.new()
+	view.position = pos
+	add_child(view)
+	return view
 
-func _map_equipment_slots() -> void:
-	_equipment_slots = {
-		"head": wow_layout.get_node_or_null("LeftColumn/HelmetSlot"),
-		"body": wow_layout.get_node_or_null("LeftColumn/ArmorSlot"),
-		"main_hand": wow_layout.get_node_or_null("RightColumn/WeaponSlot"),
-		"off_hand": wow_layout.get_node_or_null("RightColumn/ShieldSlot"),
-		"feet": wow_layout.get_node_or_null("RightColumn/BootsSlot"),
-	}
 
-func _connect_equipment_slot_clicks() -> void:
-	## Conectar click en cada slot equipado para desequipar
-	for slot_type in _equipment_slots:
-		var slot_node = _equipment_slots[slot_type]
-		if slot_node == null:
-			continue
-		# Captura por valor
-		var _slot_type = slot_type
-		slot_node.gui_input.connect(func(event: InputEvent):
-			if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-				_on_equipment_slot_clicked(_slot_type)
-		)
-		slot_node.mouse_filter = Control.MOUSE_FILTER_STOP
+func _rich(rect: Rect2, font_size: int) -> RichTextLabel:
+	var label := RichTextLabel.new()
+	label.position = rect.position
+	label.size = rect.size
+	label.bbcode_enabled = true
+	label.scroll_active = false
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_font_size_override("normal_font_size", font_size)
+	add_child(label)
+	return label
 
-## Crea el héroe de muestra dentro del hueco central (mismo dibujo que en la mazmorra).
-func _create_puppet() -> void:
-	var holder := Control.new()
-	holder.custom_minimum_size = Vector2(320, 520)
-	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hero_center.add_child(holder)
+
+## Tico a gran tamaño y tenue detrás de su rejilla (el mismo dibujo que en la mazmorra; con la franja de
+## pegatinas integrada, ver la nota después de este bloque).
+func _puppet_setup() -> void:
 	_puppet = HERO_SCENE.instantiate()
-	# Que no lo confundan con el héroe real (DebugPanel busca el grupo "hero")
-	_puppet.remove_from_group("hero")
+	_puppet.remove_from_group("hero")  # que no lo confundan con el héroe de la partida
 	_puppet.set("show_hud", false)
-	_puppet.position = Vector2(160, 440)
-	_puppet.scale = Vector2(8, 8)  # pixel art a escala entera (fase 2: mini-lienzo propio)
+	_puppet.scale = Vector2(18, 18)  # 32 px de arte a ×18: casi el alto de la rejilla
+	_puppet.position = HERO_GRID_POS + Vector2(330, 640)  # pies al fondo de la rejilla, centrado
+	_puppet.modulate = Color(1, 1, 1, 0.35)
 	_puppet.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	holder.add_child(_puppet)
-	_puppet.look_target = _puppet.position + Vector2(300, -80)
+	_puppet.z_index = 0  # Hero.tscn lo pone en 10 (por delante de los enemigos); aquí va detrás de la rejilla y de la pieza que se arrastra
+	add_child(_puppet)
 	_puppet.process_mode = Node.PROCESS_MODE_DISABLED  # solo se anima con el panel abierto
-	# Peana
-	var pedestal := Panel.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.2, 0.14, 0.1, 1)
-	style.border_color = Color(0.55, 0.41, 0.24, 1)
-	style.set_border_width_all(3)
-	style.set_corner_radius_all(40)
-	pedestal.add_theme_stylebox_override("panel", style)
-	pedestal.size = Vector2(250, 44)
-	pedestal.position = Vector2(35, 430)
-	pedestal.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	pedestal.show_behind_parent = false
-	holder.add_child(pedestal)
-	holder.move_child(pedestal, 0)
 
-func _gui_input(event: InputEvent) -> void:
-	# Cerrar al hacer click en el fondo oscuro
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var panel_container = get_node_or_null("PanelContainer")
-		if panel_container:
-			var local_pos = panel_container.get_local_mouse_position()
-			var panel_rect = Rect2(Vector2.ZERO, panel_container.size)
-			if not panel_rect.has_point(local_pos):
-				close()
-				accept_event()
 
 func open() -> void:
 	visible = true
-	_refresh_all()
-	# Aparición del panel
-	var panel: Control = $PanelContainer
-	panel.pivot_offset = panel.size * 0.5
-	panel.scale = Vector2(0.92, 0.92)
-	panel.modulate.a = 0.0
-	var tw := create_tween().set_parallel(true)
-	tw.tween_property(panel, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.tween_property(panel, "modulate:a", 1.0, 0.15)
+	_refresh()
 	if _puppet:
 		_puppet.process_mode = Node.PROCESS_MODE_INHERIT
 		_puppet.respawn(_puppet.position)
 
+
 func close() -> void:
+	_cancel_press()
 	visible = false
 	if _puppet:
 		_puppet.process_mode = Node.PROCESS_MODE_DISABLED
 	emit_signal("panel_closed")
 
-func _on_equipment_changed(_stats: Dictionary) -> void:
-	## Auto-refresh cuando cambia el equipamiento (señal de InventoryManager)
+# ═══════════════════════════════════════════════════════════════════
+#  REFRESCO
+# ═══════════════════════════════════════════════════════════════════
+
+func _refresh_if_open() -> void:
 	if visible:
-		_refresh_all()
+		_refresh()
 
-# ═══════════════════════════════════════════════════════════════════
-#  REFRESH
-# ═══════════════════════════════════════════════════════════════════
 
-func _refresh_all() -> void:
-	_refresh_equipment()
-	_refresh_inventory()
-	_refresh_stats()
+func _refresh() -> void:
+	if _im == null or not is_node_ready():
+		return
+	_hero_view.setup(_im.hero_grid, GridExpansions.MAX_SIZE)
+	_bag_view.setup(_im.bag_grid, InventoryManager.BAG_SIZE)
+	_loot_view.set_items(_im.get_loot())
+	loot_title.text = tr("Botín · %d") % _im.get_loot_count()
+	if _selected and not (_selected in _im.get_crafted_items()):
+		_selected = null
+	_refresh_stats({})
+	_refresh_ficha()
+	_refresh_next()
 	if _puppet and _puppet.has_method("refresh_gear"):
 		_puppet.refresh_gear()
 
-func _refresh_equipment() -> void:
-	if not _inventory_manager:
-		return
 
-	var slot_icon_names := {
-		"head": "HelmetIcon",
-		"main_hand": "WeaponIcon",
-		"off_hand": "ShieldIcon",
-		"body": "ArmorIcon",
-		"feet": "BootsIcon"
-	}
-	var slot_label_names := {
-		"head": "HelmetLabel",
-		"main_hand": "WeaponLabel",
-		"off_hand": "ShieldLabel",
-		"body": "ArmorLabel",
-		"feet": "BootsLabel"
-	}
+## Estadísticas de Tico. `preview` ({"totals", "powers"}, del arrastre) añade el cambio en verde o rojo.
+func _refresh_stats(preview: Dictionary) -> void:
+	var now := CombatMath.hero_stats_with_powers(_im.calculate_total_stats(), _im.active_legendary_powers())
+	var after: Dictionary = now if preview.is_empty() else CombatMath.hero_stats_with_powers(preview.totals, preview.powers)
+	var mitigation := roundi(CombatMath.armor_mitigation(int(now.armor)) * 100.0)
+	var parts := [
+		tr("Vida %d") % now.max_hp + _delta(after.max_hp - now.max_hp, "%+d"),
+		tr("Daño %.0f") % now.dmg + _delta(after.dmg - now.dmg, "%+.0f"),
+		tr("Armadura %d (-%d%%)") % [now.armor, mitigation] + _delta(after.armor - now.armor, "%+d"),
+		tr("Crítico %.0f%%") % (now.crit_p * 100.0) + _delta((after.crit_p - now.crit_p) * 100.0, "%+.0f"),
+		tr("Velocidad %.2f") % now.aps + _delta(after.aps - now.aps, "%+.2f"),
+	]
+	_stats_label.text = "   ".join(parts)
 
-	for slot_type in EQUIPMENT_SLOT_TYPES:
-		var slot_node = _equipment_slots.get(slot_type)
-		if slot_node == null:
-			continue
 
-		var icon_rect = slot_node.get_node_or_null(slot_icon_names.get(slot_type, ""))
-		var label: Label = slot_node.get_node_or_null(slot_label_names.get(slot_type, ""))
-		var equipped_item: CraftedItem = _inventory_manager.get_equipped_item(slot_type)
-		if icon_rect == null:
-			continue
-		var frame := _ensure_slot_frame(icon_rect)
-		var tex_rect := _ensure_slot_icon(icon_rect)
-		if equipped_item != null:
-			tex_rect.texture = equipped_item.get_icon()
-			tex_rect.modulate = Color.WHITE
-			_set_frame_color(frame, equipped_item.get_quality_color(), 4)
-			slot_node.tooltip_text = equipped_item.get_display_name()
-			if label:
-				label.text = "%d%% %s" % [equipped_item.get_quality_percent(), tr(TIER_NAMES.get(equipped_item.get_quality_tier(), ""))]
-				label.add_theme_color_override("font_color", equipped_item.get_quality_color())
-		else:
-			tex_rect.texture = null
-			_set_frame_color(frame, COLOR_FRAME_EMPTY, 3)
-			slot_node.tooltip_text = tr(SLOT_NAMES.get(slot_type, slot_type.capitalize()))
-			if label:
-				label.text = tr(SLOT_NAMES.get(slot_type, slot_type.capitalize()))
-				label.add_theme_color_override("font_color", Color(0.6, 0.52, 0.42))
-		if icon_rect is ColorRect:
-			icon_rect.color = COLOR_SLOT_EMPTY
+## Cambio de la vista previa: verde si sube, rojo si baja, nada si no cambia.
+func _delta(d: float, fmt: String) -> String:
+	if absf(d) < 0.005:
+		return ""
+	return " [color=#%s]%s[/color]" % [COLOR_UP if d > 0.0 else COLOR_DOWN, fmt % d]
 
-func _ensure_slot_frame(icon_rect: Control) -> Panel:
-	var frame: Panel = icon_rect.get_node_or_null("Frame")
-	if frame == null:
-		frame = Panel.new()
-		frame.name = "Frame"
-		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		frame.set_anchors_preset(Control.PRESET_FULL_RECT)
-		icon_rect.add_child(frame)
-	return frame
 
-func _ensure_slot_icon(icon_rect: Control) -> TextureRect:
-	var tex: TextureRect = icon_rect.get_node_or_null("ItemIcon")
-	if tex == null:
-		tex = TextureRect.new()
-		tex.name = "ItemIcon"
-		tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		tex.set_anchors_preset(Control.PRESET_FULL_RECT)
-		tex.offset_left = 10
-		tex.offset_top = 10
-		tex.offset_right = -10
-		tex.offset_bottom = -10
-		icon_rect.add_child(tex)
-	return tex
-
-func _set_frame_color(frame: Panel, color: Color, width: int) -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0, 0, 0, 0)
-	style.draw_center = false
-	style.border_color = color
-	style.set_border_width_all(width)
-	style.set_corner_radius_all(14)
-	frame.add_theme_stylebox_override("panel", style)
-
-func _refresh_inventory() -> void:
-	# Limpiar grid
-	for child in inventory_grid.get_children():
-		child.queue_free()
-
-	if not _inventory_manager:
-		return
-
-	# Solo mostrar items NO equipados (los mejores primero)
-	var unequipped: Array[CraftedItem] = _inventory_manager.get_unequipped_items()
-	unequipped.sort_custom(func(a: CraftedItem, b: CraftedItem): return _item_score(a) > _item_score(b))
-
-	for item in unequipped:
-		var item_slot = _create_item_slot(item)
-		inventory_grid.add_child(item_slot)
-
-func _refresh_stats() -> void:
-	# Obtener héroe via GameManager.get_hero()
-	var hero: Node = null
-	if _game_manager and _game_manager.has_method("get_hero"):
-		hero = _game_manager.get_hero()
-
-	if hero == null:
-		# Fallback: sin héroe registrado, mostrar stats de equipamiento
-		_refresh_stats_from_equipment()
-		return
-
-	if hp_label:
-		hp_label.text = tr("Vida %d") % hero.max_hp
-	if dmg_label:
-		dmg_label.text = tr("Daño %.0f") % hero.dmg
-	if armor_label:
-		var mitigation: float = hero.armor_mitigation() if hero.has_method("armor_mitigation") else 0.0
-		armor_label.text = tr("Armadura %d (-%d%%)") % [hero.armor, int(round(mitigation * 100.0))]
-	if crit_label:
-		crit_label.text = tr("Crítico %.0f%%") % (hero.crit_p * 100.0)
-
-func _refresh_stats_from_equipment() -> void:
-	## Fallback: calcular stats solo de equipamiento sin referencia al héroe
-	if not _inventory_manager:
-		return
-	var stats: Dictionary = _inventory_manager.calculate_total_stats()
-	if hp_label:
-		hp_label.text = tr("Vida +%d") % int(stats.get("hp", 0))
-	if dmg_label:
-		dmg_label.text = tr("Daño +%d") % int(stats.get("damage", 0))
-	if armor_label:
-		armor_label.text = tr("Armadura +%d") % int(stats.get("armor", 0))
-	if crit_label:
-		crit_label.text = tr("Crítico +%.0f%%") % (float(stats.get("crit", 0.0)) * 100.0)
-
-# ═══════════════════════════════════════════════════════════════════
-#  ITEM SLOTS (inventario)
-# ═══════════════════════════════════════════════════════════════════
-
-## Puntuación simple para ordenar y marcar mejoras: rareza del plano y luego calidad.
-func _item_score(item: CraftedItem) -> float:
-	var rarity := "basic"
-	if item.item_resource:
-		rarity = String(item.item_resource.rarity)
-	return float(RARITY_RANK.get(rarity, 0)) * 100.0 + item.quality * 100.0
-
-func _is_upgrade(item: CraftedItem) -> bool:
-	if _inventory_manager == null:
-		return false
-	var current: CraftedItem = _inventory_manager.get_equipped_item(item.get_equipment_slot())
-	return current == null or _item_score(item) > _item_score(current)
-
-## Texto corto con las stats más relevantes del objeto.
-func _stat_line(item: CraftedItem) -> String:
-	var parts: Array[String] = []
-	var st: Dictionary = item.calculated_stats
-	if int(st.get("damage", 0)) > 0:
-		parts.append(tr("+%d Daño") % int(st.damage))
-	if int(st.get("hp", 0)) > 0:
-		parts.append(tr("+%d Vida") % int(st.hp))
-	if int(st.get("armor", 0)) > 0:
-		parts.append(tr("+%d Arm") % int(st.armor))
-	if float(st.get("crit", 0.0)) > 0.005:
-		parts.append(tr("+%d%% Crít") % int(round(float(st.crit) * 100.0)))
-	if float(st.get("aps", 0.0)) > 0.01:
-		parts.append(tr("+%.1f Vel") % float(st.aps))
-	return "  ".join(parts.slice(0, 2))
-
-func _create_item_slot(item: CraftedItem) -> Control:
-	var tier_color := item.get_quality_color()
-	var slot := PanelContainer.new()
-	slot.custom_minimum_size = Vector2(218, 250)
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.15, 0.105, 0.085, 1.0)
-	style.border_color = tier_color
-	style.set_border_width_all(3)
-	style.border_width_bottom = 6
-	style.set_corner_radius_all(14)
-	style.content_margin_left = 8
-	style.content_margin_right = 8
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
-	slot.add_theme_stylebox_override("panel", style)
-
-	var vbox := VBoxContainer.new()
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_theme_constant_override("separation", 2)
-	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	slot.add_child(vbox)
-
-	var icon := TextureRect.new()
-	icon.texture = item.get_icon()
-	icon.custom_minimum_size = Vector2(0, 104)
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(icon)
-
-	var name_label := Label.new()
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.add_theme_font_size_override("font_size", 22)
-	name_label.add_theme_constant_override("outline_size", 4)
-	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	name_label.text = tr(item.item_resource.display_name) if item.item_resource else "???"
-	vbox.add_child(name_label)
-
-	var quality_label := Label.new()
-	quality_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	quality_label.add_theme_font_size_override("font_size", 20)
-	quality_label.add_theme_color_override("font_color", tier_color)
-	quality_label.add_theme_constant_override("outline_size", 4)
-	quality_label.text = "%d%% · %s" % [item.get_quality_percent(), tr(TIER_NAMES.get(item.get_quality_tier(), ""))]
-	vbox.add_child(quality_label)
-
-	var stat_label := Label.new()
-	stat_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	stat_label.add_theme_font_size_override("font_size", 18)
-	stat_label.add_theme_color_override("font_color", Color(0.85, 0.8, 0.72))
-	stat_label.text = _stat_line(item)
-	vbox.add_child(stat_label)
-
-	if _is_upgrade(item):
-		var up := Label.new()
-		up.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		up.add_theme_font_size_override("font_size", 20)
-		up.add_theme_color_override("font_color", Color(0.45, 0.95, 0.5))
-		up.add_theme_constant_override("outline_size", 4)
-		up.text = "▲ %s" % tr("Mejora")
-		vbox.add_child(up)
-
-	# Toque para equipar
-	slot.gui_input.connect(func(event: InputEvent):
-		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			_on_item_clicked(item)
-	)
-	slot.mouse_filter = Control.MOUSE_FILTER_STOP
-
-	return slot
-
-# ═══════════════════════════════════════════════════════════════════
-#  ACCIONES
-# ═══════════════════════════════════════════════════════════════════
-
-func _on_item_clicked(item: CraftedItem) -> void:
-	if not _inventory_manager:
-		return
-
-	var success = _inventory_manager.equip_item(item)
-	if success:
-		emit_signal("item_equipped", item.get_equipment_slot(), item)
-		DebugManager.log_msg(&"ui", "EquipmentPanel: Equipped %s" % item.get_display_name())
-		_equip_feedback(item.get_equipment_slot())
+func _refresh_ficha() -> void:
+	if _selected:
+		_ficha_label.text = _ficha_text(_selected)
 	else:
-		DebugManager.log_msg(&"ui", "EquipmentPanel: Failed to equip %s" % item.get_display_name())
+		_ficha_label.text = "[color=#a89a86]%s[/color]" % tr("Toca una pieza para verla; arrástrala para colocarla")
 
-## Brillo en el hueco equipado, el héroe de muestra se "re-materializa" y suena un clinc metálico.
-func _equip_feedback(slot_type: String) -> void:
-	var slot_node: Control = _equipment_slots.get(slot_type)
-	if slot_node:
-		slot_node.pivot_offset = slot_node.size * 0.5
-		var tw := create_tween()
-		tw.tween_property(slot_node, "scale", Vector2(1.18, 1.18), 0.08)
-		tw.tween_property(slot_node, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		slot_node.modulate = Color(1.8, 1.7, 1.3)
-		create_tween().tween_property(slot_node, "modulate", Color.WHITE, 0.4)
-	if _puppet:
-		_puppet.set("_materialize", 0.55)
-	Sfx.play(&"equip_clink")
 
-func _on_equipment_slot_clicked(slot_type: String) -> void:
-	## Desequipa el item del slot al hacer click
-	if not _inventory_manager:
+## Ficha breve (spec, apartado 9.1): nombre y calidad, estadísticas con su aumento, aura, zona y, si es
+## legendaria, su habilidad y su precio.
+func _ficha_text(item: CraftedItem) -> String:
+	var pct: Dictionary = _im.hero_bonuses().get(item, {}) if item.place == InventoryManager.PLACE_HERO else {}
+	var head := "[color=#%s]%s · %s[/color]" % [item.get_quality_color().to_html(false), item.get_name_with_rank(), item.get_quality_label()]
+	var stats := []
+	for key in ["damage", "hp", "armor", "crit", "aps"]:
+		var v := float(item.calculated_stats.get(key, 0))
+		if v <= 0.0:
+			continue
+		var boost := float(pct.get(key, 0.0))
+		var text := _stat_text(key, v * (1.0 + boost))
+		if boost > 0.0:
+			text += " [color=#%s](+%d %%)[/color]" % [COLOR_UP, roundi(boost * 100.0)]
+		stats.append(text)
+	var extras := []
+	var slot := item.get_equipment_slot()
+	var strength := GearAuras.aura_strength(item)
+	if strength > 0.0 and GearAuras.AURA_TEXTS.has(slot):
+		extras.append(tr(GearAuras.AURA_TEXTS[slot]) % roundi(strength * 100.0))
+	if GearAuras.ZONE_TEXTS.has(slot):
+		extras.append(tr(GearAuras.ZONE_TEXTS[slot]))
+	var power: Dictionary = LegendaryPowers.POWERS.get(StringName(item.item_resource.item_id), {})
+	if LegendaryPowers.is_legendary(item) and not power.is_empty():
+		var p := "[color=#ffa629]%s: %s[/color]" % [tr(power.name), tr(power.text)]
+		if String(power.price) != "":
+			p += " [color=#%s](%s)[/color]" % [COLOR_DOWN, tr(power.price)]
+		extras.append(p)
+	return "%s   %s\n%s" % [head, "  ".join(stats), " · ".join(extras)]
+
+
+func _stat_text(key: String, v: float) -> String:
+	match key:
+		"damage":
+			return tr("+%d Daño") % roundi(v)
+		"hp":
+			return tr("+%d Vida") % roundi(v)
+		"armor":
+			return tr("+%d Arm") % roundi(v)
+		"crit":
+			return tr("+%d%% Crít") % roundi(v * 100.0)
+		"aps":
+			return tr("+%.1f Vel") % v
+	return ""
+
+
+## Siguiente ampliación: el primer jefe del ciclo I que aún no ha ampliado la rejilla (tarea 12; con los
+## rangos llegarán las recetas).
+func _refresh_next() -> void:
+	_next_label.text = ""
+	for id in GridExpansions.ids():
+		if id in _im.expansions:
+			continue
+		_next_label.text = tr("La rejilla crece al vencer al jefe de la sala %d") % int(GridExpansions.RECIPES[id].room)
 		return
 
-	var equipped_item: CraftedItem = _inventory_manager.get_equipped_item(slot_type)
-	if equipped_item == null:
-		return  # Slot vacío, nada que hacer
+# ═══════════════════════════════════════════════════════════════════
+#  EL DEDO
+# ═══════════════════════════════════════════════════════════════════
 
-	var success = _inventory_manager.unequip_item(slot_type)
-	if success:
-		DebugManager.log_msg(&"ui", "EquipmentPanel: Unequipped from %s" % slot_type)
+func _input(event: InputEvent) -> void:
+	if not visible:
+		return
+	if event.is_action_pressed("ui_cancel"):
+		close()
+		get_viewport().set_input_as_handled()
+	elif event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				_on_press(event.position)
+			else:
+				_on_release(event.position)
+		elif event.pressed and _dragging and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+			_rotate_drag()
+			get_viewport().set_input_as_handled()
+	elif event is InputEventMouseMotion:
+		_on_motion(event.position)
+	elif event is InputEventScreenTouch and event.pressed and event.index >= 1 and _dragging:
+		_rotate_drag()  # segundo dedo
+		get_viewport().set_input_as_handled()
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_R and _dragging:
+		_rotate_drag()
+		get_viewport().set_input_as_handled()
 
-func _on_close_pressed() -> void:
-	close()
+
+func _on_press(pos: Vector2) -> void:
+	var hit := _piece_at(pos)
+	if hit.is_empty():
+		return  # botones y fondo: sigue su camino
+	_press = hit
+	_press.pos = pos
+	_press.time = Time.get_ticks_msec()
+	_press.long_done = false
+	_dragging = false
+	_scrolling = false
+	_scroll_start = _loot_view.scroll
+	get_viewport().set_input_as_handled()
+
+
+## Pieza bajo un punto de la pantalla: {"item", "from", "rot", "origin"}, o {} si no hay nada que coger.
+## En el botín vacío devuelve {"item": null, "from": &"loot"} para poder desplazarlo.
+func _piece_at(pos: Vector2) -> Dictionary:
+	for view in [_hero_view, _bag_view]:
+		var local: Vector2 = pos - view.global_position
+		if Rect2(Vector2.ZERO, view.size).has_point(local):
+			var item: CraftedItem = view.item_at_local(local)
+			if item:
+				return {"item": item, "from": item.place, "rot": item.rot, "origin": view.global_position + view.item_origin(item)}
+	var lp: Vector2 = pos - _loot_view.global_position
+	if Rect2(Vector2.ZERO, _loot_view.size).has_point(lp):
+		var slot: Dictionary = _loot_view.slot_at_local(lp)
+		if slot.is_empty():
+			return {"item": null, "from": InventoryManager.PLACE_LOOT, "rot": 0, "origin": pos}
+		var origin: Vector2 = _loot_view.global_position + slot.rect.position - Vector2(_loot_view.scroll, 0.0)
+		return {"item": slot.item, "from": InventoryManager.PLACE_LOOT, "rot": slot.rot, "origin": origin}
+	return {}
+
+
+func _on_motion(pos: Vector2) -> void:
+	if _press.is_empty():
+		return
+	get_viewport().set_input_as_handled()
+	if _dragging:
+		_drag_pos = pos
+		_update_target()
+		return
+	if _scrolling:
+		_loot_view.scroll = clampf(_scroll_start - (pos.x - _press.pos.x), 0.0, _loot_view.max_scroll())
+		_loot_view.queue_redraw()
+		return
+	var moved: Vector2 = pos - _press.pos
+	if moved.length() < DRAG_THRESHOLD:
+		return
+	var in_loot: bool = _press.from == InventoryManager.PLACE_LOOT
+	if _press.item == null or (in_loot and absf(moved.x) > absf(moved.y)):
+		_scrolling = true
+		_on_motion(pos)
+		return
+	_dragging = true
+	_drag_rot = int(_press.rot)
+	_drag_pos = pos
+	_set_hidden(_press.item)
+	_update_target()
+
+
+func _on_release(_pos: Vector2) -> void:
+	if _press.is_empty():
+		return
+	get_viewport().set_input_as_handled()
+	var item: CraftedItem = _press.item
+	if _dragging:
+		_drop(item)
+	elif not _scrolling and item and not _press.long_done:
+		_tap(item)
+	_cancel_press()
+
+
+## Pulsación larga: enseña la ficha de la pieza.
+func _process(_delta: float) -> void:
+	if _press.is_empty() or _dragging or _scrolling or _press.item == null or _press.long_done:
+		return
+	if Time.get_ticks_msec() - int(_press.time) >= LONG_PRESS_MS:
+		_press.long_done = true
+		_selected = _press.item
+		_refresh_ficha()
+
+
+func _cancel_press() -> void:
+	_press = {}
+	_dragging = false
+	_scrolling = false
+	_target = {}
+	_set_hidden(null)
+	_clear_highlights()
+	if _im and is_node_ready():
+		_refresh_stats({})
+	_ghost_layer.queue_redraw()
+
+
+func _set_hidden(item: CraftedItem) -> void:
+	_hero_view.hidden_item = item
+	_bag_view.hidden_item = item
+	_loot_view.hidden_item = item
+	_hero_view.queue_redraw()
+	_bag_view.queue_redraw()
+	_loot_view.queue_redraw()
+
+
+func _clear_highlights() -> void:
+	for view in [_hero_view, _bag_view]:
+		view.drop_cells = {}
+		view.swap_item = null
+		view.glow = {}
+		view.queue_redraw()
+
+
+## Toque: en una rejilla gira la pieza (si no cabe girada, tiembla); en el botín solo la enseña.
+func _tap(item: CraftedItem) -> void:
+	_selected = item
+	if item.place != InventoryManager.PLACE_LOOT and not _im.rotate_in_place(item):
+		(_hero_view if item.place == InventoryManager.PLACE_HERO else _bag_view).start_shake(item)
+		Sfx.play(&"ui_tap", 0.0, 0.55)
+	_refresh()
+
+
+func _rotate_drag() -> void:
+	_drag_rot = (_drag_rot + 1) % 4
+	_target = {"rotated": true}  # distinto de cualquier destino: fuerza a volver a enseñarlo
+	_update_target()
+
+
+## Esquina de la caja de la pieza que se arrastra: donde la cogió el dedo, una casilla más arriba para
+## que el dedo no tape el destino.
+func _ghost_origin() -> Vector2:
+	var grab: Vector2 = _press.origin - _press.pos
+	return _drag_pos + grab + Vector2(0.0, -CELL)
+
+
+## Busca el destino bajo la pieza (el centro de la primera casilla de su caja) y lo enseña.
+func _update_target() -> void:
+	var item: CraftedItem = _press.item
+	var t := {}
+	if _loot_view.get_global_rect().has_point(_drag_pos):
+		t = {"place": InventoryManager.PLACE_LOOT, "ok": true}
+	else:
+		var anchor := _ghost_origin() + Vector2(CELL, CELL) * 0.5
+		for view in [_hero_view, _bag_view]:
+			var local: Vector2 = anchor - view.global_position
+			if not Rect2(Vector2.ZERO, view.size).has_point(local):
+				continue
+			var place: StringName = InventoryManager.PLACE_HERO if view == _hero_view else InventoryManager.PLACE_BAG
+			var cell: Vector2i = view.cell_at(local)
+			var res: Dictionary = _im.drop_result(item, place, cell, _drag_rot)
+			t = {"place": place, "cell": cell, "ok": res.ok, "swap": res.swap, "view": view}
+			break
+	if t != _target:
+		_target = t
+		_show_target()
+	_ghost_layer.queue_redraw()
+
+
+func _show_target() -> void:
+	_clear_highlights()
+	var item: CraftedItem = _press.item
+	var preview := {}
+	if _target.has("view"):
+		var view: GearGridView = _target.view
+		var fp := PieceShape.of_item(item, _drag_rot)
+		var color := GearGridView.COLOR_OK if _target.ok else GearGridView.COLOR_BAD
+		for c in fp.clean + fp.aristas:
+			var cell: Vector2i = _target.cell + c
+			if view.grid.in_bounds(cell):
+				view.drop_cells[cell] = color
+		view.swap_item = _target.swap
+		if _target.ok:
+			var sim: GearGrid = _im.simulate_hero_grid(item, _target.place, _target.cell, _drag_rot)
+			preview = {"totals": GearAuras.totals(sim), "powers": LegendaryPowers.active(sim.items)}
+			_hero_view.glow = _aura_changes(_im.hero_bonuses(), GearAuras.bonuses(sim))
+	elif not _target.is_empty() and item.place == InventoryManager.PLACE_HERO:
+		# Sacarla de Tico (al botín o, en la tarea 10, a la venta): la vista previa es sin ella
+		var sim2: GearGrid = _im.simulate_hero_grid(item, InventoryManager.PLACE_LOOT, Vector2i.ZERO, 0)
+		preview = {"totals": GearAuras.totals(sim2), "powers": LegendaryPowers.active(sim2.items)}
+		_hero_view.glow = _aura_changes(_im.hero_bonuses(), GearAuras.bonuses(sim2))
+	_refresh_stats(preview)
+	for view in [_hero_view, _bag_view]:
+		view.queue_redraw()
+
+
+## Piezas de Tico que ganarían (verde) o perderían (rojo) aumento con el arrastre.
+func _aura_changes(before: Dictionary, after: Dictionary) -> Dictionary:
+	var out := {}
+	for item in after:
+		if item == _press.item:
+			continue
+		var d := _sum(after[item]) - _sum(before.get(item, {}))
+		if d > 0.001:
+			out[item] = GearGridView.COLOR_GAIN
+		elif d < -0.001:
+			out[item] = GearGridView.COLOR_LOSS
+	return out
+
+
+func _sum(pct: Dictionary) -> float:
+	var s := 0.0
+	for k in pct:
+		s += float(pct[k])
+	return s
+
+
+func _drop(item: CraftedItem) -> void:
+	if _target.is_empty() or not _target.get("ok", false):
+		return  # vuelve a su sitio
+	var place: StringName = _target.place
+	var from_place := item.place
+	var from_cell := item.cell
+	var from_rot := item.rot
+	if _im.move_item(item, place, _target.get("cell", Vector2i.ZERO), _drag_rot):
+		_selected = item
+		_refresh_ficha()  # el aviso del movimiento llega antes de elegirla
+		# Soltarla donde ya estaba vale, pero no mueve nada: ni clinc ni materialización
+		var moved := item.place != from_place or item.cell != from_cell or item.rot != from_rot
+		if moved and place == InventoryManager.PLACE_HERO:
+			Sfx.play(&"equip_clink")
+			if _puppet:
+				_puppet.set("_materialize", 0.55)
+
+
+func _draw_ghost() -> void:
+	if not _dragging or _press.is_empty():
+		return
+	GearGridView.draw_piece_at(_ghost_layer, _press.item, _ghost_origin(), _drag_rot, CELL, 0.85, _hero_view.sprite_for)
