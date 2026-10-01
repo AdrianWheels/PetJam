@@ -56,7 +56,7 @@
 
 - **Godot:** siempre 4.5.1 (`D:/Software/Godot/godot_ver4.5.exe`), nunca `godot.exe` (4.7), y siempre a través del lanzador `bash D:/Proyectos/PetJam-inventario/.superpowers/sdd/2026-09-27-inventario-en-rejilla/godot-run.sh`.
   - El lanzador añade `--headless --path` al worktree (sin `--headless` con `GODOT_WINDOW=1`, para las capturas) y un `timeout` de 300 s (`GODOT_TIMEOUT` para cambiarlo).
-  - Copia `save.json` antes y lo restaura si cambia. También deshace la reescritura de `default_bus_layout.tres`.
+  - Aísla la partida: Godot saca `user://` de `APPDATA`, y el lanzador usa una carpeta propia (`appdata/`, junto a él) con una copia fresca de la partida real. Las pruebas y las capturas ven datos reales, pero nunca escriben el `save.json` del usuario, aunque esté jugando a la vez. También deshace la reescritura de `default_bus_layout.tres`.
   - Donde un paso diga `D:/Software/Godot/godot_ver4.5.exe --headless --path . <argumentos>`, ejecuta `bash D:/Proyectos/PetJam-inventario/.superpowers/sdd/2026-09-27-inventario-en-rejilla/godot-run.sh <argumentos>`.
   - Tras crear scripts con `class_name`, recursos o PNG nuevos: `bash D:/Proyectos/PetJam-inventario/.superpowers/sdd/2026-09-27-inventario-en-rejilla/godot-run.sh --import`.
 - **Código:** GDScript con tabuladores y comentarios en español. Sin autoloads nuevos ni plugins.
@@ -66,7 +66,7 @@
   - Antes de añadir una fila, comprueba con `grep -n "^<texto>," locale/textos.csv` que no existe.
   - Tras editar el CSV: `D:/Software/Godot/godot_ver4.5.exe --headless --path . --import`.
   - Los textos de la franja (scripts de `TextTests.STRIP_SCRIPTS`) usan solo caracteres de `PixelFont`: A-Z, ÁÉÍÓÚÜÑ, cifras y ! ¡ ? ¿ . , : ; - + / ( ) % ' · ×.
-- **Partida del usuario:** `%APPDATA%/Godot/app_userdata/PetJam/save.json` la comparten todos los worktrees. El lanzador la protege. Si algo la cambia de todas formas, para y avisa. El 2026-10-01 una batería sin `art/assets` la dejó vacía, y se restauró desde la copia.
+- **Partida del usuario:** `%APPDATA%/Godot/app_userdata/PetJam/save.json` la comparten todos los worktrees, y el usuario puede estar jugando. Con el lanzador nunca se escribe; no hace falta copiarla ni restaurarla a mano, aunque algún paso del plan lo diga. El 2026-10-01 una batería sin `art/assets` y sin el lanzador la dejó vacía, y se restauró desde la copia.
 - **Commits:** sin Co-Authored-By, añadiendo los ficheros por su ruta (nunca `git add -A`). Nunca entran `art/assets` (enlace) ni `default_bus_layout.tres`.
 - **Arte:** aplazado al final, por decisión del usuario (2026-10-01): es un prototipo personal y los estilos pueden mezclarse mientras tanto. Las piezas se dibujan con casillas de color (tarea 8) y las tareas 14 y 15 no tienen nada que hacer.
 - **Medidas:** casillas de 110 px de pantalla.
