@@ -1023,6 +1023,8 @@ git add scripts/core/GearAuras.gd scripts/core/GearAuras.gd.uid scripts/tests/In
 git commit -m "feat: auras entre vecinas, zonas del cuerpo y tope (GearAuras)"
 ```
 
+**Nota tras la revisión (2026-10-01):** `bonuses()` solo apunta las estadísticas que la pieza tiene, tanto la zona como las auras (spec 4.1). La prueba de las claves de `totals()` compara con la lista literal. El código bueno está en el commit 862fd79; el de arriba es la primera versión.
+
 ---
 
 ### Task 4: Habilidades legendarias: datos y multiplicadores (`LegendaryPowers`)
