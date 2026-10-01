@@ -779,3 +779,37 @@ func test_older_save_migrates_without_a_warning() -> void:
 	check(captured.messages.any(func(m): return "versión 1" in m and "se migra" in m), "el registro dice que la migra (%d mensajes)" % captured.messages.size())
 	check(captured.warnings == 0, "y no avisa (%d avisos)" % captured.warnings)
 	await _reload_user_save()
+
+
+# ─── Tarea 8: vistas de rejilla y botín ────────────────────────────────
+
+func test_grid_view_maps_points_to_cells_and_pieces() -> void:
+	var g := GearGrid.new(Vector2i(4, 4))
+	var sword := _piece(&"sword_advanced")
+	g.place(sword, Vector2i(2, 1), 0)
+	var view := GearGridView.new()
+	add_child(view)
+	view.setup(g, Vector2i(6, 6))
+	check(view.size == Vector2(660, 660), "la rejilla dibuja 6×6 casillas de 110 px (%s)" % view.size)
+	check(view.cell_at(Vector2(230, 120)) == Vector2i(2, 1), "un punto cae en su casilla")
+	check(view.item_at_local(Vector2(240, 350)) == sword and view.item_at_local(Vector2(10, 10)) == null, "encuentra la pieza bajo el dedo")
+	check(view.item_origin(sword) == Vector2(220, 110), "esquina de la pieza en píxeles")
+	view.queue_free()
+
+
+func test_loot_strip_lays_pieces_flat_and_scrolls() -> void:
+	var tall := _piece(&"sword_masterwork")  # 1×4: tumbada ocupa 4×1
+	var strip := LootStripView.new()
+	strip.size = Vector2(960, 330)
+	add_child(strip)
+	var list := [tall]
+	for i in 5:
+		list.append(_piece(&"shield_master"))
+	strip.set_items(list)
+	check(LootStripView.flat_rot(tall) == 1, "la espada se enseña tumbada")
+	var first: Dictionary = strip.slot_at_local(Vector2(40, 165))
+	check(first.get("item") == tall and first.get("rot") == 1, "la primera pieza, a la izquierda")
+	check(strip.max_scroll() > 0.0, "si no cabe todo, se desplaza (%.0f)" % strip.max_scroll())
+	strip.scroll = strip.max_scroll()
+	check(strip.slot_at_local(Vector2(900, 165)).get("item") == list.back(), "desplazada, la última queda a la derecha")
+	strip.queue_free()
