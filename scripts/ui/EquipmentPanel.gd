@@ -6,12 +6,14 @@ extends ColorRect
 ## sprite (con los consumibles al lado), botín, mochila y zona de venta.
 ## El dedo lo lleva este panel, en _input:
 ##  - tocar una pieza de una rejilla la gira (si girada no cabe, tiembla); en el botín solo la enseña;
-##  - mantener pulsado enseña su ficha (la completa, con botones, llega en la tarea 10);
+##  - mantener pulsado abre su ficha completa, con los botones A la mochila, Al botín, Vender y Cerrar;
 ##  - arrastrar la mueve: la pieza va una casilla por encima del dedo y un segundo dedo la gira;
+##  - soltarla en la zona de venta la vende (las Épicas y Legendarias piden confirmación);
 ##  - en el botín, de lado se desplaza la tira; hacia arriba o abajo se coge la pieza.
 ## En el ordenador el ratón hace lo mismo, y la rueda o la tecla R giran la pieza que se arrastra.
 ## Atrás (Android) llega como NOTIFICATION_WM_GO_BACK_REQUEST, no como tecla, y el árbol cierra el juego si
-## quit_on_go_back es true: mientras el panel está abierto lo apaga y Atrás cierra el panel (ver _notification).
+## quit_on_go_back es true: mientras el panel está abierto lo apaga. Atrás y Escape cierran lo de más arriba: la
+## confirmación, si no la ficha y, si no, el panel (ver _back).
 
 signal panel_closed
 
@@ -45,10 +47,19 @@ var _next_label: Label
 var _ghost_layer: Control
 var _puppet: Node2D
 var _selected: CraftedItem = null
+## Ficha completa (pulsación larga) y confirmación: capas oscuras a pantalla completa con un panel en el centro.
+## La confirmación guarda lo que hará si se dice que sí.
+var _card: ColorRect
+var _card_text: RichTextLabel
+var _card_sell_btn: Button
+var _card_item: CraftedItem = null
+var _confirm_box: ColorRect
+var _confirm_text: Label
+var _confirm_action: Callable = Callable()
 
-## Pulsación en curso: {"item", "from", "rot", "origin", "pos", "time", "long_done"}; {} si no hay.
+## Pulsación en curso: {"item", "from", "rot", "origin", "pos", "time"}; {} si no hay.
 ## "origin" es la esquina de la caja de la pieza en la pantalla al pulsar. "item" es null si se pulsa el
-## botín vacío (solo para desplazarlo).
+## botín vacío (solo para desplazarlo). La pulsación larga la termina (abre la ficha).
 var _press := {}
 var _dragging := false
 var _scrolling := false
@@ -100,7 +111,10 @@ func _build() -> void:
 	_ghost_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_ghost_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ghost_layer.draw.connect(_draw_ghost)
-	add_child(_ghost_layer)  # el último: se dibuja encima de todo
+	add_child(_ghost_layer)  # encima de rejillas y botín; la ficha y la confirmación, creadas después, van sobre él (con ellas no se arrastra)
+	_build_card()
+	_build_confirm()
+	sell_all_btn.pressed.connect(_on_sell_all)
 
 
 func _grid_view(pos: Vector2) -> GearGridView:
@@ -139,7 +153,10 @@ func _puppet_setup() -> void:
 
 func open() -> void:
 	if is_node_ready():
-		_cancel_press()  # por si algo ocultó el panel sin pasar por close() en mitad de un arrastre
+		# Por si algo ocultó el panel sin pasar por close(): ni arrastre, ni ficha, ni confirmación de la vez anterior
+		_cancel_press()
+		_close_card()
+		_close_confirm()
 	visible = true
 	_hold_go_back()
 	_refresh()
@@ -150,6 +167,8 @@ func open() -> void:
 
 func close() -> void:
 	_cancel_press()
+	_close_card()
+	_close_confirm()
 	visible = false
 	_release_go_back()
 	if _puppet:
@@ -163,13 +182,24 @@ func close() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
 		if is_visible_in_tree():
-			close()
+			_back()
 	elif what == NOTIFICATION_VISIBILITY_CHANGED:
 		# También si algo oculta el panel sin pasar por close(), o lo oculta un ancestro suyo
 		if is_visible_in_tree():
 			_hold_go_back()
 		else:
 			_release_go_back()
+
+
+## Atrás (Android) y Escape: cierran lo que esté más arriba. Primero la confirmación (y su acción se olvida), si no la
+## ficha y, si no hay ninguna, el panel.
+func _back() -> void:
+	if _confirm_box.visible:
+		_close_confirm()
+	elif _card.visible:
+		_close_card()
+	else:
+		close()
 
 
 func _exit_tree() -> void:
@@ -327,7 +357,7 @@ func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree():
 		return
 	if event.is_action_pressed("ui_cancel"):
-		close()
+		_back()
 		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
@@ -349,13 +379,14 @@ func _input(event: InputEvent) -> void:
 
 
 func _on_press(pos: Vector2) -> void:
+	if _card.visible or _confirm_box.visible:
+		return  # con la ficha o la confirmación abiertas, el dedo es de sus botones
 	var hit := _piece_at(pos)
 	if hit.is_empty():
 		return  # botones y fondo: sigue su camino
 	_press = hit
 	_press.pos = pos
 	_press.time = Time.get_ticks_msec()
-	_press.long_done = false
 	_dragging = false
 	_scrolling = false
 	_scroll_start = _loot_view.scroll
@@ -415,19 +446,21 @@ func _on_release(_pos: Vector2) -> void:
 	var item: CraftedItem = _press.item
 	if _dragging:
 		_drop(item)
-	elif not _scrolling and item and not _press.long_done:
+	elif not _scrolling and item:
 		_tap(item)
 	_cancel_press()
 
 
-## Pulsación larga: enseña la ficha de la pieza.
+## Pulsación larga: abre la ficha completa de la pieza y termina la pulsación, para que mover el dedo después no
+## arrastre la pieza por debajo de la ficha ni soltarlo la gire.
 func _process(_delta: float) -> void:
-	if _press.is_empty() or _dragging or _scrolling or _press.item == null or _press.long_done:
+	if _press.is_empty() or _dragging or _scrolling or _press.item == null:
 		return
 	if Time.get_ticks_msec() - int(_press.time) >= LONG_PRESS_MS:
-		_press.long_done = true
 		_selected = _press.item
 		_refresh_ficha()
+		_open_card(_press.item)
+		_cancel_press()
 
 
 func _cancel_press() -> void:
@@ -437,6 +470,8 @@ func _cancel_press() -> void:
 	_target = {}
 	_set_hidden(null)
 	_clear_highlights()
+	sell_label.text = tr("Suelta aquí para vender")
+	sell_zone.modulate = Color.WHITE
 	if _im and is_node_ready():
 		_refresh_stats({})
 	_ghost_layer.queue_redraw()
@@ -481,24 +516,28 @@ func _ghost_origin() -> Vector2:
 	return _drag_pos + grab + Vector2(0.0, -CELL)
 
 
-## Busca el destino bajo la pieza (el centro de la primera casilla de su caja) y lo enseña. Manda la pieza, no el
-## dedo: primero las rejillas, por la casilla que hay bajo ella (solo cuentan las que ya existen, no las punteadas,
-## que sobre una rejilla pequeña taparían el botín); si no hay ninguna, el botín, por el dedo.
+## Busca el destino y lo enseña. Primero la zona de venta, por el dedo: con el dedo en ella, la parte cogida ya está fuera
+## de la mochila, pero una pieza ancha puede tener aún su primera casilla encima de ella y saldría un rojo. Después las
+## rejillas, por la casilla que hay bajo la pieza (el centro de la primera casilla de su caja; solo cuentan las que ya
+## existen, no las punteadas, que sobre una rejilla pequeña taparían el botín). Si no hay ninguna, el botín, por el dedo.
 func _update_target() -> void:
 	var item: CraftedItem = _press.item
 	var t := {}
-	var anchor := _ghost_origin() + Vector2(CELL, CELL) * 0.5
-	for view in [_hero_view, _bag_view]:
-		var local: Vector2 = anchor - view.global_position
-		if not Rect2(Vector2.ZERO, view.size).has_point(local):
-			continue
-		var cell: Vector2i = view.cell_at(local)
-		if not view.grid.in_bounds(cell):
-			continue
-		var place: StringName = InventoryManager.PLACE_HERO if view == _hero_view else InventoryManager.PLACE_BAG
-		var res: Dictionary = _im.drop_result(item, place, cell, _drag_rot)
-		t = {"place": place, "cell": cell, "ok": res.ok, "swap": res.swap, "view": view}
-		break
+	if sell_zone.get_global_rect().has_point(_drag_pos):
+		t = {"place": &"sell", "ok": true}
+	if t.is_empty():
+		var anchor := _ghost_origin() + Vector2(CELL, CELL) * 0.5
+		for view in [_hero_view, _bag_view]:
+			var local: Vector2 = anchor - view.global_position
+			if not Rect2(Vector2.ZERO, view.size).has_point(local):
+				continue
+			var cell: Vector2i = view.cell_at(local)
+			if not view.grid.in_bounds(cell):
+				continue
+			var place: StringName = InventoryManager.PLACE_HERO if view == _hero_view else InventoryManager.PLACE_BAG
+			var res: Dictionary = _im.drop_result(item, place, cell, _drag_rot)
+			t = {"place": place, "cell": cell, "ok": res.ok, "swap": res.swap, "view": view}
+			break
 	if t.is_empty() and _loot_view.get_global_rect().has_point(_drag_pos):
 		t = {"place": InventoryManager.PLACE_LOOT, "ok": true}
 	if t != _target:
@@ -525,10 +564,14 @@ func _show_target() -> void:
 			preview = {"totals": GearAuras.totals(sim), "powers": LegendaryPowers.active(sim.items)}
 			_hero_view.glow = _aura_changes(_im.hero_bonuses(), GearAuras.bonuses(sim))
 	elif not _target.is_empty() and item.place == InventoryManager.PLACE_HERO:
-		# Sacarla de Tico (al botín o, en la tarea 10, a la venta): la vista previa es sin ella
+		# Sacarla de Tico (al botín o a la venta): la vista previa es sin ella
 		var sim2: GearGrid = _im.simulate_hero_grid(item, InventoryManager.PLACE_LOOT, Vector2i.ZERO, 0)
 		preview = {"totals": GearAuras.totals(sim2), "powers": LegendaryPowers.active(sim2.items)}
 		_hero_view.glow = _aura_changes(_im.hero_bonuses(), GearAuras.bonuses(sim2))
+	# La zona de venta enseña lo que daría la pieza mientras está encima
+	var selling: bool = _target.get("place", &"") == &"sell"
+	sell_label.text = tr("Vender por %d de oro") % item.get_sell_price() if selling else tr("Suelta aquí para vender")
+	sell_zone.modulate = Color(1.4, 1.25, 0.8) if selling else Color.WHITE
 	_refresh_stats(preview)
 	for view in [_hero_view, _bag_view]:
 		view.queue_redraw()
@@ -558,6 +601,9 @@ func _sum(pct: Dictionary) -> float:
 func _drop(item: CraftedItem) -> void:
 	if _target.is_empty() or not _target.get("ok", false):
 		return  # vuelve a su sitio
+	if _target.place == &"sell":
+		_sell(item)
+		return
 	var place: StringName = _target.place
 	var from_place := item.place
 	var from_cell := item.cell
@@ -577,3 +623,159 @@ func _draw_ghost() -> void:
 	if not _dragging or _press.is_empty():
 		return
 	GearGridView.draw_piece_at(_ghost_layer, _press.item, _ghost_origin(), _drag_rot, CELL, 0.85, _hero_view.sprite_for)
+
+# ═══════════════════════════════════════════════════════════════════
+#  FICHA COMPLETA, CONFIRMACIÓN Y VENTA
+# ═══════════════════════════════════════════════════════════════════
+
+## Capa oscura a pantalla completa con un panel centrado; la usan la ficha y la confirmación.
+## Devuelve [la capa, la caja vertical del panel].
+func _overlay(top: float) -> Array:
+	var shade := ColorRect.new()
+	shade.color = Color(0, 0, 0, 0.6)
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_STOP
+	shade.visible = false
+	add_child(shade)
+	var panel := PanelContainer.new()
+	panel.position = Vector2(90, top)
+	panel.custom_minimum_size = Vector2(900, 0)
+	shade.add_child(panel)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 18)
+	panel.add_child(box)
+	return [shade, box]
+
+
+func _button(text: String, action: Callable) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.custom_minimum_size = Vector2(200, 96)
+	b.add_theme_font_size_override("font_size", 26)
+	b.pressed.connect(action)
+	return b
+
+
+func _build_card() -> void:
+	var parts := _overlay(560)
+	_card = parts[0]
+	_card_text = RichTextLabel.new()
+	_card_text.bbcode_enabled = true
+	_card_text.fit_content = true
+	_card_text.custom_minimum_size = Vector2(860, 0)
+	_card_text.add_theme_font_size_override("normal_font_size", 28)
+	parts[1].add_child(_card_text)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 14)
+	parts[1].add_child(row)
+	row.add_child(_button(tr("A la mochila"), _card_to_bag))
+	row.add_child(_button(tr("Al botín"), _card_to_loot))
+	_card_sell_btn = _button(tr("Vender"), _card_sell)
+	row.add_child(_card_sell_btn)
+	row.add_child(_button(tr("Cerrar"), _close_card))
+
+
+func _build_confirm() -> void:
+	var parts := _overlay(760)
+	_confirm_box = parts[0]
+	_confirm_text = Label.new()
+	_confirm_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_confirm_text.custom_minimum_size = Vector2(860, 0)
+	_confirm_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_confirm_text.add_theme_font_size_override("font_size", 30)
+	parts[1].add_child(_confirm_text)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 40)
+	parts[1].add_child(row)
+	row.add_child(_button(tr("Sí"), _on_confirm_yes))
+	row.add_child(_button(tr("No"), _close_confirm))
+
+
+## Ficha completa de una pieza (pulsación larga): su ficha breve y qué se puede hacer con ella.
+func _open_card(item: CraftedItem) -> void:
+	_card_item = item
+	var aristas := tr("Sin aristas") if item.aristas.is_empty() else tr("Aristas: %d") % item.aristas.size()
+	_card_text.text = "%s\n[color=#a89a86]%s[/color]" % [_ficha_text(item), aristas]
+	_card_sell_btn.text = tr("Vender por %d") % item.get_sell_price()
+	_card.visible = true
+
+
+func _close_card() -> void:
+	_card.visible = false
+	_card_item = null
+
+
+func _card_to_bag() -> void:
+	var item := _card_item
+	_close_card()
+	if item == null or item.place == InventoryManager.PLACE_BAG:
+		return
+	var spot := GearPacker.find_spot(_im.bag_grid, item, false)
+	if spot.is_empty() or not _im.move_item(item, InventoryManager.PLACE_BAG, spot.cell, spot.rot):
+		Sfx.play(&"ui_tap", 0.0, 0.55)  # la mochila está llena
+
+
+func _card_to_loot() -> void:
+	var item := _card_item
+	_close_card()
+	if item:
+		_im.move_item(item, InventoryManager.PLACE_LOOT)
+
+
+func _card_sell() -> void:
+	var item := _card_item
+	_close_card()
+	if item:
+		_sell(item)
+
+
+## Pregunta antes de hacer algo que no se deshace.
+func _confirm(text: String, action: Callable) -> void:
+	_confirm_text.text = text
+	_confirm_action = action
+	_confirm_box.visible = true
+
+
+## Cierra la confirmación sin hacer nada y se olvida de su acción (No, Atrás y cerrar el panel).
+func _close_confirm() -> void:
+	_confirm_box.visible = false
+	_confirm_action = Callable()
+
+
+func _on_confirm_yes() -> void:
+	var action := _confirm_action
+	_close_confirm()  # antes de actuar: si la acción pregunta otra cosa, esa pregunta se queda
+	if action.is_valid():
+		action.call()
+
+
+## Venta desde la zona de venta o la ficha: las Épicas y las Legendarias piden confirmación.
+func _sell(item: CraftedItem) -> void:
+	if item.get_quality_tier() in ["epic", "legendary"]:
+		_confirm(tr("¿Vender %s por %d de oro?") % [item.get_name_with_rank(), item.get_sell_price()], func(): _do_sell(item))
+	else:
+		_do_sell(item)
+
+
+func _do_sell(item: CraftedItem) -> void:
+	if _im.sell_item(item) > 0:
+		Sfx.play(&"loot_coins")
+	_refresh()
+
+
+## "Vender todo": el botín salvo las Épicas y las Legendarias, tras confirmar con el total.
+func _on_sell_all() -> void:
+	var items: Array = _im.sellable_loot()
+	if items.is_empty():
+		Sfx.play(&"ui_tap", 0.0, 0.55)
+		return
+	var total := 0
+	for item in items:
+		total += item.get_sell_price()
+	_confirm(tr("¿Vender %d piezas del botín por %d de oro? Las Épicas y Legendarias se quedan.") % [items.size(), total], func():
+		if _im.sell_all_loot() > 0:
+			Sfx.play(&"loot_coins")
+		_refresh()
+	)

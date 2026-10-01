@@ -275,3 +275,14 @@ Suelta aquí para vender,Suelta aquí para vender,Drop here to sell
 Velocidad %.2f,Velocidad %.2f,Speed %.2f
 Toca una pieza para verla; arrástrala para colocarla,Toca una pieza para verla; arrástrala para colocarla,Tap a piece to see it; drag it to place it
 La rejilla crece al vencer al jefe de la sala %d,La rejilla crece al vencer al jefe de la sala %d,The grid grows when you beat the boss of room %d
+A la mochila,A la mochila,To backpack
+Al botín,Al botín,To loot
+Cerrar,Cerrar,Close
+Sí,Sí,Yes
+No,No,No
+Sin aristas,Sin aristas,No rough edges
+Aristas: %d,Aristas: %d,Rough edges: %d
+Vender por %d,Vender por %d,Sell for %d
+Vender por %d de oro,Vender por %d de oro,Sell for %d gold
+¿Vender %s por %d de oro?,¿Vender %s por %d de oro?,Sell %s for %d gold?
+¿Vender %d piezas del botín por %d de oro? Las Épicas y Legendarias se quedan.,¿Vender %d piezas del botín por %d de oro? Las Épicas y Legendarias se quedan.,Sell %d loot pieces for %d gold? Epic and Legendary pieces stay.

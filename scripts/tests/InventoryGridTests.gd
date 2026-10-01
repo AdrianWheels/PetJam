@@ -1218,3 +1218,324 @@ func test_a_hidden_ancestor_stops_the_panel_reading_the_finger() -> void:
 	_mouse(panel, p, false)
 	holder.queue_free()
 	await _restore_inventory(saved)
+
+
+# ─── Tarea 10: ficha, venta e insignia ─────────────────────────────────
+
+func _long_press(panel: Control, pos: Vector2) -> void:
+	_mouse(panel, pos, true)
+	panel._press.time = Time.get_ticks_msec() - 1000  # como si llevara 1 s pulsada
+	panel._process(0.0)
+
+
+func test_long_press_opens_the_card() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var helmet := _piece(&"helmet_advanced", 1.0)
+	im.add_crafted_item(helmet)
+	im.move_item(helmet, &"hero", Vector2i(0, 0), 0)
+	var panel := _new_panel()
+	var p := _cell_center(panel._hero_view, Vector2i(0, 0))
+	_long_press(panel, p)
+	check(panel._card.visible and panel._card_item == helmet, "mantener pulsado abre la ficha completa")
+	check(panel._card_text.text.contains(tr("Regeneración")), "la ficha enseña la habilidad legendaria (%s)" % panel._card_text.text)
+	_mouse(panel, p, false)
+	check(helmet.rot == 0, "soltar tras la pulsación larga no gira")
+	panel._card_to_bag()
+	check(helmet.place == &"bag" and not panel._card.visible, "A la mochila la manda al primer hueco libre y cierra")
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+func test_sell_zone_sells_and_asks_for_the_best() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var plain := _piece(&"boots_basic", 0.3)
+	var epic := _piece(&"boots_basic", 0.95)
+	for p in [plain, epic]:
+		im.add_crafted_item(p)
+	im.move_item(plain, &"bag", Vector2i(0, 0), 0)
+	im.move_item(epic, &"bag", Vector2i(2, 0), 0)
+	var panel := _new_panel()
+	var sell_point: Vector2 = panel.sell_zone.get_global_rect().get_center()
+	for item in [plain, epic]:
+		var start := _cell_center(panel._bag_view, item.cell)
+		_mouse(panel, start, true)
+		_move(panel, start + Vector2(0, -40))
+		_move(panel, sell_point)
+		check(panel._target.get("place") == &"sell", "sobre la zona de venta")
+		check(panel.sell_label.text.contains(str(item.get_sell_price())), "la zona enseña el precio (%s)" % panel.sell_label.text)
+		_mouse(panel, sell_point, false)
+	check(not (plain in im.get_crafted_items()), "la pieza normal se vende al soltarla")
+	check(epic in im.get_crafted_items() and panel._confirm_box.visible, "la épica pide confirmación antes")
+	var gold: int = im.get_quantity(&"gold")
+	panel._on_confirm_yes()
+	check(not (epic in im.get_crafted_items()) and im.get_quantity(&"gold") == gold + epic.get_sell_price(), "al confirmar, se vende")
+	await _silence_sounds()
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+func test_sell_all_asks_and_keeps_the_best() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var a := _piece(&"sword_basic", 0.2)
+	var b := _piece(&"sword_basic", 0.5)
+	var legend := _piece(&"sword_basic", 1.0)
+	for p in [a, b, legend]:
+		im.add_crafted_item(p)
+	var panel := _new_panel()
+	panel._on_sell_all()
+	check(panel._confirm_box.visible and panel._confirm_text.text.contains(str(a.get_sell_price() + b.get_sell_price())), "pide confirmación con el total (%s)" % panel._confirm_text.text)
+	check(im.get_loot().size() == 3, "sin confirmar no vende nada")
+	panel._on_confirm_yes()
+	check(im.get_loot() == [legend], "vende todo salvo la legendaria")
+	await _silence_sounds()
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+## Con solo lo mejor en el botín, Vender todo no tiene nada que vender y no pregunta.
+func test_sell_all_does_not_ask_when_only_the_best_is_left() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	im.add_crafted_item(_piece(&"sword_basic", 0.95))
+	var panel := _new_panel()
+	panel._on_sell_all()
+	check(not panel._confirm_box.visible, "con solo una épica en el botín no se pregunta")
+	check(im.get_loot().size() == 1, "y el botín queda como estaba")
+	await _silence_sounds()
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+## La pulsación larga termina la pulsación: si el dedo se mueve después, no arrastra la pieza por debajo de la ficha.
+func test_long_press_ends_the_press() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var sword := _piece(&"sword_advanced")  # 1×3
+	im.add_crafted_item(sword)
+	im.move_item(sword, &"hero", Vector2i(1, 0), 0)
+	var panel := _new_panel()
+	var p := _cell_center(panel._hero_view, Vector2i(1, 1))
+	_long_press(panel, p)
+	check(panel._card.visible and panel._card_item == sword, "la pulsación larga abre la ficha")
+	check(panel._press.is_empty() and panel._selected == sword, "y termina la pulsación, con la pieza elegida en la ficha breve")
+	_move(panel, p + Vector2(60, -60))
+	check(not panel._dragging and panel._hero_view.hidden_item == null, "mover el dedo después no arrastra nada")
+	_mouse(panel, p + Vector2(60, -60), false)
+	check(sword.cell == Vector2i(1, 0) and sword.rot == 0 and panel._card.visible, "soltar no mueve ni gira la pieza, y la ficha sigue abierta")
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+## Vender una pieza de Tico arrastrándola a la zona de venta. La venta ocurre dentro de _drop, con el arrastre aún en
+## marcha: el refresco que provoca recalcula el destino con la pieza ya vendida (sin errores).
+func test_dragging_a_piece_of_tico_to_the_sell_zone_sells_it() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var sword := _piece(&"sword_basic", 0.3)  # normal: se vende sin preguntar
+	im.add_crafted_item(sword)
+	im.move_item(sword, &"hero", Vector2i(1, 0), 0)
+	var panel := _new_panel()
+	var price := sword.get_sell_price()
+	var gold: int = im.get_quantity(&"gold")
+	var start := _cell_center(panel._hero_view, Vector2i(1, 0))
+	_mouse(panel, start, true)
+	_move(panel, start + Vector2(30, 0))
+	check(panel._dragging, "se coge la espada de Tico")
+	var sell_point: Vector2 = panel.sell_zone.get_global_rect().get_center()
+	_move(panel, sell_point)
+	check(panel._target.get("place") == &"sell" and panel._target.get("ok", false), "sobre la zona de venta (%s)" % [panel._target])
+	check("[color=" in panel._stats_label.text, "la barra enseña lo que perdería Tico (%s)" % panel._stats_label.text)
+	_mouse(panel, sell_point, false)
+	check(not (sword in im.get_crafted_items()) and not (sword in im.hero_grid.items) and im.get_hero_items().is_empty(), "la espada sale de Tico y del inventario")
+	check(im.get_quantity(&"gold") == gold + price, "el oro sube lo que valía (%d)" % im.get_quantity(&"gold"))
+	check(not panel._confirm_box.visible and not panel._dragging and panel._press.is_empty() and panel._target.is_empty(), "no queda nada a medias")
+	check(panel._hero_view.hidden_item == null and not ("[color=" in panel._stats_label.text), "la rejilla se ve entera y la barra, sin cambios")
+	await _silence_sounds()
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+## La zona de venta se mira primero y por el dedo: con el dedo en ella, una pieza ancha cogida por la derecha puede estar
+## aún sobre la mochila, y no por eso el destino es la mochila.
+func test_sell_zone_wins_over_the_bag_under_the_piece() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var helmet := _piece(&"helmet_master", 0.95)  # caja de 3×2
+	im.add_crafted_item(helmet)
+	im.move_item(helmet, &"bag", Vector2i(0, 0), 0)
+	var panel := _new_panel()
+	var start := _cell_center(panel._bag_view, Vector2i(2, 1))  # su casilla de abajo a la derecha
+	_mouse(panel, start, true)
+	_move(panel, start + Vector2(0, -30))
+	check(panel._dragging, "se coge el casco maestro por su extremo derecho")
+	_move(panel, panel.sell_zone.get_global_rect().position + Vector2(20, 250))  # en la zona, cerca de su borde izquierdo
+	var anchor: Vector2 = panel._ghost_origin() + Vector2(GearGridView.CELL, GearGridView.CELL) * 0.5
+	var under: Vector2i = panel._bag_view.cell_at(anchor - panel._bag_view.global_position)
+	check(panel._bag_view.grid.in_bounds(under), "la pieza sigue sobre una casilla de la mochila (%s)" % under)
+	check(panel._target.get("place") == &"sell", "pero el destino es la zona de venta (%s)" % [panel._target])
+	_move(panel, Vector2(540, 60))  # fuera de todo: se cancela
+	_mouse(panel, Vector2(540, 60), false)
+	check(helmet.place == &"bag" and helmet.cell == Vector2i(0, 0), "soltada fuera, la pieza vuelve a su sitio")
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+## La zona de venta enseña el precio y se ilumina solo mientras la pieza está sobre ella.
+func test_sell_zone_lights_up_only_while_the_piece_is_over_it() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var epic := _piece(&"helmet_basic", 0.95)  # épica: soltarla en la zona pregunta antes de vender
+	im.add_crafted_item(epic)
+	im.move_item(epic, &"bag", Vector2i(0, 0), 0)
+	var panel := _new_panel()
+	var idle: String = panel.sell_label.text
+	var inside: Vector2 = panel.sell_zone.get_global_rect().get_center()
+	var start := _cell_center(panel._bag_view, Vector2i(0, 0))
+	_mouse(panel, start, true)
+	_move(panel, start + Vector2(0, -40))
+	check(panel.sell_label.text == idle and panel.sell_zone.modulate == Color.WHITE, "arrastrando fuera de la zona, ni precio ni brillo")
+	_move(panel, inside)
+	check(panel.sell_label.text.contains(str(epic.get_sell_price())) and panel.sell_zone.modulate != Color.WHITE, "sobre la zona, el precio y el brillo")
+	_move(panel, start + Vector2(0, -40))
+	check(panel.sell_label.text == idle and panel.sell_zone.modulate == Color.WHITE, "al salir de la zona vuelve a ser la de siempre")
+	_move(panel, inside)
+	_mouse(panel, inside, false)
+	check(panel._confirm_box.visible and panel.sell_label.text == idle and panel.sell_zone.modulate == Color.WHITE, "al soltar vuelve a ser la de siempre, aunque se pida confirmar")
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+## Los botones de la ficha completa: Al botín, A la mochila (con y sin sitio) y Vender (con y sin confirmación).
+func test_card_buttons_send_and_sell() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var sword := _piece(&"sword_basic", 0.3)
+	var epic := _piece(&"helmet_basic", 0.95)
+	im.add_crafted_item(sword)
+	im.add_crafted_item(epic)
+	im.move_item(sword, &"hero", Vector2i(0, 0), 0)
+	var panel := _new_panel()
+	panel._open_card(sword)
+	check(panel._card_sell_btn.text.contains(str(sword.get_sell_price())), "el botón Vender enseña el precio (%s)" % panel._card_sell_btn.text)
+	check(panel._card_text.text.contains(tr("Sin aristas")), "la ficha dice cuántas aristas trae (%s)" % panel._card_text.text)
+	panel._card_to_loot()
+	check(sword.place == &"loot" and not panel._card.visible, "Al botín la saca de Tico y cierra la ficha")
+	panel._open_card(epic)
+	panel._card_sell()
+	check(not panel._card.visible and panel._confirm_box.visible and epic in im.get_crafted_items(), "vender una épica desde la ficha la cierra y pide confirmar")
+	panel._close_confirm()
+	var price := sword.get_sell_price()
+	var gold: int = im.get_quantity(&"gold")
+	panel._open_card(sword)
+	panel._card_sell()
+	check(not (sword in im.get_crafted_items()) and im.get_quantity(&"gold") == gold + price and not panel._confirm_box.visible, "vender una normal desde la ficha la vende sin preguntar")
+	for y in 4:
+		for x in 6:
+			var filler := _piece(&"helmet_basic", 0.5)
+			im.add_crafted_item(filler)
+			im.move_item(filler, &"bag", Vector2i(x, y), 0)
+	panel._open_card(epic)
+	panel._card_to_bag()
+	check(epic.place == &"loot" and not panel._card.visible, "con la mochila llena, A la mochila no mueve la pieza")
+	await _silence_sounds()
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+## Con la ficha o la confirmación abiertas el dedo es de sus botones: el panel no coge ni gira las piezas de debajo.
+func test_overlays_take_the_finger() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var sword := _piece(&"sword_advanced")  # 1×3
+	im.add_crafted_item(sword)
+	im.move_item(sword, &"hero", Vector2i(1, 0), 0)
+	var panel := _new_panel()
+	var p := _cell_center(panel._hero_view, Vector2i(1, 1))
+	panel._open_card(sword)
+	_mouse(panel, p, true)
+	_mouse(panel, p, false)
+	check(panel._press.is_empty() and sword.rot == 0, "con la ficha abierta, un toque sobre la pieza de debajo no hace nada")
+	panel._close_card()
+	panel._confirm("¿Seguro?", func(): pass)
+	_mouse(panel, p, true)
+	_mouse(panel, p, false)
+	check(panel._press.is_empty() and sword.rot == 0, "con la confirmación abierta, tampoco")
+	panel._close_confirm()
+	_mouse(panel, p, true)
+	_mouse(panel, p, false)
+	check(sword.rot == 1, "y con las dos cerradas el toque vuelve a girarla (%d)" % sword.rot)
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+## Atrás (Android) y Escape cierran lo que esté más arriba: la confirmación, si no la ficha y, si no, el panel.
+func test_back_closes_the_topmost_overlay_first() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var epic := _piece(&"helmet_basic", 0.95)
+	var plain := _piece(&"boots_basic", 0.3)
+	im.add_crafted_item(epic)
+	im.add_crafted_item(plain)
+	var panel := _new_panel()
+	var closed := {"count": 0}
+	panel.panel_closed.connect(func(): closed.count += 1)
+	var gold: int = im.get_quantity(&"gold")
+	panel._open_card(epic)
+	panel.notification(NOTIFICATION_WM_GO_BACK_REQUEST)
+	check(not panel._card.visible and panel._card_item == null and panel.visible and closed.count == 0, "Atrás con la ficha abierta cierra solo la ficha")
+	check(not get_tree().quit_on_go_back, "y el panel sigue reteniendo Atrás: el juego no se cierra")
+	panel._sell(epic)
+	check(panel._confirm_box.visible, "vender una épica pide confirmación")
+	panel.notification(NOTIFICATION_WM_GO_BACK_REQUEST)
+	check(not panel._confirm_box.visible and panel.visible and closed.count == 0, "Atrás con la confirmación abierta cierra solo la confirmación")
+	check(epic in im.get_crafted_items() and im.get_quantity(&"gold") == gold, "y su acción no se ejecuta")
+	check(not panel._confirm_action.is_valid(), "la confirmación se olvida de ella")
+	panel._on_confirm_yes()
+	check(epic in im.get_crafted_items() and im.get_quantity(&"gold") == gold, "un Sí que llegue después no vende lo que se canceló")
+	# Con las dos a la vez (la confirmación va encima), Escape las cierra una a una y, a la tercera, el panel
+	panel._open_card(plain)
+	panel._on_sell_all()
+	check(panel._card.visible and panel._confirm_box.visible, "la ficha y la confirmación, abiertas a la vez")
+	var esc := InputEventAction.new()
+	esc.action = &"ui_cancel"
+	esc.pressed = true
+	panel._input(esc)
+	check(not panel._confirm_box.visible and panel._card.visible and panel.visible, "Escape cierra primero la confirmación")
+	panel._input(esc)
+	check(not panel._card.visible and panel.visible and closed.count == 0, "después, la ficha")
+	panel._input(esc)
+	check(not panel.visible and closed.count == 1, "y por último el panel")
+	await get_tree().process_frame  # Atrás se devuelve en diferido
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+## close() y open() dejan cerradas la ficha y la confirmación y olvidan la acción pendiente: al abrir el panel otra vez
+## no sale la ficha ni la pregunta de la vez anterior.
+func test_close_and_open_leave_both_overlays_closed() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var epic := _piece(&"helmet_basic", 0.95)
+	im.add_crafted_item(epic)
+	var panel := _new_panel()
+	var gold: int = im.get_quantity(&"gold")
+	panel._open_card(epic)
+	panel._sell(epic)  # la épica pide confirmación
+	check(panel._card.visible and panel._confirm_box.visible, "la ficha y la confirmación, abiertas")
+	panel.close()
+	check(not panel._card.visible and not panel._confirm_box.visible, "close() las cierra")
+	panel.open()
+	check(not panel._card.visible and not panel._confirm_box.visible, "y al abrir otra vez no hay ni ficha ni confirmación")
+	panel._on_confirm_yes()
+	check(epic in im.get_crafted_items() and im.get_quantity(&"gold") == gold, "la acción pendiente se olvidó al cerrar: un Sí no vende nada")
+	# Si algo oculta el panel sin pasar por close(), open() las deja cerradas igualmente
+	panel._open_card(epic)
+	panel._sell(epic)
+	panel.visible = false
+	panel.open()
+	check(not panel._card.visible and not panel._confirm_box.visible and not panel._confirm_action.is_valid(), "open() las cierra aunque el panel se ocultara sin close()")
+	panel.queue_free()
+	await _restore_inventory(saved)

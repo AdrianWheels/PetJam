@@ -396,27 +396,6 @@ func _changed(hero_changed: bool) -> void:
 		emit_signal("equipment_changed", calculate_total_stats())
 
 # ═══════════════════════════════════════════════════════════════════
-#  COMPATIBILIDAD PROVISIONAL (la quita la tarea 10, con el panel nuevo)
-# ═══════════════════════════════════════════════════════════════════
-
-## Equipa como el panel viejo: la pieza entra en el primer sitio libre de la rejilla de Tico.
-func equip_item(item: CraftedItem) -> bool:
-	if item == null or not (item in crafted_items) or item.place == PLACE_HERO:
-		return false
-	var spot := GearPacker.find_spot(hero_grid, item)
-	return not spot.is_empty() and move_item(item, PLACE_HERO, spot.cell, spot.rot)
-
-
-## Quita de Tico la mejor pieza de ese hueco antiguo y la manda al botín.
-func unequip_item(slot: String) -> bool:
-	var item := best_hero_item(slot)
-	return item != null and move_item(item, PLACE_LOOT)
-
-
-func get_equipped_item(slot: String) -> CraftedItem:
-	return best_hero_item(slot)
-
-# ═══════════════════════════════════════════════════════════════════
 #  PERSISTENCIA
 # ═══════════════════════════════════════════════════════════════════
 

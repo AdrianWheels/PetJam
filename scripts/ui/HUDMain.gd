@@ -52,12 +52,10 @@ var _corridor: Node
 # Slots de requests activos
 var _request_slots: Array[Node] = []
 
-# Insignias de "nuevo" en los botones (Equipo: objetos forjados sin mirar; Planos: planos nuevos)
+# Insignias en los botones (Equipo: piezas del botín, las que faltan por colocar; Planos: planos nuevos)
 var _equip_badge: Label
 var _blueprint_badge: Label
-var _new_items := 0
 var _new_blueprints := 0
-var _known_item_count := -1
 var _minigame_debug_shown := false
 var _shown_request_keys: Array = []  # pedidos ya visibles (para no re-animar sus tarjetas)
 
@@ -123,12 +121,15 @@ func _ready() -> void:
 	# Insignias sobre los botones del panel derecho
 	_equip_badge = _make_badge(delivery_btn)
 	_blueprint_badge = _make_badge(blueprints_btn)
-	if _inventory_manager and _inventory_manager.has_signal("crafted_items_changed"):
-		_inventory_manager.crafted_items_changed.connect(_on_crafted_items_changed)
-		_known_item_count = _inventory_manager.get_crafted_items().size()
-	# Al cargar partida, los objetos que llegan no son "nuevos"
+	# El botín cambia al colocar o vender piezas: al cerrar el panel de Equipo o la tienda se cuenta de nuevo
+	if equipment_panel and equipment_panel.has_signal("panel_closed"):
+		equipment_panel.panel_closed.connect(_update_badges)
+	if shop_panel and shop_panel.has_signal("shop_closed"):
+		shop_panel.shop_closed.connect(_update_badges)
+	# Al cargar partida, la insignia cuenta el botín que llega
 	if _game_manager and _game_manager.has_signal("progress_loaded"):
 		_game_manager.progress_loaded.connect(_on_progress_loaded)
+	_update_badges()  # la partida suele estar cargada ya: la insignia arranca con el botín que hay
 	_add_hero_view_frame()
 
 	# Limpiar slots placeholder y cargar requests iniciales
@@ -468,7 +469,6 @@ func _on_blueprints_pressed() -> void:
 func _on_delivery_pressed() -> void:
 	print("HUDMain: Equipment panel requested")
 	Sfx.play(&"ui_tap")
-	_new_items = 0
 	_update_badges()
 	emit_signal("delivery_requested")
 	if equipment_panel:
@@ -700,7 +700,8 @@ func _make_badge(button: Control) -> Label:
 
 
 func _update_badges() -> void:
-	_set_badge(_equip_badge, _new_items)
+	var loot_count: int = _inventory_manager.get_loot_count() if _inventory_manager and _inventory_manager.has_method("get_loot_count") else 0
+	_set_badge(_equip_badge, loot_count)
 	_set_badge(_blueprint_badge, _new_blueprints)
 
 
@@ -716,15 +717,6 @@ func _set_badge(badge: Label, count: int) -> void:
 		var tw := create_tween()
 		tw.tween_property(badge, "scale", Vector2(1.5, 1.5), 0.1).from(Vector2(0.3, 0.3))
 		tw.tween_property(badge, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-
-
-func _on_crafted_items_changed(items) -> void:
-	var count: int = items.size() if items is Array else 0
-	if _known_item_count >= 0 and count > _known_item_count:
-		# Se cuenta ya, pero la insignia se enciende al cerrar el resultado, cuando las
-		# partículas del objeto llegan al botón (ver _show_craft_result)
-		_new_items += count - _known_item_count
-	_known_item_count = count
 
 
 ## Al aceptar un pedido, su icono sube desde la tarjeta hasta la forja y se funde.
@@ -752,9 +744,6 @@ func _fly_request_to_forge(texture: Texture2D, from_rect: Rect2) -> void:
 
 
 func _on_progress_loaded() -> void:
-	if _inventory_manager:
-		_known_item_count = _inventory_manager.get_crafted_items().size()
-	_new_items = 0
 	_update_badges()
 
 
