@@ -171,10 +171,10 @@ func _execute_enemy_attack():
 	var style: String = enemy.style
 	var heavy := style == "slam"
 
-	var dealt: int = hero.take_damage(raw)
+	var dealt: int = hero.take_damage(raw, false, enemy.level)
 	if fx:
 		fx.damage_number(number_pos, dealt, &"hero")
-		if dealt < raw and _block_text_cd <= 0.0 and hero.has_method("armor_mitigation") and hero.armor_mitigation() >= 0.2:
+		if dealt < raw and _block_text_cd <= 0.0 and hero.has_method("armor_mitigation") and hero.armor_mitigation(enemy.level) >= 0.2:
 			_block_text_cd = 2.5
 			fx.float_text(hit_pos + Vector2(-9, -4), tr("Bloqueo"), Color("b8c4d6"), false, 0.7, 8.0)
 		match style:

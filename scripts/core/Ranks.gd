@@ -33,7 +33,8 @@ const BIOME_MATERIAL_BASE_QTY := 2
 ## Crecimiento de recetas, botín y oro por rango (spec: 1,6^(N−1))
 const MAT_GROWTH := 1.6
 ## Ajuste del poder por rango sobre la curva de enemigos (lo fija la calibración de la tarea 3)
-const RANK_POWER_BONUS := 1.0
+## Palanca de la calibración (static var: la barre el enlace de Balanza).
+static var RANK_POWER_BONUS := 1.0
 
 ## Texto del aviso de cada hito; %s es el numeral con espacio delante (" II") o nada en el rango I
 const MILESTONE_TEXTS := {
@@ -67,6 +68,18 @@ static func stat_mult(rank: int) -> float:
 		return 1.0
 	var mid_n := ROOMS_PER_CYCLE * (r - 1) + MID_CYCLE_OFFSET
 	return EnemyScaling.stat_scale(mid_n) / EnemyScaling.stat_scale(MID_CYCLE_OFFSET) * pow(RANK_POWER_BONUS, r - 1)
+
+
+## Rango del equipo (spec de rangos, apartado 6, «Base de Tico»): el menor rango entre las piezas equipadas; sin piezas,
+## el I. Es la única regla: el inventario en rejilla la redefine aquí, y quien junte las piezas (InventoryManager, el
+## enlace de Balanza) le pasa sus rangos.
+static func team_rank(piece_ranks: Array) -> int:
+	if piece_ranks.is_empty():
+		return 1
+	var lowest := int(piece_ranks[0])
+	for r in piece_ranks:
+		lowest = mini(lowest, int(r))
+	return maxi(1, lowest)
 
 
 ## Aplica el rango a las estadísticas de un objeto (las de ItemResource.calculate_stats).

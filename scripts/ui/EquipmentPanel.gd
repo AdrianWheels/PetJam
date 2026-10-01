@@ -280,7 +280,11 @@ func _refresh_stats() -> void:
 	if dmg_label:
 		dmg_label.text = tr("Daño %.0f") % hero.dmg
 	if armor_label:
-		var mitigation: float = hero.armor_mitigation() if hero.has_method("armor_mitigation") else 0.0
+		# La reducción depende del enemigo: se enseña la de la sala actual
+		var room := 1
+		if _game_manager and "current_enemy_level" in _game_manager:
+			room = int(_game_manager.current_enemy_level)
+		var mitigation: float = hero.armor_mitigation(room) if hero.has_method("armor_mitigation") else 0.0
 		armor_label.text = tr("Armadura %d (-%d%%)") % [hero.armor, int(round(mitigation * 100.0))]
 	if crit_label:
 		crit_label.text = tr("Crítico %.0f%%") % (hero.crit_p * 100.0)
