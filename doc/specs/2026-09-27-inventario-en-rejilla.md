@@ -1,6 +1,6 @@
 # Inventario en rejilla
 
-**Fecha:** 2026-09-27 · **Estado:** aprobado. El 2026-09-28, al escribir el plan, se ajustó a la revisión del spec de rangos (duelos con la vida llena, muro y calibración con Balanza) y a la fase 2 del pixel art, en los apartados 3.2, 5, 6, 7, 8, 9.5, 13, 14 y 16. El 2026-10-01 el usuario aplazó el arte al final (apartado 9.5): es un prototipo personal y los estilos pueden mezclarse mientras tanto
+**Fecha:** 2026-09-27 · **Estado:** aprobado. El 2026-09-28, al escribir el plan, se ajustó a la revisión del spec de rangos (duelos con la vida llena, muro y calibración con Balanza) y a la fase 2 del pixel art, en los apartados 3.2, 5, 6, 7, 8, 9.5, 13, 14 y 16. El 2026-10-01 el usuario aplazó el arte al final (apartado 9.5): es un prototipo personal y los estilos pueden mezclarse mientras tanto. Ese mismo día adelantó el sistema al resto de los rangos (apartado 16): la rejilla crece de forma provisional al vencer a los jefes (apartado 7) y el guardado pasa a la versión 2 (apartado 10)
 **Petición:** "Quiero que el inventario del héroe de PetJam funcione como el de Lootbound" (https://store.steampowered.com/app/3091140/Lootbound/). En Lootbound el equipo es una rejilla delante de la silueta del héroe, sin huecos fijos: cada objeto ocupa una forma que se gira y se coloca donde quepa. Hay mochila, botín y 2 consumibles, y algunos objetos dan auras a sus vecinos o se activan por su posición. La tarjeta del tablero pide que colocar lo que se forja sea un puzle con sinergias y dé más razones para forjar. Decisiones del usuario:
 
 | Pregunta | Elegido |
@@ -213,6 +213,8 @@ El spec de rangos se revisó el 2026-09-27 (apartados 6 y 7). Desde entonces, ca
 
 ## 7. Recetas de ampliación
 
+**Provisional (2026-10-01):** las recetas necesitan los materiales de bioma y el encargo propio de los rangos, que aún no están. Hasta entonces, vencer por primera vez al jefe de la sala 10, 20, 30 o 40 del ciclo I amplía la rejilla directamente, con el aviso "¡La rejilla crece!" en la franja. El panel dice qué jefe toca. Todo lo que sigue en este apartado llega con los rangos.
+
 | Receta | Se desbloquea al vencer por primera vez | Rejilla (si se forjan en este orden) | Materiales (de partida) | Minijuegos |
 |---|---|---|---|---|
 | Correas de hueso | Rey Osario (sala 10) | 4×4 → 5×4 | 10 de hueso y 20 de cuero | Coser |
@@ -306,14 +308,14 @@ Medidas: casillas de 22×22 píxeles de arte a ×5 (110 px de pantalla), el mism
 
 ## 10. Guardado y migración
 
-- **Guardado versión 3** (la 2 es la del spec de rangos). En `inventory`:
+- **Guardado versión 2** (la base guarda la 1; los rangos pasarán a la 3). En `inventory`:
   - cada pieza de `crafted_items` guarda, además de lo de hoy (`item_id`, `quality`, `stats`, `timestamp` y el `rank` de los rangos), `place`, `x`, `y`, `rot` y `aristas` (una lista de pares);
   - desaparecen `equipped` en las piezas y `equipped_slots`;
   - el orden de las piezas del botín es el de la lista;
   - `hero_grid`: [ancho, alto];
   - `expansions`: los ids de las recetas forjadas;
   - `consumables`: los 2 huecos (`id` y `count`).
-- **Migración de la versión 2 a la 3,** encadenada tras la de la 1 a la 2:
+- **Migración de la versión 1 a la 2:**
   1. Se dan como forjadas las ampliaciones de los jefes que el récord ya supera, y la rejilla toma su tamaño.
   2. Cada pieza recibe sus aristas según su calidad, con los sitios sorteados con una semilla fija (su `timestamp` y su posición en la lista). La misma partida da siempre el mismo resultado.
   3. Las piezas que estaban equipadas se colocan en la rejilla con `GearPacker`: las mejores primero y, si se puede, en su zona. Las que no caben van al botín.
@@ -351,10 +353,10 @@ Medidas: casillas de 22×22 píxeles de arte a ×5 (110 px de pantalla), el mism
   - habilidades legendarias: multiplicadores, sin repetir, topes y los efectos de combate con semilla fija. Segunda oportunidad, una vez por duelo;
   - `calculate_total_stats()` igual a la suma hecha a mano en un caso de ejemplo;
   - rango del equipo: el menor entre las mejores piezas de cada tipo;
-  - recetas: se desbloquean una sola vez al vencer al jefe, forjarlas amplía la rejilla sin crear pieza y no se repiten en el ciclo II;
+  - ampliaciones: la rejilla crece una sola vez por jefe, al vencerlo por primera vez, y no en el ciclo II (provisional; con los rangos, las recetas);
   - consumibles: compra al hueco, "No hay hueco" sin cobrar, Vida por debajo del 30 %, y Velocidad y Suerte al aparecer un jefe;
   - guardar y cargar la versión 3;
-  - migración con una partida de la versión 2 que genera la propia prueba (4 piezas equipadas, 40 sueltas y récord 35): ninguna pieza perdida, rejilla de 6×5 y aristas deterministas;
+  - migración con una partida de la versión 1 que genera la propia prueba (4 piezas equipadas, 40 sueltas y récord 35): ninguna pieza perdida, rejilla de 6×5 y aristas deterministas;
   - posiciones imposibles al cargar: la pieza pasa al botín.
 - **Simulación de balance** (`BalanceSim`, y Balanza si los rangos la usan): duelos con rejillas llenas, los objetivos y la escalera del spec de rangos, el poder por casilla y la cuenta de materiales.
 - **Siguen en verde:**
@@ -405,7 +407,7 @@ Cada fase deja el juego funcionando.
 2. **Datos,** `InventoryManager` con sus tres sitios, guardado versión 3 y migración. Mientras llega el panel nuevo, unas funciones de compatibilidad provisionales mantienen el panel viejo: equipar coloca con `GearPacker`.
 3. **Panel nuevo y controles,** con dibujos provisionales (casillas de color). Se quitan las funciones de compatibilidad.
 4. **Habilidades legendarias** en combate y sus efectos en la franja.
-5. **Recetas de ampliación y consumibles.**
+5. **Ampliación de la rejilla y consumibles:** la ampliación es provisional, al vencer a los jefes; las recetas llegan con los rangos.
 6. **Arte:** aplazado al final, en su tarjeta.
 7. **Balance:** estadísticas por casilla, duelos con rejillas en la simulación y calibración, con la misma herramienta que los rangos.
 8. **Verificación:** capturas, prueba en un móvil y documentación.
@@ -414,13 +416,14 @@ Cada fase deja el juego funcionando.
 
 - **Orden: Balanza, rangos e inventario.** La calibración de los rangos está en pausa hasta que esté el motor Balanza (otra sesión), y los rangos no se terminan sin ella.
 - **Rangos:**
-  - La implementación empieza cuando la tarjeta "Implementar los rangos de plano por ciclo" esté en "Completada - Pendiente Revisión". Entonces esta rama se rebasa sobre `franja-pixel-fase-1` actualizada.
-  - Usa de los rangos:
-    - `CraftedItem.rank`, `Ranks.stat_mult` y los numerales;
-    - los materiales de bioma, el encargo propio de la biblioteca y el guardado versión 2;
-    - los duelos con la vida llena y el reintento del muro al cambiar de equipo o beber una poción;
-    - la función del rango del equipo y la simulación de balance.
-  - Si al rebasar algo de esto ha cambiado, se ajusta este spec antes de seguir.
+  - **Orden (decisión del usuario, 2026-10-01):** el sistema se implementa antes que el resto de los rangos, que siguen parados hasta que Balanza calibre su curva. La rama se rebasa sobre `franja-pixel-fase-1`, que ya tiene `Ranks`, el muro y los duelos.
+  - De los rangos usa lo que ya está: `Ranks.gold_mult` y los numerales (`Ranks.suffix`), los duelos con la vida llena y el reintento del muro al cambiar de equipo o beber una poción.
+  - Lo que aún no existe lo suple o lo aplaza:
+    - el rango de cada pieza se añade con valor 1;
+    - el guardado pasa a la versión 2;
+    - las recetas de ampliación (materiales de bioma y encargo propio) esperan a los rangos, y mientras tanto la rejilla crece al vencer a los jefes;
+    - el balance con rejillas espera a Balanza.
+  - El plan de rangos adapta después sus tareas 5, 6, 8 y 11, que tocan las piezas, el guardado, la tienda, la forja y el panel de Equipo.
 - **Balanza:** si los rangos se calibran con ella, este spec también (apartado 6). Su orden `import` solo cambia las líneas de estadísticas de los `.tres`, así que conserva `shape_cells` y `arista_spots`.
 - **Franja con pegatinas** (rama `franja-pegatinas`): no hace falta. Si ya está integrada:
   - el panel enseña su Tico de pegatina;
