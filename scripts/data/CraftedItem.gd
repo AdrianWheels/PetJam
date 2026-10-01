@@ -11,6 +11,12 @@ var calculated_stats: Dictionary = {}
 # Metadatos
 var crafted_timestamp: int = 0
 var is_equipped: bool = false
+var rank: int = 1  # rango del plano con que se forjó (1 = rango I)
+# Sitio en el inventario (spec del inventario en rejilla, apartado 3). Lo mantiene InventoryManager.
+var place: StringName = &"loot"  ## &"hero" (rejilla de Tico), &"bag" (mochila) o &"loot" (botín)
+var cell: Vector2i = Vector2i.ZERO  ## esquina de arriba a la izquierda de su caja en la rejilla
+var rot: int = 0  ## cuartos de vuelta en el sentido de las agujas del reloj (0-3)
+var aristas: Array[Vector2i] = []  ## casillas de más, en coordenadas de la pieza sin girar (PieceShape)
 
 func _init(item_res: ItemResource, craft_quality: float) -> void:
 	item_resource = item_res
@@ -73,6 +79,12 @@ func get_display_name() -> String:
 		return "%s (%d%%)" % [tr(item_resource.display_name), get_quality_percent()]
 	return tr("Objeto desconocido")
 
+## Nombre con el numeral del rango, ya traducido: "Espada maestra III" (sin numeral en el rango I).
+func get_name_with_rank() -> String:
+	if item_resource == null:
+		return tr("Objeto desconocido")
+	return tr(item_resource.display_name) + Ranks.suffix(rank)
+
 ## Retorna el slot de equipamiento
 func get_equipment_slot() -> String:
 	if item_resource:
@@ -98,7 +110,12 @@ func to_dict() -> Dictionary:
 		"quality": quality,
 		"stats": calculated_stats.duplicate(),
 		"timestamp": crafted_timestamp,
-		"equipped": is_equipped
+		"rank": rank,
+		"place": String(place),
+		"x": cell.x,
+		"y": cell.y,
+		"rot": rot,
+		"aristas": aristas.map(func(a): return [a.x, a.y]),
 	}
 
 ## Deserialización desde diccionario
@@ -106,5 +123,13 @@ static func from_dict(data: Dictionary, item_res: ItemResource) -> CraftedItem:
 	var item = CraftedItem.new(item_res, data.get("quality", 0.5))
 	item.calculated_stats = data.get("stats", {}).duplicate()
 	item.crafted_timestamp = data.get("timestamp", 0)
-	item.is_equipped = data.get("equipped", false)
+	item.rank = maxi(1, int(data.get("rank", 1)))
+	item.place = StringName(data.get("place", "loot"))
+	item.cell = Vector2i(int(data.get("x", 0)), int(data.get("y", 0)))
+	item.rot = posmod(int(data.get("rot", 0)), 4)
+	var ar: Array[Vector2i] = []
+	for pair in data.get("aristas", []):
+		if pair is Array and pair.size() == 2:
+			ar.append(Vector2i(int(pair[0]), int(pair[1])))
+	item.aristas = ar
 	return item

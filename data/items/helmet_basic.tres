@@ -16,3 +16,5 @@ base_hp_min = 15
 base_hp_max = 35
 base_armor_min = 1
 base_armor_max = 3
+shape_cells = Array[Vector2i]([Vector2i(0, 0)])
+arista_spots = Array[Vector2i]([Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)])
