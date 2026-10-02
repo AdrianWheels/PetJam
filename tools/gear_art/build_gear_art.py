@@ -123,15 +123,19 @@ def strip_white_border(img: Image.Image, max_px: int = 24) -> Image.Image:
 
 
 def remove_white_bg(img: Image.Image) -> Image.Image:
-    """Quita el fondo blanco liso de las imágenes hechas en ChatGPT: el blanco que toca el borde de la imagen. Los
-    brillos blancos del dibujo no tocan el borde y se quedan."""
+    """Quita el fondo blanco liso de las imágenes hechas en ChatGPT: el blanco que toca el borde de la imagen y los
+    huecos blancos grandes encerrados (el agujero de un aro, entre la cuerda y el arco). Los brillos blancos del
+    dibujo son pequeños y se quedan."""
     import numpy as np
     from scipy import ndimage
     a = np.array(img.convert("RGBA"))
     white = a[..., :3].astype(int).min(axis=2) > 235
     lab, _ = ndimage.label(white)
     edge = np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
-    bg = ndimage.binary_dilation(np.isin(lab, edge[edge > 0]), iterations=1)  # el halo claro del recorte
+    sizes = np.bincount(lab.ravel())
+    big = np.nonzero(sizes > white.size * 0.004)[0]  # huecos de más del 0,4 % de la imagen
+    holes = np.union1d(edge, big)
+    bg = ndimage.binary_dilation(np.isin(lab, holes[holes > 0]), iterations=1)  # el halo claro del recorte
     a[..., 3] = np.where(bg, 0, a[..., 3])
     return Image.fromarray(a)
 
