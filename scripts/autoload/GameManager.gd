@@ -108,6 +108,9 @@ func _ready():
 	if inv_manager and inv_manager.has_signal("crafted_items_changed"):
 		# Save al craft nuevo item
 		inv_manager.crafted_items_changed.connect(_on_trigger_save)
+	if inv_manager and inv_manager.has_signal("loot_poses_changed"):
+		# Save cuando la pila del botín se queda quieta o se cierra el panel (spec del botín con física, apartado 8)
+		inv_manager.loot_poses_changed.connect(_on_trigger_save)
 
 	# Esperar data_ready para cargar partida guardada
 	var dm = get_node_or_null("/root/DataManager")

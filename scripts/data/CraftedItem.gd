@@ -19,6 +19,9 @@ var place: StringName = &"loot"  ## &"hero" (rejilla de Tico), &"bag" (mochila) 
 var cell: Vector2i = Vector2i.ZERO  ## esquina de arriba a la izquierda de su caja en la rejilla
 var rot: int = 0  ## cuartos de vuelta en el sentido de las agujas del reloj (0-3)
 var aristas: Array[Vector2i] = []  ## casillas de más, en coordenadas de la pieza sin girar (PieceShape)
+## Dónde está en la caja del botín con física (LootBoxView): {"pos": Vector2, "ang": float} en coordenadas de la caja, o
+## vacío si no tiene pose (al abrir el panel cae desde arriba). InventoryManager la vacía cuando la pieza sale del botín.
+var loot_pose: Dictionary = {}
 
 func _init(item_res: ItemResource, craft_quality: float, craft_rank: int = 1) -> void:
 	item_resource = item_res
@@ -109,9 +112,9 @@ func get_icon() -> Texture2D:
 		return item_resource.get_icon()
 	return null
 
-## Serialización para inventario persistente
+## Serialización para inventario persistente. La pose del botín (lx, ly, ang) solo si está en el botín y la tiene.
 func to_dict() -> Dictionary:
-	return {
+	var d := {
 		"item_id": String(item_resource.item_id) if item_resource else "",
 		"quality": quality,
 		"stats": calculated_stats.duplicate(),
@@ -123,6 +126,11 @@ func to_dict() -> Dictionary:
 		"rot": rot,
 		"aristas": aristas.map(func(a): return [a.x, a.y]),
 	}
+	if place == &"loot" and not loot_pose.is_empty():
+		d["lx"] = loot_pose.pos.x
+		d["ly"] = loot_pose.pos.y
+		d["ang"] = loot_pose.ang
+	return d
 
 ## Deserialización desde diccionario
 static func from_dict(data: Dictionary, item_res: ItemResource) -> CraftedItem:
@@ -137,4 +145,16 @@ static func from_dict(data: Dictionary, item_res: ItemResource) -> CraftedItem:
 		if pair is Array and pair.size() == 2:
 			ar.append(Vector2i(int(pair[0]), int(pair[1])))
 	item.aristas = ar
+	item.loot_pose = pose_from_dict(data)
 	return item
+
+## Pose del botín leída de un guardado (spec del botín con física, apartado 8): {} si falta lx, ly o ang, o si alguno no es
+## un número finito. Que quepa en la caja lo mira LootBoxView.pose_is_valid al abrir el panel.
+static func pose_from_dict(data: Dictionary) -> Dictionary:
+	var values: Array[float] = []
+	for key in ["lx", "ly", "ang"]:
+		var v = data.get(key)
+		if not (v is float or v is int) or not is_finite(float(v)):
+			return {}
+		values.append(float(v))
+	return {"pos": Vector2(values[0], values[1]), "ang": values[2]}

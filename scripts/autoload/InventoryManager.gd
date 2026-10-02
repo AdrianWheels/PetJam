@@ -19,6 +19,7 @@ signal equipment_changed(equipment_stats: Dictionary)  ## ha cambiado la rejilla
 signal loot_changed(count: int)
 signal grid_resized(size: Vector2i)
 signal consumables_changed(slots: Array)
+signal loot_poses_changed  ## la caja del botín ha dejado en sus piezas dónde están (GameManager guarda)
 
 const PLACE_HERO := &"hero"
 const PLACE_BAG := &"bag"
@@ -285,6 +286,12 @@ func remove_crafted_item(item: CraftedItem) -> bool:
 	_changed(was_hero)
 	return true
 
+
+## Las piezas del botín tienen pose nueva (la caja con física se ha quedado quieta, o se ha cerrado el panel): pide el
+## guardado diferido de siempre (spec del botín con física, apartado 8).
+func note_loot_poses() -> void:
+	loot_poses_changed.emit()
+
 # ═══════════════════════════════════════════════════════════════════
 #  ESTADÍSTICAS DE TICO
 # ═══════════════════════════════════════════════════════════════════
@@ -445,11 +452,12 @@ func sell_potion_slot(index: int) -> int:
 #  SITIOS (privado)
 # ═══════════════════════════════════════════════════════════════════
 
-## Saca una pieza de donde esté, sin avisar.
+## Saca una pieza de donde esté, sin avisar. Fuera del botín su pose no vale: si vuelve, cae desde arriba.
 func _take_out(item: CraftedItem) -> void:
 	hero_grid.remove(item)
 	bag_grid.remove(item)
 	loot.erase(item)
+	item.loot_pose = {}
 
 
 ## Pone una pieza (ya fuera de todo sitio) en `place`. Si no cabe en la rejilla, al botín.
