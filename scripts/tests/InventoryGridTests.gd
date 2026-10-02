@@ -2105,3 +2105,41 @@ func test_result_screen_shows_aristas_and_the_legendary_power() -> void:
 	check(texts.any(func(s): return s.begins_with(tr("Filo perfecto"))), "y con su habilidad (%s)" % [texts])
 	screen.queue_free()
 	await get_tree().process_frame
+
+
+## La pantalla de resultado vive en la ventana del minijuego (la mitad de la pantalla: 1080×960 de base) y su
+## contenido ya llenaba esa ventana. Con las líneas de aristas y de habilidad, una espada o una legendaria no
+## caben a tamaño normal: la pantalla se reduce entera, y el botón de continuar queda dentro de la ventana.
+## Lo que ya cabía (un escudo épico) sigue a tamaño normal.
+func test_the_result_screen_fits_its_window_with_the_new_lines() -> void:
+	var window := SubViewport.new()
+	window.size = Vector2i(1080, 960)
+	add_child(window)
+	var rough: Array[Vector2i] = [Vector2i(-1, 0)]
+	var cases := [
+		[_piece(&"sword_masterwork", 1.0), true, "espada maestra legendaria (la habilidad ocupa dos líneas)"],
+		[_piece(&"sword_basic", 0.8, rough), true, "espada rara con una arista"],
+		[_piece(&"shield_basic", 0.95), false, "escudo épico"],
+	]
+	for c in cases:
+		var screen: Control = CraftResultScreen.new()
+		screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		window.add_child(screen)
+		screen.show_result({"crafted_item": c[0], "blueprint_id": "sword_basic", "quality": c[0].quality, "grade": "perfect", "forjamagia": 3, "forjamagia_bonus": 0.1})
+		for i in 4:
+			await get_tree().process_frame
+		var before_button: float = screen._margin.scale.x
+		screen._continue_container.visible = true  # la revelación enseña el botón al final
+		for i in 3:
+			await get_tree().process_frame
+		var button: Control = screen._continue_container
+		var bottom: float = (button.get_global_transform() * Vector2(0.0, button.size.y)).y
+		var center: float = (button.get_global_transform() * Vector2(button.size.x * 0.5, 0.0)).x
+		check(bottom <= 960.5, "%s: el botón de continuar acaba dentro de la ventana (%.0f de 960)" % [c[2], bottom])
+		check(screen._margin.scale.x < 1.0 if c[1] else is_equal_approx(screen._margin.scale.x, 1.0), "%s: %s (escala %.3f)" % [c[2], "se reduce" if c[1] else "sigue a tamaño normal", screen._margin.scale.x])
+		check(is_equal_approx(screen._margin.scale.x, before_button), "%s: nada se recoloca al aparecer el botón (%.3f antes, %.3f después)" % [c[2], before_button, screen._margin.scale.x])
+		check(absf(center - 540.0) < 1.0, "%s: reducida, sigue centrada (el botón, en x = %.1f)" % [c[2], center])
+		screen.queue_free()
+		await get_tree().process_frame
+	window.queue_free()
+	await get_tree().process_frame

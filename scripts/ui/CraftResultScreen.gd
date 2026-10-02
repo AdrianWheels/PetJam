@@ -33,9 +33,13 @@ const STAT_NAMES := {
 }
 
 const BAR_SIZE := Vector2(120, 540)
+## Lo más que se reduce la pantalla para caber en su ventana (ver _fit_to_window).
+const MIN_FIT := 0.6
 
 # Nodos internos (se crean en _build_ui)
 var _bg: ColorRect
+var _margin: MarginContainer
+var _main_vbox: VBoxContainer
 var _title_label: Label
 var _item_name_label: Label
 var _bar_frame: Panel
@@ -96,6 +100,8 @@ class Rays extends Control:
 
 func _ready() -> void:
 	_build_ui()
+	resized.connect(_fit_to_window)
+	_margin.minimum_size_changed.connect(_fit_to_window)
 	# Empezar invisible para fade in
 	modulate.a = 0.0
 
@@ -383,6 +389,22 @@ func _label(size: int, color: Color, outline: int = 8) -> Label:
 	return l
 
 
+## La pantalla vive en la ventana del minijuego, de alto fijo (la mitad de la pantalla), y su contenido ya la
+## llenaba. Si con las aristas y la habilidad no cabe (una espada, una legendaria), se reduce entera en la misma
+## proporción, para que el botón de continuar no quede fuera. Se reduce `margin` y no `main_vbox`: un contenedor
+## devuelve a escala 1 a lo que coloca. El botón, aún oculto, cuenta: así nada se recoloca al aparecer. Cuenta
+## hasta donde llega el contenido: el margen de abajo ya se comía parte (y lo que cabía no se toca).
+func _fit_to_window() -> void:
+	var needed := _margin.get_combined_minimum_size().y - float(_margin.get_theme_constant("margin_bottom"))
+	if not _continue_container.visible:
+		needed += _continue_container.get_combined_minimum_size().y + float(_main_vbox.get_theme_constant("separation"))
+	var fit := 1.0
+	if size.y > 0.0 and needed > size.y:
+		fit = maxf(MIN_FIT, size.y / needed)
+	_margin.pivot_offset = Vector2(_margin.size.x * 0.5, 0.0)
+	_margin.scale = Vector2(fit, fit)
+
+
 func _build_ui() -> void:
 	# Fondo: tonos de la forja
 	_bg = ColorRect.new()
@@ -397,10 +419,12 @@ func _build_ui() -> void:
 	margin.add_theme_constant_override("margin_top", 30)
 	margin.add_theme_constant_override("margin_bottom", 30)
 	add_child(margin)
+	_margin = margin
 
 	var main_vbox := VBoxContainer.new()
 	main_vbox.add_theme_constant_override("separation", 10)
 	margin.add_child(main_vbox)
+	_main_vbox = main_vbox
 
 	_title_label = _label(64, Color(1.0, 0.85, 0.4), 10)
 	_title_label.text = tr("FORJADO")
