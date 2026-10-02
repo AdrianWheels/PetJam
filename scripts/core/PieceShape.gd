@@ -87,3 +87,27 @@ static func check_resource(res: ItemResource) -> String:
 		if not touches:
 			return "el sitio %s no toca la forma por un lado" % s
 	return ""
+
+
+## Centro de masa de una pieza girada (footprint()), en píxeles desde la esquina de su caja: la media de los centros de
+## todas sus casillas, limpias y aristas (todas pesan lo mismo y todas chocan en la caja del botín).
+static func mass_center(fp: Dictionary, cell_px: float) -> Vector2:
+	var cells: Array[Vector2i] = []
+	cells.append_array(fp.clean)
+	cells.append_array(fp.aristas)
+	var sum := Vector2.ZERO
+	for c in cells:
+		sum += (Vector2(c) + Vector2(0.5, 0.5)) * cell_px
+	return sum / float(cells.size())
+
+
+## Rectángulos de colisión de una pieza girada (footprint()) para el botín con física (spec
+## doc/specs/2026-10-02-botin-con-fisica.md, apartado 3): uno por casilla, primero las limpias y después las aristas, en
+## píxeles y centrados en su centro de masa.
+static func collision_rects(fp: Dictionary, cell_px: float) -> Array[Rect2]:
+	var com := mass_center(fp, cell_px)
+	var out: Array[Rect2] = []
+	for list in [fp.clean, fp.aristas]:
+		for c in list:
+			out.append(Rect2(Vector2(c) * cell_px - com, Vector2(cell_px, cell_px)))
+	return out
