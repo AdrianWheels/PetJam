@@ -2026,9 +2026,6 @@ func test_first_boss_kill_grows_the_grid() -> void:
 	# Sin muro, sea cual sea la partida: esta prueba mira la rejilla; el muro tiene la suya
 	# (test_the_expansion_never_sends_tico_to_the_wall)
 	gm.wall_room = 0
-	# Niveles ya vencidos: así register_enemy_defeat no desbloquea planos al azar en la prueba
-	gm.enemies_defeated[10] = true
-	gm.enemies_defeated[60] = true
 	var seen := []
 	var on_grow := func(id): seen.append(id)
 	gm.grid_expanded.connect(on_grow)

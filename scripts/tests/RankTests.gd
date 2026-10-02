@@ -876,3 +876,42 @@ func test_library_reject_twice_restores_the_name() -> void:
 	check(card.name_label.text == name_before, "tras pulsar dos veces, el nombre real vuelve")
 	check(absf(card.position.x - x_before) < 0.01, "la tarjeta vuelve a su x de reposo")
 	panel.queue_free()
+
+
+func test_library_card_shows_the_selected_rank_cost() -> void:
+	var dm := _dm()
+	var saved_ranks: Dictionary = dm.unlocked_ranks.duplicate()
+	dm.unlocked_ranks[&"helmet_basic"] = 3
+	var bp: BlueprintResource = dm.get_blueprint(&"helmet_basic")
+	var card = load("res://scenes/UI/BlueprintCard.tscn").instantiate()
+	add_child(card)
+	card.set_blueprint_data(&"helmet_basic", bp, true, 3)
+	await get_tree().process_frame
+	var tier: StringName = dm.blueprint_tier(&"helmet_basic")
+	var first: Dictionary = Ranks.recipe(bp.materials, tier, 1)
+	var third: Dictionary = Ranks.recipe(bp.materials, tier, 3)
+	check(card.shown_recipe == third and card._cost_box.get_child_count() == third.size(), "la tarjeta abre en el rango más alto y enseña su receta")
+	card.selected_rank = 1
+	card._refresh_rank()
+	await get_tree().process_frame
+	check(card.shown_recipe == first and card.shown_recipe != third, "al bajar el rango cambia la receta que enseña la tarjeta")
+	card.selected_rank = 3
+	card._refresh_rank()
+	await get_tree().process_frame
+	check(card.shown_recipe == third and card.shown_recipe != first, "al volver al rango III vuelve su receta")
+	var labels_ok: bool = card._cost_box.get_child_count() == third.size()
+	var idx := 0
+	for mat_id in third:
+		if idx < card._cost_box.get_child_count():
+			labels_ok = labels_ok and card._cost_box.get_child(idx).get_node("Qty").text == "x%d" % third[mat_id]
+		idx += 1
+	check(labels_ok, "las cantidades de la línea de coste son las de Ranks.recipe del rango III")
+	check(card.tooltip_text.contains("x%d" % third[third.keys()[0]]), "el tooltip usa la receta del rango elegido")
+	card.queue_free()
+	var locked = load("res://scenes/UI/BlueprintCard.tscn").instantiate()
+	add_child(locked)
+	locked.set_blueprint_data(&"helmet_basic", bp, false, 0)
+	await get_tree().process_frame
+	check(locked._cost_box == null and locked.shown_recipe.is_empty(), "la tarjeta bloqueada no muestra coste")
+	locked.queue_free()
+	dm.unlocked_ranks = saved_ranks

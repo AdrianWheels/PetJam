@@ -12,11 +12,16 @@ var blueprint_data: BlueprintResource
 var is_unlocked: bool = false
 var item_resource: ItemResource
 
+const MATERIAL_ICON_SCENE := preload("res://scenes/UI/MaterialIcon.tscn")
+
 signal forge_requested(bp_id: StringName, rank: int)
 
 var max_rank: int = 0
 var selected_rank: int = 1
 var _rank_label: Label
+var _cost_box: HFlowContainer
+## Receta del rango elegido (la que cobra «Forjar»): lo que enseñan la línea de coste y el tooltip
+var shown_recipe: Dictionary = {}
 var _forge_btn: Button
 var _shake_tween: Tween
 var _rest_x: float = 0.0
@@ -56,6 +61,12 @@ func set_blueprint_data(bp_id: StringName, blueprint: BlueprintResource, unlocke
 func _build_forge_row() -> void:
 	if _forge_btn or max_rank < 1:
 		return
+	_cost_box = HFlowContainer.new()
+	_cost_box.alignment = FlowContainer.ALIGNMENT_CENTER
+	_cost_box.add_theme_constant_override("h_separation", 6)
+	_cost_box.add_theme_constant_override("v_separation", 0)
+	_cost_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	$VBox.add_child(_cost_box)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	var prev := Button.new()
@@ -79,6 +90,42 @@ func _refresh_rank() -> void:
 	if _rank_label:
 		_rank_label.text = Biomes.roman(selected_rank)
 	name_label.text = (_blueprint_name() if blueprint_data else str(blueprint_id)) + Ranks.suffix(selected_rank)
+	_refresh_cost()
+	_update_tooltip()
+
+
+## Receta del rango elegido (materiales del plano × rango más los del bioma de su nivel).
+func _rank_recipe() -> Dictionary:
+	if blueprint_data == null or max_rank < 1:
+		return {}
+	var dm = get_node_or_null("/root/DataManager")
+	var tier: StringName = dm.blueprint_tier(blueprint_id) if dm else Ranks.TIER_BASIC
+	return Ranks.recipe(blueprint_data.materials, tier, selected_rank)
+
+
+## Línea de coste de la tarjeta: icono de material y cantidad, como en los pedidos.
+func _refresh_cost() -> void:
+	shown_recipe = _rank_recipe()
+	if _cost_box == null:
+		return
+	for child in _cost_box.get_children():
+		_cost_box.remove_child(child)
+		child.queue_free()
+	for mat_id in shown_recipe:
+		var item := HBoxContainer.new()
+		item.add_theme_constant_override("separation", 1)
+		item.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var icon_node = MATERIAL_ICON_SCENE.instantiate()
+		icon_node.custom_minimum_size = Vector2(22, 22)
+		icon_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon_node.set("material_name", String(mat_id))
+		item.add_child(icon_node)
+		var qty := Label.new()
+		qty.name = "Qty"
+		qty.text = "x%d" % int(shown_recipe[mat_id])
+		qty.add_theme_font_size_override("font_size", 14)
+		item.add_child(qty)
+		_cost_box.add_child(item)
 
 
 ## Sacudida cuando el encargo no se puede hacer. Si ya hay una en marcha se corta y la tarjeta
@@ -118,10 +165,10 @@ func _update_tooltip() -> void:
 	if item_resource:
 		text += "[b]%s[/b]\n" % tr("Estadísticas base:")
 		var ranges := [
-			["Daño", item_resource.base_damage_min, item_resource.base_damage_max],
-			["Armadura", item_resource.base_armor_min, item_resource.base_armor_max],
-			["Vida", item_resource.base_hp_min, item_resource.base_hp_max],
-			["Fuerza", item_resource.base_str_min, item_resource.base_str_max],
+			["Daño", _scaled("damage", item_resource.base_damage_min), _scaled("damage", item_resource.base_damage_max)],
+			["Armadura", _scaled("armor", item_resource.base_armor_min), _scaled("armor", item_resource.base_armor_max)],
+			["Vida", _scaled("hp", item_resource.base_hp_min), _scaled("hp", item_resource.base_hp_max)],
+			["Fuerza", _scaled("str", item_resource.base_str_min), _scaled("str", item_resource.base_str_max)],
 			["Agilidad", item_resource.base_agi_min, item_resource.base_agi_max],
 			["Intelecto", item_resource.base_int_min, item_resource.base_int_max],
 		]
@@ -131,13 +178,20 @@ func _update_tooltip() -> void:
 		text += "\n"
 
 	# Materiales
-	if not blueprint_data.materials.is_empty():
+	# Plano desbloqueado: la receta del rango elegido; bloqueado, la base del plano
+	var recipe: Dictionary = shown_recipe if max_rank >= 1 else blueprint_data.materials
+	if not recipe.is_empty():
 		text += "[b]%s[/b]\n" % tr("Requisitos:")
-		for mat_id in blueprint_data.materials:
-			var qty = blueprint_data.materials[mat_id]
+		for mat_id in recipe:
+			var qty = recipe[mat_id]
 			text += "- %s: x%d\n" % [_material_name(String(mat_id)), qty]
 
 	tooltip_text = text
+
+
+## Una estadística base con el rango elegido aplicado (Ranks.scale_stats).
+func _scaled(key: String, value: int) -> int:
+	return int(Ranks.scale_stats({key: value}, selected_rank)[key])
 
 
 ## Nombre de un material en el idioma del jugador (el de su MaterialResource).

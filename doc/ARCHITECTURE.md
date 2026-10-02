@@ -263,7 +263,7 @@ RequestsManager: pedido con rango (80 % el más alto desbloqueado, 20 % uno meno
    → accept_request() consume materiales (los del plano × mat_mult y los de bioma) → CraftingManager.enqueue(rank)
    → minijuegos con TrialDifficulty.apply() → CraftedItem(rank): estadísticas × Ranks.stat_mult()
    → botín → rejilla de Tico → InventoryManager.equipment_rank() → base de Tico
-Enemy: al morir suelta el material del bioma de su sala (Ranks.biome_material_for_room()); un jefe lo suelta seguro
+Enemy: al morir suelta el material del bioma de su sala (Ranks.biome_material_for_room()); un jefe lo suelta seguro solo si su muerte sube el récord (si no, vale la probabilidad normal del bioma)
 ```
 
 Al cargar, `GameManager.apply_record_milestones()` aplica los hitos que el récord ya supera. El encargo propio (`CraftingManager.place_own_order(bp_id, rank)`, desde `BlueprintCard`: selector de rango y «Forjar») cobra la receta y no da oro.
