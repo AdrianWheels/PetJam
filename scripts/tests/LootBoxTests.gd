@@ -498,3 +498,368 @@ func test_piece_under_a_point_and_its_place_on_screen() -> void:
 	check(box.rect_global() == Rect2(60, 970, 960, 440), "la caja en la pantalla (%s)" % box.rect_global())
 	check(box.piece_global_point(sword).is_equal_approx(box.to_global(Vector2(200, 356.5))), "su primera casilla en la pantalla (%s)" % box.piece_global_point(sword))
 	await _free_box(box)
+
+
+# ─── Tarea 5: el panel de Equipo con la caja ───────────────────────────
+
+func _new_panel() -> Control:
+	var panel: Control = load("res://scenes/UI/EquipmentPanel.tscn").instantiate()
+	add_child(panel)
+	panel.open()
+	return panel
+
+
+## Eventos de ratón en coordenadas del lienzo (1080×1920), directos al panel.
+func _mouse(panel: Control, pos: Vector2, pressed: bool) -> void:
+	var e := InputEventMouseButton.new()
+	e.button_index = MOUSE_BUTTON_LEFT
+	e.pressed = pressed
+	e.position = pos
+	panel._input(e)
+
+
+func _move(panel: Control, pos: Vector2) -> void:
+	var e := InputEventMouseMotion.new()
+	e.position = pos
+	panel._input(e)
+
+
+## Dónde poner el dedo para que la pieza cogida caiga con su caja en `cell` de `view` (va una casilla por encima del dedo).
+func _finger_for(panel: Control, view: Control, cell: Vector2i) -> Vector2:
+	var grab: Vector2 = panel._press.origin - panel._press.pos
+	return view.global_position + Vector2(cell) * CELL - grab + Vector2(0, CELL)
+
+
+## Deja una pieza del botín apoyada en el suelo de la caja, en la x dada (px de la caja) y con ese ángulo: con pose, la
+## caja la pone ahí al abrir el panel, sin esperar a que caiga desde arriba.
+func _in_box(item: CraftedItem, x: float, angle: float = 0.0) -> void:
+	var fp := PieceShape.of_item(item, posmod(roundi(angle / (PI / 2.0)), 4))
+	var com := PieceShape.mass_center(fp, LootBoxView.BOX_CELL)
+	item.loot_pose = {"pos": Vector2(x, LootBoxView.SIZE.y - float(fp.size.y) * LootBoxView.BOX_CELL + com.y - 1.0), "ang": angle}
+
+
+func _long_press(panel: Control, pos: Vector2) -> void:
+	_mouse(panel, pos, true)
+	panel._press.time = Time.get_ticks_msec() - 1000  # como si llevara 1 s pulsada
+	panel._process(0.0)
+
+
+## Calla las voces de AudioManager: el clinc de colocar una pieza en Tico seguiría sonando al acabar la suite.
+func _silence_sounds() -> void:
+	var am := get_node_or_null("/root/AudioManager")
+	if am:
+		for voice in am.get_children():
+			if voice is AudioStreamPlayer:
+				voice.stop()
+	await get_tree().create_timer(0.1).timeout
+
+
+func test_the_panel_makes_room_for_the_box() -> void:
+	var panel := _new_panel()
+	check(panel._loot_box.rect_global() == Rect2(60, 970, 960, 440), "la caja mide 960×440 desde y = 970 (%s)" % panel._loot_box.rect_global())
+	check(panel._bag_view.global_position == Vector2(60, 1460), "la mochila baja a y = 1460 (%s)" % panel._bag_view.global_position)
+	check(panel.sell_zone.get_global_rect() == Rect2(760, 1460, 260, 440), "y la zona de venta con ella (%s)" % panel.sell_zone.get_global_rect())
+	check(panel.get_node("BagIcon").position.y == 1410.0 and panel.get_node("BagTitle").position.y == 1416.0, "el título de la mochila, con su icono, entre la caja y la mochila")
+	check(not ("_scrolling" in panel) and not ("_loot_view" in panel), "sin la tira ni su desplazamiento")
+	panel.queue_free()
+	await get_tree().process_frame
+
+
+func test_grabbing_a_box_piece_straightens_it() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var sword := _piece(&"sword_advanced")  # 1×3
+	im.add_crafted_item(sword)
+	sword.loot_pose = {"pos": Vector2(480, 200), "ang": 1.3}  # torcida, casi tumbada
+	var panel := _new_panel()
+	var box: LootBoxView = panel._loot_box
+	check(box.body_of(sword) != null and is_equal_approx(box.body_of(sword).rotation, 1.3), "la espada está en la caja con su ángulo")
+	var start := box.piece_global_point(sword)
+	_mouse(panel, start, true)
+	check(panel._press.get("item") == sword and panel._press.get("rot") == 1, "al cogerla se endereza al cuarto de vuelta más cercano (%s)" % [panel._press.get("rot")])
+	check(box.body_of(sword).rects.all(func(r): return r.size == Vector2(55, 55)), "en la caja choca a media escala: 55 px por casilla")
+	var com := PieceShape.mass_center(PieceShape.of_item(sword, 1), panel.DRAG_CELL)
+	check(is_equal_approx(panel.DRAG_CELL, 110.0) and (panel._press.origin + com).is_equal_approx(box.to_global(Vector2(480, 200))), "cogida, crece a 110 px por casilla alrededor de su centro de masa")
+	_move(panel, start + Vector2(0, -40))
+	check(panel._dragging and panel._drag_rot == 1 and box.is_held(sword) and box.body_of(sword) == null, "arrastrada, sale de la física y la lleva el dedo")
+	var full: Vector2 = Vector2(PieceShape.of_item(sword, 1).size) * panel.DRAG_CELL
+	check(full == Vector2(330, 110), "la pieza arrastrada mide lo que en la rejilla (%s)" % full)
+	_move(panel, Vector2(540, 60))  # arriba del todo, fuera de las rejillas y de la caja
+	_mouse(panel, Vector2(540, 60), false)
+	var back := box.body_of(sword)
+	check(sword.place == &"loot" and back != null and not box.is_held(sword), "soltada fuera de todo, vuelve a la caja")
+	check(back.position.is_equal_approx(Vector2(480, LootBoxView.CEIL_Y + 27.5)) and is_equal_approx(back.rotation, PI / 2.0), "al punto de la caja más cercano al dedo, bajo el techo (%s)" % back.position)
+	check(back.rects.all(func(r): return r.size == Vector2(55, 55)), "y vuelve a media escala")
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+func test_dropping_in_the_box_throws_with_the_gesture() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var helmet := _piece(&"helmet_basic")
+	im.add_crafted_item(helmet)
+	_in_box(helmet, 200.0)
+	var panel := _new_panel()
+	var box: LootBoxView = panel._loot_box
+	var start := box.piece_global_point(helmet)
+	_mouse(panel, start, true)
+	_move(panel, start + Vector2(0, -40))
+	var finger := box.to_global(Vector2(600, 300))
+	_move(panel, finger)
+	check(panel._target.get("place") == &"loot", "sobre la caja, el destino es el botín (%s)" % [panel._target])
+	var center: Vector2 = panel._ghost_origin() + PieceShape.mass_center(PieceShape.of_item(helmet, 0), panel.DRAG_CELL)
+	var now := Time.get_ticks_usec()
+	panel._drag_trail = [[finger - Vector2(300, 0), now - 50000], [finger, now]]  # 6000 px/s hacia la derecha
+	_mouse(panel, finger, false)
+	var body := box.body_of(helmet)
+	check(body != null and body.position.is_equal_approx(box.to_local(center)), "entra donde se veía la pieza, una casilla por encima del dedo")
+	check(body.linear_velocity.x > 1000.0 and body.linear_velocity.length() <= LootBoxView.MAX_THROW_SPEED + 0.5, "con la inercia del gesto, con tope (%s)" % body.linear_velocity)
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+func test_a_piece_from_the_grid_lands_where_it_is_dropped() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var helmet := _piece(&"helmet_basic")
+	im.add_crafted_item(helmet)
+	im.move_item(helmet, &"hero", Vector2i(0, 0), 0)
+	var panel := _new_panel()
+	var box: LootBoxView = panel._loot_box
+	var start: Vector2 = panel._hero_view.global_position + Vector2(55, 55)
+	_mouse(panel, start, true)
+	_move(panel, start + Vector2(30, 30))
+	var finger := box.to_global(Vector2(480, 300))
+	_move(panel, finger)
+	_mouse(panel, finger, false)
+	var body := box.body_of(helmet)
+	check(helmet.place == &"loot" and body != null and box._queue.is_empty(), "sale de Tico y entra en la caja sin caer desde arriba")
+	check(body.position.is_equal_approx(Vector2(480, 190)), "donde se soltó: una casilla por encima del dedo (%s)" % body.position)
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+func test_a_swap_sends_the_other_piece_from_the_top() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var old_sword := _piece(&"sword_basic", 0.5)
+	var new_sword := _piece(&"sword_basic", 0.95)
+	im.add_crafted_item(old_sword)
+	im.move_item(old_sword, &"hero", Vector2i(3, 0), 0)  # de pie en (3,0)-(3,1)
+	im.add_crafted_item(new_sword)
+	_in_box(new_sword, 300.0, PI / 2.0)  # tumbada en la caja
+	var panel := _new_panel()
+	var box: LootBoxView = panel._loot_box
+	var start := box.piece_global_point(new_sword)
+	_mouse(panel, start, true)
+	_move(panel, start + Vector2(0, -30))
+	var finger := _finger_for(panel, panel._hero_view, Vector2i(2, 0))  # tumbada: (2,0)-(3,0), encima de la vieja
+	_move(panel, finger)
+	_mouse(panel, finger, false)
+	check(new_sword.place == &"hero" and old_sword.place == &"loot", "se intercambian")
+	check(box.body_of(old_sword) == null and box._queue.has(old_sword), "la vieja espera su turno para caer desde arriba")
+	var frames: int = await _physics_until(func(): return box.body_of(old_sword) != null, 3 * LootBoxView.SPAWN_INTERVAL)
+	check(frames > 0 and box.body_of(old_sword).position.y < 0.0, "y cae desde arriba de la caja")
+	await _silence_sounds()
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+func test_tap_and_long_press_on_a_box_piece() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var helmet := _piece(&"helmet_advanced", 1.0)
+	im.add_crafted_item(helmet)
+	_in_box(helmet, 400.0)
+	var panel := _new_panel()
+	var box: LootBoxView = panel._loot_box
+	var p := box.piece_global_point(helmet)
+	_mouse(panel, p, true)
+	_mouse(panel, p, false)
+	check(panel._selected == helmet and box.body_of(helmet) != null and not box.is_held(helmet), "tocarla la enseña en la ficha, sin sacarla de la caja")
+	_long_press(panel, p)
+	check(panel._card.visible and panel._card_item == helmet and box.body_of(helmet) != null, "mantenerla pulsada abre su ficha completa")
+	_mouse(panel, p, false)
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+func test_closing_mid_drag_returns_the_piece_to_the_box() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var gm := get_node("/root/GameManager")
+	var helmet := _piece(&"helmet_basic")
+	im.add_crafted_item(helmet)
+	_in_box(helmet, 200.0)
+	var panel := _new_panel()
+	var box: LootBoxView = panel._loot_box
+	var start := box.piece_global_point(helmet)
+	_mouse(panel, start, true)
+	_move(panel, start + Vector2(0, -40))
+	_move(panel, box.to_global(Vector2(700, 300)))
+	check(box.is_held(helmet), "el casco va en el dedo")
+	gm.save_writer = Callable(self, "_count_save_write")
+	_save_writes = 0
+	panel.close()  # Atrás con la pieza en el dedo
+	var body := box.body_of(helmet)
+	check(not box.active and not box.is_held(helmet) and body != null, "vuelve a la caja, que se congela")
+	check(body.position.is_equal_approx(Vector2(700, 300)) and LootBoxView.pose_is_valid(helmet.loot_pose), "al punto más cercano al dedo, con su pose recogida (%s)" % body.position)
+	var p0 := body.position
+	await _physics_steps(30)
+	check(body.position == p0, "con el panel cerrado no se mueve")
+	for i in 2:
+		await get_tree().process_frame
+	check(_save_writes >= 1, "y la pose se guarda (%d)" % _save_writes)
+	gm.save_writer = Callable()
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+func test_new_loot_while_holding_a_box_piece() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var helmet := _piece(&"helmet_basic")
+	im.add_crafted_item(helmet)
+	_in_box(helmet, 200.0)
+	var panel := _new_panel()
+	var box: LootBoxView = panel._loot_box
+	var start := box.piece_global_point(helmet)
+	_mouse(panel, start, true)
+	_move(panel, start + Vector2(0, -40))
+	var fresh := _piece(&"boots_basic")
+	im.add_crafted_item(fresh)  # llega de la forja a mitad del arrastre
+	check(box.is_held(helmet) and box.body_of(helmet) == null, "la pieza cogida no reaparece en la caja")
+	check(box._queue.has(fresh) and not box._queue.has(helmet), "la nueva espera para caer desde arriba")
+	_move(panel, Vector2(540, 60))
+	_mouse(panel, Vector2(540, 60), false)
+	var frames: int = await _physics_until(func(): return box.body_of(fresh) != null, 6 * LootBoxView.SPAWN_INTERVAL)
+	check(frames > 0 and box.body_of(helmet) != null and box._bodies.size() == 2, "al final, un cuerpo cada una")
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+func test_selling_an_epic_from_the_box_waits_in_the_box() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var epic := _piece(&"helmet_basic", 0.95)
+	im.add_crafted_item(epic)
+	_in_box(epic, 800.0)
+	var panel := _new_panel()
+	var box: LootBoxView = panel._loot_box
+	var start := box.piece_global_point(epic)
+	_mouse(panel, start, true)
+	_move(panel, start + Vector2(0, 40))
+	var sell_point: Vector2 = panel.sell_zone.get_global_rect().get_center()
+	_move(panel, sell_point)
+	_mouse(panel, sell_point, false)
+	check(panel._confirm_box.visible and epic in im.get_crafted_items(), "la épica pide confirmación")
+	check(box.body_of(epic) != null and not box.is_held(epic), "mientras, vuelve a la caja")
+	panel._on_confirm_yes()
+	check(not (epic in im.get_crafted_items()) and box.body_of(epic) == null, "al confirmar se vende y su cuerpo se va")
+	await _silence_sounds()
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+## Requisito A de la revisión de la tarea 4: la caja cerrada saca sus cuerpos de la física (PROCESS_MODE_DISABLED) y sus
+## consultas de solape no verían nada. Las poses que se cargan con el panel cerrado entran al abrirlo, ya con la caja
+## activa: las que se pisan acaban como fantasmas (o separadas) y nadie sale despedido.
+func test_overlapping_poses_loaded_while_closed_do_not_explode_on_open() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var panel := _new_panel()
+	panel.close()
+	var box: LootBoxView = panel._loot_box
+	check(not box.active, "con el panel cerrado la caja está parada")
+	var a := _piece(&"shield_advanced")
+	var b := _piece(&"shield_advanced")
+	im.add_crafted_item(a)
+	im.add_crafted_item(b)
+	for it in [a, b]:
+		it.loot_pose = {"pos": Vector2(480, 384), "ang": 0.0}  # las dos en el mismo sitio
+	im.load_save_data(im.to_save_data(), 1)  # como al cargar la partida: piezas nuevas con su pose
+	var loot: Array[CraftedItem] = im.get_loot()
+	check(loot.size() == 2 and loot.all(func(it): return LootBoxView.pose_is_valid(it.loot_pose)), "se cargan con su pose")
+	check(box._bodies.is_empty(), "con el panel cerrado aún no entran")
+	panel.open()
+	check(box.active and loot.all(func(it): return box.body_of(it) != null), "al abrir, las dos entran en su pose")
+	var ghosts: Array = loot.filter(func(it): return box.body_of(it).is_ghost)
+	check(ghosts.size() == 1, "la que pisa a la otra entra como fantasma (%d fantasmas)" % ghosts.size())
+	await _physics_steps(120)
+	check(loot.all(func(it): return _inside(box.body_of(it))), "las dos siguen dentro de la caja")
+	var solid: Array = loot.filter(func(it): return not box.body_of(it).is_ghost)
+	check(solid.size() >= 1 and box.body_of(solid[0]).position.distance_to(Vector2(480, 384)) < 3.0, "y nadie sale despedido (%s)" % box.body_of(loot[0]).position)
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+## Un cuerpo por pieza del botín, ni uno más ni uno menos: los cuerpos (y los hijos LootPiece de la caja) son las piezas
+## del botín, salvo la que lleva el dedo.
+func _one_body_each(box: LootBoxView, loot: Array) -> bool:
+	var pieces := box.get_children().filter(func(n): return n is LootPiece)
+	if pieces.size() != loot.size() or box._bodies.size() != loot.size():
+		return false
+	for item in loot:
+		var body := box.body_of(item)
+		if body == null or body.item != item or not (body in pieces):
+			return false
+	return true
+
+
+## Requisito B: «Vender todo» y vender lo que queda (la caja se sincroniza con un botín vacío) dejan un cuerpo por pieza.
+func test_sell_all_leaves_one_body_per_loot_piece() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var basics := [_piece(&"helmet_basic", 0.3), _piece(&"boots_basic", 0.3), _piece(&"sword_basic", 0.3)]
+	var epic := _piece(&"shield_advanced", 0.95)
+	var xs := [120.0, 360.0, 600.0, 840.0]
+	for i in 4:
+		var it: CraftedItem = (basics + [epic])[i]
+		im.add_crafted_item(it)
+		_in_box(it, xs[i])
+	var panel := _new_panel()
+	var box: LootBoxView = panel._loot_box
+	check(_one_body_each(box, im.get_loot()), "al abrir, un cuerpo por pieza (%d cuerpos, %d piezas)" % [box._bodies.size(), im.get_loot().size()])
+	panel._on_sell_all()
+	panel._on_confirm_yes()
+	check(im.get_loot().size() == 1 and im.get_loot()[0] == epic, "«Vender todo» deja la épica")
+	check(_one_body_each(box, im.get_loot()), "y solo su cuerpo en la caja (%d cuerpos)" % box._bodies.size())
+	await _physics_steps(30)
+	check(_one_body_each(box, im.get_loot()), "también unos pasos después")
+	im.sell_item(epic)  # la caja se queda con el botín vacío
+	check(_one_body_each(box, []) and box._queue.is_empty() and box._held == null, "con el botín vacío no queda ningún cuerpo")
+	await _silence_sounds()
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+## Requisito B: añadir, quitar y volver a añadir deprisa (en el mismo paso o con la pieza aún en la cola) no pierde ni
+## duplica cuerpos.
+func test_quick_add_remove_add_keeps_one_body_each() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var panel := _new_panel()
+	var box: LootBoxView = panel._loot_box
+	var a := _piece(&"helmet_basic", 0.3)
+	var b := _piece(&"boots_basic", 0.3)
+	im.add_crafted_item(a)
+	im.sell_item(a)
+	im.add_crafted_item(a)  # la misma pieza vuelve antes de entrar
+	im.add_crafted_item(b)
+	check(box._queue.size() == 2 and box._queue.count(a) == 1, "en la cola, una vez cada una (%d)" % box._queue.size())
+	var frames: int = await _physics_until(func(): return box._queue.is_empty(), 6 * LootBoxView.SPAWN_INTERVAL)
+	check(frames > 0 and _one_body_each(box, im.get_loot()), "al entrar, un cuerpo cada una (%d cuerpos)" % box._bodies.size())
+	# Con cuerpo: a Tico y de vuelta al botín en el mismo paso, y otra que llega y se vende a la vez
+	im.move_item(a, &"hero", Vector2i(0, 0), 0)
+	im.move_item(a, InventoryManager.PLACE_LOOT)
+	var c := _piece(&"sword_basic", 0.3)
+	im.add_crafted_item(c)
+	im.remove_crafted_item(c)
+	im.add_crafted_item(c)
+	check(box.body_of(a) == null and box._queue.count(a) == 1 and box._queue.count(c) == 1, "la que volvió del todo cae otra vez desde arriba, sin cuerpo viejo")
+	frames = await _physics_until(func(): return box._queue.is_empty(), 8 * LootBoxView.SPAWN_INTERVAL)
+	check(frames > 0 and _one_body_each(box, im.get_loot()), "al final, un cuerpo por pieza del botín (%d cuerpos, %d piezas)" % [box._bodies.size(), im.get_loot().size()])
+	await _silence_sounds()
+	panel.queue_free()
+	await _restore_inventory(saved)

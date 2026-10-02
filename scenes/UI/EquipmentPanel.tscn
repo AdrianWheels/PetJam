@@ -48,25 +48,25 @@ text = "Vender todo"
 
 [node name="BagIcon" type="TextureRect" parent="."]
 offset_left = 56.0
-offset_top = 1300.0
+offset_top = 1410.0
 offset_right = 108.0
-offset_bottom = 1352.0
+offset_bottom = 1462.0
 mouse_filter = 2
 texture = ExtResource("bag_icon")
 
 [node name="BagTitle" type="Label" parent="."]
 offset_left = 112.0
-offset_top = 1306.0
+offset_top = 1416.0
 offset_right = 700.0
-offset_bottom = 1346.0
+offset_bottom = 1456.0
 theme_override_font_sizes/font_size = 30
 text = "Mochila"
 
 [node name="SellZone" type="Panel" parent="."]
 offset_left = 760.0
-offset_top = 1350.0
+offset_top = 1460.0
 offset_right = 1020.0
-offset_bottom = 1790.0
+offset_bottom = 1900.0
 mouse_filter = 2
 
 [node name="SellLabel" type="Label" parent="SellZone"]

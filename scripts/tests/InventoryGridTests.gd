@@ -850,6 +850,19 @@ func _finger_for(panel: Control, view: Control, cell: Vector2i) -> Vector2:
 	return view.global_position + Vector2(cell) * GearGridView.CELL - grab + Vector2(0, GearGridView.CELL)
 
 
+## Deja una pieza del botín apoyada en el suelo de la caja, en la x dada (px de la caja) y con ese ángulo: con pose, la
+## caja la pone ahí al abrir el panel, sin esperar a que caiga desde arriba.
+func _in_box(item: CraftedItem, x: float, angle: float = 0.0) -> void:
+	var fp := PieceShape.of_item(item, posmod(roundi(angle / (PI / 2.0)), 4))
+	var com := PieceShape.mass_center(fp, LootBoxView.BOX_CELL)
+	item.loot_pose = {"pos": Vector2(x, LootBoxView.SIZE.y - float(fp.size.y) * LootBoxView.BOX_CELL + com.y - 1.0), "ang": angle}
+
+
+## Dónde pulsar una pieza de la caja: el centro de su primera casilla limpia.
+func _box_point(panel: Control, item: CraftedItem) -> Vector2:
+	return panel._loot_box.piece_global_point(item)
+
+
 ## Calla las voces de AudioManager y deja que el hilo de audio las suelte: el clinc de colocar una pieza en
 ## Tico sigue sonando al acabar la suite y Godot avisaría de recursos «still in use at exit» (como en
 ## GameplayTests._silence_loot_sounds).
@@ -886,11 +899,12 @@ func test_drag_from_loot_places_and_swaps() -> void:
 	im.add_crafted_item(old_sword)
 	im.move_item(old_sword, &"hero", Vector2i(3, 0), 0)  # de pie en (3,0)-(3,1)
 	im.add_crafted_item(new_sword)
+	_in_box(new_sword, 300.0, PI / 2.0)  # tumbada en el suelo de la caja
 	var panel := _new_panel()
-	var start: Vector2 = panel._loot_view.global_position + Vector2(40, 165)
+	var start := _box_point(panel, new_sword)
 	_mouse(panel, start, true)
-	check(panel._press.get("item") == new_sword and panel._press.get("rot") == 1, "se coge la espada nueva, tumbada como en el botín")
-	_move(panel, start + Vector2(0, -30))  # hacia arriba: se coge (de lado se desplazaría el botín)
+	check(panel._press.get("item") == new_sword and panel._press.get("rot") == 1, "se coge la espada nueva, tumbada como está en la caja")
+	_move(panel, start + Vector2(0, -30))
 	check(panel._dragging, "empieza el arrastre")
 	var finger := _finger_for(panel, panel._hero_view, Vector2i(2, 0))  # tumbada: (2,0)-(3,0), encima de la vieja
 	_move(panel, finger)
@@ -936,8 +950,9 @@ func test_new_loot_while_dragging_is_not_lost() -> void:
 	var im := _im()
 	var dragged := _piece(&"helmet_basic")
 	im.add_crafted_item(dragged)
+	_in_box(dragged, 300.0)
 	var panel := _new_panel()
-	var start: Vector2 = panel._loot_view.global_position + Vector2(60, 165)
+	var start := _box_point(panel, dragged)
 	_mouse(panel, start, true)
 	_move(panel, start + Vector2(0, -40))
 	check(panel._dragging, "se arrastra el casco")
@@ -954,17 +969,20 @@ func test_new_loot_while_dragging_is_not_lost() -> void:
 	await _restore_inventory(saved)
 
 
-func test_loot_strip_scrolls_sideways() -> void:
+## En la caja no hay desplazamiento: arrastrar de lado también coge la pieza (spec del botín con física, apartado 6).
+func test_dragging_sideways_in_the_box_takes_the_piece() -> void:
 	var saved := _fresh_inventory()
 	var im := _im()
-	for i in 6:
-		im.add_crafted_item(_piece(&"shield_master"))
+	var shield := _piece(&"shield_master")
+	im.add_crafted_item(shield)
+	_in_box(shield, 600.0)
 	var panel := _new_panel()
-	var start: Vector2 = panel._loot_view.global_position + Vector2(600, 165)
+	var start := _box_point(panel, shield)
 	_mouse(panel, start, true)
 	_move(panel, start + Vector2(-300, 5))
-	check(not panel._dragging and panel._loot_view.scroll > 250.0, "de lado se desplaza la tira, no se coge la pieza (%.0f)" % panel._loot_view.scroll)
+	check(panel._dragging and panel._press.get("item") == shield, "de lado se coge la pieza")
 	_mouse(panel, start + Vector2(-300, 5), false)
+	check(shield.place == &"loot" and panel._loot_box.body_of(shield) != null, "soltada en la caja, sigue en el botín con su cuerpo")
 	panel.queue_free()
 	await _restore_inventory(saved)
 
@@ -979,13 +997,14 @@ func test_dropping_a_piece_on_its_own_place_does_not_rematerialize_tico() -> voi
 	im.add_crafted_item(sword)
 	im.add_crafted_item(helmet)
 	im.move_item(sword, &"hero", Vector2i(1, 0), 0)
+	_in_box(helmet, 300.0)
 	var panel := _new_panel()
 	var puppet: Node = panel._puppet
 	puppet.set("_materialize", 1.0)  # Tico ya está entero
-	var tap: Vector2 = panel._loot_view.global_position + Vector2(40, 165)
+	var tap := _box_point(panel, helmet)
 	_mouse(panel, tap, true)
 	_mouse(panel, tap, false)
-	check(panel._selected == helmet and "Casco básico" in panel._ficha_label.text, "un toque en el casco del botín lo enseña en la ficha")
+	check(panel._selected == helmet and "Casco básico" in panel._ficha_label.text, "un toque en el casco de la caja lo enseña en la ficha")
 	var start := _cell_center(panel._hero_view, Vector2i(1, 1))
 	_mouse(panel, start, true)
 	_move(panel, start + Vector2(30, 0))
@@ -997,6 +1016,7 @@ func test_dropping_a_piece_on_its_own_place_does_not_rematerialize_tico() -> voi
 	check(sword.place == &"hero" and sword.cell == Vector2i(1, 0) and sword.rot == 0, "la espada sigue donde estaba")
 	check(is_equal_approx(puppet.get("_materialize"), 1.0), "soltarla ahí no vuelve a materializar a Tico (%s)" % puppet.get("_materialize"))
 	check(panel._selected == sword and "Espada avanzada" in panel._ficha_label.text, "pero la ficha pasa a la espada soltada (%s)" % panel._ficha_label.text)
+	tap = _box_point(panel, helmet)
 	_mouse(panel, tap, true)  # otra vez el casco, y luego la espada a otra casilla de verdad
 	_mouse(panel, tap, false)
 	check(panel._selected == helmet and "Casco básico" in panel._ficha_label.text, "la ficha vuelve al casco")
@@ -1058,7 +1078,7 @@ func test_back_is_given_back_if_the_panel_goes_away_open() -> void:
 
 
 ## Manda la pieza, no el dedo: con la rejilla de 6×6, una pieza sobre su última fila, con el dedo ya dentro de la
-## tira del botín, cae en la rejilla.
+## caja del botín, cae en la rejilla.
 func test_dropping_on_the_last_row_of_a_full_grid_places_the_piece() -> void:
 	var saved := _fresh_inventory()
 	var im := _im()
@@ -1068,12 +1088,13 @@ func test_dropping_on_the_last_row_of_a_full_grid_places_the_piece() -> void:
 	check(im.hero_grid_size() == Vector2i(6, 6), "Tico tiene la rejilla de 6×6 (%s)" % im.hero_grid_size())
 	var helmet := _piece(&"helmet_basic")  # 1×1
 	im.add_crafted_item(helmet)
+	_in_box(helmet, 300.0)
 	var panel := _new_panel()
-	var start: Vector2 = panel._loot_view.global_position + Vector2(60, 165)
+	var start := _box_point(panel, helmet)
 	_mouse(panel, start, true)
 	_move(panel, start + Vector2(0, -30))
 	var finger := _finger_for(panel, panel._hero_view, Vector2i(2, 5))
-	check(panel._loot_view.get_global_rect().has_point(finger), "el dedo ya está dentro de la tira del botín (%s)" % finger)
+	check(panel._loot_box.rect_global().has_point(finger), "el dedo ya está dentro de la caja del botín (%s)" % finger)
 	_move(panel, finger)
 	check(panel._target.get("place") == &"hero" and panel._target.get("cell") == Vector2i(2, 5) and panel._target.get("ok", false), "el destino es la casilla de Tico bajo la pieza (%s)" % [panel._target])
 	_mouse(panel, finger, false)
@@ -1083,7 +1104,7 @@ func test_dropping_on_the_last_row_of_a_full_grid_places_the_piece() -> void:
 	await _restore_inventory(saved)
 
 
-## En una rejilla pequeña, las filas punteadas (aún sin abrir) no se llevan lo que se suelta sobre el botín.
+## En una rejilla pequeña, las filas punteadas (aún sin abrir) no se llevan lo que se suelta sobre la caja del botín.
 func test_dashed_rows_do_not_steal_a_drop_meant_for_the_loot() -> void:
 	var saved := _fresh_inventory()
 	var im := _im()
@@ -1095,11 +1116,11 @@ func test_dashed_rows_do_not_steal_a_drop_meant_for_the_loot() -> void:
 	_mouse(panel, start, true)
 	_move(panel, start + Vector2(30, 30))
 	var finger := _finger_for(panel, panel._hero_view, Vector2i(2, 5))  # la pieza sobre la fila 5, que en 4×4 aún no existe
-	check(panel._loot_view.get_global_rect().has_point(finger), "el dedo está dentro de la tira del botín (%s)" % finger)
+	check(panel._loot_box.rect_global().has_point(finger), "el dedo está dentro de la caja del botín (%s)" % finger)
 	_move(panel, finger)
 	check(panel._target.get("place") == &"loot", "sobre una casilla que no existe manda el botín (%s)" % [panel._target])
 	_mouse(panel, finger, false)
-	check(helmet.place == &"loot", "y la pieza sale de Tico al botín")
+	check(helmet.place == &"loot" and panel._loot_box.body_of(helmet) != null, "y la pieza sale de Tico a la caja del botín")
 	panel.queue_free()
 	await _restore_inventory(saved)
 
@@ -1139,8 +1160,9 @@ func test_new_loot_while_dragging_keeps_the_stats_preview() -> void:
 	var im := _im()
 	var sword := _piece(&"sword_advanced")
 	im.add_crafted_item(sword)
+	_in_box(sword, 300.0)
 	var panel := _new_panel()
-	var start: Vector2 = panel._loot_view.global_position + Vector2(60, 165)
+	var start := _box_point(panel, sword)
 	_mouse(panel, start, true)
 	_move(panel, start + Vector2(0, -30))
 	var finger := _finger_for(panel, panel._hero_view, Vector2i(0, 0))
@@ -1160,8 +1182,9 @@ func test_grid_growing_while_dragging_recalculates_the_target() -> void:
 	var im := _im()
 	var shield := _piece(&"shield_advanced")  # 2×2
 	im.add_crafted_item(shield)
+	_in_box(shield, 300.0)
 	var panel := _new_panel()
-	var start: Vector2 = panel._loot_view.global_position + Vector2(60, 165)
+	var start := _box_point(panel, shield)
 	_mouse(panel, start, true)
 	_move(panel, start + Vector2(0, -30))
 	var finger := _finger_for(panel, panel._hero_view, Vector2i(3, 0))  # en 4×4 se sale por la derecha
@@ -1183,14 +1206,15 @@ func test_open_cancels_a_drag_left_over() -> void:
 	var im := _im()
 	var helmet := _piece(&"helmet_basic")
 	im.add_crafted_item(helmet)
+	_in_box(helmet, 300.0)
 	var panel := _new_panel()
-	var start: Vector2 = panel._loot_view.global_position + Vector2(60, 165)
+	var start := _box_point(panel, helmet)
 	_mouse(panel, start, true)
 	_move(panel, start + Vector2(0, -40))
-	check(panel._dragging and panel._loot_view.hidden_item == helmet, "se arrastra el casco y la tira deja de dibujarlo")
+	check(panel._dragging and panel._loot_box.is_held(helmet) and panel._loot_box.body_of(helmet) == null, "se arrastra el casco y sale de la física de la caja")
 	panel.visible = false  # algo lo oculta sin pasar por close()
 	panel.open()
-	check(not panel._dragging and panel._press.is_empty() and panel._loot_view.hidden_item == null, "al abrirlo otra vez el arrastre queda cancelado y el casco vuelve a verse")
+	check(not panel._dragging and panel._press.is_empty() and not panel._loot_box.is_held(helmet) and panel._loot_box.body_of(helmet) != null, "al abrirlo otra vez el arrastre queda cancelado y el casco vuelve a la caja")
 	panel.queue_free()
 	await _restore_inventory(saved)
 

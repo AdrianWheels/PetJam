@@ -345,31 +345,34 @@ func _run_inventory_plan() -> void:
 	add.call(&"shield_basic", 0.6, InventoryManager.PLACE_BAG, Vector2i(0, 0))
 	add.call(&"boots_basic", 0.3, InventoryManager.PLACE_LOOT, Vector2i.ZERO)
 	add.call(&"helmet_advanced", 1.0, InventoryManager.PLACE_LOOT, Vector2i.ZERO)
-	add.call(&"sword_advanced", 0.93, InventoryManager.PLACE_LOOT, Vector2i.ZERO)  # épica, sin aristas: la última añadida va delante
+	var fresh: CraftedItem = add.call(&"sword_advanced", 0.93, InventoryManager.PLACE_LOOT, Vector2i.ZERO)  # épica, sin aristas
 	hud._on_delivery_pressed()
-	await get_tree().create_timer(1.5).timeout
+	await get_tree().create_timer(2.5).timeout  # las tres del botín caen en la caja, una tras otra
 	var panel: Node = hud.equipment_panel
-	# Arrastre: la espada nueva, del botín a la columna derecha de Tico. Tres giros con la R la ponen de pie
-	# y cae encima de la maestra: se intercambian y la maestra vuelve al botín, delante.
-	var start: Vector2 = panel._loot_view.global_position + Vector2(60, 165)
+	var box: LootBoxView = panel._loot_box
+	# Arrastre: la espada nueva, de la caja a la columna derecha de Tico. Al cogerla se endereza; con la R se pone de pie
+	# y cae encima de la maestra: se intercambian y la maestra vuelve al botín, cayendo desde arriba.
+	var start: Vector2 = box.piece_global_point(fresh)
 	panel._on_press(start)
+	var turns := (4 - int(panel._press.rot)) % 4  # giros de R hasta dejarla de pie: la espada avanzada (1×3) lo está en el giro 0
 	var grab: Vector2 = panel._press.origin - panel._press.pos
 	var finish: Vector2 = panel._hero_view.global_position + Vector2(5, 0) * GearGridView.CELL - grab + Vector2(0.0, GearGridView.CELL)
 	for i in 12:
 		panel._on_motion(start.lerp(finish, float(i + 1) / 12.0))
-		if i in [4, 6, 8]:
+		if i in [4, 6, 8] and turns > 0:
 			panel._rotate_drag()
+			turns -= 1
 		await get_tree().create_timer(0.12).timeout
 	await get_tree().create_timer(1.0).timeout  # destino en verde, intercambio y cambio de estadísticas
 	panel._on_release(finish)
-	await get_tree().create_timer(1.5).timeout
-	# Ficha completa de la maestra legendaria, ya en el botín. La pulsación larga mide tiempo real (Time.get_ticks_msec) y
-	# la grabación va más deprisa que el reloj: 0,6 s del juego pueden ser menos de 0,4 s reales y la pieza solo se tocaría.
-	# Se adelanta la hora de la pulsación en vez de esperarla
-	panel._on_press(start)
+	await get_tree().create_timer(2.0).timeout  # la maestra cae en la caja
+	# Ficha completa de la maestra legendaria, ya en la caja. La pulsación larga mide tiempo real (Time.get_ticks_msec) y
+	# la grabación va más deprisa que el reloj: se adelanta la hora de la pulsación en vez de esperarla
+	var legend_point: Vector2 = box.piece_global_point(legend)
+	panel._on_press(legend_point)
 	panel._press.time = Time.get_ticks_msec() - 1000
 	await get_tree().create_timer(0.6).timeout
-	panel._on_release(start)
+	panel._on_release(legend_point)
 
 
 func _run_ranks_plan() -> void:

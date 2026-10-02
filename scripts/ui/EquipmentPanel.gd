@@ -1,29 +1,33 @@
 # res://scripts/ui/EquipmentPanel.gd
 extends ColorRect
 
-## Panel de Equipo a pantalla completa (spec doc/specs/2026-09-27-inventario-en-rejilla.md, apartado 9).
-## De arriba abajo: estadísticas de Tico, ficha de la última pieza tocada, rejilla de Tico delante de su
-## sprite (con los consumibles al lado), botín, mochila y zona de venta.
+## Panel de Equipo a pantalla completa (spec doc/specs/2026-09-27-inventario-en-rejilla.md, apartado 9, y
+## doc/specs/2026-10-02-botin-con-fisica.md). De arriba abajo: estadísticas de Tico, ficha de la última pieza tocada, rejilla
+## de Tico delante de su sprite (con los consumibles al lado), la caja del botín con física, mochila y zona de venta.
 ## El dedo lo lleva este panel, en _input:
-##  - tocar una pieza de una rejilla la gira (si girada no cabe, tiembla); en el botín solo la enseña;
+##  - tocar una pieza de una rejilla la gira (si girada no cabe, tiembla); en la caja solo la enseña;
 ##  - mantener pulsado abre su ficha completa, con los botones A la mochila, Al botín, Vender y Cerrar;
-##  - arrastrar la mueve: la pieza va una casilla por encima del dedo y un segundo dedo la gira;
+##  - arrastrar la mueve: la pieza va una casilla por encima del dedo y un segundo dedo la gira. Una pieza de la caja sale
+##    de la física al cogerla, enderezada al cuarto de vuelta más cercano;
 ##  - soltarla en la zona de venta la vende (las Épicas y Legendarias piden confirmación);
-##  - en el botín, de lado se desplaza la tira; hacia arriba o abajo se coge la pieza;
+##  - soltarla en la caja la devuelve a la física donde se ve, con la inercia del gesto. Una pieza de la caja soltada fuera
+##    de todo (o con la venta por confirmar, o al cerrar el panel) vuelve a la caja, al punto más cercano al dedo;
 ##  - en un hueco de consumibles, tocar enseña la poción en la ficha y mantener pulsado ofrece venderla (la pulsación larga
 ##    termina la pulsación, como la de una pieza).
 ## En el ordenador el ratón hace lo mismo, y la rueda o la tecla R giran la pieza que se arrastra.
 ## Atrás (Android) llega como NOTIFICATION_WM_GO_BACK_REQUEST, no como tecla, y el árbol cierra el juego si
 ## quit_on_go_back es true: mientras el panel está abierto lo apaga. Atrás y Escape cierran lo de más arriba: la
 ## confirmación, si no la ficha y, si no, el panel (ver _back).
+## Con el panel cerrado la caja se congela; al cerrarlo se recogen las poses del botín y se guardan.
 
 signal panel_closed
 
 const HERO_SCENE := preload("res://scenes/Hero.tscn")
 const CELL := GearGridView.CELL
 const HERO_GRID_POS := Vector2(60, 262)
-const BAG_POS := Vector2(60, 1350)
-const LOOT_RECT := Rect2(60, 970, 960, 330)
+const BAG_POS := Vector2(60, 1460)
+## La caja del botín (LootBoxView.SIZE); su techo invisible queda 165 px más arriba
+const LOOT_RECT := Rect2(60, 970, 960, 440)
 const STATS_RECT := Rect2(60, 100, 960, 70)
 const FICHA_RECT := Rect2(60, 174, 960, 84)
 const NEXT_RECT := Rect2(760, 620, 260, 280)
@@ -31,6 +35,11 @@ const NEXT_RECT := Rect2(760, 620, 260, 280)
 const POTION_SLOT_RECTS := [Rect2(780, 300, 220, 120), Rect2(780, 440, 220, 120)]
 const DRAG_THRESHOLD := 10.0
 const LONG_PRESS_MS := 400
+## La pieza que se arrastra va siempre a tamaño completo (110 px por casilla), también la que sale de la caja, donde está a
+## media escala (LootBoxView.BOX_CELL): al cogerla crece alrededor de su centro de masa y al soltarla en la caja encoge
+const DRAG_CELL := CELL
+const THROW_WINDOW_US := 100000  ## el gesto que lanza la pieza: lo que se ha movido el dedo en los últimos 0,1 s
+const THROW_MIN_US := 10000  ## con menos de 0,01 s de gesto no se mide la velocidad: se suelta sin lanzar
 const COLOR_UP := "7dff8a"
 const COLOR_DOWN := "ff7a6e"
 
@@ -44,7 +53,7 @@ var _im: Node
 var _gm: Node
 var _hero_view: GearGridView
 var _bag_view: GearGridView
-var _loot_view: LootStripView
+var _loot_box: LootBoxView
 var _stats_label: RichTextLabel
 var _ficha_label: RichTextLabel
 var _next_label: Label
@@ -64,15 +73,14 @@ var _confirm_text: Label
 var _confirm_action: Callable = Callable()
 
 ## Pulsación en curso: {"item", "from", "rot", "origin", "pos", "time"}; {} si no hay.
-## "origin" es la esquina de la caja de la pieza en la pantalla al pulsar. "item" es null si se pulsa el
-## botín vacío (solo para desplazarlo). La pulsación larga la termina (abre la ficha).
+## "origin" es la esquina de la caja de la pieza en la pantalla al pulsar (en la caja, ya enderezada: ver _box_hit). La
+## pulsación larga la termina (abre la ficha).
 ## En un hueco de consumibles: {"slot", "item": null, "from": &"slot", "pos", "time"}.
 var _press := {}
 var _dragging := false
-var _scrolling := false
-var _scroll_start := 0.0
 var _drag_rot := 0
 var _drag_pos := Vector2.ZERO
+var _drag_trail: Array = []  ## [[posición, µs], …] del dedo durante el arrastre: la inercia del gesto al soltar en la caja
 ## Destino del arrastre: {"place", "cell", "ok", "swap", "view"}; {} si no hay ninguno.
 var _target := {}
 ## Atrás en Android: el quit_on_go_back de antes de abrir el panel, si el panel lo tiene apagado ahora y si aún
@@ -103,11 +111,10 @@ func _build() -> void:
 	_hero_view = _grid_view(HERO_GRID_POS)
 	_hero_view.show_zones = true  # la mochila no tiene zonas
 	_bag_view = _grid_view(BAG_POS)
-	_loot_view = LootStripView.new()
-	_loot_view.position = LOOT_RECT.position
-	_loot_view.size = LOOT_RECT.size
-	_loot_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_loot_view)
+	_loot_box = LootBoxView.new()
+	_loot_box.position = LOOT_RECT.position
+	add_child(_loot_box)  # después de la rejilla de Tico: la pila que rebosa se dibuja encima de sus últimas filas
+	_loot_box.poses_settled.connect(_on_poses_settled)
 	_next_label = Label.new()
 	_next_label.position = NEXT_RECT.position
 	_next_label.size = NEXT_RECT.size
@@ -182,6 +189,7 @@ func _puppet_setup() -> void:
 
 func open() -> void:
 	if is_node_ready():
+		_loot_box.set_active(true)  # antes de cancelar: una pieza de la caja que se arrastraba vuelve a la física
 		# Por si algo ocultó el panel sin pasar por close(): ni arrastre, ni ficha, ni confirmación de la vez anterior
 		_cancel_press()
 		_close_card()
@@ -195,14 +203,25 @@ func open() -> void:
 
 
 func close() -> void:
-	_cancel_press()
+	_cancel_press()  # una pieza de la caja que iba en el dedo vuelve a ella
 	_close_card()
 	_close_confirm()
+	# La caja se congela con el panel cerrado; antes, cada pieza guarda su pose (spec del botín con física, apartados 7 y 8)
+	_loot_box.collect_poses()
+	_loot_box.set_active(false)
+	if _im:
+		_im.note_loot_poses()
 	visible = false
 	_release_go_back()
 	if _puppet:
 		_puppet.process_mode = Node.PROCESS_MODE_DISABLED
 	emit_signal("panel_closed")
+
+
+## La pila se ha quedado quieta: sus poses ya están en las piezas y se guardan con el guardado diferido de siempre.
+func _on_poses_settled() -> void:
+	if _im:
+		_im.note_loot_poses()
 
 # ═══════════════════════════════════════════════════════════════════
 #  ATRÁS (ANDROID)
@@ -277,7 +296,10 @@ func _refresh() -> void:
 		return
 	_hero_view.setup(_im.hero_grid, GridExpansions.MAX_SIZE)
 	_bag_view.setup(_im.bag_grid, InventoryManager.BAG_SIZE)
-	_loot_view.set_items(_im.get_loot())
+	# Solo con la caja activa: congelada, sus cuerpos están fuera de la física y las poses que se pisan no se verían (no
+	# entrarían como fantasmas). Lo que cambie con el panel cerrado entra al abrirlo, que la activa antes de refrescar
+	if _loot_box.active:
+		_loot_box.sync(_im.get_loot())
 	loot_title.text = tr("Botín · %d") % _im.get_loot_count()
 	if _selected and not (_selected in _im.get_crafted_items()):
 		_selected = null
@@ -436,28 +458,33 @@ func _on_press(pos: Vector2) -> void:
 	_press.pos = pos
 	_press.time = Time.get_ticks_msec()
 	_dragging = false
-	_scrolling = false
-	_scroll_start = _loot_view.scroll
 	get_viewport().set_input_as_handled()
 
 
-## Pieza bajo un punto de la pantalla: {"item", "from", "rot", "origin"}, o {} si no hay nada que coger.
-## En el botín vacío devuelve {"item": null, "from": &"loot"} para poder desplazarlo.
+## Pieza bajo un punto de la pantalla: {"item", "from", "rot", "origin"}, o {} si no hay nada que coger. Manda la pieza de la
+## caja que choca (se dibuja encima de las últimas filas de Tico cuando la pila rebosa); después las rejillas; un fantasma
+## de la caja, el último.
 func _piece_at(pos: Vector2) -> Dictionary:
+	var body := _loot_box.piece_at(_loot_box.to_local(pos))
+	if body and not body.is_ghost:
+		return _box_hit(body)
 	for view in [_hero_view, _bag_view]:
 		var local: Vector2 = pos - view.global_position
 		if Rect2(Vector2.ZERO, view.size).has_point(local):
 			var item: CraftedItem = view.item_at_local(local)
 			if item:
 				return {"item": item, "from": item.place, "rot": item.rot, "origin": view.global_position + view.item_origin(item)}
-	var lp: Vector2 = pos - _loot_view.global_position
-	if Rect2(Vector2.ZERO, _loot_view.size).has_point(lp):
-		var slot: Dictionary = _loot_view.slot_at_local(lp)
-		if slot.is_empty():
-			return {"item": null, "from": InventoryManager.PLACE_LOOT, "rot": 0, "origin": pos}
-		var origin: Vector2 = _loot_view.global_position + slot.rect.position - Vector2(_loot_view.scroll, 0.0)
-		return {"item": slot.item, "from": InventoryManager.PLACE_LOOT, "rot": slot.rot, "origin": origin}
+	if body:
+		return _box_hit(body)
 	return {}
+
+
+## Una pieza de la caja como pulsación: enderezada al cuarto de vuelta más cercano y a tamaño completo (spec, apartado 6),
+## con la esquina de su caja (a DRAG_CELL) donde queda su centro de masa ahora mismo: crece alrededor de él.
+func _box_hit(body: LootPiece) -> Dictionary:
+	var rot := body.straight_rot()
+	var com := PieceShape.mass_center(PieceShape.of_item(body.item, rot), DRAG_CELL)
+	return {"item": body.item, "from": InventoryManager.PLACE_LOOT, "rot": rot, "origin": _loot_box.to_global(body.position) - com}
 
 
 ## Hueco de consumibles con pociones bajo un punto de la pantalla, o -1 (un hueco libre no se pulsa).
@@ -476,25 +503,42 @@ func _on_motion(pos: Vector2) -> void:
 	get_viewport().set_input_as_handled()
 	if _dragging:
 		_drag_pos = pos
+		_note_trail(pos)
 		_update_target()
-		return
-	if _scrolling:
-		_loot_view.scroll = clampf(_scroll_start - (pos.x - _press.pos.x), 0.0, _loot_view.max_scroll())
-		_loot_view.queue_redraw()
 		return
 	var moved: Vector2 = pos - _press.pos
 	if moved.length() < DRAG_THRESHOLD:
 		return
-	var in_loot: bool = _press.from == InventoryManager.PLACE_LOOT
-	if _press.item == null or (in_loot and absf(moved.x) > absf(moved.y)):
-		_scrolling = true
-		_on_motion(pos)
-		return
 	_dragging = true
 	_drag_rot = int(_press.rot)
 	_drag_pos = pos
+	_drag_trail.clear()
+	_note_trail(pos)
+	if _press.from == InventoryManager.PLACE_LOOT:
+		_loot_box.hold(_press.item)  # sale de la física: la lleva el dedo
 	_set_hidden(_press.item)
 	_update_target()
+
+
+## Guarda por dónde pasa el dedo, solo lo de los últimos THROW_WINDOW_US.
+func _note_trail(pos: Vector2) -> void:
+	var now := Time.get_ticks_usec()
+	_drag_trail.append([pos, now])
+	while _drag_trail.size() > 2 and now - int(_drag_trail[0][1]) > THROW_WINDOW_US:
+		_drag_trail.pop_front()
+
+
+## Velocidad del gesto al soltar (px/s, coordenadas del panel = de la caja): lo que se movió el dedo en los últimos 0,1 s.
+## Sin muestras suficientes, cero: la pieza se suelta sin lanzarla. El tope lo pone la caja.
+func _throw_velocity() -> Vector2:
+	if _drag_trail.size() < 2:
+		return Vector2.ZERO
+	var first: Array = _drag_trail[0]
+	var last: Array = _drag_trail[-1]
+	var dt_us := int(last[1]) - int(first[1])
+	if dt_us < THROW_MIN_US:
+		return Vector2.ZERO
+	return (Vector2(last[0]) - Vector2(first[0])) / (float(dt_us) / 1000000.0)
 
 
 func _on_release(_pos: Vector2) -> void:
@@ -508,7 +552,7 @@ func _on_release(_pos: Vector2) -> void:
 	var item: CraftedItem = _press.item
 	if _dragging:
 		_drop(item)
-	elif not _scrolling and item:
+	elif item:
 		_tap(item)
 	_cancel_press()
 
@@ -516,7 +560,7 @@ func _on_release(_pos: Vector2) -> void:
 ## Pulsación larga: abre la ficha completa de la pieza o, en un hueco de consumibles, ofrece vender sus pociones. Las dos
 ## terminan la pulsación, para que mover el dedo después no arrastre la pieza por debajo de la ficha ni soltarlo la gire.
 func _process(_delta: float) -> void:
-	if _press.is_empty() or _dragging or _scrolling:
+	if _press.is_empty() or _dragging:
 		return
 	if Time.get_ticks_msec() - int(_press.time) < LONG_PRESS_MS:
 		return
@@ -524,7 +568,7 @@ func _process(_delta: float) -> void:
 		var index: int = _press.slot
 		_cancel_press()
 		_ask_sell_potions(index)
-	elif _press.item:  # el botín vacío no tiene ficha: solo se desplaza
+	elif _press.item:
 		var item: CraftedItem = _press.item
 		_selected = item
 		_refresh_ficha()
@@ -533,10 +577,15 @@ func _process(_delta: float) -> void:
 
 
 func _cancel_press() -> void:
+	# Una pieza de la caja soltada fuera de todo, con la venta por confirmar o al cerrar el panel vuelve a la caja, al
+	# punto más cercano al dedo (spec, apartado 6)
+	var held: CraftedItem = _press.get("item")
+	if held and _loot_box.is_held(held):
+		_loot_box.drop_at(held, _loot_box.to_local(_drag_pos), Vector2.ZERO, _drag_rot)
 	_press = {}
 	_dragging = false
-	_scrolling = false
 	_target = {}
+	_drag_trail.clear()
 	_set_hidden(null)
 	_clear_highlights()
 	sell_label.text = tr("Suelta aquí para vender")
@@ -546,13 +595,12 @@ func _cancel_press() -> void:
 	_ghost_layer.queue_redraw()
 
 
+## La pieza que se arrastra no se dibuja en su rejilla (en la caja ya no tiene cuerpo).
 func _set_hidden(item: CraftedItem) -> void:
 	_hero_view.hidden_item = item
 	_bag_view.hidden_item = item
-	_loot_view.hidden_item = item
 	_hero_view.queue_redraw()
 	_bag_view.queue_redraw()
-	_loot_view.queue_redraw()
 
 
 func _clear_highlights() -> void:
@@ -597,7 +645,7 @@ func _ghost_origin() -> Vector2:
 ## Busca el destino y lo enseña. Primero la zona de venta, por el dedo: con el dedo en ella, la parte cogida ya está fuera
 ## de la mochila, pero una pieza ancha puede tener aún su primera casilla encima de ella y saldría un rojo. Después las
 ## rejillas, por la casilla que hay bajo la pieza (el centro de la primera casilla de su caja; solo cuentan las que ya
-## existen, no las punteadas, que sobre una rejilla pequeña taparían el botín). Si no hay ninguna, el botín, por el dedo.
+## existen, no las punteadas, que sobre una rejilla pequeña taparían el botín). Si no hay ninguna, la caja del botín, por el dedo.
 func _update_target() -> void:
 	var item: CraftedItem = _press.item
 	var t := {}
@@ -616,7 +664,7 @@ func _update_target() -> void:
 			var res: Dictionary = _im.drop_result(item, place, cell, _drag_rot)
 			t = {"place": place, "cell": cell, "ok": res.ok, "swap": res.swap, "view": view}
 			break
-	if t.is_empty() and _loot_view.get_global_rect().has_point(_drag_pos):
+	if t.is_empty() and _loot_box.rect_global().has_point(_drag_pos):
 		t = {"place": InventoryManager.PLACE_LOOT, "ok": true}
 	if t != _target:
 		_target = t
@@ -678,7 +726,7 @@ func _sum(pct: Dictionary) -> float:
 
 func _drop(item: CraftedItem) -> void:
 	if _target.is_empty() or not _target.get("ok", false):
-		return  # vuelve a su sitio
+		return  # vuelve a su sitio (una pieza de la caja, a la caja: _cancel_press)
 	if _target.place == &"sell":
 		_sell(item)
 		return
@@ -687,6 +735,11 @@ func _drop(item: CraftedItem) -> void:
 	var from_cell := item.cell
 	var from_rot := item.rot
 	if _im.move_item(item, place, _target.get("cell", Vector2i.ZERO), _drag_rot):
+		if place == InventoryManager.PLACE_LOOT:
+			# Entra en la caja donde se ve la pieza (una casilla por encima del dedo), con la inercia del gesto; su centro de masa
+			# se queda ahí y la caja la encoge a media escala alrededor de él
+			var center := _ghost_origin() + PieceShape.mass_center(PieceShape.of_item(item, _drag_rot), DRAG_CELL)
+			_loot_box.drop_at(item, _loot_box.to_local(center), _throw_velocity(), _drag_rot)
 		_selected = item
 		_refresh_ficha()  # el aviso del movimiento llega antes de elegirla
 		# Soltarla donde ya estaba vale, pero no mueve nada: ni clinc ni materialización
@@ -700,7 +753,7 @@ func _drop(item: CraftedItem) -> void:
 func _draw_ghost() -> void:
 	if not _dragging or _press.is_empty():
 		return
-	GearGridView.draw_piece_at(_ghost_layer, _press.item, _ghost_origin(), _drag_rot, CELL, 0.85, _hero_view.sprite_for)
+	GearGridView.draw_piece_at(_ghost_layer, _press.item, _ghost_origin(), _drag_rot, DRAG_CELL, 0.85, _hero_view.sprite_for)
 
 # ═══════════════════════════════════════════════════════════════════
 #  FICHA COMPLETA, CONFIRMACIÓN Y VENTA
