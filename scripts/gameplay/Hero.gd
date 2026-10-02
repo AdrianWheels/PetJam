@@ -81,7 +81,7 @@ var power: Dictionary = LegendaryPowers.effects([])
 var power_roll: Callable = Callable()
 ## &"dodge" o &"block" si el último golpe se esquivó o paró; &"" si no
 var last_avoid: StringName = &""
-## Ímpetu: el primer golpe contra el enemigo actual aún no se ha dado
+## Ímpetu: el primer golpe contra el enemigo actual aún no se ha dado (reset_stats lo apaga si ya no hay botas)
 var first_strike_ready := false
 var _second_chance_ready := false
 var _second_chance_used := false  ## en este duelo (se recarga al empezar el siguiente)
@@ -211,6 +211,8 @@ func reset_stats():
 	power = LegendaryPowers.effects(powers)
 	# Segunda oportunidad: lista si la da la rejilla y aún no se ha usado en este duelo
 	_second_chance_ready = float(power.second_chance) > 0.0 and not _second_chance_used
+	# Ímpetu: si el equipo cambia entre que Tico engancha al enemigo y su primer golpe, sigue listo solo con las botas
+	first_strike_ready = first_strike_ready and float(power.first_strike) > 0.0
 	STR = s.STR
 	AGI = s.AGI
 	INT = s.INT
@@ -325,6 +327,7 @@ func take_damage(amount: int, is_pulse: bool = false) -> int:
 		hp = max(0, hp - final)
 		if hp == 0:
 			alive = false
+			_regen_shown = 0  # un "+N" de la regeneración que esperaba turno no sale sobre Tico caído
 			_spawn_death_fx()
 			emit_signal("died")
 	hurt.emit(final)
@@ -431,6 +434,7 @@ func respawn(start_position: Vector2 = PixelView.HERO_START) -> void:
 	_hurt = 0.0
 	_materialize = 0.0
 	_regen_acc = 0.0
+	_regen_shown = 0  # ni un "+N" pendiente de antes (reaparecer también es viajar de sala)
 	emit_signal("respawned")
 
 

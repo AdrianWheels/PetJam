@@ -55,6 +55,19 @@ func _new_hero() -> Node2D:
 	return hero
 
 
+## Deja el inventario vacío y devuelve lo que había, para _restore_inventory. Las pruebas que tumban a Tico de un
+## golpe mortal no pueden leer la rejilla de la partida: una habilidad legendaria suya (Segunda oportunidad) lo
+## dejaría en pie, y con su equipo cambiarían también todas sus demás estadísticas.
+func _empty_inventory() -> Dictionary:
+	var saved: Dictionary = _im().to_save_data()
+	_im().clear()
+	return saved
+
+
+func _restore_inventory(saved: Dictionary) -> void:
+	_im().load_save_data(saved, int(_gm().best_enemy_level))
+
+
 func _new_shop() -> Control:
 	var shop := ShopPanel.new()
 	add_child(shop)
@@ -274,7 +287,8 @@ func test_equipping_keeps_the_health_ratio_and_respawn_heals() -> void:
 
 func test_heal_potion_only_for_a_wounded_hero_standing() -> void:
 	var im := _im()
-	var had := _set_gold(1000)
+	var saved := _empty_inventory()  # sin la rejilla de la partida: Segunda oportunidad dejaría en pie al golpe mortal
+	_set_gold(1000)
 	var hero := _new_hero()
 	var shop := _new_shop()
 	var price := _price(&"potion_heal")
@@ -292,7 +306,8 @@ func test_heal_potion_only_for_a_wounded_hero_standing() -> void:
 	check(shop._toast_label.text.contains("caído"), "y lo avisa («%s»)" % shop._toast_label.text)
 	shop.free()
 	hero.free()
-	_set_gold(had)
+	_restore_inventory(saved)  # devuelve también el oro
+	await _flush_deferred_saves()  # vaciar y devolver el inventario guarda la partida
 
 
 func test_no_potion_is_applied_without_enough_gold() -> void:
@@ -518,6 +533,7 @@ func test_farming_puts_another_enemy_of_the_same_room_ahead() -> void:
 
 func test_losing_in_the_corridor_respawns_in_the_room_before() -> void:
 	var gm := _gm()
+	var saved := _empty_inventory()  # Tico sin las habilidades de la partida: el pulso mortal lo tumba
 	var snap := _gm_snapshot()
 	_gm_setup(12, 12)
 	var corridor := _new_corridor()
@@ -530,12 +546,14 @@ func test_losing_in_the_corridor_respawns_in_the_room_before() -> void:
 	check(hero.alive and hero.hp == hero.max_hp, "con la vida llena (%d/%d)" % [hero.hp, hero.max_hp])
 	corridor.queue_free()
 	_gm_restore(snap)
+	_restore_inventory(saved)
 	await _flush_deferred_saves()
 	await _silence_loot_sounds()
 
 
 func test_travel_while_fallen_waits_for_the_respawn() -> void:
 	var gm := _gm()
+	var saved := _empty_inventory()  # Tico sin las habilidades de la partida: el pulso mortal lo tumba
 	var snap := _gm_snapshot()
 	_gm_setup(12, 12)
 	var corridor := _new_corridor()
@@ -549,6 +567,7 @@ func test_travel_while_fallen_waits_for_the_respawn() -> void:
 	check(gm.room_locked, "con el candado de haberla elegido")
 	corridor.queue_free()
 	_gm_restore(snap)
+	_restore_inventory(saved)
 	await _flush_deferred_saves()
 	await _silence_loot_sounds()
 

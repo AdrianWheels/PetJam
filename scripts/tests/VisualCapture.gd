@@ -13,7 +13,7 @@ extends Node
 ##   main   → solo arranca Main y deja al héroe luchar
 ##   craft  → acepta el primer pedido y va tocando la pantalla para jugar los minijuegos
 ##   boss   → salta al nivel 9 para ver la llegada del jefe
-##   death  → quita vida al héroe para ver muerte + respawn
+##   death  → quita vida al héroe para ver muerte + respawn (sin habilidades: Segunda oportunidad lo dejaría en pie)
 ##   potions → compra Velocidad, Suerte y Vida en la tienda, fuerza el botín doble y adelanta el
 ##             final de la Velocidad para ver su parpadeo y cómo desaparece (sala 2, combate normal)
 ##   shop   → abre la tienda y enseña sus pestañas una a una (materiales, pociones y venta)
@@ -69,6 +69,15 @@ func _hud() -> Node:
 	return _main.get_node_or_null("HUDLayer/HUD_Main")
 
 
+## Tumba a Tico de un golpe mortal. Con una Segunda oportunidad legendaria en su rejilla se quedaría en pie
+## («¡OTRA VEZ!») y la captura no enseñaría la caída: se le quitan las habilidades hasta que reaparece (reset_stats las
+## vuelve a leer), sin tocar su equipo ni su aspecto ni la partida.
+func _knock_down(hero: Node) -> void:
+	hero.power = LegendaryPowers.effects([])
+	hero._second_chance_ready = false
+	hero.take_damage(hero.hp * 10, true)
+
+
 func _run_craft_plan() -> void:
 	await get_tree().create_timer(3.0).timeout
 	var inv := get_node_or_null("/root/InventoryManager")
@@ -117,7 +126,7 @@ func _run_death_plan() -> void:
 	var gm := get_node_or_null("/root/GameManager")
 	var hero: Node = gm.get_hero() if gm else null
 	if hero and hero.has_method("take_damage"):
-		hero.take_damage(hero.hp * 10, true)
+		_knock_down(hero)
 
 
 func _run_unlock_plan() -> void:
@@ -265,7 +274,7 @@ func _run_wall_plan() -> void:
 	gm.best_enemy_level = maxi(gm.best_enemy_level, 14)
 	gm.travel_to_room(14)
 	await get_tree().create_timer(2.5).timeout
-	hero.take_damage(hero.hp * 10, true)
+	_knock_down(hero)
 	await get_tree().create_timer(3.5).timeout
 	gm.set_room_locked(false)
 	await get_tree().create_timer(4.0).timeout

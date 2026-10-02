@@ -1916,3 +1916,65 @@ func test_regeneration_shows_its_number_sparingly_and_stops_when_fallen() -> voi
 	hero._process(5.0)
 	check(not hero.alive and hero.hp == 0, "con Tico caído no regenera ni resucita (%d)" % hero.hp)
 	await _close_arena(a)
+
+
+# ─── Tarea 11, revisión: Ímpetu tras un cambio de equipo y número de regeneración pendiente ───
+
+## Si el equipo cambia entre que Tico engancha al enemigo y su primer golpe, el Ímpetu se va con las botas: el golpe
+## pendiente hace su daño de siempre, no el de multiplicarlo por 0 (ni 0 de daño ni quemadura).
+func test_first_strike_goes_with_the_boots_if_they_come_off_before_the_hit() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var boots := _piece(&"boots_master", 1.0)
+	im.add_crafted_item(boots)
+	im.move_item(boots, &"hero", Vector2i(0, 0), 0)
+	var a := await _arena([])
+	var hero: Node2D = a.hero
+	var enemy: Node2D = a.enemy
+	enemy.max_hp = 100000
+	enemy.hp = 100000
+	hero.respawn()  # vuelve a leer la rejilla (la arena le quitó las habilidades)
+	hero.prepare_for_combat()  # el duelo empieza con el primer golpe por dar
+	check(hero.first_strike_ready and float(hero.power.first_strike) > 0.0, "con las botas maestras legendarias, el Ímpetu está listo")
+	hero.reset_stats()  # otro cambio de equipo que no toca las botas
+	check(hero.first_strike_ready, "si las botas siguen puestas, sigue listo")
+	im.move_item(boots, &"loot")  # el jugador se las quita antes del primer golpe
+	hero.reset_stats()  # GameManager lo hace en cada cambio de equipo
+	check(not hero.first_strike_ready, "sin las botas, ya no está listo")
+	hero.crit_p = 0.0  # reset_stats recalcula el crítico
+	a.cc._execute_hero_attack()
+	check(100000 - enemy.hp == int(hero.dmg), "y el primer golpe hace su daño de siempre, no 0 (%d de %d)" % [100000 - enemy.hp, int(hero.dmg)])
+	await _close_arena(a)
+	await _restore_inventory(saved)
+
+
+## Un "+N" de la regeneración que esperaba su turno se descarta cuando Tico cae y cuando reaparece (reaparecer es
+## también viajar de sala): no sale flotando sobre un Tico caído ni sobre uno recién reaparecido.
+func test_a_pending_regeneration_number_goes_with_the_fall_and_with_the_respawn() -> void:
+	var a := await _arena([&"helmet_advanced"])
+	var hero: Node2D = a.hero
+	var fx: Node2D = a.corridor.get_node("CombatFX")
+	hero.max_hp = 1000
+	hero.hp = 100
+	hero._process(1.0)  # cura y enseña su número: el siguiente tendrá que esperar 2 s
+	hero._process(1.0)  # cura otra vez, y su número queda pendiente
+	check(hero._regen_shown > 0, "queda un número pendiente (%d)" % hero._regen_shown)
+	hero.take_damage(hero.max_hp * 5, true)
+	check(not hero.alive and hero._regen_shown == 0, "al caer Tico, el número pendiente se descarta (%d)" % hero._regen_shown)
+	fx.clear()
+	hero._process(5.0)
+	check(_fx_texts(a).is_empty(), "y no sale sobre Tico caído (%s)" % [_fx_texts(a)])
+	hero.respawn()
+	hero.power = LegendaryPowers.effects([&"helmet_advanced"])  # reaparecer vuelve a leer la rejilla
+	hero.max_hp = 1000
+	hero.hp = 100
+	hero._regen_fx_cd = 0.0  # sin esperas de antes: este caso no depende del anterior
+	hero._process(1.0)
+	hero._process(1.0)
+	check(hero._regen_shown > 0, "otra vez con un número pendiente (%d)" % hero._regen_shown)
+	hero.respawn()
+	check(hero._regen_shown == 0, "al reaparecer, el número pendiente se descarta (%d)" % hero._regen_shown)
+	fx.clear()
+	hero._process(3.0)
+	check(_fx_texts(a).is_empty(), "y no sale sobre Tico recién reaparecido (%s)" % [_fx_texts(a)])
+	await _close_arena(a)
