@@ -17,6 +17,7 @@ extends Node
 ##   potions → compra Velocidad y Suerte (a los huecos), las bebe al aparecer un jefe y bebe la Vida al bajar del 30 %;
 ##             fuerza el botín doble y adelanta el final de la Velocidad para ver su parpadeo y cómo desaparece
 ##             (sala 2, combate normal)
+##   unlock → hito de rango en el jefe de la sala 20: cartel «¡Planos avanzados!», 4 pergaminos escalonados y, detrás, «¡La rejilla crece!»
 ##   shop   → abre la tienda y enseña sus pestañas una a una (materiales, pociones y venta)
 ##   wall   → muro y farmeo: cae en la sala 14, farmea la 13 con «Muro: sala 14» y el selector lo lleva a la 4
 ##   inventory → rejilla de 6×6 con piezas (una legendaria y una con aristas), mochila y botín; arrastra
@@ -135,15 +136,26 @@ func _run_death_plan() -> void:
 
 
 func _run_unlock_plan() -> void:
-	# Bloquea un plano y olvida las victorias para que la próxima muerte lo desbloquee
+	# Hito de rangos (spec de rangos, apartado 3): bloquea los avanzados, vacía la rejilla de Tico (sin ampliaciones) y
+	# lleva a Tico (invencible) al jefe de la sala 20 con el récord en ella. Su muerte da el cartel del hito y, en cola
+	# detrás de él, el aviso «¡La rejilla crece!» de la ampliación provisional.
 	await get_tree().create_timer(1.0).timeout
 	var dm := get_node_or_null("/root/DataManager")
 	var gm := get_node_or_null("/root/GameManager")
-	if dm:
-		dm.unlocked_blueprints[&"helmet_master"] = false
-		dm.unlocked_blueprints[&"boots_master"] = false
-	if gm:
-		gm.enemies_defeated.clear()
+	var im := get_node_or_null("/root/InventoryManager")
+	if dm == null or gm == null or im == null:
+		return
+	for id in dm.get_blueprint_ids_for_tier(Ranks.TIER_ADVANCED):
+		dm.unlocked_ranks[id] = 0
+	im.clear()
+	var hero: Node = gm.get_hero()
+	if hero:
+		hero.set_invincible(true)
+	gm.wall_room = 0
+	gm.room_locked = false
+	gm.best_enemy_level = 19
+	gm.current_enemy_level = 19
+	gm.advance_enemy_level()  # sala 20, récord 20: su jefe aún no ha caído
 
 
 func _run_biome_plan() -> void:

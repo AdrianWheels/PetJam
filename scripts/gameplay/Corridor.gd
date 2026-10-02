@@ -25,6 +25,8 @@ signal room_traveled(room: int)  # viaje del selector o reintento del muro (el H
 
 # Medidas en píxeles del arte (216x96): las de 1080x480 divididas entre 5
 const HERO_SPEED := 38.0
+const UNLOCK_STAGGER := 0.15  # segundos entre los pergaminos de un mismo hito
+var _unlock_burst := 0
 const FLOOR_Y := PixelView.FLOOR_Y
 const VIEW_W := PixelView.VIEW_W
 const VIEW_H := PixelView.VIEW_H
@@ -91,6 +93,8 @@ func _ready():
 		_game_manager.enemy_level_changed.connect(_on_enemy_level_changed)
 		if _game_manager.has_signal("blueprint_unlocked"):
 			_game_manager.blueprint_unlocked.connect(_on_blueprint_unlocked)
+		if _game_manager.has_signal("blueprints_milestone"):
+			_game_manager.blueprints_milestone.connect(_on_blueprints_milestone)
 		if _game_manager.has_signal("room_travel"):
 			_game_manager.room_travel.connect(_on_room_travel)
 
@@ -427,19 +431,31 @@ func _show_bonus_loot(info: Dictionary) -> void:
 	get_tree().create_timer(delay + BONUS_LOOT_SOUND_LAG).timeout.connect(func(): Sfx.play(&"loot_coins"))
 
 
-func _on_blueprint_unlocked(bp_id: StringName) -> void:
+## Hito de rangos: un solo destello y un sonido; el cartel lo pone HeroViewOverlay.
+func _on_blueprints_milestone(_rank: int, _tier: StringName, _ids: Array) -> void:
+	_unlock_burst = 0
+	var pos: Vector2 = enemy.death_info.get("pos", hero.position + Vector2(24, 0))
+	fx.star(pos + Vector2(0, -16), Color("ffe08a"), 14.0, 0.4)
+	Sfx.play(&"blueprint_found", 1.0)
+
+
+## Cada plano del hito vuela a su botón, escalonado para que no salgan apilados.
+func _on_blueprint_unlocked(bp_id: StringName, rank: int = 1) -> void:
 	var pos: Vector2 = enemy.death_info.get("pos", hero.position + Vector2(24, 0))
 	var dm := get_node_or_null("/root/DataManager")
 	var bp = dm.blueprints.get(bp_id) if dm and "blueprints" in dm else null
 	var bp_name := String(bp_id)
 	var icon: Texture2D = null
 	if bp:
-		bp_name = bp.display_name
+		bp_name = tr(bp.display_name) + Ranks.suffix(rank)
 		icon = bp.get_blueprint_icon()  # el arte del plano; bp.icon no llega a cargarse
-	fx.star(pos + Vector2(0, -16), Color("ffe08a"), 14.0, 0.4)
-	fx.float_text(pos + Vector2(0, -26), tr("¡Nuevo plano!"), Color("ffe08a"), true, 1.6, 8.0)
-	Sfx.play(&"blueprint_found", 1.0)
-	loot_dropped.emit(&"blueprint", pos + Vector2(0, -16), {"id": bp_id, "name": bp_name, "icon": icon})
+	var payload := {"id": bp_id, "name": bp_name, "icon": icon, "rank": rank}
+	var delay := UNLOCK_STAGGER * _unlock_burst
+	_unlock_burst += 1
+	if delay <= 0.0:
+		loot_dropped.emit(&"blueprint", pos + Vector2(0, -16), payload)
+	else:
+		get_tree().create_timer(delay).timeout.connect(func(): loot_dropped.emit(&"blueprint", pos + Vector2(0, -16), payload))
 
 
 ## Nombre e icono de un material (caché). El nombre es el texto base en español del .tres: quien lo

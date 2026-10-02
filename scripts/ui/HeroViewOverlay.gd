@@ -95,6 +95,8 @@ func _ready() -> void:
 			_game_manager.room_lock_changed.connect(func(_l): _refresh_room())
 		if _game_manager.has_signal("grid_expanded"):
 			_game_manager.grid_expanded.connect(func(_id): show_toast(tr("¡La rejilla crece!"), Color("9fe0ff")))
+		if _game_manager.has_signal("blueprints_milestone"):
+			_game_manager.blueprints_milestone.connect(_on_blueprints_milestone)
 		_game_manager.enemy_level_changed.connect(func(_l): _refresh_selector())
 	if _inventory and _inventory.has_signal("inventory_changed"):
 		_inventory.inventory_changed.connect(func(_inv): _refresh_gold())
@@ -508,10 +510,17 @@ func _on_record_changed(best: int) -> void:
 		show_toast(tr("¡Nuevo récord de profundidad!"), Color("ffd76a"))
 
 
+## Hito de rangos (spec de rangos, apartado 3): cartel con el grupo desbloqueado. Llega al vencer a un
+## jefe, antes que su aviso "X ha caído", que es un toast y espera en cola mientras dure el cartel.
+func _on_blueprints_milestone(rank: int, tier: StringName, _ids: Array) -> void:
+	show_banner(Ranks.milestone_text(rank, tier), tr("Nuevos planos en la biblioteca"), Color("ffe08a"), 1.6)
+
+
 func _on_loot_dropped(kind: StringName, _world_pos: Vector2, payload: Dictionary) -> void:
+	# Los pergaminos de un hito no avisan aquí: los anuncia el cartel del hito
 	if kind == &"blueprint":
-		show_toast(tr("¡Nuevo plano: %s!") % tr(String(payload.get("name", ""))), Color("9fe0ff"))
-	elif payload.get("bonus", false):
+		return
+	if payload.get("bonus", false):
 		_luck_pop = 1.0  # botín doble de la Poción de Suerte
 
 

@@ -538,3 +538,91 @@ func test_v2_save_migrates_to_v3() -> void:
 	check(int(data.version) == 3 and data.data.has("unlocked_ranks") and data.inventory.has("hero_grid"), "versión 3, con unlocked_ranks y la rejilla")
 	await _reload_user_save()
 	_restore_backups(backups)
+
+
+# ─── Tarea 7: hitos al vencer jefes ────────────────────────────────────
+
+func test_boss_milestones_unlock_once_with_signals() -> void:
+	var gm := get_node("/root/GameManager")
+	var dm := _dm()
+	var saved_ranks: Dictionary = dm.unlocked_ranks.duplicate()
+	var saved_state: int = gm.dungeon_state
+	var saved_best: int = gm.best_enemy_level
+	var saved_defeated: Dictionary = gm.enemies_defeated.duplicate()
+	for id in dm.unlocked_ranks:
+		dm.unlocked_ranks[id] = 0
+	dm.apply_milestones([{"rank": 1, "tier": Ranks.TIER_BASIC}])
+	gm.dungeon_state = gm.DungeonState.RUNNING
+	gm.best_enemy_level = 999  # récord ya pasado: los jefes 20 y 40 no amplían la rejilla de la partida (GridExpansions)
+	var milestones := []
+	var unlocked := []
+	var on_ms := func(rank, tier, ids): milestones.append([rank, tier, ids.size()])
+	var on_bp := func(id, rank): unlocked.append([id, rank, milestones.size()])
+	gm.blueprints_milestone.connect(on_ms)
+	gm.blueprint_unlocked.connect(on_bp)
+	gm.register_enemy_defeat(19)
+	check(milestones.is_empty() and unlocked.is_empty(), "una sala normal no desbloquea nada")
+	gm.register_enemy_defeat(20)
+	check(milestones == [[1, Ranks.TIER_ADVANCED, 4]], "el jefe 20 da los 4 avanzados I (%s)" % [milestones])
+	check(unlocked.size() == 4 and unlocked.all(func(u): return u[2] == 1), "4 planos, anunciados después del hito")
+	gm.register_enemy_defeat(20)
+	check(milestones.size() == 1 and unlocked.size() == 4, "volver a vencerlo no repite nada")
+	gm.register_enemy_defeat(50)
+	check(milestones.back() == [2, Ranks.TIER_BASIC, 4] and dm.get_unlocked_rank(&"sword_basic") == 2, "el jefe 50 abre los básicos II")
+	gm.blueprints_milestone.disconnect(on_ms)
+	gm.blueprint_unlocked.disconnect(on_bp)
+	gm.dungeon_state = saved_state
+	gm.best_enemy_level = saved_best
+	gm.enemies_defeated = saved_defeated
+	dm.unlocked_ranks = saved_ranks
+
+
+## La ampliación provisional de la rejilla sigue detrás de los hitos: el jefe 20 da a la vez su hito y, la primera vez,
+## su ampliación.
+func test_boss_20_gives_its_milestone_and_its_grid_expansion() -> void:
+	var gm := get_node("/root/GameManager")
+	var dm := _dm()
+	var saved_inv := _fresh_inventory()
+	var saved_ranks: Dictionary = dm.unlocked_ranks.duplicate()
+	var saved_state: int = gm.dungeon_state
+	var saved_best: int = gm.best_enemy_level
+	var saved_defeated: Dictionary = gm.enemies_defeated.duplicate()
+	for id in dm.get_blueprint_ids_for_tier(Ranks.TIER_ADVANCED):
+		dm.unlocked_ranks[id] = 0
+	gm.dungeon_state = gm.DungeonState.RUNNING
+	gm.best_enemy_level = 20  # la primera vez que cae el jefe 20
+	var events := []
+	var on_ms := func(_rank, _tier, _ids): events.append(&"milestone")
+	var on_grid := func(_id): events.append(&"grid")
+	gm.blueprints_milestone.connect(on_ms)
+	gm.grid_expanded.connect(on_grid)
+	gm.register_enemy_defeat(20)
+	check(events == [&"milestone", &"grid"], "el jefe 20 da el hito y después la ampliación (%s)" % [events])
+	check(_im().hero_grid_size() == GridExpansions.size_after(1), "la rejilla crece (%s)" % _im().hero_grid_size())
+	gm.blueprints_milestone.disconnect(on_ms)
+	gm.grid_expanded.disconnect(on_grid)
+	gm.dungeon_state = saved_state
+	gm.best_enemy_level = saved_best
+	gm.enemies_defeated = saved_defeated
+	dm.unlocked_ranks = saved_ranks
+	await _restore_inventory(saved_inv)
+
+
+func test_milestone_shows_one_notice_and_staggers_scrolls() -> void:
+	var corridor: Node2D = load("res://scenes/Corridor.tscn").instantiate()
+	add_child(corridor)
+	await get_tree().process_frame
+	var scrolls := []
+	corridor.loot_dropped.connect(func(kind, _pos, _payload): if kind == &"blueprint": scrolls.append(Time.get_ticks_msec()))
+	var fx: Node = corridor.fx
+	var count_texts := func() -> int: return fx._parts.filter(func(p): return p.kind == fx.Kind.TEXT).size()
+	var texts_before: int = count_texts.call()
+	corridor._on_blueprints_milestone(2, Ranks.TIER_ADVANCED, [&"sword_advanced", &"shield_advanced", &"helmet_advanced", &"boots_advanced"])
+	for id in [&"sword_advanced", &"shield_advanced", &"helmet_advanced", &"boots_advanced"]:
+		corridor._on_blueprint_unlocked(id, 2)
+	check(count_texts.call() == texts_before, "sin un texto flotante por plano (el aviso es el cartel del HUD)")
+	await get_tree().create_timer(0.8).timeout
+	check(scrolls.size() == 4, "salen los 4 pergaminos (%d)" % scrolls.size())
+	check(scrolls.size() == 4 and scrolls[3] - scrolls[0] >= 250, "escalonados, no a la vez (%s ms)" % (scrolls[3] - scrolls[0] if scrolls.size() == 4 else -1))
+	corridor.queue_free()
+	await get_tree().process_frame
