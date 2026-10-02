@@ -206,14 +206,14 @@ func _execute_enemy_attack():
 	var heavy := style == "slam"
 	var boss: bool = enemy.is_boss  # antes de las Espinas: si matan al atacante, el nodo ya es el de la sala siguiente
 
-	var dealt: int = hero.take_damage(raw)
+	var dealt: int = hero.take_damage(raw, false, enemy.level)
 	if fx:
 		if hero.last_avoid != &"":
 			# Esquiva (botas avanzadas) o Parada (escudo avanzado) legendarias
 			fx.float_text(hit_pos + Vector2(-9, -4), tr("¡Esquiva!") if hero.last_avoid == &"dodge" else tr("¡Parada!"), Color("b8c4d6"), false, 0.7, 8.0)
 		else:
 			fx.damage_number(number_pos, dealt, &"hero")
-			if dealt < raw and _block_text_cd <= 0.0 and hero.has_method("armor_mitigation") and hero.armor_mitigation() >= 0.2:
+			if dealt < raw and _block_text_cd <= 0.0 and hero.has_method("armor_mitigation") and hero.armor_mitigation(enemy.level) >= 0.2:
 				_block_text_cd = 2.5
 				fx.float_text(hit_pos + Vector2(-9, -4), tr("Bloqueo"), Color("b8c4d6"), false, 0.7, 8.0)
 		match style:

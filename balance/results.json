@@ -1,0 +1,400 @@
+{
+  "format": 1,
+  "kitVersion": "0.1.0",
+  "harness": "godot",
+  "planId": "5041195f958f390ab25997710cf842020d3254b2902f2f70fb624edc316ec2d5",
+  "variants": [
+    {
+      "variant": "base",
+      "results": [
+        {
+          "id": "escalera[N=1]",
+          "type": "order",
+          "values": [
+            35.0,
+            37.0,
+            37.0,
+            37.0,
+            38.0,
+            40.0,
+            44.0,
+            45.0,
+            47.0,
+            48.0,
+            50.0,
+            51.0,
+            52.0,
+            55.0,
+            57.0
+          ],
+          "margin": 0.0,
+          "pass": true
+        },
+        {
+          "id": "escalera[N=2]",
+          "type": "order",
+          "values": [
+            86.0,
+            87.0,
+            88.0,
+            88.0,
+            88.0,
+            90.0,
+            94.0,
+            95.0,
+            97.0,
+            98.0,
+            100.0,
+            102.0,
+            103.0,
+            105.0,
+            106.0
+          ],
+          "margin": 0.0,
+          "pass": true
+        },
+        {
+          "id": "escalera[N=3]",
+          "type": "order",
+          "values": [
+            136.0,
+            137.0,
+            137.0,
+            137.0,
+            138.0,
+            140.0,
+            144.0,
+            145.0,
+            147.0,
+            148.0,
+            150.0,
+            151.0,
+            153.0,
+            154.0,
+            156.0
+          ],
+          "margin": 0.0,
+          "pass": true
+        },
+        {
+          "id": "escalera[N=4]",
+          "type": "order",
+          "values": [
+            185.0,
+            187.0,
+            188.0,
+            188.0,
+            189.0,
+            190.0,
+            194.0,
+            195.0,
+            197.0,
+            198.0,
+            200.0,
+            202.0,
+            203.0,
+            205.0,
+            207.0
+          ],
+          "margin": 0.0,
+          "pass": true
+        },
+        {
+          "id": "escalera[N=5]",
+          "type": "order",
+          "values": [
+            235.0,
+            236.0,
+            238.0,
+            238.0,
+            239.0,
+            240.0,
+            243.0,
+            245.0,
+            247.0,
+            248.0,
+            250.0,
+            251.0,
+            253.0,
+            255.0,
+            256.0
+          ],
+          "margin": 0.0,
+          "pass": true
+        },
+        {
+          "id": "hito-basico[N=1]",
+          "type": "band",
+          "values": [
+            37.0
+          ],
+          "margin": 0.76190476190476186,
+          "pass": true
+        },
+        {
+          "id": "hito-basico[N=2]",
+          "type": "band",
+          "values": [
+            88.0
+          ],
+          "margin": 0.23943661971830985,
+          "pass": true
+        },
+        {
+          "id": "hito-basico[N=3]",
+          "type": "band",
+          "values": [
+            137.0
+          ],
+          "margin": 0.13223140495867769,
+          "pass": true
+        },
+        {
+          "id": "hito-basico[N=4]",
+          "type": "band",
+          "values": [
+            188.0
+          ],
+          "margin": 0.099415204678362568,
+          "pass": true
+        },
+        {
+          "id": "hito-basico[N=5]",
+          "type": "band",
+          "values": [
+            238.0
+          ],
+          "margin": 0.076923076923076927,
+          "pass": true
+        },
+        {
+          "id": "hito-avanzado[N=1]",
+          "type": "band",
+          "values": [
+            47.0
+          ],
+          "margin": 0.14634146341463414,
+          "pass": true
+        },
+        {
+          "id": "hito-avanzado[N=2]",
+          "type": "band",
+          "values": [
+            97.0
+          ],
+          "margin": 0.065934065934065936,
+          "pass": true
+        },
+        {
+          "id": "hito-avanzado[N=3]",
+          "type": "band",
+          "values": [
+            147.0
+          ],
+          "margin": 0.042553191489361701,
+          "pass": true
+        },
+        {
+          "id": "hito-avanzado[N=4]",
+          "type": "band",
+          "values": [
+            197.0
+          ],
+          "margin": 0.031413612565445025,
+          "pass": true
+        },
+        {
+          "id": "hito-avanzado[N=5]",
+          "type": "band",
+          "values": [
+            247.0
+          ],
+          "margin": 0.024896265560165973,
+          "pass": true
+        },
+        {
+          "id": "hito-maestro[N=1]",
+          "type": "band",
+          "values": [
+            55.0
+          ],
+          "margin": 0.078431372549019607,
+          "pass": true
+        },
+        {
+          "id": "hito-maestro[N=2]",
+          "type": "band",
+          "values": [
+            105.0
+          ],
+          "margin": 0.039603960396039604,
+          "pass": true
+        },
+        {
+          "id": "hito-maestro[N=3]",
+          "type": "band",
+          "values": [
+            154.0
+          ],
+          "margin": 0.019867549668874173,
+          "pass": true
+        },
+        {
+          "id": "hito-maestro[N=4]",
+          "type": "band",
+          "values": [
+            205.0
+          ],
+          "margin": 0.019900497512437811,
+          "pass": true
+        },
+        {
+          "id": "hito-maestro[N=5]",
+          "type": "band",
+          "values": [
+            255.0
+          ],
+          "margin": 0.015936254980079681,
+          "pass": true
+        },
+        {
+          "id": "cota-basico[N=1]",
+          "type": "band",
+          "values": [
+            38.0
+          ],
+          "margin": 0.073170731707317069,
+          "pass": true
+        },
+        {
+          "id": "cota-basico[N=2]",
+          "type": "band",
+          "values": [
+            88.0
+          ],
+          "margin": 0.032967032967032968,
+          "pass": true
+        },
+        {
+          "id": "cota-basico[N=3]",
+          "type": "band",
+          "values": [
+            138.0
+          ],
+          "margin": 0.021276595744680851,
+          "pass": true
+        },
+        {
+          "id": "cota-basico[N=4]",
+          "type": "band",
+          "values": [
+            189.0
+          ],
+          "margin": 0.010471204188481676,
+          "pass": true
+        },
+        {
+          "id": "cota-basico[N=5]",
+          "type": "band",
+          "values": [
+            239.0
+          ],
+          "margin": 0.0082987551867219917,
+          "pass": true
+        },
+        {
+          "id": "cota-avanzado[N=1]",
+          "type": "band",
+          "values": [
+            48.0
+          ],
+          "margin": 0.058823529411764705,
+          "pass": true
+        },
+        {
+          "id": "cota-avanzado[N=2]",
+          "type": "band",
+          "values": [
+            98.0
+          ],
+          "margin": 0.029702970297029702,
+          "pass": true
+        },
+        {
+          "id": "cota-avanzado[N=3]",
+          "type": "band",
+          "values": [
+            148.0
+          ],
+          "margin": 0.019867549668874173,
+          "pass": true
+        },
+        {
+          "id": "cota-avanzado[N=4]",
+          "type": "band",
+          "values": [
+            198.0
+          ],
+          "margin": 0.014925373134328358,
+          "pass": true
+        },
+        {
+          "id": "cota-avanzado[N=5]",
+          "type": "band",
+          "values": [
+            248.0
+          ],
+          "margin": 0.011952191235059761,
+          "pass": true
+        },
+        {
+          "id": "cota-maestro[N=1]",
+          "type": "band",
+          "values": [
+            57.0
+          ],
+          "margin": 0.065573770491803282,
+          "pass": true
+        },
+        {
+          "id": "cota-maestro[N=2]",
+          "type": "band",
+          "values": [
+            106.0
+          ],
+          "margin": 0.045045045045045043,
+          "pass": true
+        },
+        {
+          "id": "cota-maestro[N=3]",
+          "type": "band",
+          "values": [
+            156.0
+          ],
+          "margin": 0.031055900621118012,
+          "pass": true
+        },
+        {
+          "id": "cota-maestro[N=4]",
+          "type": "band",
+          "values": [
+            207.0
+          ],
+          "margin": 0.018957345971563982,
+          "pass": true
+        },
+        {
+          "id": "cota-maestro[N=5]",
+          "type": "band",
+          "values": [
+            256.0
+          ],
+          "margin": 0.019157088122605363,
+          "pass": true
+        }
+      ],
+      "failed": 0,
+      "worstMargin": 0.0
+    }
+  ]
+}

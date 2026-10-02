@@ -34,7 +34,6 @@ const BASE_INT := CombatMath.HERO_BASE_INT
 const PULSE_INTERVAL := CombatMath.PULSE_INTERVAL
 
 # Armadura: reducción con rendimientos decrecientes (CombatMath.armor_mitigation)
-const ARMOR_K := CombatMath.ARMOR_K
 const MAX_MITIGATION := CombatMath.MAX_MITIGATION
 
 const WINDUP_TIME := 0.16
@@ -294,17 +293,18 @@ func expected_dps() -> float:
 	return CombatMath.expected_dps({"dmg": dmg, "crit_p": crit_p, "crit_m": crit_m, "aps": aps, "INT": INT})
 
 
-## Fracción de daño físico que absorbe la armadura (0..MAX_MITIGATION).
-func armor_mitigation() -> float:
-	return CombatMath.armor_mitigation(armor)
+## Fracción de daño físico que absorbe la armadura frente a un enemigo de la sala `enemy_level`.
+func armor_mitigation(enemy_level: int = 1) -> float:
+	return CombatMath.armor_mitigation(armor, enemy_level)
 
 
 # --- Combate ----------------------------------------------------------
 
 ## Aplica daño y devuelve el daño real recibido (tras armadura). El pulso mágico ignora la armadura.
+## `attacker_level` es la sala del enemigo que golpea: la armadura se compara con su escala.
 ## Habilidades legendarias: Esquiva y Parada anulan un golpe (no el pulso) y dejan `last_avoid`;
 ## Segunda oportunidad deja a Tico con vida la primera vez que iba a caer en cada duelo.
-func take_damage(amount: int, is_pulse: bool = false) -> int:
+func take_damage(amount: int, is_pulse: bool = false, attacker_level: int = 1) -> int:
 	last_avoid = &""
 	if debug_invincible or not alive:
 		return 0
@@ -320,7 +320,7 @@ func take_damage(amount: int, is_pulse: bool = false) -> int:
 			return 0
 	var final := amount
 	if not is_pulse:
-		var mitigation := armor_mitigation()
+		var mitigation := armor_mitigation(attacker_level)
 		final = maxi(1, int(round(float(amount) * (1.0 - mitigation))))
 		if final < amount and mitigation >= 0.15:
 			_block_flash = 1.0

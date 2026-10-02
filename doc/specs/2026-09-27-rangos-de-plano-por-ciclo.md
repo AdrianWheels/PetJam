@@ -1,6 +1,6 @@
 # Rangos de plano por ciclo
 
-**Fecha:** 2026-09-27 · **Estado:** aprobado; revisado el 2026-09-27 con el muro y el farmeo (apartado 7); implementación en pausa en la tarea 3 del plan, hasta calibrar el balance (apartado 6)
+**Fecha:** 2026-09-27 · **Estado:** aprobado; revisado el 2026-09-27 con el muro y el farmeo (apartado 7); tarea 3 del plan (calibración del balance) hecha con Balanza el 2026-10-01 (apartado 6); siguen las tareas 4 a 11 y la 13
 **Petición:** "Qué le faltaría al juego para estar completo". El análisis encontró que el juego se agota pronto: los 12 planos se desbloquean al pasar la sala 9 y el poder de Tico tiene techo, porque solo cuenta el equipo, mientras los enemigos crecen sin límite. El usuario eligió publicar **gratis primero** (medir la retención antes de monetizar) y, como eje de progresión infinito, **rangos de plano por ciclo**, con estas decisiones:
 
 | Pregunta | Elegido |
@@ -129,7 +129,7 @@ Criterios:
 
 ## 6. Balance
 
-**Objetivos: pequeños muros.** Decisión del usuario: "cada bicho es un pequeño muro, que te obligue a farmear un poco el anterior". Se miden en duelos (apartado 7): un equipo llega hasta la última sala en la que Tico gana el duelo con la vida llena, y la siguiente es su muro. Propuesta para cada rango N, que se confirma con el usuario al calibrar:
+**Objetivos: pequeños muros.** Decisión del usuario: "cada bicho es un pequeño muro, que te obligue a farmear un poco el anterior". Se miden en duelos (apartado 7): un equipo llega hasta la última sala en la que Tico gana el duelo con la vida llena, y la siguiente es su muro. Objetivos para cada rango N, confirmados con el usuario el 2026-10-01 tal cual:
 - **Escalera:** 15 estados, que son las piezas básicas, avanzadas y maestras con calidad 0,40, 0,55, 0,70, 0,85 y 1,00, con las 4 piezas equipadas. De un estado al siguiente, el muro avanza de 0 a 6 salas: mejorar siempre se nota, pero ningún salto se come medio bioma.
 - **Hitos, con calidad 0,85:** el básico vence al jefe de la sala 50·(N−1)+20, el avanzado al de la +40 y el maestro al de la 50·N (acaba el ciclo).
 - **Cotas, con calidad 1,00:** el básico no vence al jefe +40, el avanzado no acaba el ciclo y el maestro no vence al jefe 50·N+10.
@@ -137,10 +137,10 @@ Criterios:
 
 **Base de Tico.** Decisión del usuario: escala con el rango de su equipo. La regla que da "el rango del equipo" va en una sola función, porque el inventario en rejilla la redefine. Con 4 huecos, es el menor rango entre las piezas equipadas.
 
-**Simulación.** Una escena de pruebas sin ventana (`BalanceSim`, o el motor Balanza cuando esté) calcula, con las fórmulas reales de `Hero` y `Enemy`, el muro de cada combinación de rango, nivel de pieza y calidad: el primer enemigo al que Tico no gana el duelo. Usa el daño esperado por segundo de cada lado (`expected_dps`), la armadura y el tiempo hasta matar, sin azar, y comprueba los objetivos para los ciclos I a V.
+**Simulación.** Una escena de pruebas sin ventana (el motor Balanza, con el enlace `scripts/tests/BalanzaBinding.gd`) calcula, con las fórmulas reales de `Hero` y `Enemy`, el muro de cada combinación de rango, nivel de pieza y calidad: el primer enemigo al que Tico no gana el duelo. Usa el daño esperado por segundo de cada lado (`expected_dps`), la armadura y el tiempo hasta matar, sin azar, y comprueba los objetivos para los ciclos I a V.
 
 **Palancas que fija la calibración:**
-- las constantes de `EnemyScaling` (la fórmula de la curva sale de `Enemy.reset_stats` a esa clase estática; se mantienen los arquetipos y el ×1,6 de los jefes);
+- las constantes de `EnemyScaling` (la fórmula de la curva sale de `Enemy.reset_stats` a esa clase estática; se mantienen los arquetipos); el multiplicador de los jefes, antes fijo en ×1,6, pasó a ser una palanca más (decisión del 2026-10-01, más abajo);
 - `stat_mult(N)` y la base de Tico por rango;
 - `mat_mult(N)`: punto de partida, 1,6^(N−1);
 - las cantidades del apartado 4.
@@ -148,24 +148,29 @@ Criterios:
 **Lo aprendido en la tarea 3.** Medía carreras sin curarse; con duelos hay que rehacer las cuentas.
 - Con las palancas de partida no se cumplía casi nada:
   - la agilidad y la inteligencia del enemigo crecen fuera de la curva, y el pulso mágico ignora la armadura;
-  - la mitigación de la armadura (`armor / (armor + 40)`, con tope del 60 %) deja de importar en rangos altos;
+  - la mitigación de la armadura (`armor / (armor + K)`, con K = 40 de partida y tope del 60 %) deja de importar en rangos altos;
   - la base de Tico no escalaba con el rango.
-- En una réplica en Python cumplió los objetivos este modelo, que sirve de punto de partida:
-  - la curva de enemigos va en escalera: poco por sala dentro del ciclo (×1,006) y un salto al empezar cada ciclo (×8);
+- Este es el modelo que cumple los objetivos. La réplica en Python fue solo su punto de partida (×1,006 por sala dentro del ciclo y un salto de ×8 al empezar cada ciclo); los valores finales son los de «Estado», más abajo:
+  - la curva de enemigos va en escalera: poco por sala dentro del ciclo y un salto al empezar cada ciclo;
   - la agilidad y la inteligencia del enemigo se quedan en las de la sala 1, y su pulso crece con la escala;
   - la armadura se compara con la escala del enemigo;
   - la base de Tico se multiplica por el salto elevado a (rango del equipo − 1);
-  - la espada básica sube su daño máximo de 8 a 12 y su ritmo máximo de 0,15 a 0,225.
-- Con un salto de ×8, el equipo de rango V multiplica por 4.096: la interfaz necesitará cifras abreviadas.
+  - la espada básica conserva su daño máximo (8) y su ritmo máximo (0,15), que la réplica subía a 12 y a 0,225: el catálogo calibrado solo le mueve el crítico (0,04 a 0,09) y el ritmo mínimo (0,065).
+- Con el salto calibrado de ×10,5, el equipo de rango V multiplica por unos 12.155 (10,5⁴): la interfaz necesitará cifras abreviadas.
 
 **Consecuencia aceptada:** en el ciclo I las piezas maestras llegan en la sala 40 en lugar de hacia la 9. El principio es más lento y el contenido dura más.
 
-**Estado (2026-09-27): calibración en pausa.**
-- Se hará con el motor de balance reutilizable (Balanza), que se está haciendo en otra sesión, y se repetirá con el inventario en rejilla (su spec, apartado 6).
-- Hasta entonces, los rangos se paran en la tarea 3 del plan. Sin calibrar, la tarea 6 podría atascar la partida: los avanzados piden vencer al jefe de la sala 20, y en las carreras que medía la tarea 3 el equipo básico no pasaba de la sala 7.
-- Dónde está lo hecho:
-  - el código de la tarea 3, en la rama local `rangos-calibracion-aparcada`;
-  - el informe y la réplica en Python, en `.superpowers/sdd/2026-09-27-rangos-de-plano-por-ciclo/` (fuera de git).
+**Estado (2026-10-01): calibrada con Balanza.**
+- La calibración se hizo con el motor de balance reutilizable (Balanza), con el enlace `scripts/tests/BalanzaBinding.gd` y los 35 objetivos de `balance/balance.json`. Falta repetirla con el inventario en rejilla (su spec, apartado 6).
+- El riesgo que justificó la pausa (que la tarea 6 atascara la partida) queda resuelto: con el catálogo calibrado, el equipo básico del ciclo I con calidad 0,85 tiene su muro en la sala 37, y el hito pide pasar de la 20.
+- El intento anterior (carreras sin curarse) queda solo como historia: el código, en la rama local `rangos-calibracion-aparcada`; el informe y la réplica en Python, en `.superpowers/sdd/2026-09-27-rangos-de-plano-por-ciclo/` (fuera de git).
+- **Valores calibrados (2026-10-01, con Balanza):** `EnemyScaling.EXP` = 1,0455, `EnemyScaling.STEP` = 10,5, `EnemyScaling.BOSS_MULT` = 1,15, `CombatMath.ARMOR_K` = 60, `Ranks.RANK_POWER_BONUS` = 1. Objetos: los de `balance/catalog.json` (importados a `data/items/`). Comprobación: `bash balance/arnes.sh check` (35 objetivos, `balance/balance.json`); el informe es `balance/report.md`.
+- **Decisiones de la calibración:**
+  - Por decisión del usuario (2026-10-01), el multiplicador de los jefes dejó de ser fijo en ×1,6 y pasó a ser una palanca de calibración. Se calibró en ×1,15: con ×1,6 todos los muros caían en salas de jefe y la escalera no se podía cumplir.
+  - El salto de ciclo es ×10,5 y no ×8, así que el equipo de rango V multiplica por unos 12.155: la interfaz necesitará cifras abreviadas.
+  - El `progress` del enlace de Balanza (solo sirve para medir; los objetivos no lo usan) se interpola contra el esqueleto de la curva en lugar de calcularse como `muro − 1 + fracción`, porque esa fórmula daba un salto en cada sala ganada.
+  - Los 35 objetivos no se cambiaron. El muro se entiende así: vencer al jefe de la sala R equivale a muro ≥ R + 1.
+- **Resultado:** 35 de 35 con los `.tres` ya importados, con el redondeo del juego. Las cotas del básico en N = 4 y N = 5 son las más justas: 1 sala de holgura (muro 189 y 239 frente a < 191 y < 241).
 
 ## 7. Muro, farmeo y selector de sala
 
@@ -234,7 +239,7 @@ Criterios:
   - Botín: la cantidad crece con el ciclo; el material de bioma cae solo en su bioma; el jefe siempre suelta el suyo.
   - Guardado: una partida de versión 1 (fichero de prueba) carga en la versión 2 sin perder objetos ni planos, con los hitos del récord aplicados.
   - Botín del jefe: el extra solo cae cuando su muerte sube el récord.
-- **`BalanceSim`:** los objetivos del apartado 6 para los ciclos I a V, medidos en duelos, como comprobaciones.
+- **Arnés de Balanza** (`bash balance/arnes.sh check`): los 35 objetivos de `balance/balance.json` (los del apartado 6 para los ciclos I a V), medidos en duelos, como comprobaciones.
 - **`GameplayTests`**, además de seguir en verde:
   - Muro y farmeo: al perder en la sala X, Tico reaparece en la X−1 con el muro en la X; vuelve al muro tras 3 victorias y en cuanto cambia el equipo o bebe una poción de efecto; con el muro en la sala 1 lo reintenta; entra en cada sala con la vida llena.
   - Selector y candado: no pasa del récord; elegir sala pone el candado (salvo el muro); con candado repite la sala; morir con candado lo baja una sala; quitarlo lo lleva delante del muro; cambiar de sala a mitad de un combate lo abandona sin premio; con Tico caído, el viaje espera a la reaparición.
@@ -248,7 +253,7 @@ Criterios:
   - `scripts/core/Ranks.gd`, `scripts/core/EnemyScaling.gd` y `scripts/core/TrialDifficulty.gd`;
   - `data/materials/{bone,moss,obsidian,frost,void_shard}.tres`;
   - iconos en `tools/pixel_art` → `art/sprites/pixel/materials/`;
-  - `scenes/tests/RankTests.tscn` y `scenes/tests/BalanceSim.tscn`, con sus scripts.
+  - `scenes/tests/RankTests.tscn` con su script, y el enlace de Balanza (`scripts/tests/BalanzaBinding.gd`, con `balance/` y `addons/balanza/`).
 - **Modificados:**
   - Autoloads y núcleo: `DataManager`, `GameManager`, `RequestsManager`, `CraftingManager`, `CraftedItem` y `SaveManager`.
   - Pasillo: `Enemy` (curva y botín, con el extra de jefe solo con récord nuevo), `Corridor` y `Hero` (duelos con la vida llena, reaparición delante del muro y viaje entre salas).
@@ -258,7 +263,7 @@ Criterios:
 
 ## 12. Fases
 
-1. **Simulación y curva:** `EnemyScaling`, `Ranks` (solo multiplicadores), `BalanceSim` y la calibración. El juego cambia solo en la curva de enemigos.
+1. **Simulación y curva:** `EnemyScaling`, `Ranks` (solo multiplicadores), el enlace de Balanza (`BalanzaBinding`) y la calibración. El juego cambia solo en la curva de enemigos.
 2. **Rango en los datos:** `CraftedItem`, `DataManager`, el guardado versión 2 y su migración.
 3. **Hitos, pedidos y oro por rango.**
 4. **Materiales de bioma:** datos, iconos, botín y recetas.

@@ -1,0 +1,2929 @@
+{
+  "format": 2,
+  "kitVersion": "0.1.0",
+  "planId": "5041195f958f390ab25997710cf842020d3254b2902f2f70fb624edc316ec2d5",
+  "catalog": {
+    "kind": "current",
+    "hash": "fb0e2b09e3e81ee7d58964504da3fca923316c24aaa73769348c1905930c6d1f"
+  },
+  "reference": "damage",
+  "scenarios": {
+    "duel": 1
+  },
+  "seeds": 1,
+  "targets": [
+    {
+      "id": "escalera[N=1]",
+      "type": "order",
+      "sequence": [
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 0.4
+            },
+            {
+              "id": "shield_basic",
+              "quality": 0.4
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 0.4
+            },
+            {
+              "id": "boots_basic",
+              "quality": 0.4
+            }
+          ],
+          "params": {
+            "rank": 1,
+            "quality": 0.4
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 0.55
+            },
+            {
+              "id": "shield_basic",
+              "quality": 0.55
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 0.55
+            },
+            {
+              "id": "boots_basic",
+              "quality": 0.55
+            }
+          ],
+          "params": {
+            "rank": 1,
+            "quality": 0.55
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 0.7
+            },
+            {
+              "id": "shield_basic",
+              "quality": 0.7
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 0.7
+            },
+            {
+              "id": "boots_basic",
+              "quality": 0.7
+            }
+          ],
+          "params": {
+            "rank": 1,
+            "quality": 0.7
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 0.85
+            },
+            {
+              "id": "shield_basic",
+              "quality": 0.85
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 0.85
+            },
+            {
+              "id": "boots_basic",
+              "quality": 0.85
+            }
+          ],
+          "params": {
+            "rank": 1,
+            "quality": 0.85
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 1
+            },
+            {
+              "id": "shield_basic",
+              "quality": 1
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 1
+            },
+            {
+              "id": "boots_basic",
+              "quality": 1
+            }
+          ],
+          "params": {
+            "rank": 1,
+            "quality": 1
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.4
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.4
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.4
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.4
+            }
+          ],
+          "params": {
+            "rank": 1,
+            "quality": 0.4
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.55
+            }
+          ],
+          "params": {
+            "rank": 1,
+            "quality": 0.55
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.7
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.7
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.7
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.7
+            }
+          ],
+          "params": {
+            "rank": 1,
+            "quality": 0.7
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.85
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.85
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.85
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.85
+            }
+          ],
+          "params": {
+            "rank": 1,
+            "quality": 0.85
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 1
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 1
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 1
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 1
+            }
+          ],
+          "params": {
+            "rank": 1,
+            "quality": 1
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 0.4
+            },
+            {
+              "id": "shield_master",
+              "quality": 0.4
+            },
+            {
+              "id": "helmet_master",
+              "quality": 0.4
+            },
+            {
+              "id": "boots_master",
+              "quality": 0.4
+            }
+          ],
+          "params": {
+            "rank": 1,
+            "quality": 0.4
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 0.55
+            },
+            {
+              "id": "shield_master",
+              "quality": 0.55
+            },
+            {
+              "id": "helmet_master",
+              "quality": 0.55
+            },
+            {
+              "id": "boots_master",
+              "quality": 0.55
+            }
+          ],
+          "params": {
+            "rank": 1,
+            "quality": 0.55
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 0.7
+            },
+            {
+              "id": "shield_master",
+              "quality": 0.7
+            },
+            {
+              "id": "helmet_master",
+              "quality": 0.7
+            },
+            {
+              "id": "boots_master",
+              "quality": 0.7
+            }
+          ],
+          "params": {
+            "rank": 1,
+            "quality": 0.7
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 0.85
+            },
+            {
+              "id": "shield_master",
+              "quality": 0.85
+            },
+            {
+              "id": "helmet_master",
+              "quality": 0.85
+            },
+            {
+              "id": "boots_master",
+              "quality": 0.85
+            }
+          ],
+          "params": {
+            "rank": 1,
+            "quality": 0.85
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 1
+            },
+            {
+              "id": "shield_master",
+              "quality": 1
+            },
+            {
+              "id": "helmet_master",
+              "quality": 1
+            },
+            {
+              "id": "boots_master",
+              "quality": 1
+            }
+          ],
+          "params": {
+            "rank": 1,
+            "quality": 1
+          }
+        }
+      ],
+      "scenario": "duel",
+      "metric": "wall",
+      "step": {
+        "min": 0,
+        "max": 7
+      }
+    },
+    {
+      "id": "escalera[N=2]",
+      "type": "order",
+      "sequence": [
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 0.4
+            },
+            {
+              "id": "shield_basic",
+              "quality": 0.4
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 0.4
+            },
+            {
+              "id": "boots_basic",
+              "quality": 0.4
+            }
+          ],
+          "params": {
+            "rank": 2,
+            "quality": 0.4
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 0.55
+            },
+            {
+              "id": "shield_basic",
+              "quality": 0.55
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 0.55
+            },
+            {
+              "id": "boots_basic",
+              "quality": 0.55
+            }
+          ],
+          "params": {
+            "rank": 2,
+            "quality": 0.55
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 0.7
+            },
+            {
+              "id": "shield_basic",
+              "quality": 0.7
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 0.7
+            },
+            {
+              "id": "boots_basic",
+              "quality": 0.7
+            }
+          ],
+          "params": {
+            "rank": 2,
+            "quality": 0.7
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 0.85
+            },
+            {
+              "id": "shield_basic",
+              "quality": 0.85
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 0.85
+            },
+            {
+              "id": "boots_basic",
+              "quality": 0.85
+            }
+          ],
+          "params": {
+            "rank": 2,
+            "quality": 0.85
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 1
+            },
+            {
+              "id": "shield_basic",
+              "quality": 1
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 1
+            },
+            {
+              "id": "boots_basic",
+              "quality": 1
+            }
+          ],
+          "params": {
+            "rank": 2,
+            "quality": 1
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.4
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.4
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.4
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.4
+            }
+          ],
+          "params": {
+            "rank": 2,
+            "quality": 0.4
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.55
+            }
+          ],
+          "params": {
+            "rank": 2,
+            "quality": 0.55
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.7
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.7
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.7
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.7
+            }
+          ],
+          "params": {
+            "rank": 2,
+            "quality": 0.7
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.85
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.85
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.85
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.85
+            }
+          ],
+          "params": {
+            "rank": 2,
+            "quality": 0.85
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 1
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 1
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 1
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 1
+            }
+          ],
+          "params": {
+            "rank": 2,
+            "quality": 1
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 0.4
+            },
+            {
+              "id": "shield_master",
+              "quality": 0.4
+            },
+            {
+              "id": "helmet_master",
+              "quality": 0.4
+            },
+            {
+              "id": "boots_master",
+              "quality": 0.4
+            }
+          ],
+          "params": {
+            "rank": 2,
+            "quality": 0.4
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 0.55
+            },
+            {
+              "id": "shield_master",
+              "quality": 0.55
+            },
+            {
+              "id": "helmet_master",
+              "quality": 0.55
+            },
+            {
+              "id": "boots_master",
+              "quality": 0.55
+            }
+          ],
+          "params": {
+            "rank": 2,
+            "quality": 0.55
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 0.7
+            },
+            {
+              "id": "shield_master",
+              "quality": 0.7
+            },
+            {
+              "id": "helmet_master",
+              "quality": 0.7
+            },
+            {
+              "id": "boots_master",
+              "quality": 0.7
+            }
+          ],
+          "params": {
+            "rank": 2,
+            "quality": 0.7
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 0.85
+            },
+            {
+              "id": "shield_master",
+              "quality": 0.85
+            },
+            {
+              "id": "helmet_master",
+              "quality": 0.85
+            },
+            {
+              "id": "boots_master",
+              "quality": 0.85
+            }
+          ],
+          "params": {
+            "rank": 2,
+            "quality": 0.85
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 1
+            },
+            {
+              "id": "shield_master",
+              "quality": 1
+            },
+            {
+              "id": "helmet_master",
+              "quality": 1
+            },
+            {
+              "id": "boots_master",
+              "quality": 1
+            }
+          ],
+          "params": {
+            "rank": 2,
+            "quality": 1
+          }
+        }
+      ],
+      "scenario": "duel",
+      "metric": "wall",
+      "step": {
+        "min": 0,
+        "max": 7
+      }
+    },
+    {
+      "id": "escalera[N=3]",
+      "type": "order",
+      "sequence": [
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 0.4
+            },
+            {
+              "id": "shield_basic",
+              "quality": 0.4
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 0.4
+            },
+            {
+              "id": "boots_basic",
+              "quality": 0.4
+            }
+          ],
+          "params": {
+            "rank": 3,
+            "quality": 0.4
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 0.55
+            },
+            {
+              "id": "shield_basic",
+              "quality": 0.55
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 0.55
+            },
+            {
+              "id": "boots_basic",
+              "quality": 0.55
+            }
+          ],
+          "params": {
+            "rank": 3,
+            "quality": 0.55
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 0.7
+            },
+            {
+              "id": "shield_basic",
+              "quality": 0.7
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 0.7
+            },
+            {
+              "id": "boots_basic",
+              "quality": 0.7
+            }
+          ],
+          "params": {
+            "rank": 3,
+            "quality": 0.7
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 0.85
+            },
+            {
+              "id": "shield_basic",
+              "quality": 0.85
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 0.85
+            },
+            {
+              "id": "boots_basic",
+              "quality": 0.85
+            }
+          ],
+          "params": {
+            "rank": 3,
+            "quality": 0.85
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 1
+            },
+            {
+              "id": "shield_basic",
+              "quality": 1
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 1
+            },
+            {
+              "id": "boots_basic",
+              "quality": 1
+            }
+          ],
+          "params": {
+            "rank": 3,
+            "quality": 1
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.4
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.4
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.4
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.4
+            }
+          ],
+          "params": {
+            "rank": 3,
+            "quality": 0.4
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.55
+            }
+          ],
+          "params": {
+            "rank": 3,
+            "quality": 0.55
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.7
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.7
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.7
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.7
+            }
+          ],
+          "params": {
+            "rank": 3,
+            "quality": 0.7
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.85
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.85
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.85
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.85
+            }
+          ],
+          "params": {
+            "rank": 3,
+            "quality": 0.85
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 1
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 1
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 1
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 1
+            }
+          ],
+          "params": {
+            "rank": 3,
+            "quality": 1
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 0.4
+            },
+            {
+              "id": "shield_master",
+              "quality": 0.4
+            },
+            {
+              "id": "helmet_master",
+              "quality": 0.4
+            },
+            {
+              "id": "boots_master",
+              "quality": 0.4
+            }
+          ],
+          "params": {
+            "rank": 3,
+            "quality": 0.4
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 0.55
+            },
+            {
+              "id": "shield_master",
+              "quality": 0.55
+            },
+            {
+              "id": "helmet_master",
+              "quality": 0.55
+            },
+            {
+              "id": "boots_master",
+              "quality": 0.55
+            }
+          ],
+          "params": {
+            "rank": 3,
+            "quality": 0.55
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 0.7
+            },
+            {
+              "id": "shield_master",
+              "quality": 0.7
+            },
+            {
+              "id": "helmet_master",
+              "quality": 0.7
+            },
+            {
+              "id": "boots_master",
+              "quality": 0.7
+            }
+          ],
+          "params": {
+            "rank": 3,
+            "quality": 0.7
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 0.85
+            },
+            {
+              "id": "shield_master",
+              "quality": 0.85
+            },
+            {
+              "id": "helmet_master",
+              "quality": 0.85
+            },
+            {
+              "id": "boots_master",
+              "quality": 0.85
+            }
+          ],
+          "params": {
+            "rank": 3,
+            "quality": 0.85
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 1
+            },
+            {
+              "id": "shield_master",
+              "quality": 1
+            },
+            {
+              "id": "helmet_master",
+              "quality": 1
+            },
+            {
+              "id": "boots_master",
+              "quality": 1
+            }
+          ],
+          "params": {
+            "rank": 3,
+            "quality": 1
+          }
+        }
+      ],
+      "scenario": "duel",
+      "metric": "wall",
+      "step": {
+        "min": 0,
+        "max": 7
+      }
+    },
+    {
+      "id": "escalera[N=4]",
+      "type": "order",
+      "sequence": [
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 0.4
+            },
+            {
+              "id": "shield_basic",
+              "quality": 0.4
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 0.4
+            },
+            {
+              "id": "boots_basic",
+              "quality": 0.4
+            }
+          ],
+          "params": {
+            "rank": 4,
+            "quality": 0.4
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 0.55
+            },
+            {
+              "id": "shield_basic",
+              "quality": 0.55
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 0.55
+            },
+            {
+              "id": "boots_basic",
+              "quality": 0.55
+            }
+          ],
+          "params": {
+            "rank": 4,
+            "quality": 0.55
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 0.7
+            },
+            {
+              "id": "shield_basic",
+              "quality": 0.7
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 0.7
+            },
+            {
+              "id": "boots_basic",
+              "quality": 0.7
+            }
+          ],
+          "params": {
+            "rank": 4,
+            "quality": 0.7
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 0.85
+            },
+            {
+              "id": "shield_basic",
+              "quality": 0.85
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 0.85
+            },
+            {
+              "id": "boots_basic",
+              "quality": 0.85
+            }
+          ],
+          "params": {
+            "rank": 4,
+            "quality": 0.85
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 1
+            },
+            {
+              "id": "shield_basic",
+              "quality": 1
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 1
+            },
+            {
+              "id": "boots_basic",
+              "quality": 1
+            }
+          ],
+          "params": {
+            "rank": 4,
+            "quality": 1
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.4
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.4
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.4
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.4
+            }
+          ],
+          "params": {
+            "rank": 4,
+            "quality": 0.4
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.55
+            }
+          ],
+          "params": {
+            "rank": 4,
+            "quality": 0.55
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.7
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.7
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.7
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.7
+            }
+          ],
+          "params": {
+            "rank": 4,
+            "quality": 0.7
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.85
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.85
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.85
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.85
+            }
+          ],
+          "params": {
+            "rank": 4,
+            "quality": 0.85
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 1
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 1
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 1
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 1
+            }
+          ],
+          "params": {
+            "rank": 4,
+            "quality": 1
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 0.4
+            },
+            {
+              "id": "shield_master",
+              "quality": 0.4
+            },
+            {
+              "id": "helmet_master",
+              "quality": 0.4
+            },
+            {
+              "id": "boots_master",
+              "quality": 0.4
+            }
+          ],
+          "params": {
+            "rank": 4,
+            "quality": 0.4
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 0.55
+            },
+            {
+              "id": "shield_master",
+              "quality": 0.55
+            },
+            {
+              "id": "helmet_master",
+              "quality": 0.55
+            },
+            {
+              "id": "boots_master",
+              "quality": 0.55
+            }
+          ],
+          "params": {
+            "rank": 4,
+            "quality": 0.55
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 0.7
+            },
+            {
+              "id": "shield_master",
+              "quality": 0.7
+            },
+            {
+              "id": "helmet_master",
+              "quality": 0.7
+            },
+            {
+              "id": "boots_master",
+              "quality": 0.7
+            }
+          ],
+          "params": {
+            "rank": 4,
+            "quality": 0.7
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 0.85
+            },
+            {
+              "id": "shield_master",
+              "quality": 0.85
+            },
+            {
+              "id": "helmet_master",
+              "quality": 0.85
+            },
+            {
+              "id": "boots_master",
+              "quality": 0.85
+            }
+          ],
+          "params": {
+            "rank": 4,
+            "quality": 0.85
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 1
+            },
+            {
+              "id": "shield_master",
+              "quality": 1
+            },
+            {
+              "id": "helmet_master",
+              "quality": 1
+            },
+            {
+              "id": "boots_master",
+              "quality": 1
+            }
+          ],
+          "params": {
+            "rank": 4,
+            "quality": 1
+          }
+        }
+      ],
+      "scenario": "duel",
+      "metric": "wall",
+      "step": {
+        "min": 0,
+        "max": 7
+      }
+    },
+    {
+      "id": "escalera[N=5]",
+      "type": "order",
+      "sequence": [
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 0.4
+            },
+            {
+              "id": "shield_basic",
+              "quality": 0.4
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 0.4
+            },
+            {
+              "id": "boots_basic",
+              "quality": 0.4
+            }
+          ],
+          "params": {
+            "rank": 5,
+            "quality": 0.4
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 0.55
+            },
+            {
+              "id": "shield_basic",
+              "quality": 0.55
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 0.55
+            },
+            {
+              "id": "boots_basic",
+              "quality": 0.55
+            }
+          ],
+          "params": {
+            "rank": 5,
+            "quality": 0.55
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 0.7
+            },
+            {
+              "id": "shield_basic",
+              "quality": 0.7
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 0.7
+            },
+            {
+              "id": "boots_basic",
+              "quality": 0.7
+            }
+          ],
+          "params": {
+            "rank": 5,
+            "quality": 0.7
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 0.85
+            },
+            {
+              "id": "shield_basic",
+              "quality": 0.85
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 0.85
+            },
+            {
+              "id": "boots_basic",
+              "quality": 0.85
+            }
+          ],
+          "params": {
+            "rank": 5,
+            "quality": 0.85
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_basic",
+              "quality": 1
+            },
+            {
+              "id": "shield_basic",
+              "quality": 1
+            },
+            {
+              "id": "helmet_basic",
+              "quality": 1
+            },
+            {
+              "id": "boots_basic",
+              "quality": 1
+            }
+          ],
+          "params": {
+            "rank": 5,
+            "quality": 1
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.4
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.4
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.4
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.4
+            }
+          ],
+          "params": {
+            "rank": 5,
+            "quality": 0.4
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.55
+            }
+          ],
+          "params": {
+            "rank": 5,
+            "quality": 0.55
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.7
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.7
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.7
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.7
+            }
+          ],
+          "params": {
+            "rank": 5,
+            "quality": 0.7
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.85
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.85
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.85
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.85
+            }
+          ],
+          "params": {
+            "rank": 5,
+            "quality": 0.85
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 1
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 1
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 1
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 1
+            }
+          ],
+          "params": {
+            "rank": 5,
+            "quality": 1
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 0.4
+            },
+            {
+              "id": "shield_master",
+              "quality": 0.4
+            },
+            {
+              "id": "helmet_master",
+              "quality": 0.4
+            },
+            {
+              "id": "boots_master",
+              "quality": 0.4
+            }
+          ],
+          "params": {
+            "rank": 5,
+            "quality": 0.4
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 0.55
+            },
+            {
+              "id": "shield_master",
+              "quality": 0.55
+            },
+            {
+              "id": "helmet_master",
+              "quality": 0.55
+            },
+            {
+              "id": "boots_master",
+              "quality": 0.55
+            }
+          ],
+          "params": {
+            "rank": 5,
+            "quality": 0.55
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 0.7
+            },
+            {
+              "id": "shield_master",
+              "quality": 0.7
+            },
+            {
+              "id": "helmet_master",
+              "quality": 0.7
+            },
+            {
+              "id": "boots_master",
+              "quality": 0.7
+            }
+          ],
+          "params": {
+            "rank": 5,
+            "quality": 0.7
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 0.85
+            },
+            {
+              "id": "shield_master",
+              "quality": 0.85
+            },
+            {
+              "id": "helmet_master",
+              "quality": 0.85
+            },
+            {
+              "id": "boots_master",
+              "quality": 0.85
+            }
+          ],
+          "params": {
+            "rank": 5,
+            "quality": 0.85
+          }
+        },
+        {
+          "items": [
+            {
+              "id": "sword_masterwork",
+              "quality": 1
+            },
+            {
+              "id": "shield_master",
+              "quality": 1
+            },
+            {
+              "id": "helmet_master",
+              "quality": 1
+            },
+            {
+              "id": "boots_master",
+              "quality": 1
+            }
+          ],
+          "params": {
+            "rank": 5,
+            "quality": 1
+          }
+        }
+      ],
+      "scenario": "duel",
+      "metric": "wall",
+      "step": {
+        "min": 0,
+        "max": 7
+      }
+    },
+    {
+      "id": "hito-basico[N=1]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_basic",
+            "quality": 0.85
+          },
+          {
+            "id": "shield_basic",
+            "quality": 0.85
+          },
+          {
+            "id": "helmet_basic",
+            "quality": 0.85
+          },
+          {
+            "id": "boots_basic",
+            "quality": 0.85
+          }
+        ],
+        "params": {
+          "rank": 1,
+          "quality": 0.85
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "min": 21
+    },
+    {
+      "id": "hito-basico[N=2]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_basic",
+            "quality": 0.85
+          },
+          {
+            "id": "shield_basic",
+            "quality": 0.85
+          },
+          {
+            "id": "helmet_basic",
+            "quality": 0.85
+          },
+          {
+            "id": "boots_basic",
+            "quality": 0.85
+          }
+        ],
+        "params": {
+          "rank": 2,
+          "quality": 0.85
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "min": 71
+    },
+    {
+      "id": "hito-basico[N=3]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_basic",
+            "quality": 0.85
+          },
+          {
+            "id": "shield_basic",
+            "quality": 0.85
+          },
+          {
+            "id": "helmet_basic",
+            "quality": 0.85
+          },
+          {
+            "id": "boots_basic",
+            "quality": 0.85
+          }
+        ],
+        "params": {
+          "rank": 3,
+          "quality": 0.85
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "min": 121
+    },
+    {
+      "id": "hito-basico[N=4]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_basic",
+            "quality": 0.85
+          },
+          {
+            "id": "shield_basic",
+            "quality": 0.85
+          },
+          {
+            "id": "helmet_basic",
+            "quality": 0.85
+          },
+          {
+            "id": "boots_basic",
+            "quality": 0.85
+          }
+        ],
+        "params": {
+          "rank": 4,
+          "quality": 0.85
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "min": 171
+    },
+    {
+      "id": "hito-basico[N=5]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_basic",
+            "quality": 0.85
+          },
+          {
+            "id": "shield_basic",
+            "quality": 0.85
+          },
+          {
+            "id": "helmet_basic",
+            "quality": 0.85
+          },
+          {
+            "id": "boots_basic",
+            "quality": 0.85
+          }
+        ],
+        "params": {
+          "rank": 5,
+          "quality": 0.85
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "min": 221
+    },
+    {
+      "id": "hito-avanzado[N=1]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_advanced",
+            "quality": 0.85
+          },
+          {
+            "id": "shield_advanced",
+            "quality": 0.85
+          },
+          {
+            "id": "helmet_advanced",
+            "quality": 0.85
+          },
+          {
+            "id": "boots_advanced",
+            "quality": 0.85
+          }
+        ],
+        "params": {
+          "rank": 1,
+          "quality": 0.85
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "min": 41
+    },
+    {
+      "id": "hito-avanzado[N=2]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_advanced",
+            "quality": 0.85
+          },
+          {
+            "id": "shield_advanced",
+            "quality": 0.85
+          },
+          {
+            "id": "helmet_advanced",
+            "quality": 0.85
+          },
+          {
+            "id": "boots_advanced",
+            "quality": 0.85
+          }
+        ],
+        "params": {
+          "rank": 2,
+          "quality": 0.85
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "min": 91
+    },
+    {
+      "id": "hito-avanzado[N=3]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_advanced",
+            "quality": 0.85
+          },
+          {
+            "id": "shield_advanced",
+            "quality": 0.85
+          },
+          {
+            "id": "helmet_advanced",
+            "quality": 0.85
+          },
+          {
+            "id": "boots_advanced",
+            "quality": 0.85
+          }
+        ],
+        "params": {
+          "rank": 3,
+          "quality": 0.85
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "min": 141
+    },
+    {
+      "id": "hito-avanzado[N=4]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_advanced",
+            "quality": 0.85
+          },
+          {
+            "id": "shield_advanced",
+            "quality": 0.85
+          },
+          {
+            "id": "helmet_advanced",
+            "quality": 0.85
+          },
+          {
+            "id": "boots_advanced",
+            "quality": 0.85
+          }
+        ],
+        "params": {
+          "rank": 4,
+          "quality": 0.85
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "min": 191
+    },
+    {
+      "id": "hito-avanzado[N=5]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_advanced",
+            "quality": 0.85
+          },
+          {
+            "id": "shield_advanced",
+            "quality": 0.85
+          },
+          {
+            "id": "helmet_advanced",
+            "quality": 0.85
+          },
+          {
+            "id": "boots_advanced",
+            "quality": 0.85
+          }
+        ],
+        "params": {
+          "rank": 5,
+          "quality": 0.85
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "min": 241
+    },
+    {
+      "id": "hito-maestro[N=1]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_masterwork",
+            "quality": 0.85
+          },
+          {
+            "id": "shield_master",
+            "quality": 0.85
+          },
+          {
+            "id": "helmet_master",
+            "quality": 0.85
+          },
+          {
+            "id": "boots_master",
+            "quality": 0.85
+          }
+        ],
+        "params": {
+          "rank": 1,
+          "quality": 0.85
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "min": 51
+    },
+    {
+      "id": "hito-maestro[N=2]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_masterwork",
+            "quality": 0.85
+          },
+          {
+            "id": "shield_master",
+            "quality": 0.85
+          },
+          {
+            "id": "helmet_master",
+            "quality": 0.85
+          },
+          {
+            "id": "boots_master",
+            "quality": 0.85
+          }
+        ],
+        "params": {
+          "rank": 2,
+          "quality": 0.85
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "min": 101
+    },
+    {
+      "id": "hito-maestro[N=3]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_masterwork",
+            "quality": 0.85
+          },
+          {
+            "id": "shield_master",
+            "quality": 0.85
+          },
+          {
+            "id": "helmet_master",
+            "quality": 0.85
+          },
+          {
+            "id": "boots_master",
+            "quality": 0.85
+          }
+        ],
+        "params": {
+          "rank": 3,
+          "quality": 0.85
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "min": 151
+    },
+    {
+      "id": "hito-maestro[N=4]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_masterwork",
+            "quality": 0.85
+          },
+          {
+            "id": "shield_master",
+            "quality": 0.85
+          },
+          {
+            "id": "helmet_master",
+            "quality": 0.85
+          },
+          {
+            "id": "boots_master",
+            "quality": 0.85
+          }
+        ],
+        "params": {
+          "rank": 4,
+          "quality": 0.85
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "min": 201
+    },
+    {
+      "id": "hito-maestro[N=5]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_masterwork",
+            "quality": 0.85
+          },
+          {
+            "id": "shield_master",
+            "quality": 0.85
+          },
+          {
+            "id": "helmet_master",
+            "quality": 0.85
+          },
+          {
+            "id": "boots_master",
+            "quality": 0.85
+          }
+        ],
+        "params": {
+          "rank": 5,
+          "quality": 0.85
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "min": 251
+    },
+    {
+      "id": "cota-basico[N=1]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_basic",
+            "quality": 1
+          },
+          {
+            "id": "shield_basic",
+            "quality": 1
+          },
+          {
+            "id": "helmet_basic",
+            "quality": 1
+          },
+          {
+            "id": "boots_basic",
+            "quality": 1
+          }
+        ],
+        "params": {
+          "rank": 1,
+          "quality": 1
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "max": 41
+    },
+    {
+      "id": "cota-basico[N=2]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_basic",
+            "quality": 1
+          },
+          {
+            "id": "shield_basic",
+            "quality": 1
+          },
+          {
+            "id": "helmet_basic",
+            "quality": 1
+          },
+          {
+            "id": "boots_basic",
+            "quality": 1
+          }
+        ],
+        "params": {
+          "rank": 2,
+          "quality": 1
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "max": 91
+    },
+    {
+      "id": "cota-basico[N=3]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_basic",
+            "quality": 1
+          },
+          {
+            "id": "shield_basic",
+            "quality": 1
+          },
+          {
+            "id": "helmet_basic",
+            "quality": 1
+          },
+          {
+            "id": "boots_basic",
+            "quality": 1
+          }
+        ],
+        "params": {
+          "rank": 3,
+          "quality": 1
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "max": 141
+    },
+    {
+      "id": "cota-basico[N=4]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_basic",
+            "quality": 1
+          },
+          {
+            "id": "shield_basic",
+            "quality": 1
+          },
+          {
+            "id": "helmet_basic",
+            "quality": 1
+          },
+          {
+            "id": "boots_basic",
+            "quality": 1
+          }
+        ],
+        "params": {
+          "rank": 4,
+          "quality": 1
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "max": 191
+    },
+    {
+      "id": "cota-basico[N=5]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_basic",
+            "quality": 1
+          },
+          {
+            "id": "shield_basic",
+            "quality": 1
+          },
+          {
+            "id": "helmet_basic",
+            "quality": 1
+          },
+          {
+            "id": "boots_basic",
+            "quality": 1
+          }
+        ],
+        "params": {
+          "rank": 5,
+          "quality": 1
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "max": 241
+    },
+    {
+      "id": "cota-avanzado[N=1]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_advanced",
+            "quality": 1
+          },
+          {
+            "id": "shield_advanced",
+            "quality": 1
+          },
+          {
+            "id": "helmet_advanced",
+            "quality": 1
+          },
+          {
+            "id": "boots_advanced",
+            "quality": 1
+          }
+        ],
+        "params": {
+          "rank": 1,
+          "quality": 1
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "max": 51
+    },
+    {
+      "id": "cota-avanzado[N=2]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_advanced",
+            "quality": 1
+          },
+          {
+            "id": "shield_advanced",
+            "quality": 1
+          },
+          {
+            "id": "helmet_advanced",
+            "quality": 1
+          },
+          {
+            "id": "boots_advanced",
+            "quality": 1
+          }
+        ],
+        "params": {
+          "rank": 2,
+          "quality": 1
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "max": 101
+    },
+    {
+      "id": "cota-avanzado[N=3]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_advanced",
+            "quality": 1
+          },
+          {
+            "id": "shield_advanced",
+            "quality": 1
+          },
+          {
+            "id": "helmet_advanced",
+            "quality": 1
+          },
+          {
+            "id": "boots_advanced",
+            "quality": 1
+          }
+        ],
+        "params": {
+          "rank": 3,
+          "quality": 1
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "max": 151
+    },
+    {
+      "id": "cota-avanzado[N=4]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_advanced",
+            "quality": 1
+          },
+          {
+            "id": "shield_advanced",
+            "quality": 1
+          },
+          {
+            "id": "helmet_advanced",
+            "quality": 1
+          },
+          {
+            "id": "boots_advanced",
+            "quality": 1
+          }
+        ],
+        "params": {
+          "rank": 4,
+          "quality": 1
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "max": 201
+    },
+    {
+      "id": "cota-avanzado[N=5]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_advanced",
+            "quality": 1
+          },
+          {
+            "id": "shield_advanced",
+            "quality": 1
+          },
+          {
+            "id": "helmet_advanced",
+            "quality": 1
+          },
+          {
+            "id": "boots_advanced",
+            "quality": 1
+          }
+        ],
+        "params": {
+          "rank": 5,
+          "quality": 1
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "max": 251
+    },
+    {
+      "id": "cota-maestro[N=1]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_masterwork",
+            "quality": 1
+          },
+          {
+            "id": "shield_master",
+            "quality": 1
+          },
+          {
+            "id": "helmet_master",
+            "quality": 1
+          },
+          {
+            "id": "boots_master",
+            "quality": 1
+          }
+        ],
+        "params": {
+          "rank": 1,
+          "quality": 1
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "max": 61
+    },
+    {
+      "id": "cota-maestro[N=2]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_masterwork",
+            "quality": 1
+          },
+          {
+            "id": "shield_master",
+            "quality": 1
+          },
+          {
+            "id": "helmet_master",
+            "quality": 1
+          },
+          {
+            "id": "boots_master",
+            "quality": 1
+          }
+        ],
+        "params": {
+          "rank": 2,
+          "quality": 1
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "max": 111
+    },
+    {
+      "id": "cota-maestro[N=3]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_masterwork",
+            "quality": 1
+          },
+          {
+            "id": "shield_master",
+            "quality": 1
+          },
+          {
+            "id": "helmet_master",
+            "quality": 1
+          },
+          {
+            "id": "boots_master",
+            "quality": 1
+          }
+        ],
+        "params": {
+          "rank": 3,
+          "quality": 1
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "max": 161
+    },
+    {
+      "id": "cota-maestro[N=4]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_masterwork",
+            "quality": 1
+          },
+          {
+            "id": "shield_master",
+            "quality": 1
+          },
+          {
+            "id": "helmet_master",
+            "quality": 1
+          },
+          {
+            "id": "boots_master",
+            "quality": 1
+          }
+        ],
+        "params": {
+          "rank": 4,
+          "quality": 1
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "max": 211
+    },
+    {
+      "id": "cota-maestro[N=5]",
+      "type": "band",
+      "build": {
+        "items": [
+          {
+            "id": "sword_masterwork",
+            "quality": 1
+          },
+          {
+            "id": "shield_master",
+            "quality": 1
+          },
+          {
+            "id": "helmet_master",
+            "quality": 1
+          },
+          {
+            "id": "boots_master",
+            "quality": 1
+          }
+        ],
+        "params": {
+          "rank": 5,
+          "quality": 1
+        }
+      },
+      "scenario": "duel",
+      "metric": "wall",
+      "max": 261
+    }
+  ],
+  "measure": {
+    "levels": [
+      1
+    ],
+    "delta": 0.05,
+    "maxNoise": 0.2,
+    "stats": [
+      {
+        "id": "damage",
+        "step": 1
+      },
+      {
+        "id": "hp",
+        "step": 1
+      },
+      {
+        "id": "armor",
+        "step": 1
+      },
+      {
+        "id": "crit",
+        "step": 0.01
+      },
+      {
+        "id": "aps",
+        "step": 0.005
+      }
+    ],
+    "references": [
+      {
+        "level": 1,
+        "build": {
+          "items": [
+            {
+              "id": "sword_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "shield_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "helmet_advanced",
+              "quality": 0.55
+            },
+            {
+              "id": "boots_advanced",
+              "quality": 0.55
+            }
+          ],
+          "params": {
+            "level": 1,
+            "quality": 0.55,
+            "rank": 1
+          }
+        }
+      }
+    ],
+    "effects": [],
+    "items": [
+      {
+        "id": "boots_advanced",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "boots_basic",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "boots_master",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "helmet_advanced",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "helmet_basic",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "helmet_master",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "shield_advanced",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "shield_basic",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "shield_master",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "sword_advanced",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "sword_basic",
+        "level": 1,
+        "quality": 0.55
+      },
+      {
+        "id": "sword_masterwork",
+        "level": 1,
+        "quality": 0.55
+      }
+    ],
+    "challenge": false
+  }
+}

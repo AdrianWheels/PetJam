@@ -291,7 +291,9 @@ func _refresh() -> void:
 func _refresh_stats(preview: Dictionary) -> void:
 	var now := CombatMath.hero_stats_with_powers(_im.calculate_total_stats(), _im.active_legendary_powers())
 	var after: Dictionary = now if preview.is_empty() else CombatMath.hero_stats_with_powers(preview.totals, preview.powers)
-	var mitigation := roundi(CombatMath.armor_mitigation(int(now.armor)) * 100.0)
+	# La reducción depende del enemigo: se enseña la de la sala actual
+	var room: int = int(_gm.current_enemy_level) if _gm and "current_enemy_level" in _gm else 1
+	var mitigation := roundi(CombatMath.armor_mitigation(int(now.armor), room) * 100.0)
 	var parts := [
 		tr("Vida %d") % now.max_hp + _delta(after.max_hp - now.max_hp, "%+d"),
 		tr("Daño %.0f") % now.dmg + _delta(after.dmg - now.dmg, "%+.0f"),

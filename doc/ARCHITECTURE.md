@@ -162,7 +162,7 @@ Los temporizadores del golpe y del pulso se llenan al empezar cada duelo (`prepa
 
 **Flujo de combate**:
 1. Héroe camina (RUN); entra en combate cuando el enemigo está a `reach + half_width` (no por solape de rects)
-2. CombatController gestiona intercambio de golpes por cooldowns (FIGHT). La armadura del héroe reduce el daño físico: `armor / (armor + 40)`, máximo 60 %
+2. CombatController gestiona intercambio de golpes por cooldowns (FIGHT). La armadura del héroe reduce el daño físico: `armor / (armor + ARMOR_K · escala del enemigo)` con `ARMOR_K` 60 (`CombatMath`), máximo 60 %
 3. Enemigo muere → rellena `death_info` → CombatController registra la victoria y avanza sala → Corridor muestra botín y celebración
 4. Héroe muere → `GameManager.register_hero_death()`: la sala donde cae pasa a ser el muro → fundido → reaparición en la sala anterior con haz de luz. Delante del muro farmea y lo reintenta cada 3 victorias, o al momento con equipo nuevo (colocar, quitar, girar o intercambiar una pieza de la rejilla de Tico: `equipment_changed`) o una poción de efecto (`GameManager.room_cleared()`, `retry_wall_now()`). La ampliación de la rejilla al vencer por primera vez a un jefe (sala 10, 20, 30 o 40 del ciclo I, provisional) recalcula a Tico pero no prueba el muro: `register_enemy_defeat()` la aplica con `_growing_grid` puesto, porque el viaje en mitad de la victoria descuadraría la sala. Cada sala es un duelo: al cruzar su puerta, Tico recupera toda la vida. Selector de sala con candado en `HeroViewOverlay` (`GameManager.travel_to_room()`, `set_room_locked()`); spec de rangos, apartado 7
 5. Hit-stop: `Corridor.hitstop(s)` congela héroe, enemigo y combate (nunca los minijuegos)

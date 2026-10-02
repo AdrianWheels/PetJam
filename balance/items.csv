@@ -1,0 +1,13 @@
+id,archetype,slot,rarity,level,effects,locks,notes
+sword_basic,espada,main_hand,basic,1,,,
+shield_basic,escudo,off_hand,basic,1,,,
+helmet_basic,casco,head,basic,1,,,
+boots_basic,botas,feet,basic,1,,,
+sword_advanced,espada,main_hand,advanced,1,,,
+shield_advanced,escudo,off_hand,advanced,1,,,
+helmet_advanced,casco,head,advanced,1,,,
+boots_advanced,botas,feet,advanced,1,,,
+sword_masterwork,espada,main_hand,master,1,,,
+shield_master,escudo,off_hand,master,1,,,
+helmet_master,casco,head,master,1,,,
+boots_master,botas,feet,master,1,,,
