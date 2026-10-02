@@ -5,13 +5,16 @@ se gira, se escala a su forma (110 px de pantalla por casilla) y se enmascara a 
 blanco de pegatina horneado. La textura queda en el giro 0 de `shape_cells`; el juego la gira en los otros 3.
 
 Uso:
-    python tools/gear_art/build_gear_art.py                 # todas las piezas de PIECES
+    python tools/gear_art/build_gear_art.py                 # todas las piezas de pieces/
     python tools/gear_art/build_gear_art.py sword_masterwork
+    python tools/gear_art/build_gear_art.py --preview=<carpeta> sword_masterwork   # y su hoja de revisión
 
 Las rutas de origen se buscan en SOURCE_DIRS, en orden: los originales viven en el repositorio de assets.
 """
 from __future__ import annotations
 
+import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -30,18 +33,27 @@ SOURCE_DIRS = [
     Path("D:/Proyectos/PetJam/.claude/worktrees/kind-robinson-8996cf/art/assets/Stickers/originales"),
 ]
 
-# Una entrada por pieza:
+PIECES_DIR = Path(__file__).resolve().parent / "pieces"
+
+# Una pieza por fichero, pieces/<item_id>.json (así cada pieza se trabaja por separado):
 #   source: fichero de imagen (en SOURCE_DIRS)
 #   cells: casillas de la forma en el giro 0, como shape_cells de data/items/<id>.tres
-#   rotate: grados en sentido antihorario que se gira el original antes de encajarlo (PIL)
-#   crop: (x0, y0, x1, y1) opcional sobre el original, antes de girar; por defecto, lo opaco
+#   crop: [x0, y0, x1, y1] opcional sobre el original, antes de girar; por defecto, lo opaco
+#   flip: true lo voltea en horizontal (después de recortar)
+#   rotate: grados en sentido antihorario que se gira antes de encajarlo (PIL)
 #   fit: "contain" (cabe entera en la caja) o "cover" (llena la caja y la máscara recorta lo que sobra)
-#   mask: True recorta a las casillas de la forma (formas en T o L); en un rectángulo no hace falta
-PIECES: dict[str, dict] = {
-    "sword_basic": {"source": "arma_basica.png", "cells": [(0, 0), (0, 1)], "rotate": 90, "fit": "contain"},
-    "sword_advanced": {"source": "arma_avanzada.png", "cells": [(0, 0), (0, 1), (0, 2)], "rotate": 90, "fit": "contain"},
-    "sword_masterwork": {"source": "arma_maestra.png", "cells": [(0, 0), (0, 1), (0, 2), (0, 3)], "rotate": 90, "fit": "contain"},
-}
+#   scale, offset: ajuste fino del tamaño (factor) y de la posición (px) dentro de la caja
+#   mask: true recorta a las casillas de la forma (formas en T o L); en un rectángulo no hace falta
+# Si existe pieces/<item_id>.py con `prepare(img) -> img`, se aplica al original antes de recortarlo: para
+# borrar o mover partes de la imagen cuando las opciones no bastan.
+
+
+def load_piece(item_id: str) -> dict:
+    return json.loads((PIECES_DIR / f"{item_id}.json").read_text(encoding="utf-8"))
+
+
+def all_pieces() -> list[str]:
+    return sorted(p.stem for p in PIECES_DIR.glob("*.json"))
 
 
 def find_source(name: str) -> Path:
@@ -92,7 +104,15 @@ def opaque_box(img: Image.Image) -> tuple[int, int, int, int]:
 
 def build(item_id: str, spec: dict) -> Path:
     src = Image.open(find_source(spec["source"])).convert("RGBA")
+    hook = PIECES_DIR / f"{item_id}.py"
+    if hook.exists():
+        mod_spec = importlib.util.spec_from_file_location(f"piece_{item_id}", hook)
+        mod = importlib.util.module_from_spec(mod_spec)
+        mod_spec.loader.exec_module(mod)
+        src = mod.prepare(src)
     src = src.crop(spec.get("crop") or opaque_box(src))
+    if spec.get("flip"):
+        src = src.transpose(Image.FLIP_LEFT_RIGHT)
     if spec.get("rotate"):
         src = src.rotate(spec["rotate"], expand=True, resample=Image.BICUBIC)
         src = src.crop(opaque_box(src))
@@ -116,9 +136,47 @@ def build(item_id: str, spec: dict) -> Path:
     return path
 
 
-def main(ids: list[str]) -> None:
-    for item_id in ids or list(PIECES):
-        print(build(item_id, PIECES[item_id]))
+def preview(item_id: str, spec: dict, path: Path) -> None:
+    """Hoja de revisión: la textura en sus 4 giros sobre casillas como las del juego (fondo oscuro, borde de calidad)."""
+    tex = Image.open(OUT_DIR / f"{item_id}.png").convert("RGBA")
+    cells = [tuple(c) for c in spec["cells"]]
+    tiles = []
+    for r in range(4):
+        t = tex
+        cs = cells
+        for _ in range(r):
+            t = t.transpose(Image.ROTATE_270)  # un cuarto de vuelta a la derecha, como GearArt
+            cs = [(-y, x) for (x, y) in cs]
+        mx, my = min(c[0] for c in cs), min(c[1] for c in cs)
+        cs = [(x - mx, y - my) for (x, y) in cs]
+        tile = Image.new("RGBA", (t.width + 40, t.height + 40), (40, 28, 24, 255))
+        from PIL import ImageDraw
+        d = ImageDraw.Draw(tile)
+        for (x, y) in cs:
+            d.rectangle((20 + x * CELL + 4, 20 + y * CELL + 4, 20 + (x + 1) * CELL - 5, 20 + (y + 1) * CELL - 5),
+                        fill=(30, 20, 16, 255), outline=(170, 110, 230, 255), width=3)
+        tile.alpha_composite(t, (20, 20))
+        tiles.append(tile)
+    w = sum(t.width for t in tiles) + 10 * 5
+    h = max(t.height for t in tiles) + 20
+    sheet = Image.new("RGBA", (w, h), (24, 16, 14, 255))
+    x = 10
+    for t in tiles:
+        sheet.alpha_composite(t, (x, 10))
+        x += t.width + 10
+    sheet.save(path)
+
+
+def main(args: list[str]) -> None:
+    prev_dir = None
+    if args and args[0].startswith("--preview="):
+        prev_dir = Path(args.pop(0).split("=", 1)[1])
+    for item_id in args or all_pieces():
+        spec = load_piece(item_id)
+        print(build(item_id, spec))
+        if prev_dir:
+            prev_dir.mkdir(parents=True, exist_ok=True)
+            preview(item_id, spec, prev_dir / f"{item_id}_preview.png")
 
 
 if __name__ == "__main__":
