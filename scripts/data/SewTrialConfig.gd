@@ -9,7 +9,8 @@ class_name SewTrialConfig
 ## Velocidad de colapso del círculo (multiplicador). Más alto = más rápido.
 @export_range(0.3, 2.5, 0.1) var stitch_speed: float = 1.0
 
-## Precisión requerida (0.0-1.0). Más alto = ventana más estrecha.
+## Precisión (0.0-1.0). Al coser, más alto = ventanas MÁS GRANDES (más fácil); al revés que en la forja,
+## donde más precisión estrecha la ventana (ver SewMinigame._compute_windows).
 @export_range(0.0, 1.0, 0.05) var precision: float = 0.5
 
 ## Umbral para otorgar bonus de Evasión (0.0-1.0).

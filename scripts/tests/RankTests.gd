@@ -759,3 +759,43 @@ func test_forge_reads_precision() -> void:
 	check(is_equal_approx(forge._tolerance, lerpf(0.25, 0.08, 0.7)), "la forja estrecha su ventana con la precisión del plano (%.3f)" % forge._tolerance)
 	forge.queue_free()
 	await get_tree().process_frame
+
+
+# ─── Tarea 10: dificultad por rango ────────────────────────────────────
+
+func _config(params: Dictionary) -> TrialConfig:
+	var c := TrialConfig.new()
+	c.parameters = params.duplicate()
+	return c
+
+
+func test_rank_one_leaves_trials_unchanged() -> void:
+	var c := _config({"forge_speed": 1.0, "precision": 0.4})
+	TrialDifficulty.apply(c, 1)
+	check(c.parameters == {"forge_speed": 1.0, "precision": 0.4}, "el rango I no cambia nada")
+
+
+func test_difficulty_grows_with_rank_and_respects_caps() -> void:
+	var forge := _config({"forge_speed": 1.0, "precision": 0.4})
+	TrialDifficulty.apply(forge, 3)
+	check(is_equal_approx(forge.parameters.forge_speed, 1.21) and is_equal_approx(forge.parameters.precision, 0.52), "forja III: ×1,21 y +0,12 (%s)" % [forge.parameters])
+	var hammer := _config({"hammer_speed": 110, "tempo_bpm": 110, "precision": 0.7})
+	TrialDifficulty.apply(hammer, 20)
+	check(hammer.parameters.hammer_speed == 160 and hammer.parameters.tempo_bpm == 160 and is_equal_approx(hammer.parameters.precision, 0.85), "martillo XX: topes 160 y 0,85")
+	var sew := _config({"stitch_speed": 1.2, "precision": 0.3})
+	TrialDifficulty.apply(sew, 4)
+	check(sew.parameters.stitch_speed > 1.2 and is_equal_approx(sew.parameters.precision, 0.15), "coser IV: más rápido y ventanas menores (precisión 0,15)")
+	TrialDifficulty.apply(sew, 20)
+	check(sew.parameters.stitch_speed <= 1.6 and sew.parameters.precision >= 0.0, "coser: topes 1,6 y 0,0")
+	var quench := _config({"quench_speed": 1.0, "time_window": 0.3})
+	TrialDifficulty.apply(quench, 30)
+	check(is_equal_approx(quench.parameters.time_window, 0.12) and quench.parameters.quench_speed <= 2.0, "temple: ventana mínima 0,12 y velocidad máxima 2")
+
+
+func test_crafting_uses_the_task_rank() -> void:
+	var dm := _dm()
+	var cm := get_node("/root/CraftingManager")
+	var bp: BlueprintResource = dm.get_blueprint(&"sword_basic")
+	var c1: TrialConfig = cm._resolve_trial_config(bp.trial_sequence[0], bp, 1)
+	var c3: TrialConfig = cm._resolve_trial_config(bp.trial_sequence[0], bp, 3)
+	check(c3.parameters.forge_speed > c1.parameters.forge_speed, "la espada básica III se forja más rápido que la I")

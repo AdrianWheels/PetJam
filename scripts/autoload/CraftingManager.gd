@@ -347,14 +347,14 @@ func _start_next_trial(task: CraftingTask) -> void:
 
 	task.status = STATUS_IN_PROGRESS
 	task.current_trial_id = trial.trial_id
-	var config := _resolve_trial_config(trial, task.blueprint)
+	var config := _resolve_trial_config(trial, task.blueprint, task.rank)
 	print("CraftingManager: Starting trial %s for task %d" % [String(trial.trial_id), task.id])
 	_emit_task_update(task)
 	task.current_trial_config = config
 	# Emitir señal deferred para evitar race condition con limpieza de minijuego anterior
 	call_deferred("emit_signal", "task_started", task.id, config.duplicate_config())
 
-func _resolve_trial_config(trial: TrialResource, blueprint: BlueprintResource) -> TrialConfig:
+func _resolve_trial_config(trial: TrialResource, blueprint: BlueprintResource, rank: int = 1) -> TrialConfig:
 	if trial == null:
 		return null
 	var config: TrialConfig = null
@@ -377,6 +377,8 @@ func _resolve_trial_config(trial: TrialResource, blueprint: BlueprintResource) -
 		config.parameters = {}
 	if config.max_score <= 0.0:
 		config.max_score = 100.0
+	# Dificultad del rango sobre la copia (el recurso del plano no cambia)
+	TrialDifficulty.apply(config, rank)
 	return config
 
 func _finalize_task(task: CraftingTask) -> Dictionary:
