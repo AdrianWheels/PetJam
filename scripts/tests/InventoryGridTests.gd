@@ -2072,7 +2072,6 @@ func test_each_boss_of_the_first_cycle_grows_the_grid_one_step() -> void:
 	gm.wall_room = 0  # sin muro: ver test_first_boss_kill_grows_the_grid
 	gm.dungeon_state = gm.DungeonState.RUNNING
 	for step in [[10, Vector2i(5, 4)], [20, Vector2i(5, 5)], [30, Vector2i(6, 5)], [40, Vector2i(6, 6)], [50, Vector2i(6, 6)]]:
-		gm.enemies_defeated[step[0]] = true  # el jefe ya cayó otra vez: no reparte un plano al azar
 		gm.best_enemy_level = step[0]
 		gm.register_enemy_defeat(step[0])
 		check(im.hero_grid_size() == step[1], "tras el jefe de la sala %d, la rejilla es de %s (%s)" % [step[0], step[1], im.hero_grid_size()])
@@ -2110,7 +2109,6 @@ func test_the_expansion_never_sends_tico_to_the_wall() -> void:
 		"hero": gm.get("_hero")}
 	var tico := StatsCounter.new()
 	gm.set("_hero", tico)
-	gm.enemies_defeated[20] = true  # el jefe ya cayó otra vez: no reparte un plano al azar
 	gm.wall_room = 19  # el muro, más abajo que el jefe (Tico cayó en la 19 y saltó con el selector a la 20)
 	gm.room_locked = false
 	gm.current_enemy_level = 20
@@ -2150,7 +2148,6 @@ func test_a_boss_kill_with_a_lower_wall_keeps_the_room_accounting() -> void:
 	var a := await _arena([])
 	var gm := get_node("/root/GameManager")
 	var extra := {"defeated": gm.enemies_defeated.duplicate(), "boss": gm.boss_defeated_flag}
-	gm.enemies_defeated[10] = true  # sin planos al azar
 	gm.boss_defeated_flag = false
 	gm.wall_room = 9
 	gm.current_enemy_level = 10

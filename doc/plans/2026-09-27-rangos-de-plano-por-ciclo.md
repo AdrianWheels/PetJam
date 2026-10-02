@@ -2311,7 +2311,7 @@ En `InventoryGridTests.gd`, solo textos (las comprobaciones ya usan `SaveManager
 - en `test_v1_save_migrates_without_losing_pieces`: `"guardado versión 2, sin huecos fijos"` pasa a `"guardado en la versión actual, sin huecos fijos"`; el comentario `# El fichero de la versión 2 también se carga: …` pasa a `# El fichero de la versión actual también se carga: …`; y `"se carga el fichero de la versión 2"` pasa a `"se carga el fichero de la versión actual"`;
 - en el comentario de `test_loading_an_old_save_keeps_a_backup_of_it`: «la reescriba en la versión 2» pasa a «la reescriba en la versión actual», y «Con la partida ya en la versión 2 no hace copia» pasa a «Con la partida ya en la versión actual no hace copia».
 
-Esa prueba sigue con `V1_BACKUP_PATH` y la partida de la versión 1: la copia de la 1 no cambia de nombre. Al final llama a `_reload_user_save()`, que carga la partida de la sesión; si esa partida es antigua, la carga crea la copia de su versión (`save.v<versión>.bak.json`; con la copia real de este equipo, la de la versión 1), y `TestSuite` la deja como estaba al acabar. Corrección posterior: la partida real de este equipo es de la versión 1, no de la 2.
+Esa prueba sigue con `V1_BACKUP_PATH` y la partida de la versión 1: la copia de la 1 no cambia de nombre. Al final llama a `_reload_user_save()`, que carga la partida de la sesión; si esa partida es antigua, la carga crea la copia de su versión (`save.v<versión>.bak.json`; con la copia real de este equipo, la de la versión 1), y `TestSuite` la deja como estaba al acabar.
 
 - [ ] **Step 7: El spec dice «versión 3»**
 
@@ -2639,7 +2639,7 @@ Abre con Read los fotogramas de la muerte del jefe y los 4 s siguientes, y compr
 
 - [ ] **Step 6: Ejecutar y ver que pasa**
 
-Antes, en `InventoryGridTests.gd`, `test_each_boss_of_the_first_cycle_grows_the_grid_one_step` y `test_the_expansion_never_sends_tico_to_the_wall` guardan `dm.unlocked_ranks.duplicate()` al empezar y lo restauran al acabar: vencer jefes aplica hitos de rango (avanzados I, maestros I, básicos II) sobre el `DataManager` real, con independencia de `enemies_defeated`, y guarda la partida. `enemies_defeated` se conserva solo para que no repartan un plano al azar.
+Antes, en `InventoryGridTests.gd`, `test_each_boss_of_the_first_cycle_grows_the_grid_one_step` y `test_the_expansion_never_sends_tico_to_the_wall` guardan `dm.unlocked_ranks.duplicate()` al empezar y lo restauran al acabar: vencer jefes aplica hitos de rango (avanzados I, maestros I, básicos II) sobre el `DataManager` real, con independencia de `enemies_defeated`, y guarda la partida. Ya no hace falta marcar `enemies_defeated` en esos tests: tras la tarea 7 `register_enemy_defeat` no reparte planos al azar (solo emite `enemy_defeated_first_time`, que nadie escucha); el estado de `enemies_defeated` se sigue restaurando porque la propia victoria lo escribe.
 
 Run: RankTests, InventoryGridTests, GameplayTests, PixelTests y TextTests. Expected: 0 fallos.
 
