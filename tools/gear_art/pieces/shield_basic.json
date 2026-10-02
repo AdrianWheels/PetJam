@@ -1,5 +1,5 @@
 {
- "source": "shield_advanced.png",
+ "source": "escudo_basico.png",
  "cells": [
   [
    0,
@@ -10,5 +10,7 @@
    1
   ]
  ],
+ "white_bg": true,
+ "strip_border": false,
  "fit": "contain"
 }

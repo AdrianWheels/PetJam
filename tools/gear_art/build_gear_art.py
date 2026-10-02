@@ -44,6 +44,7 @@ PIECES_DIR = Path(__file__).resolve().parent / "pieces"
 #   rotate: grados en sentido antihorario que se gira antes de encajarlo (PIL)
 #   fit: "contain" (cabe entera en la caja) o "cover" (llena la caja y la máscara recorta lo que sobra)
 #   scale, offset: ajuste fino del tamaño (factor) y de la posición (px) dentro de la caja
+#   white_bg: quita el fondo blanco liso (las imágenes hechas en ChatGPT sobre la plantilla de la pieza)
 #   strip_border: quita el borde blanco del original (por defecto, en los iconos de Imagenes/Items, que lo traen)
 #   mask: true recorta a las casillas de la forma (formas en T o L); en un rectángulo no hace falta
 # Si existe pieces/<item_id>.py con `prepare(img) -> img`, se aplica al original antes de recortarlo: para
@@ -121,6 +122,20 @@ def strip_white_border(img: Image.Image, max_px: int = 24) -> Image.Image:
     return Image.fromarray(a)
 
 
+def remove_white_bg(img: Image.Image) -> Image.Image:
+    """Quita el fondo blanco liso de las imágenes hechas en ChatGPT: el blanco que toca el borde de la imagen. Los
+    brillos blancos del dibujo no tocan el borde y se quedan."""
+    import numpy as np
+    from scipy import ndimage
+    a = np.array(img.convert("RGBA"))
+    white = a[..., :3].astype(int).min(axis=2) > 235
+    lab, _ = ndimage.label(white)
+    edge = np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
+    bg = ndimage.binary_dilation(np.isin(lab, edge[edge > 0]), iterations=1)  # el halo claro del recorte
+    a[..., 3] = np.where(bg, 0, a[..., 3])
+    return Image.fromarray(a)
+
+
 def opaque_box(img: Image.Image) -> tuple[int, int, int, int]:
     """Caja de lo opaco de verdad: los originales traen halos casi transparentes que inflan getbbox."""
     return img.getchannel("A").point(lambda v: 255 if v > 40 else 0).getbbox()
@@ -128,6 +143,8 @@ def opaque_box(img: Image.Image) -> tuple[int, int, int, int]:
 
 def build(item_id: str, spec: dict) -> Path:
     src = Image.open(find_source(spec["source"])).convert("RGBA")
+    if spec.get("white_bg"):
+        src = remove_white_bg(src)
     hook = PIECES_DIR / f"{item_id}.py"
     if hook.exists():
         mod_spec = importlib.util.spec_from_file_location(f"piece_{item_id}", hook)
