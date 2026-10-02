@@ -165,7 +165,7 @@ func _on_requests_refreshed(requests: Array) -> void:
 	var keys: Array = []
 	for i in range(min(requests.size(), 3)):  # Máximo 3 visibles
 		var request = requests[i]
-		var key := "%s|%s|%s" % [request.get("blueprint_id", ""), request.get("client_name", ""), request.get("gold_reward", 0)]
+		var key := "%s|%s|%s|%s" % [request.get("blueprint_id", ""), request.get("rank", 1), request.get("client_name", ""), request.get("gold_reward", 0)]
 		keys.append(key)
 		var slot = REQUEST_SLOT_SCENE.instantiate()
 		slot.animate_in = not _shown_request_keys.has(key)

@@ -626,3 +626,84 @@ func test_milestone_shows_one_notice_and_staggers_scrolls() -> void:
 	check(scrolls.size() == 4 and scrolls[3] - scrolls[0] >= 250, "escalonados, no a la vez (%s ms)" % (scrolls[3] - scrolls[0] if scrolls.size() == 4 else -1))
 	corridor.queue_free()
 	await get_tree().process_frame
+
+
+# ─── Tarea 8: pedidos y crafteo por rango ──────────────────────────────
+
+func test_request_rank_is_mostly_the_highest() -> void:
+	var rm := get_node("/root/RequestsManager")
+	var dm := _dm()
+	var saved: Dictionary = dm.unlocked_ranks.duplicate()
+	dm.unlocked_ranks[&"sword_basic"] = 3
+	rm.rng.seed = 12345
+	var counts := {1: 0, 2: 0, 3: 0}
+	for i in 1000:
+		counts[rm.make_request(&"sword_basic").rank] += 1
+	check(counts[3] > 750 and counts[3] < 850 and counts[2] > 150 and counts[1] == 0, "80 %% rango III, 20 %% rango II (%s)" % [counts])
+	dm.unlocked_ranks[&"sword_basic"] = 1
+	check(rm.make_request(&"sword_basic").rank == 1, "con solo el rango I, siempre I")
+	dm.unlocked_ranks = saved
+
+
+func test_request_carries_recipe_and_gold_of_its_rank() -> void:
+	var rm := get_node("/root/RequestsManager")
+	var dm := _dm()
+	var saved: Dictionary = dm.unlocked_ranks.duplicate()
+	dm.unlocked_ranks[&"sword_masterwork"] = 2
+	rm.rng.seed = 1
+	var req: Dictionary = rm.make_request(&"sword_masterwork")
+	while req.rank != 2:
+		req = rm.make_request(&"sword_masterwork")
+	var bp: BlueprintResource = dm.get_blueprint(&"sword_masterwork")
+	check(req.materials == Ranks.recipe(bp.materials, Ranks.TIER_MASTER, 2), "el pedido lleva la receta de su rango")
+	dm.unlocked_ranks[&"sword_masterwork"] = 1
+	var req1: Dictionary = rm.make_request(&"sword_masterwork")
+	check(req.gold_reward == roundi(req1.gold_reward * Ranks.gold_mult(2)), "el oro crece con el rango (%d y %d)" % [req1.gold_reward, req.gold_reward])
+	dm.unlocked_ranks = saved
+
+
+func test_visible_request_keeps_its_rank() -> void:
+	var rm := get_node("/root/RequestsManager")
+	var dm := _dm()
+	var saved: Dictionary = dm.unlocked_ranks.duplicate()
+	dm.unlocked_ranks[&"shield_basic"] = 1
+	var req: Dictionary = rm.make_request(&"shield_basic")
+	var before := req.duplicate()
+	dm.unlock_rank(&"shield_basic", 2)
+	check(req.rank == before.rank and req.materials == before.materials and req.gold_reward == before.gold_reward, "un pedido ya creado no cambia al subir de rango")
+	dm.unlocked_ranks = saved
+
+
+func test_crafting_a_rank_makes_an_item_of_that_rank() -> void:
+	var cm := get_node("/root/CraftingManager")
+	var inv := get_node("/root/InventoryManager")
+	var items_before: int = inv.get_crafted_items().size()
+	var queue_before: Array = cm.queue.duplicate()  # _finalize_task vacía su hueco y compacta la cola
+	for i in cm.MAX_SLOTS:
+		cm.queue[i] = null
+	check(cm.enqueue(&"helmet_basic", 100, 3), "se encola el casco básico III")
+	var task = null
+	for t in cm.queue:
+		if t != null and t.blueprint.blueprint_id == &"helmet_basic" and t.rank == 3:
+			task = t
+	check(task != null, "la tarea guarda el rango")
+	if task:
+		var result: Dictionary = cm._finalize_task(task)
+		var item: CraftedItem = result.crafted_item
+		check(result.rank == 3 and item.rank == 3, "el objeto sale de rango III")
+		var base: Dictionary = item.item_resource.calculate_stats(item.quality)
+		check(item.calculated_stats == Ranks.scale_stats(base, 3), "con las estadísticas del rango III (%s)" % [item.calculated_stats])
+		check(item.place == InventoryManager.PLACE_LOOT and inv.get_loot()[0] == item, "y llega al botín, delante, como todo lo forjado")
+		check(item.aristas.size() == PieceShape.aristas_for_tier(item.get_quality_tier()), "con sus aristas sorteadas (%d)" % item.aristas.size())
+		check(result.gold_reward > 0 and not result.own_order, "un pedido sí da oro")
+		check(inv.remove_crafted_item(item) and not (item in inv.get_loot()), "remove_crafted_item lo saca también del botín")
+	check(inv.get_crafted_items().size() == items_before, "la prueba deja el inventario como estaba")
+	cm.queue = queue_before
+
+
+## La venta ya va por rango (CraftedItem.get_sell_price, que usan la tienda y el panel de Equipo). Esta prueba lo guarda.
+func test_sell_price_grows_with_the_rank() -> void:
+	var res: ItemResource = load("res://data/items/shield_basic.tres")
+	var one := CraftedItem.new(res, 0.75)
+	var two := CraftedItem.new(res, 0.75, 2)
+	check(two.get_sell_price() == roundi(one.get_sell_price() * Ranks.gold_mult(2)) and two.get_sell_price() > one.get_sell_price(), "el precio de venta crece con el rango (%d y %d)" % [one.get_sell_price(), two.get_sell_price()])

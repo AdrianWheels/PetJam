@@ -38,12 +38,16 @@ class CraftingTask:
 	var trial_results: Array = []
 	var grade: String = ""
 	var gold_reward: int = 0  ## Recompensa base del request (calculado por RequestsManager)
+	var rank: int = 1  ## Rango del plano (spec de rangos)
+	var own_order: bool = false  ## Encargo propio desde la biblioteca: no da oro
 
-	func _init(task_id: int, blueprint_res: BlueprintResource, slot: int, reward: int = 0) -> void:
+	func _init(task_id: int, blueprint_res: BlueprintResource, slot: int, reward: int = 0, task_rank: int = 1, is_own_order: bool = false) -> void:
 		id = task_id
 		blueprint = blueprint_res
 		slot_index = slot
 		gold_reward = reward
+		rank = maxi(1, task_rank)
+		own_order = is_own_order
 
 var queue: Array = []
 var heat := 0
@@ -96,7 +100,7 @@ func _enqueue_defaults() -> void:
 	# print("CraftingManager: Default blueprints enqueued")
 	pass
 
-func enqueue(recipe_id, gold_reward: int = 0) -> bool:
+func enqueue(recipe_id, gold_reward: int = 0, rank: int = 1, own_order: bool = false) -> bool:
 	var blueprint := _resolve_blueprint(StringName(str(recipe_id)))
 	if blueprint == null:
 		push_warning("CraftingManager: Cannot enqueue recipe '%s' without blueprint" % recipe_id)
@@ -113,7 +117,7 @@ func enqueue(recipe_id, gold_reward: int = 0) -> bool:
 
 	for i in range(MAX_SLOTS):
 		if queue[i] == null:
-			var task := CraftingTask.new(_generate_task_id(), blueprint, i, gold_reward)
+			var task := CraftingTask.new(_generate_task_id(), blueprint, i, gold_reward, rank, own_order)
 			queue[i] = task
 			task.status = STATUS_QUEUED  # Wait for player click
 			emit_signal("craft_enqueued", i, recipe_id)
@@ -304,6 +308,7 @@ func get_queue_snapshot() -> Array:
 			"max_score": task.max_score_accumulated,
 			"grade": task.grade,
 			"materials": materials,
+			"rank": task.rank,
 		})
 	return snapshot
 
@@ -402,7 +407,7 @@ func _finalize_task(task: CraftingTask) -> Dictionary:
 		if dm and dm.has_method("get_item_resource"):
 			var item_res = dm.get_item_resource(task.blueprint.result_item)
 			if item_res:
-				crafted_item = CraftedItem.new(item_res, quality_normalized)
+				crafted_item = CraftedItem.new(item_res, quality_normalized, task.rank)
 				# Aristas según la calidad (spec del inventario en rejilla, apartado 2.3)
 				crafted_item.aristas = PieceShape.roll_aristas(item_res, crafted_item.get_quality_tier(), rng)
 				
@@ -427,7 +432,9 @@ func _finalize_task(task: CraftingTask) -> Dictionary:
 			gold_multiplier = 1.0
 		_:
 			gold_multiplier = 0.5
-	var final_gold := int(task.gold_reward * gold_multiplier) if task.gold_reward > 0 else int(50 * gold_multiplier)
+	var final_gold := 0
+	if not task.own_order:
+		final_gold = int(task.gold_reward * gold_multiplier) if task.gold_reward > 0 else int(50 * gold_multiplier)
 
 	var result := {
 		"status": STATUS_COMPLETED,
@@ -441,6 +448,8 @@ func _finalize_task(task: CraftingTask) -> Dictionary:
 		"materials": task.blueprint.materials if task.blueprint else {},
 		"crafted_item": crafted_item,
 		"gold_reward": final_gold,
+		"rank": task.rank,
+		"own_order": task.own_order,
 		"forjamagia": forjamagia,
 		"forjamagia_bonus": fm_bonus,
 	}
@@ -504,6 +513,7 @@ func _emit_task_update(task: CraftingTask) -> void:
 		"score": task.score_accumulated,
 		"max_score": task.max_score_accumulated,
 		"grade": task.grade,
+		"rank": task.rank,
 		"current_trial_id": String(task.current_trial_id)
 	}
 	emit_signal("task_updated", task.id, payload)

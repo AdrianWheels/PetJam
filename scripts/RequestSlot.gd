@@ -51,9 +51,14 @@ func _on_gui_input(event: InputEvent) -> void:
 		print("RequestSlot: Clicked slot %d" % slot_index)
 
 
-## Configura la tarjeta con el diccionario del pedido (blueprint, gold_reward y el cliente).
+## Configura la tarjeta con el diccionario del pedido (blueprint, rank, materials, gold_reward y el cliente).
 func set_request(request: Dictionary) -> void:
-	set_blueprint(request.get("blueprint"))
+	var blueprint: BlueprintResource = request.get("blueprint")
+	set_blueprint(blueprint)
+	if blueprint:
+		set_blueprint_name((tr(blueprint.display_name) if blueprint.display_name != "" else String(blueprint.blueprint_id)) + Ranks.suffix(int(request.get("rank", 1))))
+		# La receta del rango del pedido (materiales de bioma incluidos), no la del .tres
+		set_materials(request.get("materials", blueprint.materials))
 	var reward := int(request.get("gold_reward", 0))
 	reward_label.text = str(reward) if reward > 0 else "—"
 	var rm := get_node_or_null("/root/RequestsManager")
