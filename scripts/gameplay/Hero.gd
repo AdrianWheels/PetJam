@@ -7,7 +7,10 @@ extends CharacterBody2D
 ##    disolución al reaparecer con shaders/pixel_sprite.gdshader,
 ##  - barra de vida y nombre en fuente pixel,
 ##  - la armadura reduce el daño físico,
-##  - la Poción de Velocidad (GameManager) multiplica el ritmo de ataque mientras dura.
+##  - la Poción de Velocidad (GameManager) multiplica el ritmo de ataque mientras dura,
+##  - las habilidades legendarias de la rejilla (`power`): Esquiva y Parada anulan un golpe, Segunda oportunidad
+##    deja a Tico con vida una vez por duelo y la Regeneración cura con él vivo. Golpe doble, quemadura, Espinas
+##    e Ímpetu los resuelve CombatController.
 ## Vida: cambiar de equipo conserva la proporción de vida (no cura); solo respawn() la llena y heal()
 ## cura sin resucitar.
 ## Unidades: píxeles del arte (la franja mide 216x96). El origen del nodo es el centro de los pies.
@@ -17,6 +20,7 @@ signal died
 signal respawned
 signal attack_triggered  # Emitida cuando el cooldown de ataque llega a 0
 signal pulse_hit(amount: int, target_pos: Vector2)  # Pulso mágico aplicado (posición previa al daño)
+signal hurt(amount: int)  ## tras cada golpe o pulso recibido (0 si se esquivó o paró): pociones automáticas
 
 const SPRITE_SHADER := preload("res://shaders/pixel_sprite.gdshader")
 const HERO_NAME := "Tico"
@@ -70,6 +74,20 @@ var debug_invincible: bool = false
 var stored_hp: int = 0
 var stored_max_hp: int = 0
 var stored_dmg: float = 0.0
+
+## Habilidades legendarias de la rejilla (LegendaryPowers.effects): se recalculan en reset_stats
+var power: Dictionary = LegendaryPowers.effects([])
+## Tirada de 0 a 1 para las habilidades (esquiva, parada, golpe doble); las pruebas la fuerzan
+var power_roll: Callable = Callable()
+## &"dodge" o &"block" si el último golpe se esquivó o paró; &"" si no
+var last_avoid: StringName = &""
+## Ímpetu: el primer golpe contra el enemigo actual aún no se ha dado
+var first_strike_ready := false
+var _second_chance_ready := false
+var _second_chance_used := false  ## en este duelo (se recarga al empezar el siguiente)
+var _regen_acc := 0.0
+var _regen_shown := 0
+var _regen_fx_cd := 0.0
 
 var size: Vector2 = Vector2(12, 28)  # Compatibilidad
 var half_width: float = 6.0
@@ -133,6 +151,19 @@ func _process(delta: float) -> void:
 	_t += delta
 	_hurt = maxf(0.0, _hurt - delta)
 	_block_flash = maxf(0.0, _block_flash - delta * 3.0)
+	# Regeneración (casco avanzado legendario): solo con Tico vivo; un "+N" verde cada 2 s como mucho
+	if alive and float(power.regen) > 0.0 and hp < max_hp:
+		_regen_acc += float(max_hp) * float(power.regen) * delta
+		if _regen_acc >= 1.0:
+			var gain := int(_regen_acc)
+			_regen_acc -= gain
+			hp = mini(max_hp, hp + gain)
+			_regen_shown += gain
+	_regen_fx_cd = maxf(0.0, _regen_fx_cd - delta)
+	if _regen_shown > 0 and _regen_fx_cd <= 0.0 and fx:
+		fx.float_text(body_center() + Vector2(0, -16), "+%d" % _regen_shown, Color("7dff8a"), false, 0.8, 8.0)
+		_regen_shown = 0
+		_regen_fx_cd = 2.0
 	if _strike > 0.0:
 		_strike = maxf(0.0, _strike - delta / _strike_time)
 	if not is_attacking:
@@ -177,6 +208,9 @@ func reset_stats():
 	if inv_manager and inv_manager.has_method("active_legendary_powers"):
 		powers = inv_manager.active_legendary_powers()
 	var s := CombatMath.hero_stats_with_powers(equipment_stats, powers)
+	power = LegendaryPowers.effects(powers)
+	# Segunda oportunidad: lista si la da la rejilla y aún no se ha usado en este duelo
+	_second_chance_ready = float(power.second_chance) > 0.0 and not _second_chance_used
 	STR = s.STR
 	AGI = s.AGI
 	INT = s.INT
@@ -258,22 +292,56 @@ func armor_mitigation() -> float:
 # --- Combate ----------------------------------------------------------
 
 ## Aplica daño y devuelve el daño real recibido (tras armadura). El pulso mágico ignora la armadura.
+## Habilidades legendarias: Esquiva y Parada anulan un golpe (no el pulso) y dejan `last_avoid`;
+## Segunda oportunidad deja a Tico con vida la primera vez que iba a caer en cada duelo.
 func take_damage(amount: int, is_pulse: bool = false) -> int:
+	last_avoid = &""
 	if debug_invincible or not alive:
 		return 0
+	if not is_pulse:
+		if float(power.dodge) > 0.0 and roll_power() < float(power.dodge):
+			last_avoid = &"dodge"
+			hurt.emit(0)
+			return 0
+		if float(power.block) > 0.0 and roll_power() < float(power.block):
+			last_avoid = &"block"
+			_block_flash = 1.0
+			hurt.emit(0)
+			return 0
 	var final := amount
 	if not is_pulse:
-		final = maxi(1, int(round(float(amount) * (1.0 - armor_mitigation()))))
-		if final < amount and armor_mitigation() >= 0.15:
+		var mitigation := armor_mitigation()
+		final = maxi(1, int(round(float(amount) * (1.0 - mitigation))))
+		if final < amount and mitigation >= 0.15:
 			_block_flash = 1.0
-	hp = max(0, hp - final)
 	_hurt = HURT_TIME
 	_ghost_delay = 0.35
-	if hp == 0:
-		alive = false
-		_spawn_death_fx()
-		emit_signal("died")
+	if final >= hp and _second_chance_ready:
+		_second_chance_ready = false
+		_second_chance_used = true
+		hp = maxi(1, roundi(float(max_hp) * float(power.second_chance)))
+		_on_second_chance()
+	else:
+		hp = max(0, hp - final)
+		if hp == 0:
+			alive = false
+			_spawn_death_fx()
+			emit_signal("died")
+	hurt.emit(final)
 	return final
+
+
+func roll_power() -> float:
+	return float(power_roll.call()) if power_roll.is_valid() else randf()
+
+
+## Segunda oportunidad: destello, anillo y "¡OTRA VEZ!" en la franja.
+func _on_second_chance() -> void:
+	_materialize = 0.4
+	if fx:
+		var c := body_center()
+		fx.ring(c, Color("ffd76a"), 2.0, 20.0, 0.45, 1.0)
+		fx.float_text(c + Vector2(0, -16), tr("¡Otra vez!"), Color("ffd76a"), true, 1.2, 10.0)
 
 
 func set_invincible(invincible: bool) -> void:
@@ -343,6 +411,10 @@ func prepare_for_combat() -> void:
 	atk_timer = 1.0 / aps
 	pulse_timer = PULSE_INTERVAL
 	is_attacking = false
+	first_strike_ready = float(power.first_strike) > 0.0
+	# Segunda oportunidad: una por duelo (en el spec de rangos, cada sala es un duelo con la vida llena)
+	_second_chance_used = false
+	_second_chance_ready = float(power.second_chance) > 0.0
 
 
 func respawn(start_position: Vector2 = PixelView.HERO_START) -> void:
@@ -358,6 +430,7 @@ func respawn(start_position: Vector2 = PixelView.HERO_START) -> void:
 	_strike = 0.0
 	_hurt = 0.0
 	_materialize = 0.0
+	_regen_acc = 0.0
 	emit_signal("respawned")
 
 

@@ -165,7 +165,7 @@ func dust_puff(pos: Vector2, color: Color, count: int = 5, strength: float = 1.0
 		})
 
 
-## Número de daño. style: "normal", "crit", "hero", "pulse", "enemy_pulse", "block"
+## Número de daño. style: "normal", "crit", "hero", "pulse", "enemy_pulse", "block", "burn", "thorns"
 func damage_number(pos: Vector2, amount: int, style: StringName = &"normal") -> void:
 	var color := Color(1, 1, 1)
 	var big := false
@@ -183,6 +183,10 @@ func damage_number(pos: Vector2, amount: int, style: StringName = &"normal") -> 
 			color = Color("c77dff")
 		&"block":
 			color = Color("b8c4d6")
+		&"burn":
+			color = Color("ff8a3d")
+		&"thorns":
+			color = Color("c9b37a")
 	_num_side = -_num_side
 	var start := pos + Vector2(_num_side * randf_range(1.0, 4.0), randf_range(-1.0, 1.0))
 	_add({

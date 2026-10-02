@@ -6,7 +6,8 @@ extends CharacterBody2D
 ##    que ya mira hacia el héroe (lo exporta tools/pixel_art); de momento solo el reposo de 2 fotogramas,
 ##  - entrada, carga, golpe y retroceso como desplazamientos en píxeles enteros; destello al recibir daño
 ##    y disolución al aparecer con shaders/pixel_sprite.gdshader,
-##  - barra de vida con "daño fantasma", nombre y aviso "!" en fuente pixel.
+##  - barra de vida con "daño fantasma", nombre y aviso "!" en fuente pixel,
+##  - la quemadura del Filo ígneo (apply_burn): daño por segundo, sin armadura, que se apaga al recolocarse el nodo.
 ## Unidades: píxeles del arte (la franja mide 216x96). El origen del nodo es el centro de los pies.
 
 signal stats_reset
@@ -25,6 +26,7 @@ const HURT_TIME := 0.18
 const INTRO_TIME := 0.5
 const IDLE_FRAME_TIME := 0.5
 const MATERIAL_DROP_QTY := 15
+const BURN_TICK := 0.5  ## la quemadura hace daño cada medio segundo: un número por tic
 
 var level: int = 1
 var STR: float = 0.0
@@ -82,6 +84,10 @@ var _hp_ghost := 1.0
 var _ghost_delay := 0.0
 var _cast_launched := false
 var _landed := false
+var _burn_dps := 0.0
+var _burn_left := 0.0
+var _burn_acc := 0.0
+var _burn_tick := 0.0
 var _sprite: Sprite2D
 var _hud: Node2D
 var _metrics: Dictionary = {}
@@ -114,6 +120,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_tick_burn(delta)
 	_t += delta
 	_hurt = maxf(0.0, _hurt - delta)
 	if _strike > 0.0:
@@ -142,6 +149,7 @@ func _process(delta: float) -> void:
 # ─── Configuración ─────────────────────────────────────────────────────
 
 func configure_for_level(lv: int, boss: bool) -> void:
+	_clear_burn()
 	level = lv
 	is_boss = boss
 	_apply_archetype(&"boss" if boss else EnemyArchetypes.pick_for_room(lv))
@@ -242,6 +250,51 @@ func take_damage(amount: int, _is_pulse: bool = false) -> int:
 	if hp == 0:
 		_die()
 	return amount
+
+
+## Quemadura (Filo ígneo): `dps` de daño por segundo durante `duration` s, sin armadura. No se acumula:
+## se queda la que hace más daño por segundo y el tiempo vuelve a empezar.
+func apply_burn(dps: float, duration: float) -> void:
+	if not alive or dps <= 0.0:
+		return
+	_burn_dps = maxf(_burn_dps, dps)
+	_burn_left = duration
+
+
+func is_burning() -> bool:
+	return alive and _burn_left > 0.0
+
+
+## Apaga la quemadura: el duelo ha acabado con el enemigo vivo (Tico ha caído) y no puede rematarlo después.
+func extinguish() -> void:
+	_clear_burn()
+
+
+func _clear_burn() -> void:
+	_burn_dps = 0.0
+	_burn_left = 0.0
+	_burn_acc = 0.0
+	_burn_tick = 0.0
+
+
+func _tick_burn(delta: float) -> void:
+	if not is_burning():
+		return
+	var dt := minf(delta, _burn_left)
+	_burn_left -= dt
+	_burn_acc += _burn_dps * dt
+	_burn_tick += dt
+	if _burn_tick >= BURN_TICK or _burn_left <= 0.0:
+		_burn_tick = 0.0
+		var dmg := int(_burn_acc)
+		_burn_acc -= dmg
+		if dmg > 0:
+			var at := body_center()
+			take_damage(dmg, true)
+			if fx:
+				fx.damage_number(at + Vector2(0, -10), dmg, &"burn")
+	if _burn_left <= 0.0:
+		_clear_burn()
 
 
 func attack(target, _particles: Array = []) -> void:

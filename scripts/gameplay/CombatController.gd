@@ -3,6 +3,8 @@ extends Node
 ## Resuelve los golpes del combate por cooldown y dispara su feedback:
 ## arco de corte, chispas, números de daño en el mundo, shake, hit-stop y sonido con variación.
 ## La lógica de daño es la de siempre (daño + crítico); la armadura la aplica Hero.take_damage.
+## Habilidades legendarias: aquí el golpe doble, el Ímpetu, la quemadura y las Espinas; Hero.take_damage
+## resuelve la esquiva, la parada y Segunda oportunidad.
 
 signal combat_started
 signal combat_finished
@@ -44,6 +46,9 @@ var _block_text_cd := 0.0
 ## Con mucha velocidad y crítico, congelar y sacudir en cada golpe frenaría el avance idle
 ## y la cámara no pararía: la "fanfarria" completa del crítico tiene enfriamiento.
 var _crit_fx_cd := 0.0
+## Enemigos muertos desde que existe el controlador. Un golpe que mata recoloca el nodo Enemy en la sala siguiente,
+## que al farmear (candado puesto o delante del muro) es del mismo nivel: la cuenta distingue al enemigo nuevo.
+var _kills := 0
 var _game_manager: Node
 var _inventory_manager: Node
 var _audio: Node
@@ -104,7 +109,9 @@ func _process(delta: float):
 		hero.pulse(enemy)
 	if combat_active and hero.alive and enemy.alive:
 		enemy.attack(hero)
-		enemy.pulse(hero)
+		# Las Espinas pueden haber matado al atacante: el nodo ya es el enemigo de la sala siguiente
+		if combat_active and enemy.alive:
+			enemy.pulse(hero)
 	if not hero.alive or not enemy.alive:
 		stop_combat()
 
@@ -125,8 +132,29 @@ func _on_enemy_attack():
 	_execute_enemy_attack()
 
 
+## ¿Sigue ahí el enemigo al que se apuntó? Si un golpe lo mató, el nodo Enemy ya es el de la sala siguiente (o
+## sigue muerto) y nada del golpe puede llegarle. El nivel solo lo distingue al avanzar de sala: al repetirla,
+## el enemigo nuevo tiene el mismo, y por eso se mira también si ha muerto alguien desde entonces (`kills`).
+func _same_target(target_level: int, kills: int) -> bool:
+	return enemy.alive and enemy.level == target_level and _kills == kills
+
+
 func _execute_hero_attack():
+	var target_level: int = enemy.level
+	var kills := _kills
+	_hero_hit(target_level, false)
+	# Golpe doble (espada avanzada legendaria). Si el primer golpe ha matado, el nodo Enemy ya es el de la
+	# sala siguiente (se recoloca al morir) o sigue muerto: el segundo golpe no le llega.
+	if float(hero.power.double_hit) > 0.0 and _same_target(target_level, kills) and hero.roll_power() < float(hero.power.double_hit):
+		_hero_hit(target_level, true)
+
+
+func _hero_hit(target_level: int, is_second: bool) -> void:
 	var damage: float = hero.dmg
+	# Ímpetu (botas maestras legendarias): el primer golpe contra cada enemigo, ×3
+	if hero.first_strike_ready and not is_second:
+		damage *= float(hero.power.first_strike)
+		hero.first_strike_ready = false
 	var crit: bool = randf() < hero.crit_p
 	if crit:
 		damage *= hero.crit_m
@@ -140,9 +168,15 @@ func _execute_hero_attack():
 		var slash_color: Color = COLOR_CRIT if crit else _weapon_color()
 		fx.slash(hero.position + Vector2(6, -13), 13.0 if not crit else 15.0, -1.95, 0.85, slash_color, 0.17, 3.0 if not crit else 4.0)
 		fx.spark_burst(hit_pos, Vector2(1, -0.35), Color(1, 0.93, 0.7), 16 if crit else 8, Vector2(36, 92), 0.8)
+	var kills := _kills
 	enemy.take_damage(amount)
+	# Filo ígneo (espada maestra legendaria): el golpe deja una quemadura, si el enemigo sigue vivo y es el mismo
+	if float(hero.power.burn) > 0.0 and _same_target(target_level, kills):
+		enemy.apply_burn(float(amount) * float(hero.power.burn) / LegendaryPowers.BURN_TIME, LegendaryPowers.BURN_TIME)
 	if fx:
 		fx.damage_number(number_pos, amount, &"crit" if crit else &"normal")
+		if is_second:
+			fx.float_text(number_pos + Vector2(0, -8), tr("¡Doble!"), Color("ffe08a"), false, 0.7, 8.0)
 	if crit:
 		if fx:
 			fx.ring(hit_pos, COLOR_CRIT, 2.0, 13.0, 0.24, 1.0)
@@ -170,13 +204,18 @@ func _execute_enemy_attack():
 	var number_pos: Vector2 = hero.body_center() + Vector2(-2, -16)
 	var style: String = enemy.style
 	var heavy := style == "slam"
+	var boss: bool = enemy.is_boss  # antes de las Espinas: si matan al atacante, el nodo ya es el de la sala siguiente
 
 	var dealt: int = hero.take_damage(raw)
 	if fx:
-		fx.damage_number(number_pos, dealt, &"hero")
-		if dealt < raw and _block_text_cd <= 0.0 and hero.has_method("armor_mitigation") and hero.armor_mitigation() >= 0.2:
-			_block_text_cd = 2.5
-			fx.float_text(hit_pos + Vector2(-9, -4), tr("Bloqueo"), Color("b8c4d6"), false, 0.7, 8.0)
+		if hero.last_avoid != &"":
+			# Esquiva (botas avanzadas) o Parada (escudo avanzado) legendarias
+			fx.float_text(hit_pos + Vector2(-9, -4), tr("¡Esquiva!") if hero.last_avoid == &"dodge" else tr("¡Parada!"), Color("b8c4d6"), false, 0.7, 8.0)
+		else:
+			fx.damage_number(number_pos, dealt, &"hero")
+			if dealt < raw and _block_text_cd <= 0.0 and hero.has_method("armor_mitigation") and hero.armor_mitigation() >= 0.2:
+				_block_text_cd = 2.5
+				fx.float_text(hit_pos + Vector2(-9, -4), tr("Bloqueo"), Color("b8c4d6"), false, 0.7, 8.0)
 		match style:
 			"slam":
 				fx.dust_puff(hero.position + Vector2(8, 0), Color(0.75, 0.7, 0.62, 0.6), 9, 1.6)
@@ -187,10 +226,19 @@ func _execute_enemy_attack():
 				fx.spark_burst(hit_pos, Vector2(-1, -0.2), enemy.accent_color, 10, Vector2(28, 72), 1.0)
 			_:
 				fx.spark_burst(hit_pos, Vector2(-1, -0.25), Color(1, 0.55, 0.45), 8, Vector2(30, 76), 0.8)
+	# Espinas (escudo maestro legendario): parte del daño recibido vuelve al atacante. Si lo mata, muere
+	# una sola vez: Enemy._die no hace nada con el enemigo ya caído. Un Tico que cae con este golpe no las
+	# devuelve: la victoria contaría con Tico ya caído.
+	if dealt > 0 and hero.alive and float(hero.power.thorns) > 0.0 and enemy.alive:
+		var back := maxi(1, int(float(dealt) * float(hero.power.thorns)))
+		var at: Vector2 = enemy.body_center()
+		enemy.take_damage(back, true)
+		if fx:
+			fx.damage_number(at + Vector2(0, -14), back, &"thorns")
 	if camera:
 		camera.add_trauma((0.42 if heavy else 0.14) + (0.2 if crit else 0.0))
 	if heavy:
-		Sfx.play(&"golem_slam", -1.0, 0.9 if enemy.is_boss else 1.0)
+		Sfx.play(&"golem_slam", -1.0, 0.9 if boss else 1.0)
 	if crit and _crit_fx_cd <= 0.0 and corridor.has_method("hitstop"):
 		_crit_fx_cd = CRIT_FX_COOLDOWN
 		corridor.hitstop(0.05)
@@ -239,11 +287,15 @@ func _play_random(streams: Array, volume_db: float, pitch: float = 1.0, variance
 
 func _on_hero_died(_drops := []):
 	stop_combat()
+	# Con Tico caído el duelo está perdido: la quemadura se apaga, o podría rematar al enemigo y contar como victoria
+	if enemy and enemy.has_method("extinguish"):
+		enemy.extinguish()
 	if _game_manager and _game_manager.has_method("register_hero_death"):
 		_game_manager.register_hero_death()
 
 
 func _on_enemy_died(drops):
+	_kills += 1
 	stop_combat()
 	if drops is Array and drops.size() > 0 and _inventory_manager and _inventory_manager.has_method("add_drops"):
 		_inventory_manager.add_drops(drops)

@@ -1539,3 +1539,380 @@ func test_close_and_open_leave_both_overlays_closed() -> void:
 	check(not panel._card.visible and not panel._confirm_box.visible and not panel._confirm_action.is_valid(), "open() las cierra aunque el panel se ocultara sin close()")
 	panel.queue_free()
 	await _restore_inventory(saved)
+
+
+# ─── Tarea 11: habilidades legendarias en combate ──────────────────────
+
+## Pasillo de prueba con un enemigo de la sala 5 y Tico con las habilidades dadas, sin críticos y con toda
+## tirada de habilidad a favor. Guarda el estado de GameManager para restaurarlo. Sin muro ni candado, sea cual
+## sea la partida: al vencer, el pasillo pone el enemigo de la sala 6 (las pruebas del farmeo ponen el candado).
+func _arena(powers: Array) -> Dictionary:
+	var gm := get_node("/root/GameManager")
+	var state := {"level": gm.current_enemy_level, "best": gm.best_enemy_level, "deaths": gm.death_count, "dungeon": gm.dungeon_state, "wall": gm.wall_room, "locked": gm.room_locked}
+	gm.current_enemy_level = 5
+	gm.wall_room = 0
+	gm.room_locked = false
+	var corridor: Node2D = load("res://scenes/Corridor.tscn").instantiate()
+	add_child(corridor)
+	await get_tree().process_frame
+	var hero: Node2D = corridor.get_node("Hero")
+	hero.power = LegendaryPowers.effects(powers)
+	hero._second_chance_ready = float(hero.power.second_chance) > 0.0  # cuentan las habilidades dadas, no la rejilla de la partida
+	hero.crit_p = 0.0
+	hero.power_roll = func() -> float: return 0.0
+	return {"corridor": corridor, "hero": hero, "enemy": corridor.get_node("Enemy"), "cc": corridor.get_node("CombatController"), "state": state}
+
+
+func _close_arena(a: Dictionary) -> void:
+	a.corridor.queue_free()
+	var gm := get_node("/root/GameManager")
+	gm.current_enemy_level = a.state.level
+	gm.best_enemy_level = a.state.best
+	gm.death_count = a.state.deaths
+	gm.dungeon_state = a.state.dungeon  # una caída de Tico en la prueba lo cambia
+	gm.wall_room = a.state.wall  # y también deja un muro
+	gm.room_locked = a.state.locked
+	await get_tree().process_frame
+	await get_tree().create_timer(0.35).timeout  # deja que empiecen a sonar los golpes y el botín
+	await _silence_sounds()
+
+
+## Textos (números de daño incluidos) que hay ahora en la capa de efectos de la arena.
+func _fx_parts(a: Dictionary) -> Array:
+	var fx: Node2D = a.corridor.get_node("CombatFX")
+	return fx._parts.filter(func(p): return p.kind == fx.Kind.TEXT)
+
+
+func _fx_texts(a: Dictionary) -> Array:
+	return _fx_parts(a).map(func(p): return p.text)
+
+
+func test_double_hit_strikes_twice() -> void:
+	var a := await _arena([&"sword_advanced"])
+	var enemy: Node2D = a.enemy
+	enemy.max_hp = 100000
+	enemy.hp = 100000
+	a.cc._execute_hero_attack()
+	check(100000 - enemy.hp == int(a.hero.dmg) * 2, "con la tirada a favor golpea dos veces (%d de daño, golpe de %d)" % [100000 - enemy.hp, int(a.hero.dmg)])
+	await _close_arena(a)
+
+
+func test_double_hit_never_reaches_the_next_enemy() -> void:
+	var a := await _arena([&"sword_advanced"])
+	var enemy: Node2D = a.enemy
+	var deaths := [0]
+	enemy.died.connect(func(_drops): deaths[0] += 1)
+	enemy.hp = 1
+	var level_before: int = enemy.level
+	a.cc._execute_hero_attack()
+	check(deaths[0] == 1, "el primer golpe mata, una vez (%d)" % deaths[0])
+	check(enemy.level == level_before or enemy.hp == enemy.max_hp, "si el nodo ya es el enemigo de la sala siguiente, está intacto (%d/%d)" % [enemy.hp, enemy.max_hp])
+	await _close_arena(a)
+
+
+func test_burn_deals_its_share_over_three_seconds() -> void:
+	var a := await _arena([&"sword_masterwork"])
+	var enemy: Node2D = a.enemy
+	enemy.max_hp = 100000
+	enemy.hp = 100000
+	a.cc._execute_hero_attack()
+	var hit := int(a.hero.dmg)
+	var after_hit: int = enemy.hp
+	check(enemy.is_burning(), "el golpe deja una quemadura")
+	for i in 8:
+		enemy._tick_burn(0.5)
+	var burned: int = after_hit - enemy.hp
+	check(absi(burned - roundi(hit * 0.4)) <= 1, "la quemadura hace el 40 %% del golpe en 3 s (%d de %d)" % [burned, hit])
+	check(not enemy.is_burning(), "y se apaga")
+	await _close_arena(a)
+
+
+func test_burn_does_not_carry_over_to_the_next_enemy() -> void:
+	var a := await _arena([])
+	var enemy: Node2D = a.enemy
+	enemy.apply_burn(50.0, 3.0)
+	check(enemy.is_burning(), "quemándose")
+	enemy.configure_for_level(6, false)  # el nodo pasa a la sala siguiente, como al morir
+	check(not enemy.is_burning(), "el enemigo siguiente no empieza quemado")
+	await _close_arena(a)
+
+
+func test_thorns_kill_counts_once() -> void:
+	var a := await _arena([&"shield_master"])
+	var hero: Node2D = a.hero
+	var enemy: Node2D = a.enemy
+	hero.max_hp = 100000
+	hero.hp = 100000
+	enemy.dmg = 200.0
+	enemy.crit_p = 0.0
+	enemy.hp = 1
+	var deaths := [0]
+	enemy.died.connect(func(_drops): deaths[0] += 1)
+	a.cc._execute_enemy_attack()
+	check(deaths[0] == 1, "las Espinas matan al enemigo durante su propio ataque, una sola vez (%d)" % deaths[0])
+	await _close_arena(a)
+
+
+func test_dodge_and_block_avoid_whole_hits_but_not_pulses() -> void:
+	var a := await _arena([&"boots_advanced"])
+	var hero: Node2D = a.hero
+	var hp: int = hero.hp
+	check(hero.take_damage(50) == 0 and hero.last_avoid == &"dodge" and hero.hp == hp, "Esquiva: el golpe no hace nada")
+	check(hero.take_damage(5, true) > 0 and hero.last_avoid == &"", "el pulso mágico no se esquiva")
+	hero.power = LegendaryPowers.effects([&"shield_advanced"])
+	hp = hero.hp
+	check(hero.take_damage(50) == 0 and hero.last_avoid == &"block" and hero.hp == hp, "Parada: tampoco")
+	hero.power_roll = func() -> float: return 0.99
+	check(hero.take_damage(10) > 0, "con la tirada en contra, el golpe entra")
+	await _close_arena(a)
+
+
+func test_second_chance_once_per_duel() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var helmet := _piece(&"helmet_master", 1.0)
+	im.add_crafted_item(helmet)
+	im.move_item(helmet, &"hero", Vector2i(0, 0), 0)
+	var a := await _arena([])
+	var hero: Node2D = a.hero
+	hero.respawn()  # vuelve a leer la rejilla (la arena le quitó las habilidades)
+	hero.prepare_for_combat()  # empieza un duelo: Segunda oportunidad lista
+	check(float(hero.power.second_chance) > 0.0, "el casco maestro legendario da Segunda oportunidad")
+	hero.take_damage(hero.max_hp * 5, true)
+	check(hero.alive and hero.hp == roundi(hero.max_hp * 0.4), "la primera caída del duelo se queda con el 40 %% (%d/%d)" % [hero.hp, hero.max_hp])
+	hero.take_damage(hero.max_hp * 5, true)
+	check(not hero.alive, "la segunda vez en el mismo duelo cae")
+	hero.respawn()
+	hero.prepare_for_combat()
+	hero.take_damage(hero.max_hp * 5, true)
+	check(hero.alive, "en el duelo siguiente vuelve a tenerla")
+	await _close_arena(a)
+	await _restore_inventory(saved)
+
+
+func test_regeneration_heals_while_alive() -> void:
+	var a := await _arena([&"helmet_advanced"])
+	var hero: Node2D = a.hero
+	hero.hp = roundi(hero.max_hp * 0.5)
+	var before: int = hero.hp
+	hero._process(1.0)
+	check(hero.hp - before == int(hero.max_hp * 0.015), "recupera el 1,5 %% de la vida máxima en un segundo (%d)" % (hero.hp - before))
+	await _close_arena(a)
+
+
+func test_first_strike_triples_the_first_hit_on_each_enemy() -> void:
+	var a := await _arena([&"boots_master"])
+	var hero: Node2D = a.hero
+	var enemy: Node2D = a.enemy
+	enemy.max_hp = 100000
+	enemy.hp = 100000
+	hero.prepare_for_combat()
+	var hit := int(hero.dmg)
+	a.cc._execute_hero_attack()
+	check(100000 - enemy.hp == int(hero.dmg * 3.0), "primer golpe ×3 (%d)" % (100000 - enemy.hp))
+	var mid: int = enemy.hp
+	a.cc._execute_hero_attack()
+	check(mid - enemy.hp == hit, "el segundo, normal (%d)" % (mid - enemy.hp))
+	await _close_arena(a)
+
+
+# ─── Tarea 11: las habilidades en el pasillo (muro, Tico caído y franja) ───────
+
+## Al farmear (con el candado puesto) el enemigo siguiente es de la misma sala: su nivel no lo distingue del que
+## acaba de morir. Ni el segundo golpe ni la quemadura del golpe que mató al anterior pueden llegarle.
+func test_a_kill_never_reaches_the_next_enemy_of_the_same_room() -> void:
+	var a := await _arena([&"sword_advanced", &"sword_masterwork"])
+	get_node("/root/GameManager").room_locked = true  # Tico repite la sala: el pasillo pone otro enemigo del mismo nivel
+	var enemy: Node2D = a.enemy
+	var deaths := [0]
+	enemy.died.connect(func(_drops): deaths[0] += 1)
+	enemy.hp = 1
+	a.cc._execute_hero_attack()
+	check(deaths[0] == 1, "el primer golpe mata, una vez (%d)" % deaths[0])
+	check(enemy.alive and enemy.level == 5, "el pasillo ha puesto otro enemigo de la misma sala (nivel %d)" % enemy.level)
+	check(enemy.hp == enemy.max_hp, "el segundo golpe no le llega (%d/%d)" % [enemy.hp, enemy.max_hp])
+	check(not enemy.is_burning(), "y la quemadura del golpe que mató al anterior tampoco")
+	await _close_arena(a)
+
+
+## Si las Espinas matan al atacante en su propio ataque, lo que queda del fotograma no toca al enemigo de la sala
+## siguiente: su pulso mágico conserva el cronómetro entero.
+func test_thorns_kill_leaves_the_rest_of_the_frame_off_the_next_enemy() -> void:
+	var a := await _arena([&"shield_master"])
+	var hero: Node2D = a.hero
+	var enemy: Node2D = a.enemy
+	hero.max_hp = 100000
+	hero.hp = 100000
+	a.cc.start_combat()
+	hero.atk_timer = 1000.0  # Tico ni golpea ni lanza su pulso en este fotograma
+	hero.pulse_timer = 1000.0
+	enemy.dmg = 200.0
+	enemy.crit_p = 0.0
+	enemy.hp = 1
+	enemy.atk_timer = 0.0  # el atacante golpea ahora
+	var deaths := [0]
+	enemy.died.connect(func(_drops): deaths[0] += 1)
+	a.cc._process(0.016)
+	check(deaths[0] == 1, "las Espinas matan al atacante, una vez (%d)" % deaths[0])
+	check(enemy.alive and enemy.level == 6 and enemy.hp == enemy.max_hp, "el nodo es ya el enemigo de la sala 6, entero (nivel %d, %d/%d)" % [enemy.level, enemy.hp, enemy.max_hp])
+	check(enemy.pulse_timer == enemy.PULSE_INTERVAL, "y el resto del fotograma no toca su pulso mágico (%.4f)" % enemy.pulse_timer)
+	await _close_arena(a)
+
+
+## Un Tico que cae con el golpe no devuelve Espinas: el enemigo no muere con él (sería una victoria con Tico ya caído).
+func test_thorns_need_tico_standing() -> void:
+	var a := await _arena([&"shield_master"])
+	var hero: Node2D = a.hero
+	var enemy: Node2D = a.enemy
+	hero.hp = 1
+	enemy.dmg = 200.0
+	enemy.crit_p = 0.0
+	enemy.hp = 1
+	var deaths := [0]
+	enemy.died.connect(func(_drops): deaths[0] += 1)
+	a.cc._execute_enemy_attack()
+	check(not hero.alive, "el golpe tumba a Tico")
+	check(deaths[0] == 0 and enemy.alive and enemy.hp == 1, "sin Tico en pie no hay Espinas (%d muertes, %d de vida)" % [deaths[0], enemy.hp])
+	await _close_arena(a)
+
+
+## Con Tico caído el duelo está perdido: la quemadura se apaga y no puede rematar al enemigo (sería una victoria
+## que cuenta para el muro con Tico ya caído).
+func test_burn_goes_out_when_tico_falls() -> void:
+	var a := await _arena([&"sword_masterwork"])
+	var hero: Node2D = a.hero
+	var enemy: Node2D = a.enemy
+	enemy.max_hp = 100000
+	enemy.hp = 100000
+	a.cc._execute_hero_attack()
+	check(enemy.is_burning(), "el golpe deja una quemadura")
+	hero.take_damage(hero.max_hp * 5, true)
+	check(not hero.alive and not enemy.is_burning(), "al caer Tico, la quemadura se apaga")
+	await _close_arena(a)
+
+
+## Las quemaduras no se acumulan: se queda la que hace más daño por segundo y el tiempo vuelve a empezar (spec, apartado 5).
+func test_burns_do_not_stack() -> void:
+	var a := await _arena([])
+	var enemy: Node2D = a.enemy
+	enemy.max_hp = 100000
+	enemy.hp = 100000
+	enemy.apply_burn(10.0, 3.0)
+	enemy._tick_burn(2.0)  # 20 de daño y queda 1 s
+	enemy.apply_burn(4.0, 3.0)  # más floja: sigue la de 10 por segundo y el tiempo vuelve a 3 s
+	for i in 6:
+		enemy._tick_burn(0.5)
+	check(100000 - enemy.hp == 20 + 30 and not enemy.is_burning(), "la floja no se suma: 20 + 3 s a 10 por segundo (%d)" % (100000 - enemy.hp))
+	enemy.hp = 100000
+	enemy.apply_burn(10.0, 3.0)
+	enemy.apply_burn(20.0, 1.0)  # más fuerte: pasa a 20 por segundo
+	for i in 2:
+		enemy._tick_burn(0.5)
+	check(100000 - enemy.hp == 20 and not enemy.is_burning(), "la fuerte manda: 1 s a 20 por segundo (%d)" % (100000 - enemy.hp))
+	await _close_arena(a)
+
+
+## Ímpetu vale solo para el primero de los dos golpes del golpe doble (spec, apartado 5), y el segundo se anuncia.
+func test_first_strike_only_counts_for_the_first_of_a_double_hit() -> void:
+	var a := await _arena([&"boots_master", &"sword_advanced"])
+	var hero: Node2D = a.hero
+	var enemy: Node2D = a.enemy
+	enemy.max_hp = 100000
+	enemy.hp = 100000
+	hero.prepare_for_combat()
+	var expected := int(hero.dmg * 3.0) + int(hero.dmg)
+	a.corridor.get_node("CombatFX").clear()
+	a.cc._execute_hero_attack()
+	check(100000 - enemy.hp == expected, "el primero ×3 y el segundo normal (%d de %d)" % [100000 - enemy.hp, expected])
+	check(not hero.first_strike_ready, "y el Ímpetu queda gastado")
+	check("¡Doble!" in _fx_texts(a), "el segundo golpe sale con su «¡Doble!» (%s)" % [_fx_texts(a)])
+	await _close_arena(a)
+
+
+## `hurt` avisa tras cada golpe o pulso recibido, también si se esquiva (lo usarán las pociones automáticas), y sin
+## tirada forzada las habilidades usan el azar de siempre.
+func test_hurt_is_emitted_after_every_hit_even_an_avoided_one() -> void:
+	var a := await _arena([&"boots_advanced"])
+	var hero: Node2D = a.hero
+	var seen := []
+	hero.hurt.connect(func(amount: int): seen.append(amount))
+	var dodged: int = hero.take_damage(50)
+	var pulse: int = hero.take_damage(5, true)
+	hero.power = LegendaryPowers.effects([])
+	var hit: int = hero.take_damage(50)
+	check(dodged == 0 and pulse > 0 and hit > 0 and seen == [dodged, pulse, hit], "un aviso por golpe o pulso, con el daño real (%s)" % [seen])
+	hero.power_roll = Callable()
+	var roll: float = hero.roll_power()
+	check(roll >= 0.0 and roll < 1.0, "sin tirada forzada sale un azar de 0 a 1 (%.2f)" % roll)
+	await _close_arena(a)
+
+
+## La franja nombra lo que no hace daño: «¡Esquiva!» y «¡Parada!» en lugar del número, y «¡Otra vez!» al volver con
+## Segunda oportunidad.
+func test_the_strip_names_avoided_hits_and_the_second_chance() -> void:
+	var a := await _arena([&"boots_advanced"])
+	var hero: Node2D = a.hero
+	var enemy: Node2D = a.enemy
+	var fx: Node2D = a.corridor.get_node("CombatFX")
+	enemy.crit_p = 0.0
+	fx.clear()
+	a.cc._execute_enemy_attack()
+	var texts := _fx_texts(a)
+	check("¡Esquiva!" in texts and not texts.any(func(t): return String(t).is_valid_int()), "esquivado: «¡Esquiva!» y ningún número de daño (%s)" % [texts])
+	hero.power = LegendaryPowers.effects([&"shield_advanced"])
+	fx.clear()
+	a.cc._execute_enemy_attack()
+	texts = _fx_texts(a)
+	check("¡Parada!" in texts and not texts.any(func(t): return String(t).is_valid_int()), "parado: «¡Parada!» y ningún número de daño (%s)" % [texts])
+	hero.power = LegendaryPowers.effects([&"helmet_master"])
+	hero._second_chance_ready = true
+	fx.clear()
+	hero.take_damage(hero.max_hp * 5, true)
+	check(hero.alive and "¡Otra vez!" in _fx_texts(a), "Segunda oportunidad: «¡Otra vez!» (%s)" % [_fx_texts(a)])
+	await _close_arena(a)
+
+
+## Los números de la quemadura y de las Espinas tienen su propio color.
+func test_burn_and_thorns_numbers_have_their_own_colors() -> void:
+	var a := await _arena([&"shield_master"])
+	var hero: Node2D = a.hero
+	var enemy: Node2D = a.enemy
+	var fx: Node2D = a.corridor.get_node("CombatFX")
+	hero.max_hp = 100000
+	hero.hp = 100000
+	enemy.max_hp = 100000
+	enemy.hp = 100000
+	enemy.crit_p = 0.0
+	fx.clear()
+	enemy.apply_burn(10.0, 1.0)
+	enemy._tick_burn(0.5)
+	var burn := _fx_parts(a)
+	check(burn.size() == 1 and burn[0].text == "5" and burn[0].color == Color("ff8a3d"), "quemadura: el 5 de medio segundo, naranja (%s)" % [burn.map(func(p): return [p.text, p.color])])
+	fx.clear()
+	a.cc._execute_enemy_attack()
+	var colors := _fx_parts(a).map(func(p): return p.color)
+	check(Color("c9b37a") in colors, "Espinas: su número, del color de las Espinas")
+	await _close_arena(a)
+
+
+## La regeneración enseña un «+N» verde cada 2 s como mucho, con lo curado en medio, y se para con Tico caído.
+func test_regeneration_shows_its_number_sparingly_and_stops_when_fallen() -> void:
+	var a := await _arena([&"helmet_advanced"])
+	var hero: Node2D = a.hero
+	hero.max_hp = 1000
+	hero.hp = 100
+	a.corridor.get_node("CombatFX").clear()
+	hero._process(1.0)
+	check(_fx_texts(a).size() == 1, "el primer segundo ya enseña su número (%s)" % [_fx_texts(a)])
+	hero._process(1.0)
+	check(_fx_texts(a).size() == 1, "el siguiente espera: solo uno cada 2 s (%s)" % [_fx_texts(a)])
+	hero._process(1.0)
+	var texts := _fx_texts(a)
+	var shown := 0
+	for t in texts:
+		shown += int(String(t).trim_prefix("+"))
+	check(texts.size() == 2 and shown == hero.hp - 100, "y el segundo suma lo curado entre medias (%s, curado %d)" % [texts, hero.hp - 100])
+	hero.take_damage(hero.max_hp * 5, true)
+	hero._process(5.0)
+	check(not hero.alive and hero.hp == 0, "con Tico caído no regenera ni resucita (%d)" % hero.hp)
+	await _close_arena(a)
