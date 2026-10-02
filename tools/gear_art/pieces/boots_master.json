@@ -1,0 +1,7 @@
+{
+ "source": "boots_master.png",
+ "cells": [[0, 0], [0, 1], [0, 2], [1, 2]],
+ "flip": true,
+ "fit": "contain",
+ "mask": true
+}

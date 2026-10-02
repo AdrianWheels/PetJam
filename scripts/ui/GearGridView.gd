@@ -12,6 +12,7 @@ const COLOR_LOCKED := Color(0.6, 0.5, 0.38, 0.55)
 const COLOR_WEAPON := Color("d85a30")
 const COLOR_ARMOR := Color("1d9e75")
 const COLOR_ARISTA := Color(0.62, 0.6, 0.58, 0.9)
+const COLOR_ART_BACK := Color(0.1, 0.07, 0.06, 0.55)  ## fondo de las casillas de una pieza con arte
 const COLOR_OK := Color(0.45, 0.95, 0.5, 0.45)
 const COLOR_BAD := Color(1.0, 0.35, 0.3, 0.45)
 const COLOR_SWAP := Color("ffd76a")
@@ -27,7 +28,7 @@ var hidden_item: CraftedItem = null  ## la pieza que se arrastra no se dibuja en
 var drop_cells: Dictionary = {}  ## casilla → color del destino del arrastre
 var swap_item: CraftedItem = null  ## pieza con la que se intercambiaría (contorno amarillo)
 var glow: Dictionary = {}  ## pieza → color: gana (verde) o pierde (rojo) aumento con el arrastre
-var sprite_for: Callable = Callable()  ## (pieza, giro) → Texture2D; sin él, casillas de color
+var sprite_for: Callable = Callable(GearArt, "texture_for")  ## (pieza, giro) → Texture2D; sin textura, casillas de color
 var _shake_item: CraftedItem = null
 var _shake := 0.0
 
@@ -38,7 +39,7 @@ func setup(g: GearGrid, max_cells: Vector2i) -> void:
 	custom_minimum_size = Vector2(max_cells) * CELL
 	size = custom_minimum_size
 	mouse_filter = Control.MOUSE_FILTER_IGNORE  # el panel lleva el dedo
-	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR  # el arte de las piezas es ilustrado, no pixel art
 	queue_redraw()
 
 
@@ -105,16 +106,29 @@ func _draw() -> void:
 
 
 ## Dibuja una pieza con la esquina de su caja en `top_left` y casillas de `cell_px`. Lo usan la rejilla,
-## el botín y la pieza que se arrastra. Con `sprite_fn` válido pinta su textura (cuando haya arte); si no, casillas de color.
+## el botín y la pieza que se arrastra. Si `sprite_fn` da una textura (GearArt), la pinta; si no, casillas de color.
 static func draw_piece_at(canvas: CanvasItem, item: CraftedItem, top_left: Vector2, rot: int, cell_px: float, alpha: float, sprite_fn: Callable = Callable()) -> void:
 	var fp := PieceShape.of_item(item, rot)
-	if sprite_fn.is_valid():
-		var tex: Texture2D = sprite_fn.call(item, rot)
-		if tex:
-			canvas.draw_texture_rect(tex, Rect2(top_left, Vector2(fp.size) * cell_px), false, Color(1, 1, 1, alpha))
-			return
 	var base := COLOR_WEAPON if GearAuras.kind(item) == &"weapon" else COLOR_ARMOR
 	var edge := item.get_quality_color()
+	var tex: Texture2D = sprite_fn.call(item, rot) if sprite_fn.is_valid() else null
+	if tex:
+		# Con arte: cada casilla limpia lleva un fondo oscuro del color de su tipo y el borde de la calidad, y la
+		# textura va encima, estirada sobre la caja de las casillas limpias. Las aristas, en gris, como sin arte
+		var lo := Vector2i(999, 999)
+		var hi := Vector2i(-999, -999)
+		for c in fp.clean:
+			lo = Vector2i(mini(lo.x, c.x), mini(lo.y, c.y))
+			hi = Vector2i(maxi(hi.x, c.x), maxi(hi.y, c.y))
+			var r := Rect2(top_left + Vector2(c) * cell_px, Vector2(cell_px, cell_px)).grow(-4.0)
+			canvas.draw_rect(r, Color(base.darkened(0.7), alpha * 0.75))
+			canvas.draw_rect(r, Color(edge, alpha), false, 3.0)
+		for c in fp.aristas:
+			var r := Rect2(top_left + Vector2(c) * cell_px, Vector2(cell_px, cell_px)).grow(-cell_px * 0.18)
+			canvas.draw_rect(r, Color(COLOR_ARISTA, alpha * 0.85))
+		var box := Rect2(top_left + Vector2(lo) * cell_px, Vector2(hi - lo + Vector2i.ONE) * cell_px)
+		canvas.draw_texture_rect(tex, box, false, Color(1, 1, 1, alpha))
+		return
 	for c in fp.clean:
 		var r := Rect2(top_left + Vector2(c) * cell_px, Vector2(cell_px, cell_px)).grow(-4.0)
 		canvas.draw_rect(r, Color(base, alpha))
