@@ -266,3 +266,235 @@ func test_points_bounds_and_the_nearest_quarter_turn() -> void:
 	check(LootPiece.extent(sword.rects, 0.0).is_equal_approx(Rect2(-27.5, -55, 55, 110)), "de pie, su caja alrededor del centro de masa (%s)" % LootPiece.extent(sword.rects, 0.0))
 	holder.queue_free()
 	await get_tree().physics_frame
+
+
+# ─── Tarea 4: la caja ──────────────────────────────────────────────────
+
+## Caja en su sitio del panel (60, 970), activa y con el azar fijo.
+func _new_box() -> LootBoxView:
+	var box := LootBoxView.new()
+	box.position = Vector2(60, 970)
+	box.rng.seed = 11
+	add_child(box)
+	box.set_active(true)
+	return box
+
+
+func _free_box(box: LootBoxView) -> void:
+	box.queue_free()
+	await get_tree().physics_frame
+
+
+func _items(ids: Array) -> Array[CraftedItem]:
+	var out: Array[CraftedItem] = []
+	for id in ids:
+		out.append(_piece(id))
+	return out
+
+
+## true si la pieza está dentro de la caja y por debajo del techo (con 2 px de margen).
+func _inside(body: LootPiece) -> bool:
+	var r := body.bounds()
+	return r.position.x >= -2.0 and r.end.x <= LootBoxView.SIZE.x + 2.0 and r.position.y >= LootBoxView.CEIL_Y - 2.0 and r.end.y <= LootBoxView.SIZE.y + 2.0
+
+
+## El punto más alto de la pila (el menor top_y).
+func _highest_top(box: LootBoxView, list: Array) -> float:
+	var top := INF
+	for item in list:
+		top = minf(top, box.body_of(item).top_y())
+	return top
+
+
+func test_pieces_without_a_pose_fall_one_after_another() -> void:
+	var box := _new_box()
+	var list := _items([&"helmet_basic", &"boots_basic", &"sword_basic"])
+	box.sync(list)
+	check(box._bodies.is_empty() and box._queue.size() == 3, "sin pose, esperan su turno para caer (%d en cola)" % box._queue.size())
+	var frames: int = await _physics_until(func(): return box._bodies.size() == 1, 3 * LootBoxView.SPAWN_INTERVAL)
+	check(frames >= LootBoxView.SPAWN_INTERVAL - 1 and box._queue.size() == 2, "la primera entra al cabo de %d pasos (%d)" % [LootBoxView.SPAWN_INTERVAL, frames])
+	var first := box.body_of(list[0])
+	check(first != null and first.position.y < 0.0, "y cae desde arriba de la caja (y %.0f)" % (first.position.y if first else INF))
+	frames = await _physics_until(func(): return box._bodies.size() == 3, 6 * LootBoxView.SPAWN_INTERVAL)  # con margen por si la de arriba aún tapa un intento
+	check(frames > 0 and box._queue.is_empty(), "las otras, una tras otra")
+	await _free_box(box)
+
+
+func test_pieces_fall_and_rest_inside_the_box() -> void:
+	var box := _new_box()
+	var list := _items([&"shield_master", &"sword_masterwork", &"helmet_master", &"boots_master", &"shield_advanced", &"boots_advanced", &"helmet_basic", &"sword_basic"])
+	box.sync(list)
+	var frames: int = await _physics_until(func(): return box.is_settled(), 1500)
+	check(frames > 0, "8 piezas se quedan quietas en menos de 25 s (%d pasos)" % frames)
+	check(list.all(func(it): return box.body_of(it) != null and _inside(box.body_of(it))), "todas dentro de la caja y por debajo del techo")
+	await _free_box(box)
+
+
+## Con la caja llena entran fantasmas; al vender las que chocan, los fantasmas vuelven a chocar y se recolocan.
+func test_a_full_box_makes_ghosts_and_selling_brings_them_back() -> void:
+	var box := _new_box()
+	var list: Array[CraftedItem] = []
+	for i in 40:
+		list.append(_piece(&"shield_master"))  # 2×3 a 55 px: 240 casillas en una caja de unas 190 (con lo de encima del borde)
+	box.sync(list)
+	var frames: int = await _physics_until(func(): return box.is_settled(), 3000)
+	check(frames > 0, "la caja llena se queda quieta (%d pasos)" % frames)
+	var ghosts: Array = list.filter(func(it): return box.body_of(it).is_ghost)
+	check(ghosts.size() > 0, "con la caja llena hay fantasmas (%d)" % ghosts.size())
+	check(_highest_top(box, list) >= LootBoxView.CEIL_Y - 2.0, "nada pasa del techo (%.1f)" % _highest_top(box, list))
+	check(ghosts.all(func(it): return is_equal_approx(box.body_of(it).modulate.a, LootPiece.GHOST_ALPHA)), "los fantasmas se ven semitransparentes")
+	var keep: Array = ghosts.slice(0, 3)  # se vende todo lo que choca: con 3 escudos sobra sitio
+	box.sync(keep)
+	frames = await _physics_until(func(): return box.is_settled(), 3000)
+	check(frames > 0, "después de vender, la pila vuelve a quedarse quieta (%d pasos)" % frames)
+	check(keep.all(func(it): return not box.body_of(it).is_ghost), "los fantasmas vuelven a chocar")
+	check(keep.all(func(it): return box.fits(box.body_of(it)) and _inside(box.body_of(it))), "y se recolocan sin solapes, dentro de la caja")
+	await _free_box(box)
+
+
+func test_poses_come_back_where_they_were() -> void:
+	var box := _new_box()
+	var list := _items([&"shield_master", &"helmet_master", &"boots_advanced", &"sword_masterwork"])
+	box.sync(list)
+	var frames: int = await _physics_until(func(): return box.is_settled(), 2000)
+	check(frames > 0, "la pila se queda quieta (%d pasos)" % frames)
+	box.collect_poses()
+	check(list.all(func(it): return LootBoxView.pose_is_valid(it.loot_pose)), "cada pieza tiene su pose")
+	var copies: Array[CraftedItem] = []
+	for it in list:
+		copies.append(CraftedItem.from_dict(JSON.parse_string(JSON.stringify(it.to_dict())), it.item_resource))
+	await _free_box(box)
+	var again := _new_box()
+	again.sync(copies)
+	check(again._queue.is_empty() and again._bodies.size() == 4, "con pose, todas entran a la vez, sin caer desde arriba")
+	await _physics_steps(60)
+	var worst := 0.0
+	for it in copies:
+		worst = maxf(worst, again.body_of(it).position.distance_to(it.loot_pose.pos))
+	check(worst < 3.0, "y se quedan donde estaban (lo que más se ha movido: %.2f px)" % worst)
+	await _free_box(again)
+
+
+func test_impossible_poses_fall_from_the_top() -> void:
+	var out := _piece(&"helmet_basic")
+	out.loot_pose = {"pos": Vector2(5000, 100), "ang": 0.0}  # fuera de la caja
+	var high := _piece(&"boots_basic")
+	high.loot_pose = {"pos": Vector2(400, -400), "ang": 0.0}  # por encima del techo
+	var good := _piece(&"sword_basic")
+	good.loot_pose = {"pos": Vector2(200, 384), "ang": 0.0}  # de pie en el suelo (a 55 px: de y 329 a 439)
+	check(not LootBoxView.pose_is_valid(out.loot_pose) and not LootBoxView.pose_is_valid(high.loot_pose), "fuera de la caja o por encima del techo no vale")
+	check(not LootBoxView.pose_is_valid({}) and not LootBoxView.pose_is_valid({"pos": Vector2(NAN, 0), "ang": 0.0}) and not LootBoxView.pose_is_valid({"pos": Vector2(10, 10), "ang": "x"}), "vacía o sin números tampoco")
+	check(LootBoxView.pose_is_valid(good.loot_pose), "dentro sí")
+	var box := _new_box()
+	box.sync([out, high, good])
+	check(box.body_of(good) != null and box.body_of(out) == null and box.body_of(high) == null, "la buena entra en su pose; las imposibles, no")
+	check(box._queue.size() == 2 and box._queue[0] == out and box._queue[1] == high, "las imposibles esperan para caer desde arriba")
+	var frames: int = await _physics_until(func(): return box._queue.is_empty(), 200)
+	check(frames > 0 and [out, high, good].all(func(it): return box.body_of(it) != null and _inside(box.body_of(it))), "y ninguna se pierde")
+	await _free_box(box)
+
+
+func test_overlapping_saved_poses_do_not_explode() -> void:
+	var a := _piece(&"shield_advanced")
+	var b := _piece(&"shield_advanced")
+	for it in [a, b]:
+		it.loot_pose = {"pos": Vector2(480, 384), "ang": 0.0}  # las dos en el mismo sitio
+	var box := _new_box()
+	box.sync([a, b])
+	check(not box.body_of(a).is_ghost and box.body_of(b).is_ghost, "la segunda, encima de la primera, entra como fantasma")
+	await _physics_steps(120)
+	check(_inside(box.body_of(a)) and _inside(box.body_of(b)), "las dos siguen dentro de la caja")
+	check(box.body_of(a).position.distance_to(Vector2(480, 384)) < 3.0, "y nadie sale despedido (%s)" % box.body_of(a).position)
+	await _free_box(box)
+
+
+func test_taking_out_a_support_lets_the_pile_fall() -> void:
+	var below := _piece(&"shield_advanced")
+	var above := _piece(&"helmet_basic")
+	below.loot_pose = {"pos": Vector2(480, 384), "ang": 0.0}  # 2×2 en el suelo (a 55 px): de y 329 a 439
+	above.loot_pose = {"pos": Vector2(480, 300), "ang": 0.0}  # 1×1 encima: de y 272,5 a 327,5
+	var box := _new_box()
+	box.sync([below, above])
+	var frames: int = await _physics_until(func(): return box.is_settled(), 600)
+	check(frames > 0, "la pila de dos se queda quieta (%d pasos)" % frames)
+	box.sync([above])  # se vende la de abajo
+	frames = await _physics_until(func(): return box.is_settled(), 900)
+	check(frames > 0 and box.body_of(above).bounds().end.y > LootBoxView.SIZE.y - 4.0, "la de arriba cae al suelo (fondo en %.1f)" % box.body_of(above).bounds().end.y)
+	await _free_box(box)
+
+
+func test_a_piece_dropped_on_the_pile_rises_until_it_fits() -> void:
+	var base := _piece(&"shield_advanced")
+	base.loot_pose = {"pos": Vector2(480, 384), "ang": 0.0}
+	var dropped := _piece(&"helmet_basic")
+	var box := _new_box()
+	box.sync([base, dropped])
+	box.hold(dropped)
+	check(box.is_held(dropped) and box.body_of(dropped) == null and box._queue.is_empty(), "cogida: sin cuerpo y fuera de la cola")
+	box.drop_at(dropped, Vector2(480, 384), Vector2.ZERO, 0)  # justo encima del escudo: solaparía
+	var body := box.body_of(dropped)
+	check(body != null and not box.is_held(dropped), "soltada, vuelve a tener cuerpo")
+	check(not body.is_ghost and not box._overlaps(body.rects, body.transform, [body.get_rid()]), "sube hasta no solapar")
+	check(body.position.y < 320.0 and is_equal_approx(body.position.x, 480.0), "en la misma columna, encima del escudo (%s)" % body.position)
+	await _free_box(box)
+
+
+func test_a_throw_is_capped_and_keeps_its_turn() -> void:
+	check(LootBoxView.cap_throw(Vector2(5000, 0)).is_equal_approx(Vector2(LootBoxView.MAX_THROW_SPEED, 0)), "un gesto rápido se queda en el tope")
+	check(LootBoxView.cap_throw(Vector2(100, -50)) == Vector2(100, -50), "uno suave no se toca")
+	var sword := _piece(&"sword_advanced")
+	var box := _new_box()
+	box.sync([sword])
+	box.hold(sword)
+	box.drop_at(sword, Vector2(480, 200), Vector2(0, -9000), 1)
+	var body := box.body_of(sword)
+	check(body != null and body.position.is_equal_approx(Vector2(480, 200)), "aparece donde se suelta")
+	check(body.linear_velocity.length() <= LootBoxView.MAX_THROW_SPEED + 0.01 and body.linear_velocity.length() > LootBoxView.MAX_THROW_SPEED - 1.0, "con la velocidad del gesto, con tope (%.0f)" % body.linear_velocity.length())
+	check(is_equal_approx(body.rotation, PI / 2.0), "y con el giro con que se soltó")
+	await _free_box(box)
+
+
+func test_a_closed_box_does_not_move() -> void:
+	var helmet := _piece(&"helmet_basic")
+	var box := _new_box()
+	box.sync([helmet])
+	box.hold(helmet)
+	box.drop_at(helmet, Vector2(480, 0), Vector2.ZERO, 0)  # en el aire
+	var body := box.body_of(helmet)
+	box.set_active(false)
+	var p0 := body.position
+	await _physics_steps(60)
+	check(body.position == p0, "con la caja cerrada no cae (%s → %s)" % [p0, body.position])
+	box.set_active(true)
+	await _physics_steps(60)
+	check(body.position.y > p0.y + 50.0, "al abrirla sigue cayendo (%s)" % body.position)
+	await _free_box(box)
+
+
+func test_a_still_pile_reports_its_poses_at_most_once_a_second() -> void:
+	var box := _new_box()
+	var at: Array[int] = []
+	box.poses_settled.connect(func(): at.append(Engine.get_physics_frames()))
+	var list := _items([&"shield_advanced", &"helmet_basic"])
+	box.sync(list)
+	await _physics_until(func(): return at.size() == 1, 1200)
+	check(at.size() == 1, "quieta tras el cambio, avisa una vez (%d)" % at.size())
+	check(list.all(func(it): return it.loot_pose.get("pos", Vector2.INF).is_equal_approx(box.body_of(it).position)), "con las poses ya en las piezas")
+	box.hold(list[1])
+	box.drop_at(list[1], Vector2(700, 300), Vector2.ZERO, 0)
+	await _physics_until(func(): return at.size() == 2, 1200)
+	check(at.size() == 2 and at[1] - at[0] >= LootBoxView.SAVE_EVERY, "tras otro cambio avisa otra vez, como mucho una vez por segundo (%s)" % [at])
+	await _physics_steps(120)
+	check(at.size() == 2, "quieta y sin cambios, no avisa más")
+	await _free_box(box)
+
+
+func test_piece_under_a_point_and_its_place_on_screen() -> void:
+	var sword := _piece(&"sword_basic")
+	sword.loot_pose = {"pos": Vector2(200, 384), "ang": 0.0}  # de pie a 55 px: de x 172,5 a 227,5 y de y 329 a 439
+	var box := _new_box()
+	box.sync([sword])
+	check(box.piece_at(Vector2(200, 400)) == box.body_of(sword) and box.piece_at(Vector2(600, 400)) == null and box.piece_at(Vector2(240, 400)) == null, "dice qué pieza hay bajo un punto, a media escala")
+	check(box.rect_global() == Rect2(60, 970, 960, 440), "la caja en la pantalla (%s)" % box.rect_global())
+	check(box.piece_global_point(sword).is_equal_approx(box.to_global(Vector2(200, 356.5))), "su primera casilla en la pantalla (%s)" % box.piece_global_point(sword))
+	await _free_box(box)
