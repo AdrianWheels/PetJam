@@ -780,6 +780,8 @@ func _card_to_bag() -> void:
 	var spot := GearPacker.find_spot(_im.bag_grid, item, false)
 	if spot.is_empty() or not _im.move_item(item, InventoryManager.PLACE_BAG, spot.cell, spot.rot):
 		Sfx.play(&"ui_tap", 0.0, 0.55)  # la mochila está llena
+		# Y se dice en la ficha breve, que si no parece que el botón no ha hecho nada. Se va con el siguiente refresco
+		_ficha_label.text = "[color=#%s]%s[/color]" % [COLOR_DOWN, tr("La mochila está llena")]
 
 
 func _card_to_loot() -> void:

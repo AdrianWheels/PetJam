@@ -2278,21 +2278,31 @@ func test_boss_potions_wait_in_front_of_the_wall() -> void:
 	var saved := _fresh_inventory()
 	var im := _im()
 	var gm := get_node("/root/GameManager")
-	var state := {"level": gm.current_enemy_level, "wall": gm.wall_room, "locked": gm.room_locked}
+	var state := {"level": gm.current_enemy_level, "wall": gm.wall_room, "locked": gm.room_locked, "dungeon": gm.dungeon_state, "wins": gm._wins_since_retry}
 	gm.clear_buffs()
 	im.add_potion(&"potion_speed")
 	gm.wall_room = 11
 	gm.room_locked = false
 	gm.current_enemy_level = 10  # farmea el jefe de la sala 10, delante del muro
+	gm.dungeon_state = gm.DungeonState.RUNNING  # con la partida parada retry_wall_now() no hace nada, haya candado o no
 	gm.on_boss_appeared()
 	check(im.potion_count(&"potion_speed") == 1 and gm.current_enemy_level == 10, "delante del muro no se bebe: el jefe no se queda a medias")
 	gm.room_locked = true
 	gm.on_boss_appeared()
 	check(im.potion_count(&"potion_speed") == 0 and gm.current_enemy_level == 10, "con candado sí se bebe, y Tico sigue en su sala")
+	# Control: sin candado, la misma poción bebida con la partida en marcha sí manda a Tico al muro. Es lo que hace que la
+	# mitad de arriba pueda fallar: sin esto, un Tico que se queda quieto podría deberse a cualquier otra cosa
+	gm.room_locked = false
 	gm.clear_buffs()
+	im.add_potion(&"potion_speed")
+	gm.drink_potion(&"potion_speed")
+	check(gm.current_enemy_level == 11, "(control) sin candado la misma poción manda a Tico al muro, la sala 11 (sala %d)" % gm.current_enemy_level)
+	gm.clear_buffs()
+	gm.dungeon_state = state.dungeon
 	gm.current_enemy_level = state.level
 	gm.wall_room = state.wall
 	gm.room_locked = state.locked
+	gm._wins_since_retry = state.wins
 	await _restore_inventory(saved)
 
 
@@ -2541,5 +2551,213 @@ func test_panel_opens_fast_with_a_full_inventory() -> void:
 	var ms: float = samples.min()
 	print("panel de Equipo: %.1f ms, la más rápida de 3 aperturas (%.1f / %.1f / %.1f; %d piezas en Tico, %d en el botín)" % [ms, samples[0], samples[1], samples[2], im.get_hero_items().size(), im.get_loot_count()])
 	check(ms < 50.0, "se abre en menos de 50 ms (la más rápida de tres: %.1f)" % ms)
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+# ─── Revisión final: temporizadores de Tico, guardados, copia de la partida y detalles ───
+
+## Cambiar la rejilla de Tico recalcula su equipo (GameManager llama a reset_stats en cada cambio) con el juego en marcha
+## detrás del panel: el golpe y el pulso en curso no se reinician, mientras el enemigo conserva los suyos. La velocidad nueva
+## solo cambia el ritmo al que se carga el golpe (conserva su avance, como refresh_attack_speed); empezar un duelo
+## (prepare_for_combat) sí los llena.
+func test_a_grid_change_mid_duel_keeps_the_attack_timers() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var gm := get_node("/root/GameManager")
+	var hero: Node2D = load("res://scenes/Hero.tscn").instantiate()
+	hero.remove_from_group("hero")
+	add_child(hero)
+	check(is_equal_approx(hero.atk_timer, 1.0 / hero.aps) and hero.pulse_timer == hero.PULSE_INTERVAL, "al aparecer, el primer cálculo deja los temporizadores llenos (golpe %.3f de %.3f, pulso %.1f)" % [hero.atk_timer, 1.0 / hero.aps, hero.pulse_timer])
+	await get_tree().process_frame
+	var prev_hero: Node = gm.get_hero()
+	gm.register_hero(hero)
+	hero.prepare_for_combat()
+	hero.atk_timer = 0.3  # el golpe va por la mitad y el pulso, por el medio
+	hero.pulse_timer = 1.2
+	var sword := _piece(&"sword_basic", 0.5)
+	im.add_crafted_item(sword)
+	var aps_before: float = hero.aps
+	im.move_item(sword, &"hero", Vector2i(0, 0), 0)  # cambia la rejilla de Tico: GameManager lo recalcula
+	check(hero.aps > aps_before, "(la espada le sube la velocidad: %.2f → %.2f)" % [aps_before, hero.aps])
+	check(is_equal_approx(hero.atk_timer, 0.3 * aps_before / hero.aps), "el golpe en curso conserva su avance con la velocidad nueva (%.4f, esperado %.4f)" % [hero.atk_timer, 0.3 * aps_before / hero.aps])
+	check(hero.pulse_timer == 1.2, "el pulso ni se toca (%.2f)" % hero.pulse_timer)
+	var kept: float = hero.atk_timer
+	check(im.rotate_in_place(sword), "girar la espada en Tico vale")
+	check(is_equal_approx(hero.atk_timer, kept) and hero.pulse_timer == 1.2, "girarla, con la misma velocidad, deja golpe y pulso donde iban (%.4f, %.2f)" % [hero.atk_timer, hero.pulse_timer])
+	im.move_item(sword, &"loot")  # quitarla devuelve la velocidad de antes y, con ella, el avance de antes
+	check(is_equal_approx(hero.aps, aps_before) and is_equal_approx(hero.atk_timer, 0.3), "quitarla devuelve el golpe a su avance de antes (%.4f)" % hero.atk_timer)
+	hero.prepare_for_combat()
+	check(is_equal_approx(hero.atk_timer, 1.0 / hero.aps) and hero.pulse_timer == hero.PULSE_INTERVAL, "un duelo nuevo sí empieza con los dos llenos (golpe %.3f, pulso %.1f)" % [hero.atk_timer, hero.pulse_timer])
+	gm.register_hero(prev_hero)
+	hero.queue_free()
+	await _restore_inventory(saved)
+
+
+var _save_writes := 0  # guardados que GameManager ha pedido escribir desde la última vez que se puso a cero
+
+
+func _count_save_write() -> void:
+	_save_writes += 1
+
+
+## GameManager guarda en diferido cuando cambian las piezas (crafted_items_changed) y el equipo de Tico (equipment_changed):
+## los guardados que se piden en un mismo fotograma son una sola escritura (antes, cada cambio de la rejilla de Tico escribía la
+## partida entera dos veces). Se cambia el escritor por uno que solo cuenta, de principio a fin: la prueba no escribe
+## ninguna partida.
+func test_changes_in_the_same_frame_write_one_save() -> void:
+	var gm := get_node("/root/GameManager")
+	gm.save_writer = Callable(self, "_count_save_write")
+	var saved := _fresh_inventory()
+	var im := _im()
+	var sword := _piece(&"sword_basic", 0.5)
+	var helmet := _piece(&"helmet_basic", 0.5)
+	im.add_crafted_item(sword)
+	im.add_crafted_item(helmet)
+	for i in 2:
+		await get_tree().process_frame  # deja pasar los guardados de antes de empezar a contar
+	_save_writes = 0
+	im.move_item(sword, &"hero", Vector2i(0, 0), 0)  # la rejilla de Tico: avisa de las piezas y del equipo
+	for i in 2:
+		await get_tree().process_frame
+	check(_save_writes == 1, "un cambio de la rejilla de Tico escribe la partida una vez, no dos (%d)" % _save_writes)
+	_save_writes = 0
+	im.move_item(helmet, &"bag", Vector2i(0, 0), 0)  # fuera de Tico: solo avisa de las piezas
+	for i in 2:
+		await get_tree().process_frame
+	check(_save_writes == 1, "un movimiento que no es de Tico también escribe una vez (%d)" % _save_writes)
+	_save_writes = 0
+	im.rotate_in_place(sword)  # tres cambios en el mismo fotograma, dos de ellos de Tico
+	im.move_item(helmet, &"loot")
+	im.move_item(sword, &"loot")
+	for i in 2:
+		await get_tree().process_frame
+	check(_save_writes == 1, "varios cambios en un fotograma son una sola escritura (%d)" % _save_writes)
+	for i in 2:
+		await get_tree().process_frame
+	check(_save_writes == 1, "y sin cambios no se escribe más (%d)" % _save_writes)
+	im.move_item(sword, &"hero", Vector2i(0, 0), 0)
+	for i in 2:
+		await get_tree().process_frame
+	check(_save_writes == 2, "un cambio de otro fotograma vuelve a escribir: la espera no se queda puesta (%d)" % _save_writes)
+	await _restore_inventory(saved)  # también guarda en diferido: lo cuenta el escritor de pega
+	gm.save_writer = Callable()
+
+
+## Con la tienda oculta (como en HUD_Main hasta que open() la abre), un cambio de piezas no reconstruye su lista de venta, que
+## cuesta unos 7 controles por pieza del botín y la mochila. open() la rehace al abrirla; visible, el cambio se ve al momento.
+func test_a_hidden_shop_does_not_rebuild_its_sell_list() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var shop := ShopPanel.new()
+	add_child(shop)
+	await get_tree().process_frame
+	shop.visible = false
+	var list: Control = shop._inventory_grid
+	var first_id := list.get_child(0).get_instance_id()
+	var helmet := _piece(&"helmet_basic", 0.5)
+	im.add_crafted_item(helmet)
+	await get_tree().process_frame  # una reconstrucción libera los controles de antes al acabar el fotograma
+	check(list.get_child_count() == 1 and list.get_child(0).get_instance_id() == first_id, "oculta, no reconstruye la lista: siguen los mismos controles (%d)" % list.get_child_count())
+	shop.open()
+	await get_tree().process_frame
+	var card := list.get_child(0)
+	var labels := card.find_children("*", "Label", true, false)
+	check(list.get_child_count() == 1 and card is PanelContainer and not labels.is_empty() and labels[0].text == helmet.get_display_name(), "al abrirla enseña la lista de ahora: la pieza nueva (%d controles)" % list.get_child_count())
+	var boots := _piece(&"boots_basic", 0.5)
+	im.add_crafted_item(boots)
+	await get_tree().process_frame
+	check(list.get_child_count() == 2, "visible, un cambio de piezas se ve al momento (%d tarjetas)" % list.get_child_count())
+	shop.free()
+	await _restore_inventory(saved)
+
+
+## La partida es una sola y la comparten todas las compilaciones del juego: antes de que el guardado de después de cargar una
+## partida antigua la reescriba en la versión 2, SaveManager la copia en save.v1.bak.json con los mismos bytes, y solo la
+## primera vez (una migración posterior no pisa la primera copia). Con la partida ya en la versión 2 no hace copia.
+func test_loading_an_old_save_keeps_a_backup_of_it() -> void:
+	var had := FileAccess.file_exists(V1_BACKUP_PATH)
+	var kept := FileAccess.get_file_as_bytes(V1_BACKUP_PATH) if had else PackedByteArray()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(V1_BACKUP_PATH))
+	check(_load_save_dict(_v1_save()), "carga una partida de la versión 1")
+	var original := FileAccess.get_file_as_bytes(SAVE_PATH)  # lo que había en el disco al cargar
+	check(FileAccess.file_exists(V1_BACKUP_PATH) and FileAccess.get_file_as_bytes(V1_BACKUP_PATH) == original, "la carga deja una copia con los bytes de la partida original")
+	await get_tree().process_frame  # el guardado de después de cargar reescribe save.json
+	var rewritten: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
+	check(int(rewritten.version) == SaveManager.SAVE_VERSION, "save.json ya está en la versión %d (%s)" % [SaveManager.SAVE_VERSION, rewritten.version])
+	check(FileAccess.file_exists(V1_BACKUP_PATH) and FileAccess.get_file_as_bytes(V1_BACKUP_PATH) == original, "y la copia sigue con los bytes de la versión 1")
+	var later := _v1_save()
+	later.game.current_enemy_level = 9
+	check(_load_save_dict(later), "se carga otra partida antigua, distinta")
+	check(FileAccess.file_exists(V1_BACKUP_PATH) and FileAccess.get_file_as_bytes(V1_BACKUP_PATH) == original, "una migración posterior no pisa la primera copia")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(V1_BACKUP_PATH))
+	check(SaveManager.save_game() and SaveManager.load_game(), "se guarda y se carga una partida de la versión actual")
+	check(not FileAccess.file_exists(V1_BACKUP_PATH), "una partida de la versión actual no hace copia")
+	await _reload_user_save()
+	# Se deja la copia como estaba antes de la prueba (la suite también la restaura al acabar)
+	if had:
+		var f := FileAccess.open(V1_BACKUP_PATH, FileAccess.WRITE)
+		f.store_buffer(kept)
+		f.close()
+	else:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(V1_BACKUP_PATH))
+
+
+## La migración toma el récord como GameManager.load_save_data: el mayor entre el récord guardado y la sala actual. Una
+## partida más antigua aún no guardaba el récord: con el valor sin más, no daría ninguna de las ampliaciones que GameManager
+## ya cuenta como ganadas.
+func test_migration_takes_the_record_like_game_manager_does() -> void:
+	var data := _v1_save()
+	data.game.erase("best_enemy_level")
+	data.game.current_enemy_level = 35
+	check(_load_save_dict(data), "carga una partida de la versión 1 sin récord guardado")
+	var gm := get_node("/root/GameManager")
+	var im := _im()
+	check(gm.best_enemy_level == 35, "GameManager toma la sala actual como récord (%d)" % gm.best_enemy_level)
+	check(im.expansions.size() == 3 and im.hero_grid_size() == Vector2i(6, 5), "y la migración da las ampliaciones de ese mismo récord: 3 y rejilla de 6×5 (%d, %s)" % [im.expansions.size(), im.hero_grid_size()])
+	await _reload_user_save()
+
+
+## Un giro negativo vale lo mismo que su equivalente en 0-3: PieceShape.of_item toma el giro de la pieza ante cualquier
+## negativo, y cells_at se lo pasaba tal cual (place guardaba el giro bueno pero ocupaba las casillas del otro). Las botas
+## en L cambian de casillas con cada giro.
+func test_cells_at_takes_a_negative_rotation_as_its_turn() -> void:
+	var g := GearGrid.new(Vector2i(4, 4))
+	var boots := _piece(&"boots_advanced")  # giro propio 0
+	for rot in [-1, -2, -3, -5]:
+		var expected := g.cells_at(boots, Vector2i(1, 1), posmod(rot, 4))
+		var got := g.cells_at(boots, Vector2i(1, 1), rot)
+		check(got.clean == expected.clean and got.aristas == expected.aristas, "el giro %d es el %d (%s, esperado %s)" % [rot, posmod(rot, 4), got.clean, expected.clean])
+	check(g.place(boots, Vector2i(1, 1), -1) and g.rot_of(boots) == 3, "colocada con el giro -1 guarda el 3")
+	check(g.placed_clean_cells(boots).all(func(c): return g.item_at(c) == boots), "y ocupa las casillas del giro 3, las que dice ocupar (%s)" % [g.placed_clean_cells(boots)])
+
+
+## «A la mochila» con la mochila llena no mueve nada: la ficha breve dice por qué (antes solo sonaba un toque grave). El aviso
+## se va con el siguiente refresco, y con sitio la pieza pasa a la mochila sin decir nada.
+func test_a_full_bag_says_so_in_the_ficha() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var epic := _piece(&"helmet_basic", 0.95)
+	im.add_crafted_item(epic)
+	var fillers: Array[CraftedItem] = []
+	for y in InventoryManager.BAG_SIZE.y:
+		for x in InventoryManager.BAG_SIZE.x:
+			var filler := _piece(&"helmet_basic", 0.5)
+			im.add_crafted_item(filler)
+			im.move_item(filler, &"bag", Vector2i(x, y), 0)
+			fillers.append(filler)
+	var panel := _new_panel()
+	var full := tr("La mochila está llena")
+	check(not panel._ficha_label.text.contains(full), "(la ficha no lo dice antes de intentarlo)")
+	panel._open_card(epic)
+	panel._card_to_bag()
+	check(epic.place == &"loot" and not panel._card.visible, "con la mochila llena no mueve la pieza y cierra la ficha completa")
+	check(panel._ficha_label.text.contains(full), "y la ficha breve dice por qué («%s»)" % panel._ficha_label.text)
+	im.move_item(fillers[0], &"loot")  # queda un hueco: cualquier cambio de piezas refresca la ficha
+	check(not panel._ficha_label.text.contains(full), "el aviso se va con el siguiente refresco («%s»)" % panel._ficha_label.text)
+	panel._open_card(epic)
+	panel._card_to_bag()
+	check(epic.place == &"bag" and not panel._ficha_label.text.contains(full), "con sitio pasa a la mochila sin avisar de nada")
+	await _silence_sounds()
 	panel.queue_free()
 	await _restore_inventory(saved)

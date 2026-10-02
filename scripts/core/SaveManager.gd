@@ -6,6 +6,8 @@ extends RefCounted
 class_name SaveManager
 
 const SAVE_PATH := "user://save.json"
+## Copia de la partida anterior a la versión actual, hecha una sola vez al migrarla (ver _back_up_old_save)
+const BACKUP_V1_PATH := "user://save.v1.bak.json"
 const SAVE_VERSION := 2
 
 ## Guarda el estado completo del juego a disco
@@ -71,6 +73,7 @@ static func load_game() -> bool:
 	var version: int = int(save_data.get("version", 0))
 	if version < SAVE_VERSION:
 		print("SaveManager: partida de la versión %d; se migra a la %d al cargar" % [version, SAVE_VERSION])
+		_back_up_old_save()
 	elif version > SAVE_VERSION:
 		push_warning("SaveManager: partida de una versión más nueva (%d > %d). Se intenta cargar igualmente." % [version, SAVE_VERSION])
 
@@ -85,9 +88,11 @@ static func load_game() -> bool:
 		dm.load_save_data(save_data["data"])
 
 	# InventoryManager (materiales y piezas). Con una partida anterior a la rejilla, el récord decide las
-	# ampliaciones que ya tenía ganadas (spec del inventario en rejilla, apartado 10)
+	# ampliaciones que ya tenía ganadas (spec del inventario en rejilla, apartado 10). Es el mismo récord que toma
+	# GameManager.load_save_data: el mayor entre el guardado y la sala actual (una partida más antigua puede no traerlo)
 	if im and im.has_method("load_save_data") and save_data.has("inventory"):
-		var record := int(save_data.get("game", {}).get("best_enemy_level", 1))
+		var game_data: Dictionary = save_data.get("game", {})
+		var record := maxi(int(game_data.get("best_enemy_level", 1)), int(game_data.get("current_enemy_level", 1)))
 		im.load_save_data(save_data["inventory"], record)
 
 	# GameManager (nivel enemigo, muertes, loadout)
@@ -102,6 +107,19 @@ static func load_game() -> bool:
 	var since := Time.get_unix_time_from_system() - ts
 	print("SaveManager: ✅ Partida cargada (guardada hace %.0f segundos)" % since)
 	return true
+
+
+## Copia save.json en save.v1.bak.json antes de que el guardado diferido de después de cargar lo reescriba en la versión
+## nueva: la partida es una sola y la comparten todas las compilaciones del juego, así que esa escritura no se deshace.
+## Solo la primera vez: una migración posterior nunca pisa la primera copia.
+static func _back_up_old_save() -> void:
+	if FileAccess.file_exists(BACKUP_V1_PATH):
+		return
+	var err := DirAccess.copy_absolute(SAVE_PATH, BACKUP_V1_PATH)
+	if err != OK:
+		push_warning("SaveManager: no se pudo copiar la partida antigua a %s (error %d)" % [BACKUP_V1_PATH, err])
+		return
+	print("SaveManager: copia de la partida antigua en %s" % BACKUP_V1_PATH)
 
 
 ## Retorna true si existe un archivo de guardado

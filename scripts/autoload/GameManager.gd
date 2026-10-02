@@ -78,7 +78,11 @@ var _hero: Node = null
 
 const AUTOSAVE_INTERVAL := 60.0  # Segundos entre auto-saves
 var _save_loaded := false
+var _save_pending := false  # ya hay un guardado diferido en cola: los demás avisos del fotograma no piden otro
 var _autosave_timer: Timer = null
+## Quién escribe la partida en el guardado diferido; si no es válido, SaveManager. Las pruebas ponen uno que solo cuenta
+## (sin tocar el disco), como Hero.power_roll en las tiradas.
+var save_writer: Callable = Callable()
 
 # ─── Efectos temporales (pociones de la tienda) ───────────────────────
 ## Poción de Velocidad: ataques por segundo del héroe x1,5 (Hero.refresh_attack_speed).
@@ -472,11 +476,19 @@ func _on_autosave_timeout() -> void:
 	_SaveManager.save_game()
 
 func _on_trigger_save(_value = null) -> void:
-	# Defer para no guardar en medio de un frame de combate
+	# Defer para no guardar en medio de un frame de combate. Los guardados que se piden en un mismo fotograma son una sola
+	# escritura: un cambio de la rejilla de Tico avisa de las piezas y del equipo, y cada aviso pedía la partida entera.
+	if _save_pending:
+		return
+	_save_pending = true
 	call_deferred("_deferred_save")
 
 func _deferred_save() -> void:
-	_SaveManager.save_game()
+	_save_pending = false  # antes de escribir: un cambio posterior pide otro guardado
+	if save_writer.is_valid():
+		save_writer.call()
+	else:
+		_SaveManager.save_game()
 
 func to_save_data() -> Dictionary:
 	var enemies_str := {}

@@ -316,11 +316,12 @@ Medidas: casillas de 22×22 píxeles de arte a ×5 (110 px de pantalla), el mism
   - `expansions`: los ids de las recetas forjadas;
   - `consumables`: los 2 huecos (`id` y `count`).
 - **Migración de la versión 1 a la 2:**
-  1. Se dan como forjadas las ampliaciones de los jefes que el récord ya supera, y la rejilla toma su tamaño.
+  1. Se dan como forjadas las ampliaciones de los jefes que el récord ya supera (el mayor entre el récord guardado y la sala actual, como lo toma `GameManager`), y la rejilla toma su tamaño.
   2. Cada pieza recibe sus aristas según su calidad, con los sitios sorteados con una semilla fija (su `timestamp` y su posición en la lista). La misma partida da siempre el mismo resultado.
   3. Las piezas que estaban equipadas se colocan en la rejilla con `GearPacker`: las mejores primero y, si se puede, en su zona. Las que no caben van al botín.
   4. El resto va al botín, con las mejores primero.
   5. Los huecos de consumibles empiezan vacíos.
+- **Copia de la partida antigua:** la partida es una sola y la comparten todas las compilaciones del juego, y el guardado de después de cargar la reescribe en la versión 2. Antes de migrar, `SaveManager` copia `save.json` en `save.v1.bak.json` (la misma carpeta `user://`), solo si esa copia no existe: una migración posterior no pisa la primera.
 - **En cualquier carga,** una pieza con una posición imposible (fuera de la rejilla o pisando otra) pasa al botín. Nunca se pierde una pieza.
 - **Guardado robusto:** si para entonces está hecha su tarjeta, la migración se hace sobre ella.
 

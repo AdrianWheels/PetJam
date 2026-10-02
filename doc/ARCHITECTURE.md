@@ -63,6 +63,7 @@ StartScreen.tscn ──(botón Play)──→ Main.tscn
 - **Enum**: `DungeonState { IDLE, RUNNING, HERO_DEAD, COMPLETED, FAILED }`
 - **API clave**: `start_run()`, `advance_enemy_level()`, `register_enemy_defeat(level)`, `register_hero_death()`, `request_respawn()`, `deliver_item_to_hero(item_id, slot)`, `register_hero(node)`, `drink_potion(id)`, `on_boss_appeared()`
 - **Dependencias**: `DataManager` (para unlock de blueprints), `InventoryManager` (estadísticas de Tico, ampliación de la rejilla y pociones)
+- **Guardado**: los cambios de piezas, de equipo y de sala y las caídas de Tico piden un guardado en diferido (`_on_trigger_save()`); los que se piden en un mismo fotograma son una sola escritura (`_save_pending`). `save_writer` cambia quién escribe: las pruebas ponen un contador.
 - **Nota**: `MAX_DEATHS` y `DungeonState.FAILED/COMPLETED` son legacy del diseño de jam. En endless mode no hay game over.
 
 #### DataManager
@@ -155,6 +156,7 @@ cooldown, así que no cambia el DPS. El HUD de la franja (oro, muertes, sala, r�
 
 **Señal de ataque**: `attack_triggered` — emitida cuando el timer de ataque llega a 0. CombatController escucha y ejecuta daño.
 El pulso mágico emite `pulse_hit(amount, target_pos)` (posición tomada antes del daño).
+Los temporizadores del golpe y del pulso se llenan al empezar cada duelo (`prepare_for_combat()`). Recalcular a Tico a mitad de duelo (`reset_stats()`, en cada cambio de su rejilla, con el juego en marcha detrás del panel) no los reinicia: el golpe conserva su avance con la velocidad nueva y el pulso sigue su cuenta.
 
 **Habilidades legendarias** (ver 4.3): `CombatMath.hero_stats_with_powers()` aplica sus multiplicadores después de `hero_stats()`. `Hero` guarda las de su rejilla en `power` (`reset_stats()`) y hace la regeneración, la esquiva, la parada, la segunda oportunidad (una por duelo) y arma el Ímpetu; `CombatController` hace el golpe doble, el Ímpetu (el primer golpe contra cada enemigo), la quemadura y las espinas; `Enemy` lleva la quemadura (`apply_burn()`: daño por segundo sin armadura).
 
@@ -229,11 +231,13 @@ Nada se coloca solo: lo forjado va siempre al botín. La única excepción es la
 **Ampliación de la rejilla (provisional).** Hasta que las recetas lleguen con los rangos, `GameManager.register_enemy_defeat()` llama a `InventoryManager.apply_grid_expansion()` la primera vez que cae el jefe de la sala 10, 20, 30 o 40 del ciclo I. La rejilla crece (una columna a la derecha o una fila abajo, alternando), ninguna pieza se mueve y la señal `grid_expanded` hace salir «¡La rejilla crece!» en la franja. Ampliar no manda a Tico al muro (ver 4.1).
 
 **Guardado versión 2.** `to_save_data()` guarda en `inventory`: los materiales, las piezas (`crafted_items`, con el botín primero y en su orden; de cada pieza, `place`, `x`, `y`, `rot` y `aristas`), `hero_grid` (ancho y alto), `expansions` y `consumables`. Ya no guarda `equipped` ni `equipped_slots`. Una partida anterior (sin `hero_grid`) se migra al cargar:
-1. da por forjadas las ampliaciones de los jefes que su récord ya supera;
+1. da por forjadas las ampliaciones de los jefes que su récord ya supera (el mismo récord que toma `GameManager.load_save_data()`: el mayor entre `best_enemy_level` y `current_enemy_level`, porque una partida más antigua puede no traer el primero);
 2. sortea las aristas de cada pieza con una semilla fija: la misma partida da siempre el mismo resultado;
 3. coloca con `GearPacker` lo que estaba equipado, las mejores primero, y manda el resto al botín.
 
 Una posición imposible al cargar (fuera de la rejilla o pisando otra pieza) también acaba en el botín: nunca se pierde una pieza.
+
+**Copia de la partida antigua.** La partida es una sola, la comparten todas las compilaciones del juego y el guardado de después de cargar la reescribe en la versión 2. Por eso `SaveManager.load_game()` copia `save.json` en `save.v1.bak.json` (la misma carpeta `user://`) antes de repartir los datos, cuando la versión guardada es anterior a la actual. Solo la primera vez: una migración posterior nunca pisa la primera copia.
 
 **Pruebas.** `InventoryGridTests` (`scenes/tests/InventoryGridTests.tscn`), que incluye la medida de lo que tarda en abrirse el panel con la rejilla llena, y el plan `inventory` de `VisualCapture` para capturar el panel.
 

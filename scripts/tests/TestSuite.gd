@@ -4,17 +4,21 @@ extends Node
 ## lanza con su escena:
 ##   D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/<Suite>.tscn
 ## Sale con código 0 si todo pasa y 1 si algo falla. Guarda y restaura user://save.json
-## (las pruebas cargan los autoloads, que pueden autoguardar).
+## (las pruebas cargan los autoloads, que pueden autoguardar) y la copia save.v1.bak.json que SaveManager
+## hace al migrar una partida antigua (una prueba que carga una partida de la versión 1 la crearía con datos de pega).
 ## Las pruebas corren en español (el texto base del juego) aunque el sistema esté en otro idioma; al
 ## terminar se deja el idioma que había.
 
 const SAVE_PATH := "user://save.json"
+const V1_BACKUP_PATH := "user://save.v1.bak.json"
 const TEST_LOCALE := "es"
 
 var _checks := 0
 var _failures := 0
 var _had_save := false
 var _save_backup := PackedByteArray()
+var _had_v1_backup := false
+var _v1_backup_bytes := PackedByteArray()
 var _locale_backup := ""
 var _errors := ErrorCounter.new()
 
@@ -83,6 +87,9 @@ func _backup_save() -> void:
 	_had_save = FileAccess.file_exists(SAVE_PATH)
 	if _had_save:
 		_save_backup = FileAccess.get_file_as_bytes(SAVE_PATH)
+	_had_v1_backup = FileAccess.file_exists(V1_BACKUP_PATH)
+	if _had_v1_backup:
+		_v1_backup_bytes = FileAccess.get_file_as_bytes(V1_BACKUP_PATH)
 
 
 func _restore_save() -> void:
@@ -92,3 +99,10 @@ func _restore_save() -> void:
 		f.close()
 	elif FileAccess.file_exists(SAVE_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+	# La copia de la partida antigua queda como estaba: con la que hubiera (la buena, hecha al arrancar) o sin ninguna
+	if _had_v1_backup:
+		var b := FileAccess.open(V1_BACKUP_PATH, FileAccess.WRITE)
+		b.store_buffer(_v1_backup_bytes)
+		b.close()
+	elif FileAccess.file_exists(V1_BACKUP_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(V1_BACKUP_PATH))

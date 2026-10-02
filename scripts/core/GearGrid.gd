@@ -21,9 +21,10 @@ func in_bounds(c: Vector2i) -> bool:
 	return c.x >= 0 and c.y >= 0 and c.x < size.x and c.y < size.y
 
 
-## Casillas absolutas de `item` si su caja empezara en `cell` con el giro `rot`.
+## Casillas absolutas de `item` si su caja empezara en `cell` con el giro `rot`. Un giro negativo vale su equivalente
+## en 0-3: PieceShape.of_item toma el giro de la pieza ante cualquier negativo.
 func cells_at(item: CraftedItem, cell: Vector2i, rot: int) -> Dictionary:
-	var fp := PieceShape.of_item(item, rot)
+	var fp := PieceShape.of_item(item, posmod(rot, 4))
 	return {"clean": PieceShape.shift(fp.clean, cell), "aristas": PieceShape.shift(fp.aristas, cell)}
 
 

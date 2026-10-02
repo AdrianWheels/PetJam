@@ -196,9 +196,11 @@ func _process(delta: float) -> void:
 # --- Stats ------------------------------------------------------------
 
 ## Recalcula las stats desde el equipo. No cura: conserva la proporción de vida (con Tico caído sigue
-## a 0). GameManager la llama en cada cambio de equipo; respawn() llena la vida después.
+## a 0). Tampoco reinicia el golpe ni el pulso en curso: GameManager la llama en cada cambio de la rejilla, con el
+## juego en marcha detrás del panel de Equipo. respawn() llena la vida después; prepare_for_combat(), los temporizadores.
 func reset_stats():
 	var hp_ratio := _hp_ratio()
+	var old_aps := aps
 	var equipment_stats := {}
 	var inv_manager = get_node_or_null("/root/InventoryManager")
 	if inv_manager and inv_manager.has_method("calculate_total_stats"):
@@ -224,8 +226,14 @@ func reset_stats():
 	crit_p = s.crit_p
 	crit_m = s.crit_m
 	armor = s.armor
-	atk_timer = 1.0 / aps
-	pulse_timer = PULSE_INTERVAL
+	# El golpe en curso conserva la parte que le falta (cambia la velocidad a la que se carga, como en
+	# refresh_attack_speed) y el pulso sigue su cuenta: reordenar la rejilla a mitad de duelo no para a Tico mientras
+	# el enemigo conserva sus temporizadores. Sin golpe en curso (el primer cálculo, al aparecer Tico, o un golpe que
+	# acaba de salir) arranca lleno.
+	if atk_timer > 0.0:
+		atk_timer = minf(atk_timer * old_aps / aps, 1.0 / aps)
+	else:
+		atk_timer = 1.0 / aps
 	# `alive` no se toca aquí: equipar durante la caída no debe resucitarlo (lo hace respawn())
 	_hp_ghost = _hp_ratio()
 	_strike_time = clampf(0.6 / aps, 0.12, 0.24)
@@ -255,7 +263,7 @@ func _on_buffs_changed(_active: Dictionary) -> void:
 
 
 ## Aplica al ritmo de ataque los efectos activos sin recalcular el resto: reset_stats() no vale aquí
-## porque también toca la vida y los temporizadores.
+## porque también recalcula la vida y las estadísticas.
 func refresh_attack_speed() -> void:
 	var new_aps := base_aps * _attack_speed_multiplier()
 	if is_equal_approx(new_aps, aps):

@@ -385,7 +385,10 @@ func _on_inventory_changed(_inv: Dictionary) -> void:
 
 
 func _on_crafted_items_changed(_items: Array) -> void:
-	_populate_sell_items()
+	# Con la tienda oculta no hace falta: son unos 7 controles por pieza del botín y la mochila en cada cambio, y open()
+	# rehace la lista al abrirla
+	if visible:
+		_populate_sell_items()
 
 
 # ═══════════════════════════════════════════════════════════════════
