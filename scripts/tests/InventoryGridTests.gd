@@ -2065,16 +2065,19 @@ func test_each_boss_of_the_first_cycle_grows_the_grid_one_step() -> void:
 	var saved := _fresh_inventory()
 	var im := _im()
 	var gm := get_node("/root/GameManager")
+	var dm := get_node("/root/DataManager")
+	var ranks_before: Dictionary = dm.unlocked_ranks.duplicate()  # los jefes desbloquean rangos de verdad: se restauran al final
 	var state := {"dungeon": gm.dungeon_state, "best": gm.best_enemy_level, "defeated": gm.enemies_defeated.duplicate(),
 		"wall": gm.wall_room, "locked": gm.room_locked, "level": gm.current_enemy_level}
 	gm.wall_room = 0  # sin muro: ver test_first_boss_kill_grows_the_grid
 	gm.dungeon_state = gm.DungeonState.RUNNING
 	for step in [[10, Vector2i(5, 4)], [20, Vector2i(5, 5)], [30, Vector2i(6, 5)], [40, Vector2i(6, 6)], [50, Vector2i(6, 6)]]:
-		gm.enemies_defeated[step[0]] = true  # sin planos al azar
+		gm.enemies_defeated[step[0]] = true  # el jefe ya cayó otra vez: no reparte un plano al azar
 		gm.best_enemy_level = step[0]
 		gm.register_enemy_defeat(step[0])
 		check(im.hero_grid_size() == step[1], "tras el jefe de la sala %d, la rejilla es de %s (%s)" % [step[0], step[1], im.hero_grid_size()])
 	check(im.expansions.size() == 4, "cuatro ampliaciones y no más (%d)" % im.expansions.size())
+	dm.unlocked_ranks = ranks_before
 	gm.dungeon_state = state.dungeon
 	gm.best_enemy_level = state.best
 	gm.enemies_defeated = state.defeated
@@ -2100,12 +2103,14 @@ func test_the_expansion_never_sends_tico_to_the_wall() -> void:
 	var saved := _fresh_inventory()
 	var im := _im()
 	var gm := get_node("/root/GameManager")
+	var dm := get_node("/root/DataManager")
+	var ranks_before: Dictionary = dm.unlocked_ranks.duplicate()  # el jefe de la 20 desbloquea rangos de verdad: se restauran al final
 	var state := {"dungeon": gm.dungeon_state, "best": gm.best_enemy_level, "defeated": gm.enemies_defeated.duplicate(),
 		"wall": gm.wall_room, "locked": gm.room_locked, "level": gm.current_enemy_level, "wins": gm._wins_since_retry,
 		"hero": gm.get("_hero")}
 	var tico := StatsCounter.new()
 	gm.set("_hero", tico)
-	gm.enemies_defeated[20] = true  # sin planos al azar
+	gm.enemies_defeated[20] = true  # el jefe ya cayó otra vez: no reparte un plano al azar
 	gm.wall_room = 19  # el muro, más abajo que el jefe (Tico cayó en la 19 y saltó con el selector a la 20)
 	gm.room_locked = false
 	gm.current_enemy_level = 20
@@ -2123,6 +2128,7 @@ func test_the_expansion_never_sends_tico_to_the_wall() -> void:
 	im.move_item(sword, &"hero", Vector2i(0, 0), 0)  # un cambio de equipo de verdad
 	check(travels == [19] and gm.current_enemy_level == 19, "un cambio de equipo normal justo después sí prueba el muro (viajes %s, sala %d)" % [travels, gm.current_enemy_level])
 	gm.room_travel.disconnect(on_travel)
+	dm.unlocked_ranks = ranks_before
 	gm.dungeon_state = state.dungeon
 	gm.best_enemy_level = state.best
 	gm.enemies_defeated = state.defeated

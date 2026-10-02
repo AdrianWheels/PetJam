@@ -101,7 +101,7 @@ Todo texto visible nuevo de este plan va en español en el código o los datos, 
   APPDATA="$(cygpath -w <scratchpad>/appdata)" timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/RankTests.tscn
   ```
 
-  - El `cp` solo lee la partida real. Repítelo antes de cada batería: así el arranque migra cada vez la partida de verdad (hoy, versión 2).
+  - El `cp` solo lee la partida real. Repítelo antes de cada batería: así el arranque migra cada vez la partida de verdad (hoy, una copia de la versión 1: `equipped_slots`, `unlocked_blueprints`, sin `hero_grid`, récord 28; la ruta de la versión 2 la cubre `test_v2_save_migrates_to_v3`).
   - En los comandos de este plan, `<appdata>` es `"$(cygpath -w <scratchpad>/appdata)"`, y cada orden de Godot va precedida de `APPDATA=<appdata>`. Las variables de shell no pasan de una orden a otra: escribe la ruta entera cada vez.
   - `bash balance/arnes.sh check` no necesita nada de esto: lanza Godot con `balance/protegido.sh`, que le da un `APPDATA` temporal y vacío y lo borra al acabar.
 - Si Godot reescribe `default_bus_layout.tres` y solo cambian sus finales de línea, devuélvelo: `git checkout -- default_bus_layout.tres`.
@@ -2018,7 +2018,7 @@ func test_v1_save_with_high_record_migrates() -> void:
 ## DataManager: récord 25, una ampliación (rejilla de 5×4), una espada con una arista en Tico y un casco en el botín.
 func _v2_save() -> Dictionary:
 	var sword := CraftedItem.new(load("res://data/items/sword_advanced.tres"), 0.8).to_dict()
-	sword.merge({"place": "hero", "x": 2, "y": 1, "rot": 0, "aristas": [[1, 0]], "timestamp": 2001}, true)
+	sword.merge({"place": "hero", "x": 2, "y": 1, "rot": 0, "aristas": [[1, 1]], "timestamp": 2001}, true)
 	var helmet := CraftedItem.new(load("res://data/items/helmet_basic.tres"), 0.4).to_dict()
 	helmet.merge({"place": "loot", "timestamp": 2002}, true)
 	return {
@@ -2178,7 +2178,7 @@ func load_save_data(data: Dictionary) -> void:
 	print("DataManager: Loaded %d unlocked blueprints from save" % get_unlocked_blueprints().size())
 ```
 
-Antes de cerrar el paso, `grep -rn "unlocked_blueprints\|DEFAULT_UNLOCKED" scripts`. Quedan dos usos, y ninguno se toca aquí:
+Antes de cerrar el paso, `grep -rn "unlocked_blueprints\|DEFAULT_UNLOCKED" scripts`. Quedan dos usos, y ninguno se toca aquí (el grep encuentra además, y es lo esperado, la compatibilidad con la versión 1 de `DataManager.load_save_data`, `_v2_save()` y su comprobación en `RankTests`, y `scripts/tests/fixtures/save_v1.json`: se ignoran):
 - `VisualCapture._run_unlock_plan` (lo reescribe la tarea 7);
 - la partida de la versión 1 de `InventoryGridTests._v1_save()` (`"data": {"unlocked_blueprints": {}}`), que `load_save_data` sigue leyendo.
 
@@ -2311,7 +2311,7 @@ En `InventoryGridTests.gd`, solo textos (las comprobaciones ya usan `SaveManager
 - en `test_v1_save_migrates_without_losing_pieces`: `"guardado versión 2, sin huecos fijos"` pasa a `"guardado en la versión actual, sin huecos fijos"`; el comentario `# El fichero de la versión 2 también se carga: …` pasa a `# El fichero de la versión actual también se carga: …`; y `"se carga el fichero de la versión 2"` pasa a `"se carga el fichero de la versión actual"`;
 - en el comentario de `test_loading_an_old_save_keeps_a_backup_of_it`: «la reescriba en la versión 2» pasa a «la reescriba en la versión actual», y «Con la partida ya en la versión 2 no hace copia» pasa a «Con la partida ya en la versión actual no hace copia».
 
-Esa prueba sigue con `V1_BACKUP_PATH` y la partida de la versión 1: la copia de la 1 no cambia de nombre. Al final llama a `_reload_user_save()`, que carga la partida de la sesión; si esa partida es de la versión 2, la carga crea `save.v2.bak.json`, y `TestSuite` la deja como estaba al acabar.
+Esa prueba sigue con `V1_BACKUP_PATH` y la partida de la versión 1: la copia de la 1 no cambia de nombre. Al final llama a `_reload_user_save()`, que carga la partida de la sesión; si esa partida es antigua, la carga crea la copia de su versión (`save.v<versión>.bak.json`; con la copia real de este equipo, la de la versión 1), y `TestSuite` la deja como estaba al acabar. Corrección posterior: la partida real de este equipo es de la versión 1, no de la 2.
 
 - [ ] **Step 7: El spec dice «versión 3»**
 
@@ -2353,9 +2353,9 @@ grep -m1 '"version"' <scratchpad>/appdata/Godot/app_userdata/PetJam/save.json
 
 Expected:
 - sin errores;
-- «partida de la versión 2; se migra a la 3» y «copia de la partida antigua en user://save.v2.bak.json»;
+- «partida de la versión N; se migra a la 3» y «copia de la partida antigua en user://save.vN.bak.json», con N la versión de la copia real (hoy 1: «versión 1» y `save.v1.bak.json`; la ruta de la versión 2 la cubre `test_v2_save_migrates_to_v3`, no este arranque);
 - `DataManager: Loaded …` y pedidos generados (`RequestsManager: Generados`) de planos desbloqueados;
-- `save.v2.bak.json` en la carpeta, y `"version": 3` en `save.json`.
+- `save.vN.bak.json` (N = la versión de la copia; hoy `save.v1.bak.json`) en la carpeta, y `"version": 3` en `save.json`.
 
 - [ ] **Step 9: Commit**
 
@@ -2628,7 +2628,9 @@ Añade su línea a la cabecera de planes del fichero (hoy no la tiene):
 
 Graba el plan `unlock` (con la copia de la partida en `<appdata>`, Global Constraints):
 
-`APPDATA=<appdata> timeout 300 D:/Software/Godot/godot_ver4.5.exe --path . --write-movie <scratchpad>/t7/f.png --fixed-fps 10 --quit-after 200 res://scenes/tests/VisualCapture.tscn -- --plan=unlock`
+`APPDATA=<appdata> timeout 300 D:/Software/Godot/godot_ver4.5.exe --path . --write-movie <scratchpad>/t7/f.png --fixed-fps 10 --quit-after 300 res://scenes/tests/VisualCapture.tscn -- --plan=unlock`
+
+Tico sin equipo tarda unos 11 s en vencer al jefe de la sala 20, de ahí `--quit-after 300`. Al entrar en las salas 21/41/51 sale el cartel del bioma (`HeroViewOverlay`, hacia las líneas 467-471) unos 2,9 s después de la muerte del jefe: no corta el cartel del hito, pero la captura lo mostrará.
 
 Abre con Read los fotogramas de la muerte del jefe y los 4 s siguientes, y comprueba:
 - un solo cartel "¡Planos avanzados!";
@@ -2637,12 +2639,14 @@ Abre con Read los fotogramas de la muerte del jefe y los 4 s siguientes, y compr
 
 - [ ] **Step 6: Ejecutar y ver que pasa**
 
+Antes, en `InventoryGridTests.gd`, `test_each_boss_of_the_first_cycle_grows_the_grid_one_step` y `test_the_expansion_never_sends_tico_to_the_wall` guardan `dm.unlocked_ranks.duplicate()` al empezar y lo restauran al acabar: vencer jefes aplica hitos de rango (avanzados I, maestros I, básicos II) sobre el `DataManager` real, con independencia de `enemies_defeated`, y guarda la partida. `enemies_defeated` se conserva solo para que no repartan un plano al azar.
+
 Run: RankTests, InventoryGridTests, GameplayTests, PixelTests y TextTests. Expected: 0 fallos.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add scripts/autoload/GameManager.gd scripts/gameplay/Corridor.gd scripts/ui/HeroViewOverlay.gd scripts/tests/RankTests.gd scripts/tests/VisualCapture.gd locale/textos.csv
+git add scripts/autoload/GameManager.gd scripts/gameplay/Corridor.gd scripts/ui/HeroViewOverlay.gd scripts/tests/RankTests.gd scripts/tests/InventoryGridTests.gd scripts/tests/VisualCapture.gd locale/textos.csv
 git commit -m "feat: hitos de rango al vencer a los jefes, con un cartel por hito y pergaminos escalonados"
 ```
 

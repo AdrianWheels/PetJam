@@ -498,7 +498,7 @@ func test_v1_save_with_high_record_migrates() -> void:
 ## DataManager: récord 25, una ampliación (rejilla de 5×4), una espada con una arista en Tico y un casco en el botín.
 func _v2_save() -> Dictionary:
 	var sword := CraftedItem.new(load("res://data/items/sword_advanced.tres"), 0.8).to_dict()
-	sword.merge({"place": "hero", "x": 2, "y": 1, "rot": 0, "aristas": [[1, 0]], "timestamp": 2001}, true)
+	sword.merge({"place": "hero", "x": 2, "y": 1, "rot": 0, "aristas": [[1, 1]], "timestamp": 2001}, true)
 	var helmet := CraftedItem.new(load("res://data/items/helmet_basic.tres"), 0.4).to_dict()
 	helmet.merge({"place": "loot", "timestamp": 2002}, true)
 	return {
@@ -525,7 +525,7 @@ func test_v2_save_migrates_to_v3() -> void:
 	check(_load_save_bytes(original), "la partida v2 carga")
 	check(inv.hero_grid_size() == Vector2i(5, 4) and inv.get_crafted_items().size() == 2, "rejilla de 5×4 y las dos piezas (%s, %d)" % [inv.hero_grid_size(), inv.get_crafted_items().size()])
 	var sword: CraftedItem = inv.best_hero_item("main_hand")
-	check(sword != null and sword.cell == Vector2i(2, 1) and sword.rot == 0 and sword.aristas == [Vector2i(1, 0)], "la espada sigue en Tico, en su casilla, con su arista")
+	check(sword != null and sword.cell == Vector2i(2, 1) and sword.rot == 0 and sword.aristas == [Vector2i(1, 1)], "la espada sigue en Tico, en su casilla, con su arista")
 	check(inv.get_loot().size() == 1 and inv.get_loot()[0].item_resource.item_id == &"helmet_basic", "el casco sigue en el botín")
 	check(inv.get_crafted_items().all(func(it): return it.rank == 1), "las piezas siguen en rango I")
 	check(dm.get_unlocked_rank(&"sword_advanced") == 1 and dm.get_unlocked_rank(&"shield_basic") == 1, "los planos desbloqueados pasan a rango I")
