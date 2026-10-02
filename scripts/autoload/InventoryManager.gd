@@ -347,6 +347,19 @@ func equipment_rank() -> int:
 			rank = best.rank if rank == 0 else mini(rank, best.rank)
 	return maxi(1, rank)
 
+
+## Ampliación de la rejilla de Tico: crece al tamaño siguiente, sea cual sea la ampliación. false si ya
+## estaba o si `id` no es una ampliación. Hoy la llama GameManager al vencer a los jefes (provisional);
+## con los rangos la llamarán las recetas.
+func apply_grid_expansion(id: StringName) -> bool:
+	if not GridExpansions.is_expansion(id) or id in expansions:
+		return false
+	expansions.append(id)
+	hero_grid.resize(GridExpansions.size_after(expansions.size()))
+	grid_resized.emit(hero_grid.size)
+	_changed(true)  # las zonas de borde se mueven con la rejilla
+	return true
+
 # ═══════════════════════════════════════════════════════════════════
 #  SITIOS (privado)
 # ═══════════════════════════════════════════════════════════════════

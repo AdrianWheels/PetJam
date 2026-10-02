@@ -1978,3 +1978,130 @@ func test_a_pending_regeneration_number_goes_with_the_fall_and_with_the_respawn(
 	hero._process(3.0)
 	check(_fx_texts(a).is_empty(), "y no sale sobre Tico recién reaparecido (%s)" % [_fx_texts(a)])
 	await _close_arena(a)
+
+
+# ─── Tarea 12: la rejilla crece al vencer a los jefes ──────────────────
+
+func test_apply_grid_expansion_grows_once() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	check(im.apply_grid_expansion(&"grid_bone_straps") and im.hero_grid_size() == Vector2i(5, 4), "la primera ampliación lleva la rejilla a 5×4")
+	check(not im.apply_grid_expansion(&"grid_bone_straps"), "la misma no amplía dos veces")
+	check(im.apply_grid_expansion(&"grid_frost_harness") and im.hero_grid_size() == Vector2i(5, 5), "da igual cuál: la siguiente lleva a 5×5")
+	check(not im.apply_grid_expansion(&"no_existe"), "algo que no es una ampliación no hace nada")
+	await _restore_inventory(saved)
+
+
+## Ampliar avisa de la rejilla nueva y del equipo de Tico, y lo hace con la rejilla ya crecida: las zonas de
+## borde se mueven con ella (la espada de la columna derecha de 4×4 deja de estar en su zona al pasar a 5×4).
+func test_the_expansion_announces_itself_and_moves_the_edge_zones() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var sword := _piece(&"sword_basic", 0.5)
+	im.add_crafted_item(sword)
+	check(im.move_item(sword, &"hero", Vector2i(3, 0), 0), "la espada, en la columna derecha de la rejilla de 4×4")
+	check(not im.hero_bonuses()[sword].is_empty(), "y en su zona: rinde más (%s)" % [im.hero_bonuses()[sword]])
+	var before: Dictionary = im.calculate_total_stats()
+	var sizes := []
+	var notices := []
+	var on_resized := func(s): sizes.append(s)
+	var on_equipment := func(totals): notices.append(totals)
+	im.grid_resized.connect(on_resized)
+	im.equipment_changed.connect(on_equipment)
+	check(im.apply_grid_expansion(&"grid_bone_straps"), "la ampliación vale")
+	im.grid_resized.disconnect(on_resized)
+	im.equipment_changed.disconnect(on_equipment)
+	check(sizes == [Vector2i(5, 4)], "avisa de la rejilla nueva, una vez (%s)" % [sizes])
+	check(notices.size() == 1 and notices[0] != before and notices[0] == im.calculate_total_stats(), "y del equipo de Tico, ya con las zonas nuevas (%d avisos)" % notices.size())
+	check(im.hero_bonuses()[sword].is_empty(), "la columna derecha es ahora la quinta: la espada deja de estar en su zona (%s)" % [im.hero_bonuses()[sword]])
+	await _restore_inventory(saved)
+
+
+func test_first_boss_kill_grows_the_grid() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var gm := get_node("/root/GameManager")
+	var state := {"dungeon": gm.dungeon_state, "best": gm.best_enemy_level, "defeated": gm.enemies_defeated.duplicate(),
+		"wall": gm.wall_room, "locked": gm.room_locked, "level": gm.current_enemy_level}
+	# Sin muro, sea cual sea la partida: la ampliación avisa de equipment_changed y retry_wall_now no puede
+	# mandar a Tico a ninguna sala durante la prueba
+	gm.wall_room = 0
+	# Niveles ya vencidos: así register_enemy_defeat no desbloquea planos al azar en la prueba
+	gm.enemies_defeated[10] = true
+	gm.enemies_defeated[60] = true
+	var seen := []
+	var on_grow := func(id): seen.append(id)
+	gm.grid_expanded.connect(on_grow)
+	gm.dungeon_state = gm.DungeonState.RUNNING
+	gm.best_enemy_level = 11
+	gm.register_enemy_defeat(10)
+	check(seen.is_empty() and im.hero_grid_size() == Vector2i(4, 4), "con el récord ya más hondo que su sala, no es la primera victoria: no amplía (%s)" % [seen])
+	gm.best_enemy_level = 10
+	gm.register_enemy_defeat(10)
+	check(seen == [&"grid_bone_straps"] and im.hero_grid_size() == Vector2i(5, 4), "el jefe de la sala 10 amplía la rejilla (%s)" % [seen])
+	gm.best_enemy_level = 11
+	gm.register_enemy_defeat(10)
+	check(seen.size() == 1 and im.hero_grid_size() == Vector2i(5, 4), "volver a vencerlo no amplía otra vez")
+	gm.best_enemy_level = 60
+	gm.register_enemy_defeat(60)
+	check(seen.size() == 1, "los jefes del ciclo II no amplían")
+	gm.grid_expanded.disconnect(on_grow)
+	gm.dungeon_state = state.dungeon
+	gm.best_enemy_level = state.best
+	gm.enemies_defeated = state.defeated
+	gm.wall_room = state.wall
+	gm.room_locked = state.locked
+	gm.current_enemy_level = state.level
+	await _restore_inventory(saved)
+
+
+## Los cuatro jefes del ciclo I, cada uno a su paso: 5×4, 5×5, 6×5 y 6×6. El de la sala 50 no es uno de ellos.
+func test_each_boss_of_the_first_cycle_grows_the_grid_one_step() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var gm := get_node("/root/GameManager")
+	var state := {"dungeon": gm.dungeon_state, "best": gm.best_enemy_level, "defeated": gm.enemies_defeated.duplicate(),
+		"wall": gm.wall_room, "locked": gm.room_locked, "level": gm.current_enemy_level}
+	gm.wall_room = 0  # sin muro: ver test_first_boss_kill_grows_the_grid
+	gm.dungeon_state = gm.DungeonState.RUNNING
+	for step in [[10, Vector2i(5, 4)], [20, Vector2i(5, 5)], [30, Vector2i(6, 5)], [40, Vector2i(6, 6)], [50, Vector2i(6, 6)]]:
+		gm.enemies_defeated[step[0]] = true  # sin planos al azar
+		gm.best_enemy_level = step[0]
+		gm.register_enemy_defeat(step[0])
+		check(im.hero_grid_size() == step[1], "tras el jefe de la sala %d, la rejilla es de %s (%s)" % [step[0], step[1], im.hero_grid_size()])
+	check(im.expansions.size() == 4, "cuatro ampliaciones y no más (%d)" % im.expansions.size())
+	gm.dungeon_state = state.dungeon
+	gm.best_enemy_level = state.best
+	gm.enemies_defeated = state.defeated
+	gm.wall_room = state.wall
+	gm.room_locked = state.locked
+	gm.current_enemy_level = state.level
+	await _restore_inventory(saved)
+
+
+## La franja avisa con un cartelito cuando la rejilla crece.
+func test_the_strip_announces_the_grid_growing() -> void:
+	var gm := get_node("/root/GameManager")
+	var overlay: Control = load("res://scripts/ui/HeroViewOverlay.gd").new()
+	add_child(overlay)
+	var queued: int = overlay._toast_queue.size()
+	gm.grid_expanded.emit(&"grid_bone_straps")
+	check(overlay._toast_queue.size() == queued + 1 and overlay._toast_queue.back()[0] == tr("¡La rejilla crece!"), "sale «¡La rejilla crece!» (%s)" % [overlay._toast_queue])
+	overlay.free()
+
+
+func test_result_screen_shows_aristas_and_the_legendary_power() -> void:
+	var screen := CraftResultScreen.new()  # sin escena: el script construye la interfaz en _ready
+	add_child(screen)
+	await get_tree().process_frame
+	var rough: Array[Vector2i] = [Vector2i(1, 1)]
+	screen._populate_stats({"crafted_item": _piece(&"sword_basic", 0.5, rough)})
+	var texts: Array = screen._stats_container.get_children().filter(func(c): return c is Label).map(func(l): return l.text)
+	check(texts.has(tr("Aristas: %d") % 1), "dice cuántas aristas trae (%s)" % [texts])
+	check(not texts.any(func(s): return s.begins_with(tr("Filo perfecto"))), "y una pieza que no es legendaria no enseña habilidad")
+	screen._populate_stats({"crafted_item": _piece(&"sword_basic", 1.0)})
+	texts = screen._stats_container.get_children().filter(func(c): return c is Label and not c.is_queued_for_deletion()).map(func(l): return l.text)
+	check(texts.has(tr("Sin aristas")), "la legendaria sale sin aristas")
+	check(texts.any(func(s): return s.begins_with(tr("Filo perfecto"))), "y con su habilidad (%s)" % [texts])
+	screen.queue_free()
+	await get_tree().process_frame

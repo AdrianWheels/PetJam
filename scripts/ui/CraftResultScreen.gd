@@ -332,6 +332,22 @@ func _populate_stats(result: Dictionary) -> void:
 		stat_label.add_theme_constant_override("outline_size", 5)
 		stat_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_stats_container.add_child(stat_label)
+	var aristas_text := tr("Sin aristas") if crafted_item.aristas.is_empty() else tr("Aristas: %d") % crafted_item.aristas.size()
+	_stats_container.add_child(_result_line(aristas_text, Color(0.75, 0.7, 0.62), 24))
+	var power: Dictionary = LegendaryPowers.POWERS.get(StringName(crafted_item.item_resource.item_id), {})
+	if LegendaryPowers.is_legendary(crafted_item) and not power.is_empty():
+		_stats_container.add_child(_result_line("%s: %s" % [tr(power.name), tr(power.text)], Color("ffa629"), 26))
+
+
+func _result_line(text: String, color: Color, font_size: int) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_size_override("font_size", font_size)
+	l.add_theme_color_override("font_color", color)
+	l.add_theme_constant_override("outline_size", 5)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	return l
 
 
 func _on_continue_pressed() -> void:

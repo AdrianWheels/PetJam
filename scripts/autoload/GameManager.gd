@@ -18,6 +18,7 @@ signal buffs_changed(active: Dictionary)  # Un efecto temporal empieza, se renue
 signal room_travel(room: int)  # el selector o un reintento mandan a Tico a otra sala (viaje instantáneo)
 signal wall_changed(wall_room: int)  # aparece o cae el muro (0 = sin muro)
 signal room_lock_changed(locked: bool)  # candado del selector de sala
+signal grid_expanded(recipe_id)  # la rejilla de Tico crece: primera victoria sobre el jefe 10, 20, 30 o 40
 
 enum DungeonState { IDLE, RUNNING, HERO_DEAD }
 
@@ -328,6 +329,17 @@ func register_enemy_defeat(level: int) -> void:
 				if dm.unlock_blueprint(random_bp):
 					DebugManager.log_msg(&"game", "Unlocked blueprint '%s'" % random_bp)
 					emit_signal("blueprint_unlocked", StringName(random_bp))
+
+	# Rejilla de Tico (spec del inventario en rejilla, apartado 7). Provisional hasta que lleguen las
+	# recetas con los rangos: la primera vez que cae el jefe de la sala 10, 20, 30 o 40 del ciclo I, la
+	# rejilla crece sola. El récord aún no ha pasado de esta sala (room_cleared va después).
+	var recipe := GridExpansions.recipe_for_boss_room(level)
+	if recipe != &"" and best_enemy_level <= level:
+		var inv = get_node_or_null("/root/InventoryManager")
+		if inv and inv.has_method("apply_grid_expansion") and inv.apply_grid_expansion(recipe):
+			emit_signal("grid_expanded", recipe)
+
+
 func register_boss_defeat():
 	# En endless cada jefe es un hito, no el final. El avance de sala lo hace el Corridor
 	# (antes también se avanzaba aquí y el primer jefe se saltaba una sala).

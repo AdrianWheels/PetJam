@@ -91,6 +91,8 @@ func _ready() -> void:
 		if _game_manager.has_signal("wall_changed"):
 			_game_manager.wall_changed.connect(func(_w): _refresh_room())
 			_game_manager.room_lock_changed.connect(func(_l): _refresh_room())
+		if _game_manager.has_signal("grid_expanded"):
+			_game_manager.grid_expanded.connect(func(_id): show_toast(tr("¡La rejilla crece!"), Color("9fe0ff")))
 		_game_manager.enemy_level_changed.connect(func(_l): _refresh_selector())
 	if _inventory and _inventory.has_signal("inventory_changed"):
 		_inventory.inventory_changed.connect(func(_inv): _refresh_gold())
