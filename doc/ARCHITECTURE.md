@@ -196,7 +196,7 @@ InventoryManager
   ├─ crafted_items: Array[CraftedItem]    # todas las piezas; cada una está en un solo sitio (item.place)
   ├─ hero_grid: GearGrid                  # Tico (&"hero"): 4×4, crece hasta 6×6. Solo esto cuenta para sus estadísticas
   ├─ bag_grid: GearGrid                   # mochila (&"bag"): 6×4 fija. Guarda sin contar
-  ├─ loot: Array[CraftedItem]             # botín (&"loot"): sin límite, lo más nuevo delante. Aquí llega todo lo forjado
+  ├─ loot: Array[CraftedItem]             # botín (&"loot"): sin límite, en orden de llegada. En el panel es una caja con física; cada pieza guarda su loot_pose
   ├─ expansions: Array[StringName]        # ampliaciones ya aplicadas (GridExpansions)
   └─ consumables: Array                   # 2 huecos de pociones: {"id", "count"}
 ```
@@ -207,30 +207,34 @@ Nada se coloca solo: lo forjado va siempre al botín. La única excepción es la
 
 | Clase | Qué hace | Quién la usa |
 |-------|----------|--------------|
-| `PieceShape` | Forma limpia de cada pieza (`ItemResource.shape_cells`), giros de 90° normalizados y aristas: casillas de más que no dan nada y estorban (2 en Básico y Bueno, 1 en Raro, 0 desde Épico) | `GearGrid`, `InventoryManager`, `CraftingManager` (las sortea al forjar), `EquipmentPanel` y las vistas |
+| `PieceShape` | Forma limpia de cada pieza (`ItemResource.shape_cells`), giros de 90° normalizados y aristas: casillas de más que no dan nada y estorban (2 en Básico y Bueno, 1 en Raro, 0 desde Épico). También el centro de masa y los rectángulos de colisión de una pieza girada (`mass_center()`, `collision_rects()`) para el botín con física | `GearGrid`, `InventoryManager`, `CraftingManager` (las sortea al forjar), `EquipmentPanel` y las vistas |
 | `GearGrid` | Una rejilla de casillas: dice si una pieza cabe, la coloca o la quita, da sus vecinas por los lados y hace copias (`duplicate_grid()`) para simular sin tocar nada | `InventoryManager` (Tico y mochila), `GearAuras`, `GearPacker`, `EquipmentPanel` y `GearGridView` |
 | `GearAuras` | Auras entre vecinas (la espada da daño a las armas, el escudo armadura a las armaduras, el casco vida a todas y las botas velocidad de ataque a las armas; 0, 5, 10, 15 o 20 % según la calidad de quien la emite), zonas (+10 % en todo a la pieza con alguna casilla limpia en la suya) y tope (+50 % por estadística y pieza): `totals(grid)` y `bonuses(grid)` | `InventoryManager` (`calculate_total_stats()` y `preview_stats()`), `GearPacker`, `EquipmentPanel` (ficha y brillos) y `GearGridView` (zonas) |
 | `LegendaryPowers` | Las 12 habilidades de las piezas legendarias (una por pieza; las maestras con precio), sus multiplicadores y sus efectos de combate. Dos iguales cuentan como una | `InventoryManager.active_legendary_powers()`, `CombatMath`, `Hero`, `CombatController`, `CraftResultScreen` y `EquipmentPanel` |
 | `GearPacker` | Colocación automática y determinista (`find_spot()`, `pack()`) | La migración de partidas antiguas (`InventoryManager`) y «A la mochila» (`EquipmentPanel`) |
 | `GridExpansions` | Las 4 ampliaciones (una por jefe de las salas 10, 20, 30 y 40 del ciclo I) y los tamaños 4×4 → 5×4 → 5×5 → 6×5 → 6×6 | `InventoryManager.apply_grid_expansion()`, `GameManager` y `EquipmentPanel` (dice qué jefe toca) |
 | `Potions` | Catálogo de las pociones, los 2 huecos, el tope de 5 por hueco y el umbral del 30 % de vida | `InventoryManager`, `GameManager`, `ShopPanel`, `EquipmentPanel` y `HeroViewOverlay` |
-| `GearGridView` | Control que dibuja una rejilla (casillas de 110 px, piezas, aristas, zonas, destino del arrastre y brillos). Las casillas que aún no existen salen punteadas | `EquipmentPanel` (la de Tico y la mochila) y `LootStripView` (casilla y dibujo de piezas) |
-| `LootStripView` | Control que dibuja el botín: una tira con desplazamiento lateral y las piezas tumbadas | `EquipmentPanel` |
+| `GearGridView` | Control que dibuja una rejilla (casillas de 110 px, piezas, aristas, zonas, destino del arrastre y brillos). Las casillas que aún no existen salen punteadas | `EquipmentPanel` (la de Tico y la mochila) y `LootPiece` (dibujo de piezas) |
+| `LootBoxView` | `Node2D` con la caja del botín (960×440, techo invisible 165 px por encima): suelo, paredes y techo estáticos y un `LootPiece` por pieza de `InventoryManager.loot` (`sync()`). Decide quién entra y desde dónde (pose guardada, punto donde se suelta o caída desde arriba), quién no cabe (modo fantasma) y cuándo vuelve a chocar; se congela con el panel cerrado; recoge las poses y avisa cuando la pila se queda quieta (`poses_settled`) | `EquipmentPanel` |
+| `LootPiece` | `RigidBody2D` de una pieza, a media escala (`BOX_CELL`, 55 px por casilla): un rectángulo por casilla (aristas incluidas) centrado en su centro de masa, masa por casillas, su dibujo de siempre girado con el cuerpo y el modo fantasma (choca con la caja, no con las piezas; semitransparente). Capas propias: 9 paredes, 10 piezas, 11 fantasmas | `LootBoxView` |
 
-**Panel de Equipo** (`EquipmentPanel`, pantalla completa). De arriba abajo: estadísticas de Tico, ficha de la última pieza tocada, su rejilla delante de su sprite (con los 2 huecos de consumibles al lado), el botín con «Vender todo», la mochila y la zona de venta. El dedo lo lleva el panel en `_input`:
+**Panel de Equipo** (`EquipmentPanel`, pantalla completa). De arriba abajo: estadísticas de Tico, ficha de la última pieza tocada, su rejilla delante de su sprite (con los 2 huecos de consumibles al lado), la caja del botín con «Vender todo», la mochila y la zona de venta. El dedo lo lleva el panel en `_input`:
 - tocar gira la pieza (en el botín solo la enseña);
 - arrastrar la coloca o la intercambia: la pieza va una casilla por encima del dedo, y un segundo dedo, la rueda o la tecla R la giran;
 - mantener pulsado 0,4 s abre la ficha completa;
 - soltar en la zona de venta la vende;
+- en la caja (`LootBoxView`) las piezas van a media escala; coger una la saca de la física enderezada al cuarto de vuelta más cercano y a tamaño completo (`DRAG_CELL`); soltarla en la caja la devuelve donde se ve, con la inercia del gesto (tope de 1400 px/s); soltada fuera de todo vuelve a la caja, al punto más cercano al dedo. No hay desplazamiento;
 - durante el arrastre, la vista previa de estadísticas (`EquipmentPanel._show_target()`: `InventoryManager.simulate_hero_grid()` y `GearAuras.totals()`) solo se recalcula cuando cambia la casilla de destino o el giro;
 - Atrás (Android) cierra lo de más arriba: la confirmación, la ficha o el panel;
 - la insignia del botón Equipo (`HUDMain`) cuenta las piezas del botín.
 
 **Pociones.** Las de la tienda van a un hueco (`add_potion()`; sin hueco no se cobra) y `GameManager` las bebe solas. La de Vida, cuando Tico, vivo, baja del 30 % de su vida (señal `hurt` de `Hero` → `drink_potion()`). Velocidad y Suerte, al aparecer un jefe (`on_boss_appeared()`, que llama `Corridor`) si su efecto no está activo; delante de un muro sin candado esperan, porque una poción de efecto manda a Tico a probar el muro.
 
+**Botín con física.** Spec: `doc/specs/2026-10-02-botin-con-fisica.md`. `InventoryManager.loot` sigue siendo la fuente de verdad: la caja crea y quita cuerpos según la lista. Lo forjado, lo que manda «Al botín» y lo que saca un intercambio cae desde arriba, una pieza tras otra, en una x al azar; lo que suelta el jugador entra donde se suelta. Las piezas van a media escala (`LootPiece.BOX_CELL`, 55 px por casilla); al cogerlas crecen a 110 y al soltarlas en la caja vuelven a 55. Una pieza no cabe si, ya quieta, solapa a otra (casillas encogidas 4,4 px) o está apretada contra el techo, o si no encuentra sitio bajo el techo para caer en 2 s: pasa a modo fantasma. Cuando se libera sitio, los fantasmas prueban de nuevo, donde están o cayendo desde arriba. Con el panel cerrado la caja sale de la física; al cerrarlo, y cuando la pila se queda quieta (como mucho una vez por segundo), las poses van a las piezas y `InventoryManager.note_loot_poses()` pide el guardado diferido de `GameManager`. Una pieza que sale del botín pierde su pose.
+
 **Ampliación de la rejilla (provisional).** Hasta que las recetas lleguen con los rangos, `GameManager.register_enemy_defeat()` llama a `InventoryManager.apply_grid_expansion()` la primera vez que cae el jefe de la sala 10, 20, 30 o 40 del ciclo I. La rejilla crece (una columna a la derecha o una fila abajo, alternando), ninguna pieza se mueve y la señal `grid_expanded` hace salir «¡La rejilla crece!» en la franja. Ampliar no manda a Tico al muro (ver 4.1).
 
-**Guardado versión 2 (la 3 es la de los rangos).** `to_save_data()` guarda en `inventory`: los materiales, las piezas (`crafted_items`, con el botín primero y en su orden; de cada pieza, `place`, `x`, `y`, `rot` y `aristas`), `hero_grid` (ancho y alto), `expansions` y `consumables`. Ya no guarda `equipped` ni `equipped_slots`. La versión 3 (apartado 4.4) no cambia esta forma: solo añade el rango de cada pieza (`rank`, 1 si falta). Una partida anterior (sin `hero_grid`) se migra al cargar:
+**Guardado versión 2 (la 3 es la de los rangos).** `to_save_data()` guarda en `inventory`: los materiales, las piezas (`crafted_items`, con el botín primero y en su orden; de cada pieza, `place`, `x`, `y`, `rot` y `aristas`) y, en el botín, `lx`, `ly` y `ang` si tiene pose (opcionales: sin ellos la pieza cae al abrir el panel; una pose fuera de la caja, por encima del techo o sin números se descarta), `hero_grid` (ancho y alto), `expansions` y `consumables`. Ya no guarda `equipped` ni `equipped_slots`. La versión 3 (apartado 4.4) no cambia esta forma: solo añade el rango de cada pieza (`rank`, 1 si falta). Una partida anterior (sin `hero_grid`) se migra al cargar:
 1. da por forjadas las ampliaciones de los jefes que su récord ya supera (el mismo récord que toma `GameManager.load_save_data()`: el mayor entre `best_enemy_level` y `current_enemy_level`, porque una partida más antigua puede no traer el primero);
 2. sortea las aristas de cada pieza con una semilla fija: la misma partida da siempre el mismo resultado;
 3. coloca con `GearPacker` lo que estaba equipado, las mejores primero, y manda el resto al botín.
@@ -241,7 +245,7 @@ Una posición imposible al cargar (fuera de la rejilla o pisando otra pieza) tam
 
 **Rango del equipo.** `InventoryManager.grid_rank(grid)` toma la mejor pieza de cada tipo (arma, escudo, casco y botas) y delega en `Ranks.team_rank()`: el menor de esos rangos, o el I sin piezas. `equipment_rank()` es el de la rejilla de Tico. Lo usan `Hero.reset_stats()` (la base de Tico sube con él: `CombatMath.hero_stats(equipment, team_rank)`) y las estadísticas del panel de Equipo, para que lo que enseña coincida con lo que lucha. Añadir una pieza de un tipo que ya lleva nunca baja el rango.
 
-**Pruebas.** `InventoryGridTests` (`scenes/tests/InventoryGridTests.tscn`), que incluye la medida de lo que tarda en abrirse el panel con la rejilla llena, y el plan `inventory` de `VisualCapture` para capturar el panel.
+**Pruebas.** `InventoryGridTests` (`scenes/tests/InventoryGridTests.tscn`), que incluye la medida de lo que tarda en abrirse el panel con la rejilla llena; `LootBoxTests` (`scenes/tests/LootBoxTests.tscn`, con `--fixed-fps 60`), con la física real: caídas, techo, fantasmas, poses, lanzamiento y 60 piezas; y los planes `inventory` y `lootbox` de `VisualCapture` para capturar el panel.
 
 ### 4.4 Rangos por ciclo
 

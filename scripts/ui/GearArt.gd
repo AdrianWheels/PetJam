@@ -4,7 +4,7 @@ extends RefCounted
 ## Texturas de las piezas de la rejilla (spec doc/specs/2026-09-27-inventario-en-rejilla.md, apartado 9.5).
 ## Cada pieza con arte tiene `res://art/gear/<item_id>.png` en su giro 0, a 110 px por casilla
 ## (tools/gear_art/build_gear_art.py). Los otros 3 giros se sacan girando la imagen y se guardan.
-## Es el `sprite_for` de GearGridView y LootStripView: las piezas sin arte siguen con casillas de color.
+## Es el `sprite_for` de GearGridView, LootBoxView y LootPiece: las piezas sin arte siguen con casillas de color.
 
 const DIR := "res://art/gear/%s.png"
 

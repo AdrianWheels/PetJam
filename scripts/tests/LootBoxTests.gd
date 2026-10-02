@@ -914,3 +914,49 @@ func test_the_release_point_is_the_drop_point() -> void:
 	check(body != null and body.position.is_equal_approx(box.to_local(center)), "entra bajo el punto donde se soltó (%s)" % (body.position if body else Vector2.INF))
 	panel.queue_free()
 	await _restore_inventory(saved)
+
+
+# ─── Tarea 6: rendimiento ──────────────────────────────────────────────
+
+## Spec, apartado 10: 60 piezas se quedan quietas, sin pasar del techo, y abrir el panel con ellas (cada una vuelve a su pose:
+## 60 cuerpos nuevos) cabe en 50 ms, el presupuesto del panel de siempre. Se mide en el ordenador; el móvil, con su tarjeta.
+func test_sixty_pieces_settle_under_the_ceiling_and_the_panel_opens_fast() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 21
+	for i in 60:
+		var res := _res(ITEM_IDS[i % ITEM_IDS.size()])
+		var item := CraftedItem.new(res, rng.randf())
+		item.aristas = PieceShape.roll_aristas(res, item.get_quality_tier(), rng)
+		im.add_crafted_item(item)
+	var panel := _new_panel()
+	var box: LootBoxView = panel._loot_box
+	var frames: int = await _physics_until(func(): return box.is_settled(), 4000)
+	check(frames > 0, "las 60 piezas se quedan quietas (%d pasos, %.1f s de juego)" % [frames, frames / 60.0])
+	check(box._bodies.size() == 60, "todas tienen cuerpo (%d)" % box._bodies.size())
+	check(_highest_top(box, im.get_loot()) >= LootBoxView.CEIL_Y - 2.0, "ninguna pasa del techo (%.1f)" % _highest_top(box, im.get_loot()))
+	check(im.get_loot().all(func(it): return _inside(box.body_of(it))), "todas dentro de la caja")
+	var ghosts: int = im.get_loot().filter(func(it): return box.body_of(it).is_ghost).size()
+	print("botín con física: 60 piezas quietas en %d pasos, %d fantasmas" % [frames, ghosts])
+	check(60 - ghosts >= 20 and ghosts <= 40, "a media escala caben unas 25 que chocan; el resto, fantasmas (%d que chocan, %d fantasmas; medido: 25 y 35)" % [60 - ghosts, ghosts])
+	panel.close()  # recoge las poses
+	panel.queue_free()
+	await get_tree().physics_frame
+	# Tres paneles nuevos, cada uno crea los 60 cuerpos desde las poses; se mira la apertura más rápida
+	var samples: Array[float] = []
+	for i in 3:
+		var fresh: Control = load("res://scenes/UI/EquipmentPanel.tscn").instantiate()
+		add_child(fresh)
+		await get_tree().process_frame
+		var t0 := Time.get_ticks_usec()
+		fresh.open()
+		samples.append((Time.get_ticks_usec() - t0) / 1000.0)
+		check(fresh._loot_box._bodies.size() == 60 and fresh._loot_box._queue.is_empty(), "al abrir, todas vuelven a su pose sin caer")
+		fresh.close()
+		fresh.queue_free()
+		await get_tree().physics_frame
+	var ms: float = samples.min()
+	print("panel de Equipo con 60 piezas en la caja: %.1f ms, la más rápida de 3 (%.1f / %.1f / %.1f)" % [ms, samples[0], samples[1], samples[2]])
+	check(ms < 50.0, "abrir el panel con 60 piezas cabe en 50 ms (%.1f)" % ms)
+	await _restore_inventory(saved)

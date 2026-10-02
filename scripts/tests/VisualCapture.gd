@@ -22,6 +22,8 @@ extends Node
 ##   wall   → muro y farmeo: cae en la sala 14, farmea la 13 con «Muro: sala 14» y el selector lo lleva a la 4
 ##   inventory → rejilla de 6×6 con piezas (una legendaria, la maestra de rango II, y una con aristas), mochila, botín y 2 pociones de Vida; arrastra
 ##               una pieza del botín hasta Tico con intercambio y abre la ficha de la legendaria
+##   lootbox → botín con física: caen varias piezas forjadas, la caja se llena hasta que entran fantasmas y se arrastra
+##             una pieza de la caja a la rejilla de Tico
 ##   ranks  → pedidos con numeral y materiales de bioma, biblioteca con el selector de rango y, en el Santuario del Vacío
 ##            (sala 45), botín con fragmento de vacío y el cartel «¡Planos avanzados II!»
 
@@ -71,6 +73,8 @@ func _ready() -> void:
 			_run_wall_plan()
 		"inventory":
 			_run_inventory_plan()
+		"lootbox":
+			_run_lootbox_plan()
 		"ranks":
 			_run_ranks_plan()
 
@@ -410,3 +414,53 @@ func _run_ranks_plan() -> void:
 	gm.advance_enemy_level()  # sala 45, Santuario del Vacío
 	await get_tree().create_timer(2.0).timeout
 	gm.blueprints_milestone.emit(2, Ranks.TIER_ADVANCED, [])
+
+
+func _run_lootbox_plan() -> void:
+	# Botín con física (spec doc/specs/2026-10-02-botin-con-fisica.md): con el panel abierto llegan piezas forjadas y caen
+	# una tras otra; después se llena la caja hasta que entran fantasmas (semitransparentes) y, por último, se arrastra una
+	# pieza de la caja a la rejilla de Tico, vacía
+	await get_tree().create_timer(1.0).timeout
+	var hud := _hud()
+	var im := get_node_or_null("/root/InventoryManager")
+	if hud == null or im == null:
+		return
+	im.clear()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	var add := func(id: StringName) -> CraftedItem:
+		var res: ItemResource = load("res://data/items/%s.tres" % id)
+		var item := CraftedItem.new(res, rng.randf_range(0.2, 1.0))
+		item.aristas = PieceShape.roll_aristas(res, item.get_quality_tier(), rng)
+		im.add_crafted_item(item)
+		return item
+	hud._on_delivery_pressed()
+	await get_tree().create_timer(0.5).timeout
+	for id in [&"sword_basic", &"shield_advanced", &"helmet_master", &"boots_advanced", &"sword_advanced", &"boots_master"]:
+		add.call(id)  # forjada con el panel abierto: cae desde arriba
+		await get_tree().create_timer(0.4).timeout
+	await get_tree().create_timer(2.0).timeout
+	for i in 12:
+		add.call(&"shield_master")  # se llena: las últimas entran como fantasmas
+		await get_tree().create_timer(0.2).timeout
+	await get_tree().create_timer(4.0).timeout
+	var panel: Node = hud.equipment_panel
+	var box: LootBoxView = panel._loot_box
+	var target: CraftedItem = null
+	for item in im.get_loot():
+		var body: LootPiece = box.body_of(item)
+		if body and not body.is_ghost and item.item_resource.item_id != &"shield_master":
+			target = item
+			break
+	if target == null:
+		return
+	var start: Vector2 = box.piece_global_point(target)
+	panel._on_press(start)
+	var grab: Vector2 = panel._press.origin - panel._press.pos
+	var finish: Vector2 = panel._hero_view.global_position - grab + Vector2(0.0, GearGridView.CELL)  # caja de la pieza en (0,0)
+	for i in 12:
+		panel._on_motion(start.lerp(finish, float(i + 1) / 12.0))
+		await get_tree().create_timer(0.12).timeout
+	await get_tree().create_timer(1.0).timeout  # destino en verde y cambio de estadísticas
+	panel._on_release(finish)
+	await get_tree().create_timer(2.0).timeout  # la pila se recoloca y algún fantasma vuelve a chocar

@@ -781,7 +781,7 @@ func test_older_save_migrates_without_a_warning() -> void:
 	await _reload_user_save()
 
 
-# ─── Tarea 8: vistas de rejilla y botín ────────────────────────────────
+# ─── Tarea 8: vista de la rejilla ────────────────────────────────
 
 func test_grid_view_maps_points_to_cells_and_pieces() -> void:
 	var g := GearGrid.new(Vector2i(4, 4))
@@ -795,24 +795,6 @@ func test_grid_view_maps_points_to_cells_and_pieces() -> void:
 	check(view.item_at_local(Vector2(240, 350)) == sword and view.item_at_local(Vector2(10, 10)) == null, "encuentra la pieza bajo el dedo")
 	check(view.item_origin(sword) == Vector2(220, 110), "esquina de la pieza en píxeles")
 	view.queue_free()
-
-
-func test_loot_strip_lays_pieces_flat_and_scrolls() -> void:
-	var tall := _piece(&"sword_masterwork")  # 1×4: tumbada ocupa 4×1
-	var strip := LootStripView.new()
-	strip.size = Vector2(960, 330)
-	add_child(strip)
-	var list := [tall]
-	for i in 5:
-		list.append(_piece(&"shield_master"))
-	strip.set_items(list)
-	check(LootStripView.flat_rot(tall) == 1, "la espada se enseña tumbada")
-	var first: Dictionary = strip.slot_at_local(Vector2(40, 165))
-	check(first.get("item") == tall and first.get("rot") == 1, "la primera pieza, a la izquierda")
-	check(strip.max_scroll() > 0.0, "si no cabe todo, se desplaza (%.0f)" % strip.max_scroll())
-	strip.scroll = strip.max_scroll()
-	check(strip.slot_at_local(Vector2(900, 165)).get("item") == list.back(), "desplazada, la última queda a la derecha")
-	strip.queue_free()
 
 
 # ─── Tarea 9: panel de Equipo: tocar, arrastrar y soltar ───────────────
