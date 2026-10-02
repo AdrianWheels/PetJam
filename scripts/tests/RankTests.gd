@@ -854,3 +854,25 @@ func test_own_order_charges_recipe_and_gives_no_gold() -> void:
 	cm.queue = saved_queue
 	inv.inventory = saved_inv
 	dm.unlocked_ranks = saved_ranks
+
+
+func test_library_reject_twice_restores_the_name() -> void:
+	var panel = load("res://scenes/UI/BlueprintLibraryPanel.tscn").instantiate()
+	add_child(panel)
+	panel.open()
+	await get_tree().process_frame
+	var card = panel._cards.get(&"sword_basic")
+	check(card != null, "la biblioteca tiene la tarjeta de la espada básica")
+	if card == null:
+		panel.queue_free()
+		return
+	var name_before: String = card.name_label.text
+	var x_before: float = card.position.x
+	panel.reject(&"sword_basic", &"no_materials")
+	await get_tree().create_timer(0.5).timeout
+	panel.reject(&"sword_basic", &"queue_full")
+	check(card.name_label.text != name_before, "el motivo se ve mientras dura el rechazo")
+	await get_tree().create_timer(panel.REJECT_SECONDS + 0.4).timeout
+	check(card.name_label.text == name_before, "tras pulsar dos veces, el nombre real vuelve")
+	check(absf(card.position.x - x_before) < 0.01, "la tarjeta vuelve a su x de reposo")
+	panel.queue_free()

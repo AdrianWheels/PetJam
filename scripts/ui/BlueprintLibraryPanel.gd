@@ -14,6 +14,8 @@ const REJECT_TEXTS := {
 	&"locked": "Rango bloqueado",
 }
 
+const REJECT_SECONDS := 1.4
+
 signal own_order_requested(bp_id: StringName, rank: int)
 
 var _cards: Dictionary = {}  # bp_id -> tarjeta
@@ -78,12 +80,14 @@ func reject(bp_id: StringName, reason: StringName) -> void:
 		return
 	card.reject_feedback()
 	var label: Label = card.name_label
-	var old := label.text
 	label.text = tr(REJECT_TEXTS.get(reason, "Faltan materiales"))
 	label.add_theme_color_override("font_color", Color(1.0, 0.42, 0.36))
-	get_tree().create_timer(1.4).timeout.connect(func():
-		if is_instance_valid(label):
-			label.text = old
+	# Solo restaura el último rechazo: el nombre real lo vuelve a poner la propia tarjeta
+	var token: int = int(card.get_meta(&"reject_token", 0)) + 1
+	card.set_meta(&"reject_token", token)
+	get_tree().create_timer(REJECT_SECONDS).timeout.connect(func():
+		if is_instance_valid(card) and int(card.get_meta(&"reject_token", 0)) == token:
+			card._refresh_rank()
 			label.remove_theme_color_override("font_color"))
 
 

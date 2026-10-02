@@ -18,6 +18,8 @@ var max_rank: int = 0
 var selected_rank: int = 1
 var _rank_label: Label
 var _forge_btn: Button
+var _shake_tween: Tween
+var _rest_x: float = 0.0
 
 
 func set_blueprint_data(bp_id: StringName, blueprint: BlueprintResource, unlocked: bool, unlocked_rank: int = 1) -> void:
@@ -79,13 +81,18 @@ func _refresh_rank() -> void:
 	name_label.text = (_blueprint_name() if blueprint_data else str(blueprint_id)) + Ranks.suffix(selected_rank)
 
 
-## Sacudida cuando el encargo no se puede hacer
+## Sacudida cuando el encargo no se puede hacer. Si ya hay una en marcha se corta y la tarjeta
+## vuelve a su x de reposo antes de empezar otra, para que dos pulsaciones no se pisen.
 func reject_feedback() -> void:
-	var base_x := position.x
-	var tw := create_tween()
+	if _shake_tween and _shake_tween.is_valid():
+		_shake_tween.kill()
+		position.x = _rest_x
+	else:
+		_rest_x = position.x
+	_shake_tween = create_tween()
 	for i in 4:
-		tw.tween_property(self, "position:x", base_x + (8.0 if i % 2 == 0 else -8.0), 0.045)
-	tw.tween_property(self, "position:x", base_x, 0.05)
+		_shake_tween.tween_property(self, "position:x", _rest_x + (8.0 if i % 2 == 0 else -8.0), 0.045)
+	_shake_tween.tween_property(self, "position:x", _rest_x, 0.05)
 
 
 ## Nombre del plano en el idioma del jugador.
