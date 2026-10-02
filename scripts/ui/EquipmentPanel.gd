@@ -287,10 +287,10 @@ func _refresh() -> void:
 		_puppet.refresh_gear()
 
 
-## Estadísticas de Tico. `preview` ({"totals", "powers"}, del arrastre) añade el cambio en verde o rojo.
+## Estadísticas de Tico. `preview` ({"totals", "powers", "rank"}, del arrastre) añade el cambio en verde o rojo.
 func _refresh_stats(preview: Dictionary) -> void:
-	var now := CombatMath.hero_stats_with_powers(_im.calculate_total_stats(), _im.active_legendary_powers())
-	var after: Dictionary = now if preview.is_empty() else CombatMath.hero_stats_with_powers(preview.totals, preview.powers)
+	var now := CombatMath.hero_stats_with_powers(_im.calculate_total_stats(), _im.active_legendary_powers(), _im.equipment_rank())
+	var after: Dictionary = now if preview.is_empty() else CombatMath.hero_stats_with_powers(preview.totals, preview.powers, int(preview.get("rank", 1)))
 	# La reducción depende del enemigo: se enseña la de la sala actual
 	var room: int = int(_gm.current_enemy_level) if _gm and "current_enemy_level" in _gm else 1
 	var mitigation := roundi(CombatMath.armor_mitigation(int(now.armor), room) * 100.0)
@@ -628,12 +628,12 @@ func _show_target() -> void:
 		view.swap_item = _target.swap
 		if _target.ok:
 			var sim: GearGrid = _im.simulate_hero_grid(item, _target.place, _target.cell, _drag_rot)
-			preview = {"totals": GearAuras.totals(sim), "powers": LegendaryPowers.active(sim.items)}
+			preview = {"totals": GearAuras.totals(sim), "powers": LegendaryPowers.active(sim.items), "rank": InventoryManager.grid_rank(sim)}
 			_hero_view.glow = _aura_changes(_im.hero_bonuses(), GearAuras.bonuses(sim))
 	elif not _target.is_empty() and item.place == InventoryManager.PLACE_HERO:
 		# Sacarla de Tico (al botín o a la venta): la vista previa es sin ella
 		var sim2: GearGrid = _im.simulate_hero_grid(item, InventoryManager.PLACE_LOOT, Vector2i.ZERO, 0)
-		preview = {"totals": GearAuras.totals(sim2), "powers": LegendaryPowers.active(sim2.items)}
+		preview = {"totals": GearAuras.totals(sim2), "powers": LegendaryPowers.active(sim2.items), "rank": InventoryManager.grid_rank(sim2)}
 		_hero_view.glow = _aura_changes(_im.hero_bonuses(), GearAuras.bonuses(sim2))
 	# La zona de venta enseña lo que daría la pieza mientras está encima
 	var selling: bool = _target.get("place", &"") == &"sell"

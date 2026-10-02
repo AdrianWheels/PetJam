@@ -98,7 +98,7 @@ func test_hero_and_enemy_nodes_use_the_shared_formulas() -> void:
 	var hero := _new_hero()
 	await get_tree().process_frame
 	var inv := get_node("/root/InventoryManager")
-	var expected := CombatMath.hero_stats_with_powers(inv.calculate_total_stats(), inv.active_legendary_powers())
+	var expected := CombatMath.hero_stats_with_powers(inv.calculate_total_stats(), inv.active_legendary_powers(), inv.equipment_rank())
 	check(hero.max_hp == expected.max_hp and is_equal_approx(hero.dmg, expected.dmg),
 		"Hero.reset_stats usa CombatMath.hero_stats (%d/%d, %.1f/%.1f)" % [hero.max_hp, expected.max_hp, hero.dmg, expected.dmg])
 	check(is_equal_approx(hero.base_aps, expected.aps), "Hero.base_aps es el ritmo de CombatMath")
@@ -111,6 +111,73 @@ func test_hero_and_enemy_nodes_use_the_shared_formulas() -> void:
 	check(is_equal_approx(enemy.expected_dps(), CombatMath.expected_dps(e)), "Enemy.expected_dps usa CombatMath")
 	enemy.queue_free()
 	await get_tree().process_frame
+
+
+# ─── Tarea 0: rango del equipo en la base de Tico ──────────────────────
+
+func _im() -> Node:
+	return get_node("/root/InventoryManager")
+
+
+## Deja el inventario vacío (rejilla de 4×4) y devuelve lo que había para restaurarlo (como InventoryGridTests).
+func _fresh_inventory() -> Dictionary:
+	var saved: Dictionary = _im().to_save_data()
+	_im().clear()
+	return saved
+
+
+func _restore_inventory(saved: Dictionary) -> void:
+	_im().load_save_data(saved, int(get_node("/root/GameManager").best_enemy_level))
+	await get_tree().process_frame  # deja pasar los guardados diferidos del cambio de equipo
+
+
+## Pieza de rango `rank` en la casilla `cell` de la rejilla de Tico, sin girar. Calidad media: no es legendaria (sin
+## habilidades) y no lleva aristas (CraftedItem.new no las sortea).
+func _hero_piece(id: StringName, rank: int, cell: Vector2i) -> CraftedItem:
+	var item := CraftedItem.new(load("res://data/items/%s.tres" % id), 0.5)
+	item.rank = rank
+	_im().add_crafted_item(item)
+	_im().move_item(item, InventoryManager.PLACE_HERO, cell, 0)
+	return item
+
+
+## Base de Tico por el rango del equipo (spec de rangos, apartado 6, «Base de Tico»): Hero.reset_stats y el panel de
+## Equipo pasan el rango de la rejilla de Tico a CombatMath, así que su vida base es × cycle_mult(rango).
+func test_team_rank_reaches_tico_base() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var hero := _new_hero()
+	await get_tree().process_frame
+	check(im.equipment_rank() == 1 and hero.max_hp == CombatMath.hero_stats(im.calculate_total_stats()).max_hp, "rejilla vacía: rango I y la base de siempre (%d)" % hero.max_hp)
+	var cells := {&"sword_basic": Vector2i(0, 0), &"shield_basic": Vector2i(1, 0), &"helmet_basic": Vector2i(2, 0), &"boots_basic": Vector2i(3, 0)}
+	for id in cells:
+		_hero_piece(id, 2, cells[id])
+	check(im.get_hero_items().size() == 4 and im.equipment_rank() == 2, "4 piezas de rango II en Tico: rango II (%d piezas)" % im.get_hero_items().size())
+	hero.reset_stats()  # el héroe de prueba no está en el grupo "hero": GameManager no lo recalcula solo
+	var base_one: int = CombatMath.hero_stats({}).max_hp
+	var gear_hp: int = CombatMath.hero_stats(im.calculate_total_stats()).max_hp - base_one  # lo que suman las piezas
+	check(hero.max_hp == roundi(base_one * EnemyScaling.cycle_mult(2)) + gear_hp, "la vida base de Tico es × cycle_mult(2) (%d)" % hero.max_hp)
+	check(hero.max_hp == CombatMath.hero_stats_with_powers(im.calculate_total_stats(), im.active_legendary_powers(), 2).max_hp, "Hero.reset_stats usa el rango del equipo")
+	var panel: Control = load("res://scenes/UI/EquipmentPanel.tscn").instantiate()
+	add_child(panel)
+	panel.open()
+	await get_tree().process_frame
+	check((tr("Vida %d") % hero.max_hp) in panel._stats_label.text, "el panel de Equipo enseña la misma vida que Tico (%s)" % panel._stats_label.text)
+	panel.queue_free()
+	var base_two: int = hero.max_hp - gear_hp
+	var extra := _hero_piece(&"sword_basic", 1, Vector2i(0, 2))
+	check(extra.place == InventoryManager.PLACE_HERO and im.equipment_rank() == 2, "otra espada de rango I no baja el rango: cuenta la mejor espada")
+	hero.reset_stats()
+	var gear_hp_now: int = CombatMath.hero_stats(im.calculate_total_stats()).max_hp - base_one
+	check(hero.max_hp - gear_hp_now == base_two, "y la base de Tico sigue siendo la del rango II (%d)" % (hero.max_hp - gear_hp_now))
+	var helmet_one := CraftedItem.new(load("res://data/items/helmet_advanced.tres"), 0.5)
+	im.add_crafted_item(helmet_one)
+	var sim: GearGrid = im.simulate_hero_grid(im.best_hero_item("head"), InventoryManager.PLACE_LOOT, Vector2i.ZERO, 0)
+	check(InventoryManager.grid_rank(sim) == 2, "sin casco en la vista previa: el tipo que falta no cuenta")
+	sim = im.simulate_hero_grid(helmet_one, InventoryManager.PLACE_HERO, Vector2i(1, 2), 0)
+	check(InventoryManager.grid_rank(sim) == 2, "un casco avanzado de rango I no baja el rango: el mejor casco sigue siendo el básico II")
+	hero.queue_free()
+	await _restore_inventory(saved)
 
 
 # ─── Tarea 2: Ranks ────────────────────────────────────────────────────
