@@ -329,3 +329,45 @@ func test_balanza_wall_has_a_ceiling() -> void:
 	var titan := CombatMath.hero_stats({"damage": 1e12, "hp": 1e15})
 	var w: Dictionary = BalanzaBinding.wall_of(titan)
 	check(int(w.wall) == BalanzaBinding.MAX_ROOM + 1 and is_equal_approx(w.progress, float(BalanzaBinding.MAX_ROOM)), "sin muro: wall = MAX_ROOM + 1 y progress = MAX_ROOM")
+
+
+# ─── Tarea 4: materiales de bioma ──────────────────────────────────────
+
+func test_biome_materials_exist_with_pixel_icons() -> void:
+	for mat_id in Ranks.BIOME_MATERIALS:
+		var path := "res://data/materials/%s.tres" % mat_id
+		check(ResourceLoader.exists(path), "existe " + path)
+		var res = load(path)
+		check(res != null and res.icon != null and res.icon.get_width() == 12, "%s tiene icono pixel de 12x12" % mat_id)
+
+
+func test_enemy_loot_grows_with_the_cycle_and_drops_its_biome_material() -> void:
+	var inv := get_node("/root/InventoryManager")
+	var e := _new_enemy()
+	await get_tree().process_frame
+	e.configure_for_level(5, false)  # Catacumbas, ciclo I
+	e.biome_drop_chance = 1.0
+	var bone_before: int = inv.get_quantity(&"bone")
+	e.generate_drops()
+	check(int(e.last_material_drop.get("quantity", 0)) == 15, "ciclo I: tanda de 15 (%s)" % [e.last_material_drop])
+	check(e.last_biome_drop.get("item_id") == &"bone" and int(e.last_biome_drop.get("quantity", 0)) == 3, "Catacumbas suelta 3 de hueso (%s)" % [e.last_biome_drop])
+	check(inv.get_quantity(&"bone") == bone_before + 3, "el hueso llega al inventario")
+	e.configure_for_level(55, false)  # Catacumbas II, ciclo II
+	e.generate_drops()
+	check(int(e.last_material_drop.get("quantity", 0)) == ceili(15 * Ranks.mat_mult(2) - 0.0001), "ciclo II: la tanda crece con mat_mult")
+	e.biome_drop_chance = 0.0
+	e.configure_for_level(45, false)
+	e.generate_drops()
+	check(e.last_biome_drop.is_empty(), "sin la tirada no hay material de bioma")
+	var gm := get_node("/root/GameManager")
+	var best_before: int = gm.best_enemy_level
+	gm.best_enemy_level = 40  # la primera vez: su muerte sube el récord
+	e.configure_for_level(40, true)  # jefe del Glaciar: suelta el suyo aunque la probabilidad sea 0
+	e.generate_drops()
+	check(e.last_biome_drop.get("item_id") == &"frost" and int(e.last_biome_drop.get("quantity", 0)) == 10, "el jefe del Glaciar suelta 10 de escarcha (%s)" % [e.last_biome_drop])
+	gm.best_enemy_level = 41  # ya vencido: al repetirlo, como un enemigo normal
+	e.generate_drops()
+	check(e.last_biome_drop.is_empty(), "repetir un jefe no da su tanda de bioma (%s)" % [e.last_biome_drop])
+	gm.best_enemy_level = best_before
+	e.queue_free()
+	await get_tree().process_frame

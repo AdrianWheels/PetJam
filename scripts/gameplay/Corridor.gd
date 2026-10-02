@@ -36,6 +36,11 @@ const ENGAGE_GAP := 3.0
 const HERO_START := PixelView.HERO_START
 const BOSS_INTERVAL := 10  # Boss cada 10 niveles (coincide con Biomes.ROOMS_PER_BIOME)
 const RESPAWN_DELAY := 1.5
+## Botín doble (Poción de Suerte): la segunda tanda sale a la vez que la primera, un icono más adelante,
+## más rápida hacia delante y con la etiqueta una fila más arriba; su tintineo suena un poco después.
+const BONUS_LOOT_AHEAD := 12.0
+const BONUS_LOOT_SPEED := Vector2(22.0, 30.0)
+const BONUS_LOOT_SOUND_LAG := 0.1
 const POST_KILL_PAUSE := 0.45
 const FIRST_STEP_PAUSE := 0.35
 
@@ -396,6 +401,30 @@ func _on_enemy_died_fx(_drops) -> void:
 		loot_dropped.emit(&"material", pos, {"id": md.get("item_id", ""), "quantity": md.get("quantity", 0)})
 		# Tintineo cuando sale el botín (va con el mismo retardo que su icono)
 		get_tree().create_timer(0.3 if was_boss else 0.12).timeout.connect(func(): Sfx.play(&"loot_coins"))
+	_show_bonus_loot(info)
+	var bd: Dictionary = info.get("biome_material", {})
+	if not bd.is_empty():
+		var bmat := _material_info(StringName(bd.get("item_id", "")))
+		var bdelay := (0.3 if was_boss else 0.12) + 0.18
+		# Fila 2 de etiqueta: el de siempre usa la 0 y el doble de la Suerte la 1, así no se pisan
+		fx.loot_pop(pos + Vector2(8, -8), bmat.get("icon"), "+%d %s" % [int(bd.get("quantity", 0)), tr(bmat.get("name", ""))], Color(0.8, 0.95, 1.0), bdelay, FLOOR_Y, NAN, 2)
+		loot_dropped.emit(&"material", pos, {"id": bd.get("item_id", ""), "quantity": bd.get("quantity", 0), "biome": true})
+		get_tree().create_timer(bdelay + 0.1).timeout.connect(func(): Sfx.play(&"loot_coins"))
+
+
+## Segunda tanda de la Poción de Suerte, igual que la primera: icono con "+15 material" que sale del enemigo,
+## aviso loot_dropped para el HUD ("bonus": true) y tintineo. El material ya está en el inventario (lo mete Enemy).
+func _show_bonus_loot(info: Dictionary) -> void:
+	var md: Dictionary = info.get("bonus_material", {})
+	if md.is_empty():
+		return
+	var pos: Vector2 = info.get("pos", Vector2.ZERO)
+	var delay: float = 0.3 if info.get("boss", false) else 0.12  # el mismo que el primer botín
+	var mat := _material_info(StringName(md.get("item_id", "")))
+	var vx := randf_range(BONUS_LOOT_SPEED.x, BONUS_LOOT_SPEED.y)
+	fx.loot_pop(pos + Vector2(2.0 + BONUS_LOOT_AHEAD, -4), mat.get("icon"), "+%d %s" % [int(md.get("quantity", 0)), tr(mat.get("name", ""))], Color(1, 0.93, 0.7), delay, FLOOR_Y, vx, 1)
+	loot_dropped.emit(&"material", pos, {"id": md.get("item_id", ""), "quantity": md.get("quantity", 0), "bonus": true})
+	get_tree().create_timer(delay + BONUS_LOOT_SOUND_LAG).timeout.connect(func(): Sfx.play(&"loot_coins"))
 
 
 func _on_blueprint_unlocked(bp_id: StringName) -> void:

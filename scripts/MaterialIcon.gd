@@ -23,6 +23,9 @@ func _update_texture() -> void:
 		var material_res = load(material_resource_path)
 		if material_res and "icon" in material_res and material_res.icon:
 			_texture_rect.texture = material_res.icon
+			# Los iconos pixel (materiales de bioma) se amplían sin suavizar
+			var pixel_icon: bool = material_res.icon.resource_path.begins_with("res://art/sprites/pixel/")
+			_texture_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if pixel_icon else CanvasItem.TEXTURE_FILTER_PARENT_NODE
 			return
 	
 	# Fallback to placeholder images

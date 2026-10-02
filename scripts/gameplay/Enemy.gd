@@ -26,6 +26,9 @@ const HURT_TIME := 0.18
 const INTRO_TIME := 0.5
 const IDLE_FRAME_TIME := 0.5
 const MATERIAL_DROP_QTY := 15
+const BIOME_DROP_CHANCE := 0.3  # probabilidad de soltar además el material del bioma
+const BIOME_DROP_QTY := 3
+const BOSS_BIOME_QTY := 10  # los jefes siempre sueltan el suyo
 const BURN_TICK := 0.5  ## la quemadura hace daño cada medio segundo: un número por tic
 
 var level: int = 1
@@ -64,6 +67,9 @@ var accent_color: Color = Color("ff4a3a")
 
 var fx: Node = null  # CombatFX (lo asigna el Corridor)
 var last_material_drop: Dictionary = {}  # {"item_id", "quantity"} del último botín
+## Probabilidad efectiva del material de bioma (las pruebas la fuerzan a 0 o 1)
+var biome_drop_chance: float = BIOME_DROP_CHANCE
+var last_biome_drop: Dictionary = {}  # {"item_id", "quantity"} del último material de bioma
 var last_bonus_drop: Dictionary = {}  # segunda tanda de la Poción de Suerte ({} si no la hubo)
 ## Tirada (0..1) del botín doble de la Poción de Suerte. Vacía usa _rng; las pruebas la fijan para
 ## forzar el resultado (sale si la tirada es menor que GameManager.double_loot_chance()).
@@ -353,12 +359,18 @@ func generate_drops() -> Array:
 	return drop_table.roll_drops(_rng)
 
 
-## Botín de materiales: 15 de un material al azar de los que piden los planos. Con la Poción de Suerte,
-## a veces una segunda tanda de 15 de OTRO material del mismo conjunto (no repite, para que se lean
-## dos botines distintos; solo repetiría si el conjunto tuviera un único material).
+## Tanda de material de siempre en esta sala: 15 × mat_mult del ciclo (spec de rangos, apartado 4).
+func _material_drop_qty() -> int:
+	return ceili(MATERIAL_DROP_QTY * Ranks.mat_mult(Ranks.cycle_for_room(level)) - 0.0001)
+
+
+## Botín de materiales: una tanda de un material al azar de los que piden los planos (con la Poción de
+## Suerte, a veces una segunda de OTRO material) y, a veces, el material de este bioma (los jefes siempre).
 func _drop_random_materials() -> void:
 	last_material_drop = {}
 	last_bonus_drop = {}
+	last_biome_drop = {}
+	_drop_biome_material()
 	var all_materials := _blueprint_materials()
 	if all_materials.is_empty():
 		return
@@ -373,6 +385,29 @@ func _drop_random_materials() -> void:
 	if others.is_empty():
 		others = all_materials
 	last_bonus_drop = _give_material(others[_rng.randi() % others.size()])
+
+
+## Material del bioma de la sala: con probabilidad biome_drop_chance. Un jefe lo suelta seguro, y en tanda
+## de jefe, la vez que su muerte sube el récord (spec de rangos, apartado 7); si se repite, como un enemigo
+## normal. Así, el candado del selector en un jefe no multiplica el material de bioma.
+func _drop_biome_material() -> void:
+	var boss_reward := is_boss and _raises_record()
+	var chance := 1.0 if boss_reward else biome_drop_chance
+	if _rng.randf() >= chance:
+		return
+	var im := get_node_or_null("/root/InventoryManager")
+	if im == null or not im.has_method("add_item"):
+		return
+	var mat_id := Ranks.biome_material_for_room(level)
+	var qty := ceili((BOSS_BIOME_QTY if boss_reward else BIOME_DROP_QTY) * Ranks.mat_mult(Ranks.cycle_for_room(level)) - 0.0001)
+	im.add_item(mat_id, qty)
+	last_biome_drop = {"item_id": mat_id, "quantity": qty}
+
+
+## true si vencer a este enemigo sube el récord: su sala es la del récord, la primera sin vencer.
+func _raises_record() -> bool:
+	var gm := get_node_or_null("/root/GameManager")
+	return gm == null or level >= int(gm.best_enemy_level)
 
 
 ## Materiales que pide algún plano (sin repetir).
@@ -396,8 +431,9 @@ func _give_material(mat_id: StringName) -> Dictionary:
 	var im := get_node_or_null("/root/InventoryManager")
 	if im == null or not im.has_method("add_item"):
 		return {}
-	im.add_item(mat_id, MATERIAL_DROP_QTY)
-	return {"item_id": mat_id, "quantity": MATERIAL_DROP_QTY}
+	var qty := _material_drop_qty()
+	im.add_item(mat_id, qty)
+	return {"item_id": mat_id, "quantity": qty}
 
 
 ## ¿Sale el botín doble? Solo con la Poción de Suerte activa (20 % por enemigo derrotado).
@@ -422,6 +458,7 @@ func _die() -> void:
 		"pos": body_center(), "boss": is_boss, "level": level, "name": display_name,
 		"archetype": archetype, "material": last_material_drop.duplicate(),
 		"bonus_material": last_bonus_drop.duplicate(),
+		"biome_material": last_biome_drop.duplicate(),
 	}
 	emit_signal("died", drops)
 
