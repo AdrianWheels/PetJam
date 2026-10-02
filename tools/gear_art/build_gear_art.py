@@ -43,6 +43,7 @@ PIECES_DIR = Path(__file__).resolve().parent / "pieces"
 #   rotate: grados en sentido antihorario que se gira antes de encajarlo (PIL)
 #   fit: "contain" (cabe entera en la caja) o "cover" (llena la caja y la máscara recorta lo que sobra)
 #   scale, offset: ajuste fino del tamaño (factor) y de la posición (px) dentro de la caja
+#   strip_border: quita el borde blanco del original (por defecto, en los iconos de Imagenes/Items, que lo traen)
 #   mask: true recorta a las casillas de la forma (formas en T o L); en un rectángulo no hace falta
 # Si existe pieces/<item_id>.py con `prepare(img) -> img`, se aplica al original antes de recortarlo: para
 # borrar o mover partes de la imagen cuando las opciones no bastan.
@@ -97,6 +98,28 @@ def sticker(art: Image.Image) -> Image.Image:
     return out
 
 
+def strip_white_border(img: Image.Image, max_px: int = 24) -> Image.Image:
+    """Quita el borde blanco que ya traen los iconos (unos 11 px a 1024): se comen hacia dentro los píxeles casi
+    blancos que tocan lo transparente, hasta `max_px` pasadas. Así queda un solo borde, el que pone sticker()."""
+    import numpy as np
+    a = np.array(img)
+    alpha = a[..., 3] > 40
+    white = (a[..., :3].min(axis=2) > 225) & alpha
+    for _ in range(max_px):
+        outside = ~alpha
+        edge = np.zeros_like(outside)
+        edge[1:, :] |= outside[:-1, :]
+        edge[:-1, :] |= outside[1:, :]
+        edge[:, 1:] |= outside[:, :-1]
+        edge[:, :-1] |= outside[:, 1:]
+        eat = white & edge & alpha
+        if not eat.any():
+            break
+        alpha &= ~eat
+    a[..., 3] = np.where(alpha, a[..., 3], 0)
+    return Image.fromarray(a)
+
+
 def opaque_box(img: Image.Image) -> tuple[int, int, int, int]:
     """Caja de lo opaco de verdad: los originales traen halos casi transparentes que inflan getbbox."""
     return img.getchannel("A").point(lambda v: 255 if v > 40 else 0).getbbox()
@@ -110,6 +133,8 @@ def build(item_id: str, spec: dict) -> Path:
         mod = importlib.util.module_from_spec(mod_spec)
         mod_spec.loader.exec_module(mod)
         src = mod.prepare(src)
+    if spec.get("strip_border", find_source(spec["source"]).parent.name == "Items"):
+        src = strip_white_border(src)
     src = src.crop(spec.get("crop") or opaque_box(src))
     if spec.get("flip"):
         src = src.transpose(Image.FLIP_LEFT_RIGHT)

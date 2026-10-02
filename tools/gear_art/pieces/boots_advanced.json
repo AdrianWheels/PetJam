@@ -1,0 +1,12 @@
+{
+ "source": "boots_advanced.png",
+ "cells": [
+  [0, 0],
+  [0, 1],
+  [1, 1]
+ ],
+ "fit": "contain",
+ "scale": 1.04,
+ "offset": [-2, 2],
+ "mask": true
+}
