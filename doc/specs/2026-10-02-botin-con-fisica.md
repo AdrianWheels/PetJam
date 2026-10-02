@@ -15,6 +15,7 @@ Decisiones del usuario (2026-10-02):
 | Giro | Libre, en cualquier ángulo |
 | Tamaño de la caja | Más alta que la tira actual |
 | Pieza que no cabe | Modo fantasma, semitransparente |
+| Escala de las piezas en la caja (2026-10-02, tras ver que a escala completa solo caben 6 o 7) | Media escala: 55 px por casilla, unas 25-30 piezas antes de los fantasmas. Al cogerla crece a tamaño completo; al soltarla en la caja vuelve a media escala |
 
 ---
 
@@ -46,12 +47,13 @@ El panel mide 1080×1920. Cambia la parte de abajo:
 ## 3. Física
 
 - **Motor:** la física 2D de Godot. La caja es un `Node2D` dentro del panel con suelo, paredes y techo estáticos.
+- **Escala:** dentro de la caja las piezas van a media escala, 55 px por casilla (la mitad de los 110 de la rejilla). Una sola constante de escala del botín la usan las formas, el dibujo, las caídas, el techo y las pruebas.
 - **Una pieza = un `RigidBody2D`.**
-  - Una forma rectangular por casilla de su silueta, aristas incluidas, según `PieceShape`.
+  - Una forma rectangular por casilla de su silueta, aristas incluidas, según `PieceShape`, de 55 px.
   - La masa, proporcional al número de casillas.
   - Fricción, rebote y amortiguado se ajustan para que las pilas no tiemblen y se duerman pronto.
 - **Giro libre:** las piezas ruedan y quedan torcidas.
-- **Dibujo:** la pieza se pinta con `GearGridView.draw_piece_at` (textura de `GearArt` o casillas de color, borde de calidad y aristas), girada con su cuerpo.
+- **Dibujo:** la pieza se pinta a media escala con `GearGridView.draw_piece_at` (textura de `GearArt` o casillas de color, borde de calidad y aristas), girada con su cuerpo.
 
 ## 4. Entrar en la caja
 
@@ -73,11 +75,11 @@ El panel mide 1080×1920. Cambia la parte de abajo:
 
 - **Pulsar y arrastrar** una pieza de la caja:
   - la saca de la física y la lleva el dedo;
-  - la endereza al giro de 90° más cercano, para que la vista previa de la rejilla y de la mochila cuadre.
+  - la endereza al giro de 90° más cercano y la devuelve a tamaño completo (110 px por casilla), creciendo alrededor de su centro de masa, para que la vista previa de la rejilla y de la mochila cuadre.
   - La vista previa del arrastre (stats, colocación y precio en la zona de venta) es la de hoy.
 - **Soltar:**
   - en la rejilla de Tico, en la mochila o en la venta: como hoy;
-  - en la caja: vuelve a la física desde ese punto, con la inercia del gesto, y empuja a las demás.
+  - en la caja: vuelve a la física desde ese punto, encogida otra vez a media escala alrededor de su centro de masa, con la inercia del gesto, y empuja a las demás.
   - Si se suelta fuera de todo: una pieza que venía de la rejilla o de la mochila se comporta como hoy; una que venía de la caja vuelve a ella, soltada en el punto de la caja más cercano al dedo.
   - Una pieza que un intercambio saca de la rejilla o de la mochila y manda al botín cae desde arriba, como lo forjado.
 - **Tocar sin arrastrar** abre la ficha, como hoy. La pulsación larga y el giro se comportan igual que en la tira.
@@ -90,7 +92,7 @@ El panel mide 1080×1920. Cambia la parte de abajo:
 
 ## 8. Datos y guardado
 
-- **`CraftedItem.loot_pose`:** posición en la caja (coordenadas locales de la caja) y ángulo. Vacío = sin pose.
+- **`CraftedItem.loot_pose`:** posición del centro de masa en la caja (coordenadas locales de la caja, en píxeles; no cambian con la escala de las piezas) y ángulo. Vacío = sin pose.
 - **`to_dict`** escribe `lx`, `ly` y `ang` solo si la pieza está en el botín y tiene pose. **`from_dict`** los lee si están.
 - **Sin versión nueva de guardado:** los campos son opcionales. Una partida sin ellos carga igual y sus piezas caen al abrir el panel.
 - **Cuándo se guarda la pose:** al cerrar el panel, y cuando la pila se queda quieta tras un cambio (como mucho una vez por segundo), con el guardado diferido que ya existe.

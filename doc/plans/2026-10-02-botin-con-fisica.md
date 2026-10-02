@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** que el botín del panel de Equipo sea una caja física: las piezas caen, chocan con su forma real, se quedan donde caen (también al cerrar y reabrir, o al reiniciar), se cogen, se mueven y se lanzan, y la pila nunca pasa de un techo invisible gracias al modo fantasma.
+**Goal:** que el botín del panel de Equipo sea una caja física con las piezas a media escala (55 px por casilla): las piezas caen, chocan con su forma real, se quedan donde caen (también al cerrar y reabrir, o al reiniciar), se cogen, se mueven y se lanzan, y la pila nunca pasa de un techo invisible gracias al modo fantasma.
 
 **Architecture:** la física 2D de Godot, sin autoloads nuevos.
 - `PieceShape` da, sin nodos, los rectángulos de colisión de una pieza (uno por casilla, aristas incluidas) centrados en su centro de masa.
-- `LootPiece` (un `RigidBody2D`) es una pieza: sus formas, su dibujo de siempre (`GearGridView.draw_piece_at`) y el modo fantasma.
+- `LootPiece` (un `RigidBody2D`) es una pieza: sus formas, su dibujo de siempre (`GearGridView.draw_piece_at`) y el modo fantasma. En la caja todo va a media escala: `LootPiece.BOX_CELL` (55 px por casilla) es la única constante de escala del botín. Al coger una pieza el panel la arrastra a tamaño completo (110 px) y al soltarla en la caja vuelve a 55, alrededor de su centro de masa.
 - `LootBoxView` (un `Node2D` dentro del panel) es la caja: suelo, paredes y techo; sigue a `InventoryManager.loot`, que sigue siendo la fuente de verdad; decide quién cae, desde dónde y quién no cabe; se congela con el panel cerrado y recoge las poses.
 - `CraftedItem.loot_pose` guarda la pose (posición en la caja y ángulo) y viaja en el guardado como `lx`, `ly` y `ang`, opcionales, sin versión nueva.
 - `EquipmentPanel` cambia de sitio la mochila y la zona de venta, quita el desplazamiento de la tira y arrastra y suelta con la caja.
@@ -20,25 +20,26 @@
 - Las tareas van en orden: 1, 2, 3, 4, 5 y 6. Cada una usa lo que dejó la anterior.
 - Dónde: en el worktree `D:/Proyectos/PetJam-botin`, rama `botin-fisico`. Todos los comandos, desde la raíz del worktree.
 - El worktree no tiene carpeta `.godot`: antes de la primera ejecución, `--import` (ver Global Constraints).
-- El código de este plan se ha probado en una copia del worktree fuera del repo (con la partida copiada): con las seis tareas aplicadas tal cual, `LootBoxTests` pasa entera (275 comprobaciones, 0 fallos, unos 4 s con `--fixed-fps 60`) e `InventoryGridTests` solo falla en `test_older_save_migrates_without_a_warning`, por los avisos de UID de una copia de `art/assets` sin sus `.import` (en el worktree con la junction no pasa).
+- El código de este plan se ha probado en una copia del worktree fuera del repo (con la partida copiada): con las seis tareas aplicadas tal cual, `LootBoxTests` pasa entera (280 comprobaciones, 0 fallos, unos 4 s con `--fixed-fps 60`) e `InventoryGridTests` solo falla en `test_older_save_migrates_without_a_warning`, por los avisos de UID de una copia de `art/assets` sin sus `.import` (en el worktree con la junction no pasa).
 
 ## Decisiones que el spec deja abiertas
 
 - **«No cabe» (spec, apartado 5), de forma comprobable.** Una pieza no cabe si:
-  - ya quieta (dormida, o 3 s después de entrar), alguna de sus casillas, encogida 8 px por lado, pisa una pieza que choca, o su punto más alto está a 3 px o menos del techo (está apretada contra él);
+  - ya quieta (dormida, o 3 s después de entrar), alguna de sus casillas, encogida un 8 % de `BOX_CELL` por lado (4,4 px), pisa una pieza que choca, o su punto más alto está a 3 px o menos del techo (está apretada contra él);
   - o, al caer desde arriba, no encuentra sitio libre bajo el techo en 2 s (8 x al azar en cada intento). A partir de ahí, lo que llega prueba una vez y, si no hay sitio, entra como fantasma sin esperar, hasta que se libere sitio.
   - El solape se mira con `PhysicsDirectSpaceState2D.intersect_shape` sobre la capa de las piezas que chocan. Probado: un cuerpo añadido en el mismo fotograma ya sale en la consulta, y uno liberado con `free()` ya no.
 - **Salida del modo fantasma.** Cada segundo, un fantasma que ya no solapa ni toca el techo donde está vuelve a chocar ahí. Y cada vez que se libera sitio (se vende o se saca una pieza de la caja), los fantasmas vuelven a la cola: cuando les toca, prueban donde están y, si no, caen otra vez desde arriba como piezas normales. Si arriba no hay sitio en 2 s, siguen de fantasma hasta la siguiente vez que se libere sitio. Así no hay bucles.
 - **Poses guardadas.** Se restauran despiertas, no dormidas: una pose recogida en el aire (cerrar el panel con una pieza cayendo) cae al abrir en vez de flotar. Probado: una pila quieta restaurada despierta se mueve menos de 0,1 px. Una pose que solapa a otra pieza ya restaurada entra como fantasma: nada sale despedido.
 - **Fuera de la caja se olvida la pose.** `InventoryManager._take_out` vacía `loot_pose`: una pieza que sale del botín y vuelve (un intercambio, «Al botín») cae desde arriba.
 - **Guardado de la pose.** `InventoryManager` gana la señal `loot_poses_changed` y la función `note_loot_poses()`. `GameManager` la conecta a su guardado diferido de siempre (`_on_trigger_save`). Es el único cambio en los autoloads.
-- **Dónde entra lo que se suelta en la caja:** donde se ve la pieza arrastrada (una casilla por encima del dedo), con su centro de masa ahí. Si solapa, sube a pasos de un cuarto de casilla hasta no solapar; si llega al techo y sigue solapando, entra como fantasma donde se soltó. Una pieza de la caja soltada fuera de todo vuelve al punto de la caja más cercano al dedo, sin velocidad.
+- **Escala (decisión del usuario, 2026-10-02):** en la caja las piezas se dibujan y chocan a 55 px por casilla (`LootPiece.BOX_CELL = GearGridView.CELL * 0.5`); la caja, el techo y las poses siguen en píxeles de la caja. Al cogerla, la pieza crece a 110 (`EquipmentPanel.DRAG_CELL`) alrededor de su centro de masa, para que la vista previa de la rejilla y de la mochila cuadre; al soltarla en la caja encoge a 55 alrededor del mismo punto.
+- **Dónde entra lo que se suelta en la caja:** donde se ve la pieza arrastrada (una casilla de la rejilla por encima del dedo), con su centro de masa ahí. Si solapa, sube a pasos de un cuarto de casilla de la caja (13,75 px) hasta no solapar; si llega al techo y sigue solapando, entra como fantasma donde se soltó. Una pieza de la caja soltada fuera de todo vuelve al punto de la caja más cercano al dedo, sin velocidad.
 - **Velocidad del gesto:** lo que se ha movido el dedo en los últimos 0,1 s. Con menos de 0,01 s de muestras, sin velocidad. Tope de 1400 px/s.
 - **Pulsar donde la pila tapa la rejilla de Tico:** manda la pieza de la caja (se dibuja encima); un fantasma de la caja pierde frente a una pieza de la rejilla.
 - **Orden de `InventoryManager.loot`:** no cambia (lo nuevo entra delante). Ya no se enseña: es solo el de llegada.
 - **Capas de colisión:** el juego usa la 1 (Tico, enemigos y salas, y el Tico del panel). La caja usa la 9 (paredes), la 10 (piezas que chocan) y la 11 (fantasmas).
 - **Reposo:** `LootBoxView._ready` pone en el espacio del mundo 2D el umbral de reposo (8 px/s y 0,21 rad/s) y el tiempo hasta dormir (0,4 s). El juego no tiene más cuerpos rígidos.
-- **Cómo cae desde arriba:** tumbada (el cuarto de vuelta que la deja más baja, como en la tira), con un giro de ±0,3 rad, en una x al azar con la pieza entera entre las paredes y su punto más alto 1 px bajo el techo. Medido: con 60 piezas variadas (con aristas) la caja se queda con unas 6 o 7 que chocan y el resto entra como fantasma; con 12 escudos maestros, 2 chocan y 10 son fantasmas. Es la capacidad de una caja de 960×440 con piezas de 4 a 9 casillas, no un fallo: si al usuario le parece poca, es cosa del tamaño de la caja (spec, apartado 2).
+- **Cómo cae desde arriba:** tumbada (el cuarto de vuelta que la deja más baja, como en la tira), con un giro de ±0,3 rad, en una x al azar con la pieza entera entre las paredes y su punto más alto 1 px bajo el techo. Medido a media escala: con 60 piezas variadas (con aristas) chocan 25 y entran 35 como fantasmas; con 40 escudos maestros también hay fantasmas, y al vender los que chocan los fantasmas vuelven a chocar. (A escala completa solo cabían 6 o 7: por eso la media escala.)
 - **Valores de física** (probados en un experimento sin ventana con 12, 20, 30 y 60 piezas; quietas a los 630 pasos con 12): fricción 0,8, rebote 0,05, amortiguado lineal 0,5 y angular 2, gravedad ×2, masa 1 por casilla, giro inicial al caer de ±0,3 rad y giro de ±1,5 rad/s.
 - **Cómo avanzan las pruebas la física:** esperan pasos de física (`await get_tree().physics_frame`) con un tope de pasos. `LootBoxTests` se lanza con `--fixed-fps 60`: cada paso es 1/60 s de juego y no se espera tiempo real (3000 pasos tardan menos de un segundo).
 
@@ -519,6 +520,7 @@ git commit -m "feat: pose del botín en la pieza (loot_pose) y en el guardado, o
 **Interfaces:**
 - Consumes: `PieceShape.of_item`, `PieceShape.mass_center`, `PieceShape.collision_rects` (tarea 1), `GearGridView.CELL`, `GearGridView.draw_piece_at(canvas, item, top_left, rot, cell_px, alpha, sprite_fn)`, `GearArt.texture_for`.
 - Produces (`class_name LootPiece extends RigidBody2D`):
+  - escala: `BOX_CELL := GearGridView.CELL * 0.5` (55 px por casilla), la única constante de escala del botín: formas, masa por casilla, dibujo, caídas, techo y pruebas la usan;
   - capas: `LAYER_WALLS := 1 << 8`, `LAYER_PIECES := 1 << 9`, `LAYER_GHOSTS := 1 << 10`;
   - física: `FRICTION := 0.8`, `BOUNCE := 0.05`, `LINEAR_DAMP := 0.5`, `ANGULAR_DAMP := 2.0`, `GRAVITY_SCALE := 2.0`, `MASS_PER_CELL := 1.0`; dibujo: `GHOST_ALPHA := 0.45`;
   - estado: `item: CraftedItem`, `is_ghost: bool`, `rects: Array[Rect2]` (en coordenadas del cuerpo; las limpias primero), `sprite_for: Callable`;
@@ -583,6 +585,7 @@ func test_loot_piece_has_one_shape_per_cell_and_its_mass() -> void:
 	var shapes := body.get_children().filter(func(n): return n is CollisionShape2D)
 	check(shapes.size() == 7 and body.rects.size() == 7, "un rectángulo por casilla, la arista incluida (%d)" % shapes.size())
 	check(is_equal_approx(body.mass, 7.0 * LootPiece.MASS_PER_CELL), "masa proporcional a las casillas (%.1f)" % body.mass)
+	check(is_equal_approx(LootPiece.BOX_CELL, 55.0) and body.rects.all(func(r): return r.size == Vector2(55, 55)), "en la caja, cada casilla choca a media escala: 55 px")
 	check(body.collision_layer == LootPiece.LAYER_PIECES and body.collision_mask == LootPiece.LAYER_WALLS | LootPiece.LAYER_PIECES, "choca con la caja y con las demás piezas")
 	check(not body.is_ghost and is_equal_approx(body.modulate.a, 1.0), "empieza sin ser fantasma")
 	holder.queue_free()
@@ -602,7 +605,7 @@ func test_loot_piece_falls_and_sleeps_on_the_floor() -> void:
 
 func test_a_ghost_falls_through_pieces_but_not_the_floor() -> void:
 	var holder := _floor_holder()
-	var below := _loot_piece(&"shield_advanced", Vector2(300, 329))  # 2×2: centro a 110 px del suelo
+	var below := _loot_piece(&"shield_advanced", Vector2(300, 384))  # 2×2 a 55 px: centro a 55 px del suelo
 	var ghost := _loot_piece(&"shield_advanced", Vector2(300, 0))
 	holder.add_child(below)
 	holder.add_child(ghost)
@@ -612,7 +615,7 @@ func test_a_ghost_falls_through_pieces_but_not_the_floor() -> void:
 	var frames: int = await _physics_until(func(): return ghost.sleeping and below.sleeping, 900)
 	check(frames > 0, "los dos se quedan quietos (%d pasos)" % frames)
 	check(ghost.position.distance_to(below.position) < 10.0, "el fantasma atraviesa la pieza y se queda solapado con ella (%s, %s)" % [ghost.position, below.position])
-	check(ghost.bounds().end.y <= 444.0 and below.position.distance_to(Vector2(300, 329)) < 3.0, "sin atravesar el suelo ni empujar a la otra")
+	check(ghost.bounds().end.y <= 444.0 and below.position.distance_to(Vector2(300, 384)) < 3.0, "sin atravesar el suelo ni empujar a la otra")
 	ghost.set_ghost(false)
 	check(not ghost.is_ghost and ghost.collision_layer == LootPiece.LAYER_PIECES and is_equal_approx(ghost.modulate.a, 1.0), "al salir del modo fantasma vuelve a chocar y a verse entera")
 	holder.queue_free()
@@ -621,16 +624,16 @@ func test_a_ghost_falls_through_pieces_but_not_the_floor() -> void:
 
 func test_points_bounds_and_the_nearest_quarter_turn() -> void:
 	var holder := _floor_holder()
-	var sword := _loot_piece(&"sword_basic", Vector2(200, 200), PI / 2.0)  # tumbada: 220 de ancho (90 a 310) y 110 de alto (145 a 255)
+	var sword := _loot_piece(&"sword_basic", Vector2(200, 200), PI / 2.0)  # tumbada a 55 px: 110 de ancho (145 a 255) y 55 de alto (172,5 a 227,5)
 	holder.add_child(sword)
-	check(sword.contains_point(Vector2(100, 200)) and sword.contains_point(Vector2(300, 200)), "tumbada, ocupa de lado")
-	check(not sword.contains_point(Vector2(200, 100)), "y no por arriba")
-	check(sword.bounds().is_equal_approx(Rect2(90, 145, 220, 110)), "su caja girada (%s)" % sword.bounds())
-	check(is_equal_approx(sword.top_y(), 145.0), "su punto más alto")
+	check(sword.contains_point(Vector2(150, 200)) and sword.contains_point(Vector2(250, 200)), "tumbada, ocupa de lado")
+	check(not sword.contains_point(Vector2(200, 150)) and not sword.contains_point(Vector2(100, 200)), "y no por arriba ni más allá de su media escala")
+	check(sword.bounds().is_equal_approx(Rect2(145, 172.5, 110, 55)), "su caja girada, a media escala (%s)" % sword.bounds())
+	check(is_equal_approx(sword.top_y(), 172.5), "su punto más alto")
 	for pair in [[0.2, 0], [1.3, 1], [-0.1, 0], [3.0, 2], [-1.6, 3], [4.6, 3], [6.2, 0]]:
 		sword.rotation = pair[0]
 		check(sword.straight_rot() == pair[1], "ángulo %.1f → %d cuartos (%d)" % [pair[0], pair[1], sword.straight_rot()])
-	check(LootPiece.extent(sword.rects, 0.0).is_equal_approx(Rect2(-55, -110, 110, 220)), "de pie, su caja alrededor del centro de masa (%s)" % LootPiece.extent(sword.rects, 0.0))
+	check(LootPiece.extent(sword.rects, 0.0).is_equal_approx(Rect2(-27.5, -55, 55, 110)), "de pie, su caja alrededor del centro de masa (%s)" % LootPiece.extent(sword.rects, 0.0))
 	holder.queue_free()
 	await get_tree().physics_frame
 ```
@@ -648,11 +651,15 @@ extends RigidBody2D
 
 ## Una pieza del botín con física (spec doc/specs/2026-10-02-botin-con-fisica.md, apartados 3 y 5): un cuerpo rígido con
 ## un rectángulo de colisión por casilla de su silueta (aristas incluidas), centrado en su centro de masa, y su dibujo de
-## siempre (GearGridView.draw_piece_at), que gira con el cuerpo. Su forma es la del giro 0; el ángulo lo da el cuerpo.
+## siempre (GearGridView.draw_piece_at), que gira con el cuerpo, todo a media escala (BOX_CELL, 55 px por casilla). Su
+## forma es la del giro 0; el ángulo lo da el cuerpo.
 ## La caja (LootBoxView) la crea, la quita y decide cuándo pasa a modo fantasma: choca con la caja pero no con las demás
 ## piezas y se dibuja semitransparente.
 
-const CELL := GearGridView.CELL
+## Escala de la caja (decisión del usuario, 2026-10-02): en el botín las piezas se dibujan y chocan a media escala, 55 px
+## por casilla. Al cogerlas vuelven a 110 (el panel arrastra a tamaño completo) y al soltarlas en la caja vuelven a 55.
+## Es la única constante de escala del botín: LootBoxView y las pruebas la leen de aquí.
+const BOX_CELL := GearGridView.CELL * 0.5
 ## Capas propias del botín: el juego usa la 1 (Tico, enemigos, salas y el Tico del panel) y no debe tocar la caja
 const LAYER_WALLS := 1 << 8
 const LAYER_PIECES := 1 << 9
@@ -667,14 +674,14 @@ const GHOST_ALPHA := 0.45
 
 var item: CraftedItem
 var is_ghost := false
-var rects: Array[Rect2] = []  ## en coordenadas del cuerpo (giro 0, centradas en su centro de masa); las limpias primero
+var rects: Array[Rect2] = []  ## en coordenadas del cuerpo, de BOX_CELL (giro 0, centradas en su centro de masa); las limpias primero
 var sprite_for: Callable = Callable(GearArt, "texture_for")  ## (pieza, giro) → Texture2D; sin textura, casillas de color
-var _com := Vector2.ZERO  ## centro de masa desde la esquina de su caja, en el giro 0
+var _com := Vector2.ZERO  ## centro de masa desde la esquina de su caja, en el giro 0 y a BOX_CELL
 
 
 ## Rectángulos de colisión de una pieza en el giro 0, centrados en su centro de masa.
 static func rects_for(it: CraftedItem) -> Array[Rect2]:
-	return PieceShape.collision_rects(PieceShape.of_item(it, 0), CELL)
+	return PieceShape.collision_rects(PieceShape.of_item(it, 0), BOX_CELL)
 
 
 ## Caja que ocupan unos rectángulos girados `angle` alrededor del centro de masa (el origen).
@@ -691,8 +698,8 @@ static func extent(list: Array[Rect2], angle: float) -> Rect2:
 func setup(it: CraftedItem) -> void:
 	item = it
 	var fp := PieceShape.of_item(it, 0)
-	_com = PieceShape.mass_center(fp, CELL)
-	rects = PieceShape.collision_rects(fp, CELL)
+	_com = PieceShape.mass_center(fp, BOX_CELL)
+	rects = PieceShape.collision_rects(fp, BOX_CELL)
 	for r in rects:
 		var cs := CollisionShape2D.new()
 		var shape := RectangleShape2D.new()
@@ -750,7 +757,7 @@ func straight_rot() -> int:
 
 
 func _draw() -> void:
-	GearGridView.draw_piece_at(self, item, -_com, 0, CELL, 1.0, sprite_for)
+	GearGridView.draw_piece_at(self, item, -_com, 0, BOX_CELL, 1.0, sprite_for)
 ```
 
 - [ ] **Step 4: Ver que pasa**
@@ -779,12 +786,12 @@ git commit -m "feat: pieza del botín con física (LootPiece): formas por casill
 - Consumes: todo `LootPiece` (tarea 3), `CraftedItem.loot_pose` (tarea 2), `InventoryManager.PLACE_LOOT`, `GearArt.texture_for`.
 - Produces (`class_name LootBoxView extends Node2D`; coordenadas: las de este nodo, con la esquina de arriba a la izquierda de la caja en 0,0):
   - `signal poses_settled`: la pila se ha quedado quieta tras un cambio y sus poses ya están en las piezas (como mucho una vez cada `SAVE_EVERY` pasos);
-  - constantes: `SIZE := Vector2(960, 440)`, `CEIL_Y := -165.0`, `MAX_THROW_SPEED := 1400.0`, `SPAWN_INTERVAL := 9`, `SPAWN_PATIENCE := 120`, `SETTLE_CHECK := 180`, `CEIL_TOUCH := 3.0`, `OVERLAP_MARGIN := 8.0`, `LIFT_STEP := 27.5`, `GHOST_CHECK := 60`, `SAVE_EVERY := 60` y las demás del fichero;
+  - constantes: `SIZE := Vector2(960, 440)`, `CEIL_Y := -165.0`, `MAX_THROW_SPEED := 1400.0`, `SPAWN_INTERVAL := 9`, `SPAWN_PATIENCE := 120`, `SETTLE_CHECK := 180`, `CEIL_TOUCH := 3.0`, `BOX_CELL := LootPiece.BOX_CELL` (55), `OVERLAP_MARGIN := BOX_CELL * 0.08`, `LIFT_STEP := BOX_CELL * 0.25`, `GHOST_CHECK := 60`, `SAVE_EVERY := 60` y las demás del fichero;
   - estado: `active: bool`, `sprite_for: Callable`, `rng: RandomNumberGenerator`; privados que leen las pruebas: `_bodies: Dictionary` (pieza → `LootPiece`) y `_queue: Array[CraftedItem]`;
   - `set_active(on: bool) -> void`: con `false`, la caja y sus cuerpos salen de la física (`PROCESS_MODE_DISABLED`);
   - `sync(list: Array) -> void`: los cuerpos siguen a la lista del botín;
   - `hold(item: CraftedItem) -> void`, `is_held(item: CraftedItem) -> bool`;
-  - `drop_at(item: CraftedItem, local_pos: Vector2, velocity: Vector2, rot: int) -> void`: `local_pos` es el centro de masa en coordenadas de la caja; solo actúa si `item.place == &"loot"` y no tiene cuerpo;
+  - `drop_at(item: CraftedItem, local_pos: Vector2, velocity: Vector2, rot: int) -> void`: `local_pos` es el centro de masa en coordenadas de la caja (el mismo punto a 110 que a 55: la pieza encoge alrededor de él); solo actúa si `item.place == &"loot"` y no tiene cuerpo;
   - `piece_at(local: Vector2) -> LootPiece`, `body_of(item: CraftedItem) -> LootPiece`, `piece_global_point(item: CraftedItem) -> Vector2` (centro de su primera casilla limpia, en coordenadas globales), `rect_global() -> Rect2`;
   - `fits(body: LootPiece) -> bool`, `is_settled() -> bool`, `collect_poses() -> void`;
   - estáticas: `pose_is_valid(pose: Dictionary) -> bool`, `cap_throw(v: Vector2) -> Vector2`;
@@ -864,8 +871,8 @@ func test_pieces_fall_and_rest_inside_the_box() -> void:
 func test_a_full_box_makes_ghosts_and_selling_brings_them_back() -> void:
 	var box := _new_box()
 	var list: Array[CraftedItem] = []
-	for i in 12:
-		list.append(_piece(&"shield_master"))  # 2×3: 72 casillas en una caja de unas 48 (con lo de encima del borde)
+	for i in 40:
+		list.append(_piece(&"shield_master"))  # 2×3 a 55 px: 240 casillas en una caja de unas 190 (con lo de encima del borde)
 	box.sync(list)
 	var frames: int = await _physics_until(func(): return box.is_settled(), 3000)
 	check(frames > 0, "la caja llena se queda quieta (%d pasos)" % frames)
@@ -911,7 +918,7 @@ func test_impossible_poses_fall_from_the_top() -> void:
 	var high := _piece(&"boots_basic")
 	high.loot_pose = {"pos": Vector2(400, -400), "ang": 0.0}  # por encima del techo
 	var good := _piece(&"sword_basic")
-	good.loot_pose = {"pos": Vector2(200, 329), "ang": 0.0}  # de pie en el suelo
+	good.loot_pose = {"pos": Vector2(200, 384), "ang": 0.0}  # de pie en el suelo (a 55 px: de y 329 a 439)
 	check(not LootBoxView.pose_is_valid(out.loot_pose) and not LootBoxView.pose_is_valid(high.loot_pose), "fuera de la caja o por encima del techo no vale")
 	check(not LootBoxView.pose_is_valid({}) and not LootBoxView.pose_is_valid({"pos": Vector2(NAN, 0), "ang": 0.0}) and not LootBoxView.pose_is_valid({"pos": Vector2(10, 10), "ang": "x"}), "vacía o sin números tampoco")
 	check(LootBoxView.pose_is_valid(good.loot_pose), "dentro sí")
@@ -928,21 +935,21 @@ func test_overlapping_saved_poses_do_not_explode() -> void:
 	var a := _piece(&"shield_advanced")
 	var b := _piece(&"shield_advanced")
 	for it in [a, b]:
-		it.loot_pose = {"pos": Vector2(480, 329), "ang": 0.0}  # las dos en el mismo sitio
+		it.loot_pose = {"pos": Vector2(480, 384), "ang": 0.0}  # las dos en el mismo sitio
 	var box := _new_box()
 	box.sync([a, b])
 	check(not box.body_of(a).is_ghost and box.body_of(b).is_ghost, "la segunda, encima de la primera, entra como fantasma")
 	await _physics_steps(120)
 	check(_inside(box.body_of(a)) and _inside(box.body_of(b)), "las dos siguen dentro de la caja")
-	check(box.body_of(a).position.distance_to(Vector2(480, 329)) < 3.0, "y nadie sale despedido (%s)" % box.body_of(a).position)
+	check(box.body_of(a).position.distance_to(Vector2(480, 384)) < 3.0, "y nadie sale despedido (%s)" % box.body_of(a).position)
 	await _free_box(box)
 
 
 func test_taking_out_a_support_lets_the_pile_fall() -> void:
 	var below := _piece(&"shield_advanced")
 	var above := _piece(&"helmet_basic")
-	below.loot_pose = {"pos": Vector2(480, 329), "ang": 0.0}  # 2×2 en el suelo: de y 219 a 439
-	above.loot_pose = {"pos": Vector2(480, 163), "ang": 0.0}  # 1×1 encima: de y 108 a 218
+	below.loot_pose = {"pos": Vector2(480, 384), "ang": 0.0}  # 2×2 en el suelo (a 55 px): de y 329 a 439
+	above.loot_pose = {"pos": Vector2(480, 300), "ang": 0.0}  # 1×1 encima: de y 272,5 a 327,5
 	var box := _new_box()
 	box.sync([below, above])
 	var frames: int = await _physics_until(func(): return box.is_settled(), 600)
@@ -955,17 +962,17 @@ func test_taking_out_a_support_lets_the_pile_fall() -> void:
 
 func test_a_piece_dropped_on_the_pile_rises_until_it_fits() -> void:
 	var base := _piece(&"shield_advanced")
-	base.loot_pose = {"pos": Vector2(480, 329), "ang": 0.0}
+	base.loot_pose = {"pos": Vector2(480, 384), "ang": 0.0}
 	var dropped := _piece(&"helmet_basic")
 	var box := _new_box()
 	box.sync([base, dropped])
 	box.hold(dropped)
 	check(box.is_held(dropped) and box.body_of(dropped) == null and box._queue.is_empty(), "cogida: sin cuerpo y fuera de la cola")
-	box.drop_at(dropped, Vector2(480, 329), Vector2.ZERO, 0)  # justo encima del escudo: solaparía
+	box.drop_at(dropped, Vector2(480, 384), Vector2.ZERO, 0)  # justo encima del escudo: solaparía
 	var body := box.body_of(dropped)
 	check(body != null and not box.is_held(dropped), "soltada, vuelve a tener cuerpo")
 	check(not body.is_ghost and not box._overlaps(body.rects, body.transform, [body.get_rid()]), "sube hasta no solapar")
-	check(body.position.y < 200.0 and is_equal_approx(body.position.x, 480.0), "en la misma columna, encima del escudo (%s)" % body.position)
+	check(body.position.y < 320.0 and is_equal_approx(body.position.x, 480.0), "en la misma columna, encima del escudo (%s)" % body.position)
 	await _free_box(box)
 
 
@@ -1021,12 +1028,12 @@ func test_a_still_pile_reports_its_poses_at_most_once_a_second() -> void:
 
 func test_piece_under_a_point_and_its_place_on_screen() -> void:
 	var sword := _piece(&"sword_basic")
-	sword.loot_pose = {"pos": Vector2(200, 329), "ang": 0.0}  # de pie: de x 145 a 255 y de y 219 a 439
+	sword.loot_pose = {"pos": Vector2(200, 384), "ang": 0.0}  # de pie a 55 px: de x 172,5 a 227,5 y de y 329 a 439
 	var box := _new_box()
 	box.sync([sword])
-	check(box.piece_at(Vector2(200, 300)) == box.body_of(sword) and box.piece_at(Vector2(600, 300)) == null, "dice qué pieza hay bajo un punto")
+	check(box.piece_at(Vector2(200, 400)) == box.body_of(sword) and box.piece_at(Vector2(600, 400)) == null and box.piece_at(Vector2(240, 400)) == null, "dice qué pieza hay bajo un punto, a media escala")
 	check(box.rect_global() == Rect2(60, 970, 960, 440), "la caja en la pantalla (%s)" % box.rect_global())
-	check(box.piece_global_point(sword).is_equal_approx(box.to_global(Vector2(200, 274))), "su primera casilla en la pantalla (%s)" % box.piece_global_point(sword))
+	check(box.piece_global_point(sword).is_equal_approx(box.to_global(Vector2(200, 356.5))), "su primera casilla en la pantalla (%s)" % box.piece_global_point(sword))
 	await _free_box(box)
 ```
 
@@ -1042,7 +1049,7 @@ class_name LootBoxView
 extends Node2D
 
 ## El botín con física (spec doc/specs/2026-10-02-botin-con-fisica.md): una caja de 960×440 con suelo, paredes y un techo
-## invisible 165 px por encima de su borde, y un cuerpo (LootPiece) por pieza de InventoryManager.loot, que sigue siendo la
+## invisible 165 px por encima de su borde, y un cuerpo (LootPiece), a media escala (BOX_CELL, 55 px por casilla), por pieza de InventoryManager.loot, que sigue siendo la
 ## fuente de verdad: sync() crea y quita cuerpos según la lista. Coordenadas: las de este nodo (la esquina de arriba a la
 ## izquierda de la caja es 0,0; el techo está en y = CEIL_Y). El dedo lo lleva el panel de Equipo, que pasa sus puntos a
 ## estas coordenadas (to_local), pregunta qué pieza hay debajo (piece_at), la coge (hold) y la suelta (drop_at).
@@ -1059,7 +1066,7 @@ extends Node2D
 
 signal poses_settled  ## la pila se ha quedado quieta tras un cambio y sus poses ya están en las piezas
 
-const CELL := GearGridView.CELL
+const BOX_CELL := LootPiece.BOX_CELL  ## 55 px por casilla: la escala de las piezas en la caja
 const SIZE := Vector2(960, 440)
 const CEIL_Y := -165.0  ## techo invisible: 1,5 casillas por encima del borde de la caja
 const WALL := 400.0  ## grosor del suelo, las paredes y el techo: que nada los atraviese
@@ -1072,8 +1079,8 @@ const SPAWN_TRIES := 8  ## x al azar que se prueban en cada intento
 const SPAWN_PATIENCE := 120  ## pasos (2 s) esperando sitio bajo el techo antes de entrar como fantasma
 const SETTLE_CHECK := 180  ## pasos (3 s): si una pieza que ha entrado aún no se ha dormido, se mira igual si cabe
 const CEIL_TOUCH := 3.0  ## px: una pieza quieta así de cerca del techo está apretada contra él
-const OVERLAP_MARGIN := 8.0  ## px que se encoge cada casilla al buscar solapes: el contacto normal no cuenta
-const LIFT_STEP := 27.5  ## px (un cuarto de casilla) que sube una pieza soltada sobre otras hasta que no solapa
+const OVERLAP_MARGIN := BOX_CELL * 0.08  ## px (4,4) que se encoge cada casilla al buscar solapes: el contacto normal no cuenta
+const LIFT_STEP := BOX_CELL * 0.25  ## px (un cuarto de casilla de la caja) que sube una pieza soltada sobre otras hasta que no solapa
 const GHOST_CHECK := 60  ## pasos (1 s) entre comprobaciones de los fantasmas
 const SAVE_EVERY := 60  ## pasos (1 s) como mínimo entre dos avisos de poses
 const SLEEP_LINEAR := 8.0  ## px/s: por debajo, una pieza puede dormirse
@@ -1451,7 +1458,7 @@ func _overlaps(rects: Array[Rect2], xform: Transform2D, exclude: Array[RID] = []
 	var space := get_world_2d().direct_space_state
 	var query := PhysicsShapeQueryParameters2D.new()
 	var shape := RectangleShape2D.new()
-	shape.size = Vector2(CELL, CELL) - Vector2.ONE * 2.0 * OVERLAP_MARGIN
+	shape.size = Vector2(BOX_CELL, BOX_CELL) - Vector2.ONE * 2.0 * OVERLAP_MARGIN
 	query.shape = shape
 	query.collision_mask = LootPiece.LAYER_PIECES
 	query.exclude = exclude
@@ -1490,10 +1497,10 @@ git commit -m "feat: caja del botín con física (LootBoxView): entradas, techo,
 **Interfaces:**
 - Consumes: todo `LootBoxView` (tarea 4); `LootPiece.straight_rot()`, `LootPiece.item`, `LootPiece.is_ghost`; `PieceShape.mass_center`; `InventoryManager.note_loot_poses()` (tarea 2).
 - Produces (las pruebas y la tarea 6 los usan):
-  - `EquipmentPanel.LOOT_RECT := Rect2(60, 970, 960, 440)`, `BAG_POS := Vector2(60, 1460)`, `THROW_WINDOW_US := 100000`, `THROW_MIN_US := 10000`;
+  - `EquipmentPanel.LOOT_RECT := Rect2(60, 970, 960, 440)`, `BAG_POS := Vector2(60, 1460)`, `DRAG_CELL := CELL` (110: tamaño de la pieza arrastrada), `THROW_WINDOW_US := 100000`, `THROW_MIN_US := 10000`;
   - `_loot_box: LootBoxView` (sustituye a `_loot_view`; ya no existen `_loot_view`, `_scrolling` ni `_scroll_start`);
   - `_drag_trail: Array` (`[[posición: Vector2, µs: int], …]`), `_throw_velocity() -> Vector2`, `_box_hit(body: LootPiece) -> Dictionary`;
-  - `_press` de una pieza de la caja: `{"item", "from": &"loot", "rot": straight_rot(), "origin"}`, con `origin + mass_center(of_item(item, rot))` = centro del cuerpo en pantalla.
+  - `_press` de una pieza de la caja: `{"item", "from": &"loot", "rot": straight_rot(), "origin"}`, con `origin + mass_center(of_item(item, rot), DRAG_CELL)` = centro del cuerpo en pantalla: la pieza crece a 110 alrededor de su centro de masa.
   - `InventoryGridTests`: ayudas `_in_box(item, x, angle = 0.0)` y `_box_point(panel, item) -> Vector2`.
   - `LootBoxTests`: ayudas `_new_panel()`, `_mouse()`, `_move()`, `_finger_for()`, `_in_box()`, `_long_press()`, `_silence_sounds()`.
 
@@ -1538,8 +1545,8 @@ func _finger_for(panel: Control, view: Control, cell: Vector2i) -> Vector2:
 ## caja la pone ahí al abrir el panel, sin esperar a que caiga desde arriba.
 func _in_box(item: CraftedItem, x: float, angle: float = 0.0) -> void:
 	var fp := PieceShape.of_item(item, posmod(roundi(angle / (PI / 2.0)), 4))
-	var com := PieceShape.mass_center(fp, CELL)
-	item.loot_pose = {"pos": Vector2(x, LootBoxView.SIZE.y - float(fp.size.y) * CELL + com.y - 1.0), "ang": angle}
+	var com := PieceShape.mass_center(fp, LootBoxView.BOX_CELL)
+	item.loot_pose = {"pos": Vector2(x, LootBoxView.SIZE.y - float(fp.size.y) * LootBoxView.BOX_CELL + com.y - 1.0), "ang": angle}
 
 
 func _long_press(panel: Control, pos: Vector2) -> void:
@@ -1581,15 +1588,19 @@ func test_grabbing_a_box_piece_straightens_it() -> void:
 	var start := box.piece_global_point(sword)
 	_mouse(panel, start, true)
 	check(panel._press.get("item") == sword and panel._press.get("rot") == 1, "al cogerla se endereza al cuarto de vuelta más cercano (%s)" % [panel._press.get("rot")])
-	var com := PieceShape.mass_center(PieceShape.of_item(sword, 1), CELL)
-	check((panel._press.origin + com).is_equal_approx(box.to_global(Vector2(480, 200))), "con su centro de masa donde estaba")
+	check(box.body_of(sword).rects.all(func(r): return r.size == Vector2(55, 55)), "en la caja choca a media escala: 55 px por casilla")
+	var com := PieceShape.mass_center(PieceShape.of_item(sword, 1), panel.DRAG_CELL)
+	check(is_equal_approx(panel.DRAG_CELL, 110.0) and (panel._press.origin + com).is_equal_approx(box.to_global(Vector2(480, 200))), "cogida, crece a 110 px por casilla alrededor de su centro de masa")
 	_move(panel, start + Vector2(0, -40))
 	check(panel._dragging and panel._drag_rot == 1 and box.is_held(sword) and box.body_of(sword) == null, "arrastrada, sale de la física y la lleva el dedo")
+	var full: Vector2 = Vector2(PieceShape.of_item(sword, 1).size) * panel.DRAG_CELL
+	check(full == Vector2(330, 110), "la pieza arrastrada mide lo que en la rejilla (%s)" % full)
 	_move(panel, Vector2(540, 60))  # arriba del todo, fuera de las rejillas y de la caja
 	_mouse(panel, Vector2(540, 60), false)
 	var back := box.body_of(sword)
 	check(sword.place == &"loot" and back != null and not box.is_held(sword), "soltada fuera de todo, vuelve a la caja")
-	check(back.position.is_equal_approx(Vector2(480, LootBoxView.CEIL_Y + 55.0)) and is_equal_approx(back.rotation, PI / 2.0), "al punto de la caja más cercano al dedo, bajo el techo (%s)" % back.position)
+	check(back.position.is_equal_approx(Vector2(480, LootBoxView.CEIL_Y + 27.5)) and is_equal_approx(back.rotation, PI / 2.0), "al punto de la caja más cercano al dedo, bajo el techo (%s)" % back.position)
+	check(back.rects.all(func(r): return r.size == Vector2(55, 55)), "y vuelve a media escala")
 	panel.queue_free()
 	await _restore_inventory(saved)
 
@@ -1608,7 +1619,7 @@ func test_dropping_in_the_box_throws_with_the_gesture() -> void:
 	var finger := box.to_global(Vector2(600, 300))
 	_move(panel, finger)
 	check(panel._target.get("place") == &"loot", "sobre la caja, el destino es el botín (%s)" % [panel._target])
-	var center: Vector2 = panel._ghost_origin() + PieceShape.mass_center(PieceShape.of_item(helmet, 0), CELL)
+	var center: Vector2 = panel._ghost_origin() + PieceShape.mass_center(PieceShape.of_item(helmet, 0), panel.DRAG_CELL)
 	var now := Time.get_ticks_usec()
 	panel._drag_trail = [[finger - Vector2(300, 0), now - 50000], [finger, now]]  # 6000 px/s hacia la derecha
 	_mouse(panel, finger, false)
@@ -1832,6 +1843,9 @@ const LOOT_RECT := Rect2(60, 970, 960, 440)
 Tras `const LONG_PRESS_MS := 400`, añade:
 
 ```gdscript
+## La pieza que se arrastra va siempre a tamaño completo (110 px por casilla), también la que sale de la caja, donde está a
+## media escala (LootBoxView.BOX_CELL): al cogerla crece alrededor de su centro de masa y al soltarla en la caja encoge
+const DRAG_CELL := CELL
 const THROW_WINDOW_US := 100000  ## el gesto que lanza la pieza: lo que se ha movido el dedo en los últimos 0,1 s
 const THROW_MIN_US := 10000  ## con menos de 0,01 s de gesto no se mide la velocidad: se suelta sin lanzar
 ```
@@ -1930,11 +1944,11 @@ func _piece_at(pos: Vector2) -> Dictionary:
 	return {}
 
 
-## Una pieza de la caja como pulsación: enderezada al cuarto de vuelta más cercano (spec, apartado 6), con la esquina de su
-## caja donde queda su centro de masa ahora mismo.
+## Una pieza de la caja como pulsación: enderezada al cuarto de vuelta más cercano y a tamaño completo (spec, apartado 6),
+## con la esquina de su caja (a DRAG_CELL) donde queda su centro de masa ahora mismo: crece alrededor de él.
 func _box_hit(body: LootPiece) -> Dictionary:
 	var rot := body.straight_rot()
-	var com := PieceShape.mass_center(PieceShape.of_item(body.item, rot), CELL)
+	var com := PieceShape.mass_center(PieceShape.of_item(body.item, rot), DRAG_CELL)
 	return {"item": body.item, "from": InventoryManager.PLACE_LOOT, "rot": rot, "origin": _loot_box.to_global(body.position) - com}
 ```
 
@@ -2024,6 +2038,8 @@ func _set_hidden(item: CraftedItem) -> void:
 	_bag_view.queue_redraw()
 ```
 
+En `_draw_ghost`, sustituye `_ghost_origin(), _drag_rot, CELL, 0.85` por `_ghost_origin(), _drag_rot, DRAG_CELL, 0.85`: la pieza arrastrada se dibuja a 110 px por casilla, venga de donde venga.
+
 En `_update_target`, sustituye `if t.is_empty() and _loot_view.get_global_rect().has_point(_drag_pos):` por `if t.is_empty() and _loot_box.rect_global().has_point(_drag_pos):`, y en su comentario `Si no hay ninguna, el botín, por el dedo.` por `Si no hay ninguna, la caja del botín, por el dedo.`
 
 Sustituye `_drop` por:
@@ -2041,8 +2057,9 @@ func _drop(item: CraftedItem) -> void:
 	var from_rot := item.rot
 	if _im.move_item(item, place, _target.get("cell", Vector2i.ZERO), _drag_rot):
 		if place == InventoryManager.PLACE_LOOT:
-			# Entra en la caja donde se ve la pieza (una casilla por encima del dedo), con la inercia del gesto
-			var center := _ghost_origin() + PieceShape.mass_center(PieceShape.of_item(item, _drag_rot), CELL)
+			# Entra en la caja donde se ve la pieza (una casilla por encima del dedo), con la inercia del gesto; su centro de masa
+			# se queda ahí y la caja la encoge a media escala alrededor de él
+			var center := _ghost_origin() + PieceShape.mass_center(PieceShape.of_item(item, _drag_rot), DRAG_CELL)
 			_loot_box.drop_at(item, _loot_box.to_local(center), _throw_velocity(), _drag_rot)
 		_selected = item
 		_refresh_ficha()  # el aviso del movimiento llega antes de elegirla
@@ -2075,8 +2092,8 @@ En `scripts/tests/InventoryGridTests.gd`, tras la función `_finger_for`, añade
 ## caja la pone ahí al abrir el panel, sin esperar a que caiga desde arriba.
 func _in_box(item: CraftedItem, x: float, angle: float = 0.0) -> void:
 	var fp := PieceShape.of_item(item, posmod(roundi(angle / (PI / 2.0)), 4))
-	var com := PieceShape.mass_center(fp, GearGridView.CELL)
-	item.loot_pose = {"pos": Vector2(x, LootBoxView.SIZE.y - float(fp.size.y) * GearGridView.CELL + com.y - 1.0), "ang": angle}
+	var com := PieceShape.mass_center(fp, LootBoxView.BOX_CELL)
+	item.loot_pose = {"pos": Vector2(x, LootBoxView.SIZE.y - float(fp.size.y) * LootBoxView.BOX_CELL + com.y - 1.0), "ang": angle}
 
 
 ## Dónde pulsar una pieza de la caja: el centro de su primera casilla limpia.
@@ -2415,6 +2432,7 @@ func test_sixty_pieces_settle_under_the_ceiling_and_the_panel_opens_fast() -> vo
 	check(im.get_loot().all(func(it): return _inside(box.body_of(it))), "todas dentro de la caja")
 	var ghosts: int = im.get_loot().filter(func(it): return box.body_of(it).is_ghost).size()
 	print("botín con física: 60 piezas quietas en %d pasos, %d fantasmas" % [frames, ghosts])
+	check(60 - ghosts >= 20 and ghosts <= 40, "a media escala caben unas 25 que chocan; el resto, fantasmas (%d que chocan, %d fantasmas; medido: 25 y 35)" % [60 - ghosts, ghosts])
 	panel.close()  # recoge las poses
 	panel.queue_free()
 	await get_tree().physics_frame
@@ -2559,19 +2577,19 @@ En la tabla de clases:
 
 ```
 | `LootBoxView` | `Node2D` con la caja del botín (960×440, techo invisible 165 px por encima): suelo, paredes y techo estáticos y un `LootPiece` por pieza de `InventoryManager.loot` (`sync()`). Decide quién entra y desde dónde (pose guardada, punto donde se suelta o caída desde arriba), quién no cabe (modo fantasma) y cuándo vuelve a chocar; se congela con el panel cerrado; recoge las poses y avisa cuando la pila se queda quieta (`poses_settled`) | `EquipmentPanel` |
-| `LootPiece` | `RigidBody2D` de una pieza: un rectángulo por casilla (aristas incluidas) centrado en su centro de masa, masa por casillas, su dibujo de siempre girado con el cuerpo y el modo fantasma (choca con la caja, no con las piezas; semitransparente). Capas propias: 9 paredes, 10 piezas, 11 fantasmas | `LootBoxView` |
+| `LootPiece` | `RigidBody2D` de una pieza, a media escala (`BOX_CELL`, 55 px por casilla): un rectángulo por casilla (aristas incluidas) centrado en su centro de masa, masa por casillas, su dibujo de siempre girado con el cuerpo y el modo fantasma (choca con la caja, no con las piezas; semitransparente). Capas propias: 9 paredes, 10 piezas, 11 fantasmas | `LootBoxView` |
 ```
 
 En el párrafo **Panel de Equipo**, sustituye `el botín con «Vender todo»` por `la caja del botín con «Vender todo»`, y tras el punto `- soltar en la zona de venta la vende;` añade:
 
 ```
-- en la caja (`LootBoxView`), coger una pieza la saca de la física enderezada al cuarto de vuelta más cercano; soltarla en la caja la devuelve donde se ve, con la inercia del gesto (tope de 1400 px/s); soltada fuera de todo vuelve a la caja, al punto más cercano al dedo. No hay desplazamiento;
+- en la caja (`LootBoxView`) las piezas van a media escala; coger una la saca de la física enderezada al cuarto de vuelta más cercano y a tamaño completo (`DRAG_CELL`); soltarla en la caja la devuelve donde se ve, con la inercia del gesto (tope de 1400 px/s); soltada fuera de todo vuelve a la caja, al punto más cercano al dedo. No hay desplazamiento;
 ```
 
 Tras el párrafo **Pociones.**, añade:
 
 ```
-**Botín con física.** Spec: `doc/specs/2026-10-02-botin-con-fisica.md`. `InventoryManager.loot` sigue siendo la fuente de verdad: la caja crea y quita cuerpos según la lista. Lo forjado, lo que manda «Al botín» y lo que saca un intercambio cae desde arriba, una pieza tras otra, en una x al azar; lo que suelta el jugador entra donde se suelta. Una pieza no cabe si, ya quieta, solapa a otra (casillas encogidas 8 px) o está apretada contra el techo, o si no encuentra sitio bajo el techo para caer en 2 s: pasa a modo fantasma. Cuando se libera sitio, los fantasmas prueban de nuevo, donde están o cayendo desde arriba. Con el panel cerrado la caja sale de la física; al cerrarlo, y cuando la pila se queda quieta (como mucho una vez por segundo), las poses van a las piezas y `InventoryManager.note_loot_poses()` pide el guardado diferido de `GameManager`. Una pieza que sale del botín pierde su pose.
+**Botín con física.** Spec: `doc/specs/2026-10-02-botin-con-fisica.md`. `InventoryManager.loot` sigue siendo la fuente de verdad: la caja crea y quita cuerpos según la lista. Lo forjado, lo que manda «Al botín» y lo que saca un intercambio cae desde arriba, una pieza tras otra, en una x al azar; lo que suelta el jugador entra donde se suelta. Las piezas van a media escala (`LootPiece.BOX_CELL`, 55 px por casilla); al cogerlas crecen a 110 y al soltarlas en la caja vuelven a 55. Una pieza no cabe si, ya quieta, solapa a otra (casillas encogidas 4,4 px) o está apretada contra el techo, o si no encuentra sitio bajo el techo para caer en 2 s: pasa a modo fantasma. Cuando se libera sitio, los fantasmas prueban de nuevo, donde están o cayendo desde arriba. Con el panel cerrado la caja sale de la física; al cerrarlo, y cuando la pila se queda quieta (como mucho una vez por segundo), las poses van a las piezas y `InventoryManager.note_loot_poses()` pide el guardado diferido de `GameManager`. Una pieza que sale del botín pierde su pose.
 ```
 
 En el párrafo **Guardado versión 2**, tras `de cada pieza, `place`, `x`, `y`, `rot` y `aristas`)`, añade: `y, en el botín, `lx`, `ly` y `ang` si tiene pose (opcionales: sin ellos la pieza cae al abrir el panel; una pose fuera de la caja, por encima del techo o sin números se descarta)`.
