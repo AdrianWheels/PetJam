@@ -371,3 +371,32 @@ func test_enemy_loot_grows_with_the_cycle_and_drops_its_biome_material() -> void
 	gm.best_enemy_level = best_before
 	e.queue_free()
 	await get_tree().process_frame
+
+
+# ─── Tarea 5: objeto forjado con rango ─────────────────────────────────
+
+func test_crafted_item_has_rank_and_scaled_stats() -> void:
+	var res: ItemResource = load("res://data/items/sword_masterwork.tres")
+	var one := CraftedItem.new(res, 0.9)
+	var three := CraftedItem.new(res, 0.9, 3)
+	check(one.rank == 1 and three.rank == 3, "el rango se guarda en el objeto")
+	check(three.calculated_stats.damage == roundi(one.calculated_stats.damage * Ranks.stat_mult(3)), "el daño escala con el rango")
+	check(is_equal_approx(three.calculated_stats.crit, one.calculated_stats.crit), "el crítico no escala")
+	check(three.get_name_with_rank().ends_with(" III") and not one.get_name_with_rank().ends_with(" I"), "numeral solo desde el II (%s / %s)" % [one.get_name_with_rank(), three.get_name_with_rank()])
+	check(three.get_display_name().contains("III") and three.get_display_name().contains("90%"), "el nombre visible lleva numeral y calidad (%s)" % three.get_display_name())
+
+
+func test_crafted_item_rank_survives_save() -> void:
+	var res: ItemResource = load("res://data/items/helmet_master.tres")
+	var item := CraftedItem.new(res, 0.7, 2)
+	item.place = InventoryManager.PLACE_BAG
+	item.cell = Vector2i(2, 1)
+	item.rot = 3
+	var ar: Array[Vector2i] = [Vector2i(3, 0)]
+	item.aristas = ar
+	var back := CraftedItem.from_dict(JSON.parse_string(JSON.stringify(item.to_dict())), res)  # como desde el fichero
+	check(back.rank == 2 and back.calculated_stats.hp == item.calculated_stats.hp and back.calculated_stats.armor == item.calculated_stats.armor, "rango y estadísticas vuelven igual")
+	check(back.place == item.place and back.cell == item.cell and back.rot == item.rot and back.aristas == item.aristas, "y su sitio, casilla, giro y aristas (%s %s %d %s)" % [back.place, back.cell, back.rot, back.aristas])
+	var old := item.to_dict()
+	old.erase("rank")
+	check(CraftedItem.from_dict(old, res).rank == 1, "un objeto sin rango (versión 1) es de rango I")

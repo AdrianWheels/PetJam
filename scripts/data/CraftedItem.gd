@@ -20,13 +20,14 @@ var cell: Vector2i = Vector2i.ZERO  ## esquina de arriba a la izquierda de su ca
 var rot: int = 0  ## cuartos de vuelta en el sentido de las agujas del reloj (0-3)
 var aristas: Array[Vector2i] = []  ## casillas de más, en coordenadas de la pieza sin girar (PieceShape)
 
-func _init(item_res: ItemResource, craft_quality: float) -> void:
+func _init(item_res: ItemResource, craft_quality: float, craft_rank: int = 1) -> void:
 	item_resource = item_res
 	quality = clampf(craft_quality, 0.0, 1.0)
+	rank = maxi(1, craft_rank)
 	crafted_timestamp = Time.get_ticks_msec()
 	
 	if item_resource:
-		calculated_stats = item_resource.calculate_stats(quality)
+		calculated_stats = Ranks.scale_stats(item_resource.calculate_stats(quality), rank)
 
 ## Retorna la calidad como porcentaje (0-100)
 func get_quality_percent() -> int:
@@ -78,10 +79,10 @@ func get_quality_label() -> String:
 func get_sell_price() -> int:
 	return roundi(SELL_PRICE_BY_TIER.get(get_quality_tier(), 25) * Ranks.gold_mult(rank))
 
-## Nombre del objeto con su calidad, en el idioma del jugador ("Espada básica (93%)")
+## Nombre del objeto con su rango y su calidad, en el idioma del jugador ("Espada maestra III (93%)")
 func get_display_name() -> String:
 	if item_resource:
-		return "%s (%d%%)" % [tr(item_resource.display_name), get_quality_percent()]
+		return "%s (%d%%)" % [get_name_with_rank(), get_quality_percent()]
 	return tr("Objeto desconocido")
 
 ## Nombre con el numeral del rango, ya traducido: "Espada maestra III" (sin numeral en el rango I).
@@ -125,10 +126,9 @@ func to_dict() -> Dictionary:
 
 ## Deserialización desde diccionario
 static func from_dict(data: Dictionary, item_res: ItemResource) -> CraftedItem:
-	var item = CraftedItem.new(item_res, data.get("quality", 0.5))
+	var item = CraftedItem.new(item_res, data.get("quality", 0.5), maxi(1, int(data.get("rank", 1))))
 	item.calculated_stats = data.get("stats", {}).duplicate()
 	item.crafted_timestamp = data.get("timestamp", 0)
-	item.rank = maxi(1, int(data.get("rank", 1)))
 	item.place = StringName(data.get("place", "loot"))
 	item.cell = Vector2i(int(data.get("x", 0)), int(data.get("y", 0)))
 	item.rot = posmod(int(data.get("rot", 0)), 4)
