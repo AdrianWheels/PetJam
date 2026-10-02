@@ -528,9 +528,13 @@ func _note_trail(pos: Vector2) -> void:
 		_drag_trail.pop_front()
 
 
-## Velocidad del gesto al soltar (px/s, coordenadas del panel = de la caja): lo que se movió el dedo en los últimos 0,1 s.
-## Sin muestras suficientes, cero: la pieza se suelta sin lanzarla. El tope lo pone la caja.
+## Velocidad del gesto al soltar (px/s, coordenadas del panel = de la caja): lo que se movió el dedo en los últimos 0,1 s
+## contados desde ahora, no desde el último movimiento: un gesto rápido seguido de una pausa para apuntar no lanza. Sin
+## muestras suficientes en esa ventana, cero: la pieza se suelta sin lanzarla. El tope lo pone la caja.
 func _throw_velocity() -> Vector2:
+	var now := Time.get_ticks_usec()
+	while not _drag_trail.is_empty() and now - int(_drag_trail[0][1]) > THROW_WINDOW_US:
+		_drag_trail.pop_front()
 	if _drag_trail.size() < 2:
 		return Vector2.ZERO
 	var first: Array = _drag_trail[0]
@@ -541,10 +545,17 @@ func _throw_velocity() -> Vector2:
 	return (Vector2(last[0]) - Vector2(first[0])) / (float(dt_us) / 1000000.0)
 
 
-func _on_release(_pos: Vector2) -> void:
+func _on_release(pos: Vector2) -> void:
 	if _press.is_empty():
 		return
 	get_viewport().set_input_as_handled()
+	if _dragging:
+		# Se suelta donde se levanta el dedo, aunque el último movimiento no llegara hasta ahí; y ese punto, con su hora, cierra
+		# el gesto (_throw_velocity)
+		_note_trail(pos)
+		if pos != _drag_pos:
+			_drag_pos = pos
+			_update_target()
 	if _press.has("slot"):
 		_show_potion(_press.slot)  # solo llega aquí un toque: la pulsación larga ya terminó la pulsación
 		_cancel_press()

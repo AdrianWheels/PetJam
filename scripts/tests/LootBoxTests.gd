@@ -863,3 +863,54 @@ func test_quick_add_remove_add_keeps_one_body_each() -> void:
 	await _silence_sounds()
 	panel.queue_free()
 	await _restore_inventory(saved)
+
+
+## Revisión de la tarea 5: la velocidad del gesto es la del momento de soltar. Un gesto rápido seguido de una pausa para
+## apuntar no lanza la pieza; uno reciente sí.
+func test_a_throw_needs_a_fresh_gesture() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var helmet := _piece(&"helmet_basic")
+	im.add_crafted_item(helmet)
+	_in_box(helmet, 200.0)
+	var panel := _new_panel()
+	var box: LootBoxView = panel._loot_box
+	var now := Time.get_ticks_usec()
+	panel._drag_trail = [[Vector2(0, 0), now - 300000], [Vector2(300, 0), now - 250000]]  # rápido, pero hace 0,25 s
+	check(panel._throw_velocity() == Vector2.ZERO, "un gesto que acabó hace más de 0,1 s no lanza (%s)" % panel._throw_velocity())
+	panel._drag_trail = [[Vector2(0, 0), now - 50000], [Vector2(300, 0), now]]
+	check(panel._throw_velocity().x > 1000.0, "uno reciente sí (%s)" % panel._throw_velocity())
+	var start := box.piece_global_point(helmet)
+	_mouse(panel, start, true)
+	_move(panel, start + Vector2(0, -40))
+	var finger := box.to_global(Vector2(600, 300))
+	_move(panel, finger)
+	now = Time.get_ticks_usec()
+	panel._drag_trail = [[finger - Vector2(300, 0), now - 300000], [finger, now - 250000]]  # lanzó y luego se quedó quieto apuntando
+	_mouse(panel, finger, false)
+	var body := box.body_of(helmet)
+	check(body != null and body.linear_velocity == Vector2.ZERO, "quieto al soltar, la pieza entra sin inercia (%s)" % (body.linear_velocity if body else Vector2.INF))
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+## Revisión de la tarea 5: se suelta donde se levanta el dedo, aunque no llegara un último movimiento hasta ahí.
+func test_the_release_point_is_the_drop_point() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var helmet := _piece(&"helmet_basic")
+	im.add_crafted_item(helmet)
+	_in_box(helmet, 200.0)
+	var panel := _new_panel()
+	var box: LootBoxView = panel._loot_box
+	var start := box.piece_global_point(helmet)
+	_mouse(panel, start, true)
+	_move(panel, start + Vector2(0, -40))
+	_move(panel, box.to_global(Vector2(300, 300)))
+	var finger := box.to_global(Vector2(700, 300))
+	var center: Vector2 = finger + (panel._press.origin - panel._press.pos) + Vector2(0, -panel.CELL) + PieceShape.mass_center(PieceShape.of_item(helmet, 0), panel.DRAG_CELL)
+	_mouse(panel, finger, false)  # sin movimiento previo hasta este punto
+	var body := box.body_of(helmet)
+	check(body != null and body.position.is_equal_approx(box.to_local(center)), "entra bajo el punto donde se soltó (%s)" % (body.position if body else Vector2.INF))
+	panel.queue_free()
+	await _restore_inventory(saved)
