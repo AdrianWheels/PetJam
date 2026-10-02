@@ -10,6 +10,14 @@ Para la armadura hay dos fuentes:
 
 Los originales se guardan en `art/assets/Stickers/originales/` (repositorio de assets) con el nombre de cada prompt.
 
+## Método que funciona: la plantilla de la forma
+
+Probado con el casco maestro (2026-10-02): un prompt solo con texto da un dibujo bonito pero con otras proporciones. Lo que funciona es adjuntar la plantilla de la pieza (`doc/arte/plantillas/<item_id>.png`, la forma en gris con sus casillas) y pedir que la rellene entera, con pelo, plumas o adornos en las casillas raras, sobre fondo blanco liso. La imagen va a `tools/gear_art/sources/` y su `prepare()` quita el blanco que toca el borde (mira `pieces/helmet_master.py`).
+
+```
+Te adjunto una plantilla: la zona gris es la forma exacta que tiene que ocupar el dibujo. Dibuja <la pieza> en el mismo estilo de ilustración, rellenando TODA la zona gris y nada fuera de ella. <Qué llena cada casilla rara: penacho, alas, hombreras, puntera…>. Que cada casilla gris tenga dibujo hasta cerca de sus bordes. Las zonas blancas de la plantilla quedan vacías. Misma proporción que la plantilla. Fondo blanco liso, sin brillo, sin resplandor y sin sombra. No dibujes la plantilla, ni la rejilla ni el contorno negro.
+```
+
 ## Las que no encajan con los iconos actuales
 
 ### Escudo básico (1×2, alto y estrecho) · `escudo_basico.png`

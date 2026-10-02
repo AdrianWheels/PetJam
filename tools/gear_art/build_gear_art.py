@@ -28,6 +28,7 @@ SHADOW = 3  # desplazamiento de la sombra, en px
 PAD = OUTLINE + SHADOW + 2  # margen hasta el borde de la caja: el borde y la sombra no se cortan
 
 SOURCE_DIRS = [
+    Path(__file__).resolve().parent / "sources",  # imágenes hechas para una pieza (ChatGPT sobre su plantilla)
     ROOT / "art" / "assets" / "Stickers" / "originales",
     ROOT / "art" / "assets" / "Imagenes" / "Items",
     Path("D:/Proyectos/PetJam/.claude/worktrees/kind-robinson-8996cf/art/assets/Stickers/originales"),

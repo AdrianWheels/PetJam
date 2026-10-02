@@ -1,6 +1,7 @@
 {
- "source": "helmet_master.png",
+ "source": "casco_maestro.png",
  "cells": [[1, 0], [0, 1], [1, 1], [2, 1]],
  "fit": "contain",
- "mask": true
+ "mask": true,
+ "strip_border": false
 }
