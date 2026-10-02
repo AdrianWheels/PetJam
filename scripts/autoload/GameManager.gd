@@ -11,7 +11,8 @@ signal dungeon_state_changed(new_state)
 signal hero_loadout_changed(loadout)
 signal enemy_defeated_first_time(enemy_level)  # Para desbloquear blueprint
 signal enemy_level_changed(new_level)  # Señal cuando cambia nivel de enemigo
-signal blueprint_unlocked(blueprint_id)  # Plano desbloqueado al matar un enemigo por primera vez
+signal blueprint_unlocked(blueprint_id, rank)  # Plano desbloqueado (o subido de rango) por un hito
+signal blueprints_milestone(rank, tier, ids)  # Hito de rangos: se emite antes que los blueprint_unlocked
 signal record_changed(best_level)  # Nueva sala máxima alcanzada (base del leaderboard)
 signal progress_loaded  # La partida guardada ya está aplicada (para refrescar HUDs)
 signal buffs_changed(active: Dictionary)  # Un efecto temporal empieza, se renueva o caduca (id → segundos)
@@ -356,20 +357,21 @@ func register_enemy_defeat(level: int) -> void:
 		return
 	DebugManager.log_msg(&"game", "Enemy level %d defeated (current: %d)" % [level, current_enemy_level])
 	
-	# Si es la primera vez que se derrota este nivel, desbloquear blueprint
 	if not enemies_defeated.has(level):
 		enemies_defeated[level] = true
-		DebugManager.log_msg(&"game", "Enemy level %d first kill - unlocking blueprint" % level)
 		emit_signal("enemy_defeated_first_time", level)
-		
+	# Hitos de rango: vencer a ciertos jefes desbloquea un nivel de pieza (spec de rangos, apartado 3)
+	if Biomes.is_boss_room(level):
+		var ms := Ranks.milestone_for_boss_room(level)
 		var dm = get_node_or_null("/root/DataManager")
-		if dm and dm.has_method("get_locked_blueprints"):
-			var locked = dm.get_locked_blueprints()
-			if locked.size() > 0:
-				var random_bp = locked[randi() % locked.size()]
-				if dm.unlock_blueprint(random_bp):
-					DebugManager.log_msg(&"game", "Unlocked blueprint '%s'" % random_bp)
-					emit_signal("blueprint_unlocked", StringName(random_bp))
+		if not ms.is_empty() and dm and dm.has_method("apply_milestones"):
+			var newly: Array = dm.apply_milestones([ms])
+			if not newly.is_empty():
+				var ids := newly.map(func(n): return n.id)
+				emit_signal("blueprints_milestone", int(ms.rank), ms.tier, ids)
+				for n in newly:
+					emit_signal("blueprint_unlocked", n.id, n.rank)
+				_on_trigger_save()
 
 	# Rejilla de Tico (spec del inventario en rejilla, apartado 7). Provisional hasta que lleguen las
 	# recetas con los rangos: la primera vez que cae el jefe de la sala 10, 20, 30 o 40 del ciclo I, la
@@ -468,6 +470,19 @@ func _on_data_ready_load_save() -> void:
 		DebugManager.log_msg(&"game", "Save loaded: %s" % str(_save_loaded))
 	else:
 		DebugManager.log_msg(&"game", "No save file found — fresh start")
+	# Sin partida (o si no se pudo leer) no hay nada desbloqueado: los hitos del récord dan al menos los básicos I.
+	# Con partida ya los ha aplicado SaveManager.load_game().
+	if not _save_loaded:
+		apply_record_milestones()
+
+
+## Aplica en silencio los hitos que ya supera el récord (los básicos I siempre). Lo llama SaveManager.load_game() al
+## cargar una partida (también al migrarla) y _on_data_ready_load_save() cuando no hay partida.
+func apply_record_milestones() -> Array:
+	var dm = get_node_or_null("/root/DataManager")
+	if dm == null or not dm.has_method("apply_milestones"):
+		return []
+	return dm.apply_milestones(Ranks.milestones_up_to_record(best_enemy_level))
 
 func is_save_loaded() -> bool:
 	return _save_loaded

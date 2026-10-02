@@ -128,11 +128,12 @@ func show_result(result: Dictionary) -> void:
 	var crafted_item = result.get("crafted_item")
 	if crafted_item is CraftedItem:
 		icon = crafted_item.get_icon()
+		item_name = crafted_item.get_name_with_rank()
 	var dm = get_node_or_null("/root/DataManager")
 	if dm:
 		var bp = dm.get_blueprint(StringName(bp_id))
 		if bp:
-			if bp.display_name != "":
+			if item_name == "" and bp.display_name != "":
 				item_name = tr(bp.display_name)
 			if icon == null:
 				icon = bp.get_icon()  # resuelve icon_path (bp.icon queda vacío al cargar)

@@ -144,5 +144,8 @@ game_assets.export_game({key: CAST[name] for key, name in GAME_KEYS.items()})
 print("sprites del juego en", game_assets.SPRITES)
 fonts.export_fonts()
 print("fuentes pixel en", fonts.FONT_DIR)
+import materials
+materials.export_icons()
+print("iconos de materiales en", materials.OUT)
 print("colores en paleta:", len(PALETTE))
 print("ok", sheet.size)

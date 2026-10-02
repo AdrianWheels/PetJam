@@ -308,7 +308,7 @@ Medidas: casillas de 22×22 píxeles de arte a ×5 (110 px de pantalla), el mism
 
 ## 10. Guardado y migración
 
-- **Guardado versión 2** (la base guarda la 1; los rangos pasarán a la 3). En `inventory`:
+- **Guardado versión 2** (la base guarda la 1; los rangos la pasaron a la 3). En `inventory`:
   - cada pieza de `crafted_items` guarda, además de lo de hoy (`item_id`, `quality`, `stats`, `timestamp` y el `rank` de los rangos), `place`, `x`, `y`, `rot` y `aristas` (una lista de pares);
   - desaparecen `equipped` en las piezas y `equipped_slots`;
   - el orden de las piezas del botín es el de la lista;
@@ -321,7 +321,7 @@ Medidas: casillas de 22×22 píxeles de arte a ×5 (110 px de pantalla), el mism
   3. Las piezas que estaban equipadas se colocan en la rejilla con `GearPacker`: las mejores primero y, si se puede, en su zona. Las que no caben van al botín.
   4. El resto va al botín, con las mejores primero.
   5. Los huecos de consumibles empiezan vacíos.
-- **Copia de la partida antigua:** la partida es una sola y la comparten todas las compilaciones del juego, y el guardado de después de cargar la reescribe en la versión 2. Antes de migrar, `SaveManager` copia `save.json` en `save.v1.bak.json` (la misma carpeta `user://`), solo si esa copia no existe: una migración posterior no pisa la primera.
+- **Copia de la partida antigua:** la partida es una sola y la comparten todas las compilaciones del juego, y el guardado de después de cargar la reescribe en la versión actual. Antes de migrar, `SaveManager` copia `save.json` en `save.v<versión de origen>.bak.json` (la misma carpeta `user://`), solo si esa copia no existe: una migración posterior no pisa la primera.
 - **En cualquier carga,** una pieza con una posición imposible (fuera de la rejilla o pisando otra) pasa al botín. Nunca se pierde una pieza.
 - **Guardado robusto:** si para entonces está hecha su tarjeta, la migración se hace sobre ella.
 

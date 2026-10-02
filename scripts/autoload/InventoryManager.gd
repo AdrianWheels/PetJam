@@ -329,8 +329,13 @@ func preview_stats(item: CraftedItem, place: StringName, cell: Vector2i, rot: in
 ## La mejor pieza de un tipo ("main_hand", "off_hand", "head" o "feet") en la rejilla de Tico: primero
 ## el rango, después el nivel y después la calidad. Es la que dibuja su sprite.
 func best_hero_item(slot: String) -> CraftedItem:
+	return best_item_in(hero_grid, slot)
+
+
+## La mejor pieza de un tipo en una rejilla cualquiera (la de Tico o una copia simulada), con gear_score.
+static func best_item_in(grid: GearGrid, slot: String) -> CraftedItem:
 	var best: CraftedItem = null
-	for item in hero_grid.items:
+	for item in grid.items:
 		if item.get_equipment_slot() != slot:
 			continue
 		if best == null or gear_score(item) > gear_score(best):
@@ -343,16 +348,21 @@ static func gear_score(item: CraftedItem) -> float:
 	return float(item.rank) * 1000.0 + float(level) * 10.0 + item.quality
 
 
-## Rango del equipo (spec de rangos, apartado 6, "Base de Tico"; spec del inventario, apartado 6): el
-## menor rango entre las mejores piezas de cada tipo de la rejilla de Tico. Añadir una pieza de un tipo
-## que ya lleva nunca lo baja. Sin piezas, rango I.
-func equipment_rank() -> int:
-	var rank := 0
+## Rango del equipo (spec de rangos, apartado 6, "Base de Tico"; spec del inventario, apartado 6) de una rejilla: el
+## menor rango entre sus mejores piezas de cada tipo. La regla vive en Ranks.team_rank; aquí solo se juntan los rangos.
+## Un tipo que no lleva no cuenta, y añadir una pieza de un tipo que ya lleva nunca lo baja. Sin piezas, rango I.
+static func grid_rank(grid: GearGrid) -> int:
+	var ranks: Array = []
 	for slot in ["main_hand", "off_hand", "head", "feet"]:
-		var best := best_hero_item(slot)
+		var best := best_item_in(grid, slot)
 		if best:
-			rank = best.rank if rank == 0 else mini(rank, best.rank)
-	return maxi(1, rank)
+			ranks.append(best.rank)
+	return Ranks.team_rank(ranks)
+
+
+## Rango del equipo de Tico: el de su rejilla.
+func equipment_rank() -> int:
+	return grid_rank(hero_grid)
 
 
 ## Ampliación de la rejilla de Tico: crece al tamaño siguiente, sea cual sea la ampliación. false si ya

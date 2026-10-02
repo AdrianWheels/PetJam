@@ -25,6 +25,8 @@ signal room_traveled(room: int)  # viaje del selector o reintento del muro (el H
 
 # Medidas en píxeles del arte (216x96): las de 1080x480 divididas entre 5
 const HERO_SPEED := 38.0
+const UNLOCK_STAGGER := 0.15  # segundos entre los pergaminos de un mismo hito
+var _unlock_burst := 0
 const FLOOR_Y := PixelView.FLOOR_Y
 const VIEW_W := PixelView.VIEW_W
 const VIEW_H := PixelView.VIEW_H
@@ -36,6 +38,11 @@ const ENGAGE_GAP := 3.0
 const HERO_START := PixelView.HERO_START
 const BOSS_INTERVAL := 10  # Boss cada 10 niveles (coincide con Biomes.ROOMS_PER_BIOME)
 const RESPAWN_DELAY := 1.5
+## Botín doble (Poción de Suerte): la segunda tanda sale a la vez que la primera, un icono más adelante,
+## más rápida hacia delante y con la etiqueta una fila más arriba; su tintineo suena un poco después.
+const BONUS_LOOT_AHEAD := 12.0
+const BONUS_LOOT_SPEED := Vector2(22.0, 30.0)
+const BONUS_LOOT_SOUND_LAG := 0.1
 const POST_KILL_PAUSE := 0.45
 const FIRST_STEP_PAUSE := 0.35
 
@@ -86,6 +93,8 @@ func _ready():
 		_game_manager.enemy_level_changed.connect(_on_enemy_level_changed)
 		if _game_manager.has_signal("blueprint_unlocked"):
 			_game_manager.blueprint_unlocked.connect(_on_blueprint_unlocked)
+		if _game_manager.has_signal("blueprints_milestone"):
+			_game_manager.blueprints_milestone.connect(_on_blueprints_milestone)
 		if _game_manager.has_signal("room_travel"):
 			_game_manager.room_travel.connect(_on_room_travel)
 
@@ -396,21 +405,57 @@ func _on_enemy_died_fx(_drops) -> void:
 		loot_dropped.emit(&"material", pos, {"id": md.get("item_id", ""), "quantity": md.get("quantity", 0)})
 		# Tintineo cuando sale el botín (va con el mismo retardo que su icono)
 		get_tree().create_timer(0.3 if was_boss else 0.12).timeout.connect(func(): Sfx.play(&"loot_coins"))
+	_show_bonus_loot(info)
+	var bd: Dictionary = info.get("biome_material", {})
+	if not bd.is_empty():
+		var bmat := _material_info(StringName(bd.get("item_id", "")))
+		var bdelay := (0.3 if was_boss else 0.12) + 0.18
+		# Fila 2 de etiqueta: el de siempre usa la 0 y el doble de la Suerte la 1, así no se pisan
+		fx.loot_pop(pos + Vector2(8, -8), bmat.get("icon"), "+%d %s" % [int(bd.get("quantity", 0)), tr(bmat.get("name", ""))], Color(0.8, 0.95, 1.0), bdelay, FLOOR_Y, NAN, 2)
+		loot_dropped.emit(&"material", pos, {"id": bd.get("item_id", ""), "quantity": bd.get("quantity", 0), "biome": true})
+		get_tree().create_timer(bdelay + 0.1).timeout.connect(func(): Sfx.play(&"loot_coins"))
 
 
-func _on_blueprint_unlocked(bp_id: StringName) -> void:
+## Segunda tanda de la Poción de Suerte, igual que la primera: icono con "+15 material" que sale del enemigo,
+## aviso loot_dropped para el HUD ("bonus": true) y tintineo. El material ya está en el inventario (lo mete Enemy).
+func _show_bonus_loot(info: Dictionary) -> void:
+	var md: Dictionary = info.get("bonus_material", {})
+	if md.is_empty():
+		return
+	var pos: Vector2 = info.get("pos", Vector2.ZERO)
+	var delay: float = 0.3 if info.get("boss", false) else 0.12  # el mismo que el primer botín
+	var mat := _material_info(StringName(md.get("item_id", "")))
+	var vx := randf_range(BONUS_LOOT_SPEED.x, BONUS_LOOT_SPEED.y)
+	fx.loot_pop(pos + Vector2(2.0 + BONUS_LOOT_AHEAD, -4), mat.get("icon"), "+%d %s" % [int(md.get("quantity", 0)), tr(mat.get("name", ""))], Color(1, 0.93, 0.7), delay, FLOOR_Y, vx, 1)
+	loot_dropped.emit(&"material", pos, {"id": md.get("item_id", ""), "quantity": md.get("quantity", 0), "bonus": true})
+	get_tree().create_timer(delay + BONUS_LOOT_SOUND_LAG).timeout.connect(func(): Sfx.play(&"loot_coins"))
+
+
+## Hito de rangos: un solo destello y un sonido; el cartel lo pone HeroViewOverlay.
+func _on_blueprints_milestone(_rank: int, _tier: StringName, _ids: Array) -> void:
+	_unlock_burst = 0
+	var pos: Vector2 = enemy.death_info.get("pos", hero.position + Vector2(24, 0))
+	fx.star(pos + Vector2(0, -16), Color("ffe08a"), 14.0, 0.4)
+	Sfx.play(&"blueprint_found", 1.0)
+
+
+## Cada plano del hito vuela a su botón, escalonado para que no salgan apilados.
+func _on_blueprint_unlocked(bp_id: StringName, rank: int = 1) -> void:
 	var pos: Vector2 = enemy.death_info.get("pos", hero.position + Vector2(24, 0))
 	var dm := get_node_or_null("/root/DataManager")
 	var bp = dm.blueprints.get(bp_id) if dm and "blueprints" in dm else null
 	var bp_name := String(bp_id)
 	var icon: Texture2D = null
 	if bp:
-		bp_name = bp.display_name
+		bp_name = tr(bp.display_name) + Ranks.suffix(rank)
 		icon = bp.get_blueprint_icon()  # el arte del plano; bp.icon no llega a cargarse
-	fx.star(pos + Vector2(0, -16), Color("ffe08a"), 14.0, 0.4)
-	fx.float_text(pos + Vector2(0, -26), tr("¡Nuevo plano!"), Color("ffe08a"), true, 1.6, 8.0)
-	Sfx.play(&"blueprint_found", 1.0)
-	loot_dropped.emit(&"blueprint", pos + Vector2(0, -16), {"id": bp_id, "name": bp_name, "icon": icon})
+	var payload := {"id": bp_id, "name": bp_name, "icon": icon, "rank": rank}
+	var delay := UNLOCK_STAGGER * _unlock_burst
+	_unlock_burst += 1
+	if delay <= 0.0:
+		loot_dropped.emit(&"blueprint", pos + Vector2(0, -16), payload)
+	else:
+		get_tree().create_timer(delay).timeout.connect(func(): loot_dropped.emit(&"blueprint", pos + Vector2(0, -16), payload))
 
 
 ## Nombre e icono de un material (caché). El nombre es el texto base en español del .tres: quien lo

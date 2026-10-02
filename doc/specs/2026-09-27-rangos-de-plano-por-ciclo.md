@@ -1,6 +1,6 @@
 # Rangos de plano por ciclo
 
-**Fecha:** 2026-09-27 · **Estado:** aprobado; revisado el 2026-09-27 con el muro y el farmeo (apartado 7); tarea 3 del plan (calibración del balance) hecha con Balanza el 2026-10-01 (apartado 6); siguen las tareas 4 a 11 y la 13
+**Fecha:** 2026-09-27 · **Estado:** implementado (pendiente de revisión humana); revisado el 2026-09-27 con el muro y el farmeo (apartado 7); calibración del balance hecha con Balanza el 2026-10-01 (apartado 6)
 **Petición:** "Qué le faltaría al juego para estar completo". El análisis encontró que el juego se agota pronto: los 12 planos se desbloquean al pasar la sala 9 y el poder de Tico tiene techo, porque solo cuenta el equipo, mientras los enemigos crecen sin límite. El usuario eligió publicar **gratis primero** (medir la retención antes de monetizar) y, como eje de progresión infinito, **rangos de plano por ciclo**, con estas decisiones:
 
 | Pregunta | Elegido |
@@ -214,12 +214,14 @@ Criterios:
 - **Datos que ganan rango:**
   - `CraftedItem.rank` (1 por defecto): se guarda en `to_dict` y se lee en `from_dict`. Las estadísticas calculadas ya incluyen el multiplicador.
   - `DataManager`: rango máximo desbloqueado por plano.
-  - `RequestsManager`: el rango de cada pedido activo.
-  - `CraftingManager`: el rango y el origen de cada tarea.
-- **Guardado versión 2** (`SaveManager.SAVE_VERSION`), con migración desde la 1:
-  - los objetos forjados pasan a rango I;
-  - los planos desbloqueados se conservan como rango I;
-  - después se aplican los hitos que ya supera el récord (apartado 3).
+  - `RequestsManager`: el rango de cada pedido activo. No se guarda: hoy `RequestsManager` solo guarda `free_requests_remaining` y los pedidos se rehacen al arrancar.
+  - `CraftingManager`: el rango y el origen de cada tarea. Tampoco se guarda: la cola no se guarda.
+- **Guardado versión 3** (`SaveManager.SAVE_VERSION`; la 2 es la del inventario en rejilla), con migración desde la 1 y desde la 2:
+  - desde la 1, el inventario se migra a la rejilla como dice el spec del inventario (apartado 10) y los objetos forjados pasan a rango I;
+  - desde la 2, las piezas ya guardan su rango (1) y no se mueven;
+  - en las dos, los planos desbloqueados se conservan como rango I;
+  - después se aplican los hitos que ya supera el récord (apartado 3);
+  - antes de migrar, `SaveManager` copia la partida en `save.v<versión de origen>.bak.json`, solo si esa copia no existe.
 - **Muro y candado:** `GameManager` guarda también el candado y la sala del muro (0 si no hay). La sala actual ya se guardaba (`current_enemy_level`). El contador de reintentos vuelve a 0 al cargar, y una partida de la versión 1 carga sin candado ni muro.
 - Si ya está hecha la tarjeta de guardado robusto (escritura atómica y copia de seguridad), la migración se hace sobre ella. Si no, esta tarjeta no la adelanta.
 
@@ -237,7 +239,7 @@ Criterios:
   - Pedidos: el reparto 80/20 por rango, con una semilla fija; el oro crece con el rango.
   - Crafteo: la tarea de rango N da un objeto de rango N con las estadísticas multiplicadas; el encargo propio cobra la receta y no da oro.
   - Botín: la cantidad crece con el ciclo; el material de bioma cae solo en su bioma; el jefe siempre suelta el suyo.
-  - Guardado: una partida de versión 1 (fichero de prueba) carga en la versión 2 sin perder objetos ni planos, con los hitos del récord aplicados.
+  - Guardado: una partida de versión 1 (fichero de prueba) y otra de versión 2 cargan en la versión 3 sin perder objetos ni planos, con los hitos del récord aplicados y la copia de cada una.
   - Botín del jefe: el extra solo cae cuando su muerte sube el récord.
 - **Arnés de Balanza** (`bash balance/arnes.sh check`): los 35 objetivos de `balance/balance.json` (los del apartado 6 para los ciclos I a V), medidos en duelos, como comprobaciones.
 - **`GameplayTests`**, además de seguir en verde:

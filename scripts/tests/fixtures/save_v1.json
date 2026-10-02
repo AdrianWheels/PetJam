@@ -1,0 +1,26 @@
+{
+	"version": 1,
+	"timestamp": 1790000000.0,
+	"game": {
+		"current_enemy_level": 12,
+		"best_enemy_level": 57,
+		"death_count": 3,
+		"enemies_defeated": {"1": true, "2": true, "3": true},
+		"hero_loadout": {"weapon": "", "armor": "", "shield": "", "trinket": ""}
+	},
+	"data": {
+		"unlocked_blueprints": {
+			"sword_basic": true, "shield_basic": true, "boots_basic": true, "helmet_basic": false,
+			"sword_advanced": true, "shield_advanced": false, "helmet_advanced": false, "boots_advanced": false,
+			"sword_masterwork": true, "shield_master": false, "helmet_master": false, "boots_master": false
+		}
+	},
+	"inventory": {
+		"materials": {"iron": 50, "wood": 20, "gold": 300},
+		"crafted_items": [
+			{"item_id": "sword_masterwork", "quality": 0.93, "stats": {"damage": 34, "str": 0, "agi": 0, "int": 0, "hp": 0, "armor": 0, "crit": 0.4325, "aps": 0.6755}, "timestamp": 1000, "equipped": true}
+		],
+		"equipped_slots": {"main_hand": 0}
+	},
+	"requests": {"free_requests_remaining": 0}
+}

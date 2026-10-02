@@ -700,9 +700,9 @@ func test_v1_save_migrates_without_losing_pieces() -> void:
 	var migrated_places := _by_timestamp(im, func(it): return [it.place, it.cell, it.rot])
 	check(SaveManager.save_game(), "se guarda en la versión nueva")
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
-	check(int(data.version) == SaveManager.SAVE_VERSION and data.inventory.has("hero_grid") and not data.inventory.has("equipped_slots"), "guardado versión 2, sin huecos fijos")
-	# El fichero de la versión 2 también se carga: x, y y giro vuelven de JSON como decimales y las aristas como pares
-	check(SaveManager.load_game(), "se carga el fichero de la versión 2")
+	check(int(data.version) == SaveManager.SAVE_VERSION and data.inventory.has("hero_grid") and not data.inventory.has("equipped_slots"), "guardado en la versión actual, sin huecos fijos")
+	# El fichero de la versión actual también se carga: x, y y giro vuelven de JSON como decimales y las aristas como pares
+	check(SaveManager.load_game(), "se carga el fichero de la versión actual")
 	check(im.get_crafted_items().size() == 44, "ninguna pieza perdida al recargarlo (%d de 44)" % im.get_crafted_items().size())
 	check(im.hero_grid_size() == Vector2i(6, 5) and im.expansions.size() == 3, "la rejilla de 6×5 y las 3 ampliaciones vuelven (%s)" % im.hero_grid_size())
 	check(_by_timestamp(im, func(it): return it.aristas.duplicate()) == migrated_aristas, "las aristas vuelven iguales del fichero")
@@ -2026,9 +2026,6 @@ func test_first_boss_kill_grows_the_grid() -> void:
 	# Sin muro, sea cual sea la partida: esta prueba mira la rejilla; el muro tiene la suya
 	# (test_the_expansion_never_sends_tico_to_the_wall)
 	gm.wall_room = 0
-	# Niveles ya vencidos: así register_enemy_defeat no desbloquea planos al azar en la prueba
-	gm.enemies_defeated[10] = true
-	gm.enemies_defeated[60] = true
 	var seen := []
 	var on_grow := func(id): seen.append(id)
 	gm.grid_expanded.connect(on_grow)
@@ -2065,16 +2062,18 @@ func test_each_boss_of_the_first_cycle_grows_the_grid_one_step() -> void:
 	var saved := _fresh_inventory()
 	var im := _im()
 	var gm := get_node("/root/GameManager")
+	var dm := get_node("/root/DataManager")
+	var ranks_before: Dictionary = dm.unlocked_ranks.duplicate()  # los jefes desbloquean rangos de verdad: se restauran al final
 	var state := {"dungeon": gm.dungeon_state, "best": gm.best_enemy_level, "defeated": gm.enemies_defeated.duplicate(),
 		"wall": gm.wall_room, "locked": gm.room_locked, "level": gm.current_enemy_level}
 	gm.wall_room = 0  # sin muro: ver test_first_boss_kill_grows_the_grid
 	gm.dungeon_state = gm.DungeonState.RUNNING
 	for step in [[10, Vector2i(5, 4)], [20, Vector2i(5, 5)], [30, Vector2i(6, 5)], [40, Vector2i(6, 6)], [50, Vector2i(6, 6)]]:
-		gm.enemies_defeated[step[0]] = true  # sin planos al azar
 		gm.best_enemy_level = step[0]
 		gm.register_enemy_defeat(step[0])
 		check(im.hero_grid_size() == step[1], "tras el jefe de la sala %d, la rejilla es de %s (%s)" % [step[0], step[1], im.hero_grid_size()])
 	check(im.expansions.size() == 4, "cuatro ampliaciones y no más (%d)" % im.expansions.size())
+	dm.unlocked_ranks = ranks_before
 	gm.dungeon_state = state.dungeon
 	gm.best_enemy_level = state.best
 	gm.enemies_defeated = state.defeated
@@ -2100,12 +2099,13 @@ func test_the_expansion_never_sends_tico_to_the_wall() -> void:
 	var saved := _fresh_inventory()
 	var im := _im()
 	var gm := get_node("/root/GameManager")
+	var dm := get_node("/root/DataManager")
+	var ranks_before: Dictionary = dm.unlocked_ranks.duplicate()  # el jefe de la 20 desbloquea rangos de verdad: se restauran al final
 	var state := {"dungeon": gm.dungeon_state, "best": gm.best_enemy_level, "defeated": gm.enemies_defeated.duplicate(),
 		"wall": gm.wall_room, "locked": gm.room_locked, "level": gm.current_enemy_level, "wins": gm._wins_since_retry,
 		"hero": gm.get("_hero")}
 	var tico := StatsCounter.new()
 	gm.set("_hero", tico)
-	gm.enemies_defeated[20] = true  # sin planos al azar
 	gm.wall_room = 19  # el muro, más abajo que el jefe (Tico cayó en la 19 y saltó con el selector a la 20)
 	gm.room_locked = false
 	gm.current_enemy_level = 20
@@ -2123,6 +2123,7 @@ func test_the_expansion_never_sends_tico_to_the_wall() -> void:
 	im.move_item(sword, &"hero", Vector2i(0, 0), 0)  # un cambio de equipo de verdad
 	check(travels == [19] and gm.current_enemy_level == 19, "un cambio de equipo normal justo después sí prueba el muro (viajes %s, sala %d)" % [travels, gm.current_enemy_level])
 	gm.room_travel.disconnect(on_travel)
+	dm.unlocked_ranks = ranks_before
 	gm.dungeon_state = state.dungeon
 	gm.best_enemy_level = state.best
 	gm.enemies_defeated = state.defeated
@@ -2144,7 +2145,6 @@ func test_a_boss_kill_with_a_lower_wall_keeps_the_room_accounting() -> void:
 	var a := await _arena([])
 	var gm := get_node("/root/GameManager")
 	var extra := {"defeated": gm.enemies_defeated.duplicate(), "boss": gm.boss_defeated_flag}
-	gm.enemies_defeated[10] = true  # sin planos al azar
 	gm.boss_defeated_flag = false
 	gm.wall_room = 9
 	gm.current_enemy_level = 10
@@ -2673,8 +2673,8 @@ func test_a_hidden_shop_does_not_rebuild_its_sell_list() -> void:
 
 
 ## La partida es una sola y la comparten todas las compilaciones del juego: antes de que el guardado de después de cargar una
-## partida antigua la reescriba en la versión 2, SaveManager la copia en save.v1.bak.json con los mismos bytes, y solo la
-## primera vez (una migración posterior no pisa la primera copia). Con la partida ya en la versión 2 no hace copia.
+## partida antigua la reescriba en la versión actual, SaveManager la copia en save.v1.bak.json con los mismos bytes, y solo la
+## primera vez (una migración posterior no pisa la primera copia). Con la partida ya en la versión actual no hace copia.
 func test_loading_an_old_save_keeps_a_backup_of_it() -> void:
 	var had := FileAccess.file_exists(V1_BACKUP_PATH)
 	var kept := FileAccess.get_file_as_bytes(V1_BACKUP_PATH) if had else PackedByteArray()

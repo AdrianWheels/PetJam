@@ -239,7 +239,7 @@ func test_los_datos_visibles_estan_en_espanol() -> void:
 	var library = load(LIBRARY_PATH)
 	check(library.blueprints.size() == 12, "la librería carga 12 planos (%d)" % library.blueprints.size())
 	check(_tres_in(ITEMS_DIR).size() == 12, "hay 12 objetos (%d)" % _tres_in(ITEMS_DIR).size())
-	check(_tres_in(MATERIALS_DIR).size() == 9, "hay 9 materiales (%d)" % _tres_in(MATERIALS_DIR).size())
+	check(_tres_in(MATERIALS_DIR).size() == 14, "hay 14 materiales: 9 de los planos y 5 de bioma (%d)" % _tres_in(MATERIALS_DIR).size())
 	for entry in _data_texts():
 		var text: String = entry[0]
 		check(text.strip_edges() != "", "%s está vacío" % entry[1])

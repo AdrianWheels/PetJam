@@ -17,10 +17,13 @@ extends Node
 ##   potions → compra Velocidad y Suerte (a los huecos), las bebe al aparecer un jefe y bebe la Vida al bajar del 30 %;
 ##             fuerza el botín doble y adelanta el final de la Velocidad para ver su parpadeo y cómo desaparece
 ##             (sala 2, combate normal)
+##   unlock → hito de rango en el jefe de la sala 20: cartel «¡Planos avanzados!», 4 pergaminos escalonados y, detrás, «¡La rejilla crece!»
 ##   shop   → abre la tienda y enseña sus pestañas una a una (materiales, pociones y venta)
 ##   wall   → muro y farmeo: cae en la sala 14, farmea la 13 con «Muro: sala 14» y el selector lo lleva a la 4
-##   inventory → rejilla de 6×6 con piezas (una legendaria y una con aristas), mochila y botín; arrastra
+##   inventory → rejilla de 6×6 con piezas (una legendaria, la maestra de rango II, y una con aristas), mochila y botín; arrastra
 ##               una pieza del botín hasta Tico con intercambio y abre la ficha de la legendaria
+##   ranks  → pedidos con numeral y materiales de bioma, biblioteca con el selector de rango y, en el Santuario del Vacío
+##            (sala 45), botín con fragmento de vacío y el cartel «¡Planos avanzados II!»
 
 const MAIN_SCENE := preload("res://scenes/Main.tscn")
 const START_SCENE := preload("res://scenes/UI/StartScreen.tscn")
@@ -68,6 +71,8 @@ func _ready() -> void:
 			_run_wall_plan()
 		"inventory":
 			_run_inventory_plan()
+		"ranks":
+			_run_ranks_plan()
 
 
 func _hud() -> Node:
@@ -135,15 +140,26 @@ func _run_death_plan() -> void:
 
 
 func _run_unlock_plan() -> void:
-	# Bloquea un plano y olvida las victorias para que la próxima muerte lo desbloquee
+	# Hito de rangos (spec de rangos, apartado 3): bloquea los avanzados, vacía la rejilla de Tico (sin ampliaciones) y
+	# lleva a Tico (invencible) al jefe de la sala 20 con el récord en ella. Su muerte da el cartel del hito y, en cola
+	# detrás de él, el aviso «¡La rejilla crece!» de la ampliación provisional.
 	await get_tree().create_timer(1.0).timeout
 	var dm := get_node_or_null("/root/DataManager")
 	var gm := get_node_or_null("/root/GameManager")
-	if dm:
-		dm.unlocked_blueprints[&"helmet_master"] = false
-		dm.unlocked_blueprints[&"boots_master"] = false
-	if gm:
-		gm.enemies_defeated.clear()
+	var im := get_node_or_null("/root/InventoryManager")
+	if dm == null or gm == null or im == null:
+		return
+	for id in dm.get_blueprint_ids_for_tier(Ranks.TIER_ADVANCED):
+		dm.unlocked_ranks[id] = 0
+	im.clear()
+	var hero: Node = gm.get_hero()
+	if hero:
+		hero.set_invincible(true)
+	gm.wall_room = 0
+	gm.room_locked = false
+	gm.best_enemy_level = 19
+	gm.current_enemy_level = 19
+	gm.advance_enemy_level()  # sala 20, récord 20: su jefe aún no ha caído
 
 
 func _run_biome_plan() -> void:
@@ -320,7 +336,8 @@ func _run_inventory_plan() -> void:
 			if not spot.is_empty():
 				im.move_item(item, place, spot.cell, spot.rot)
 		return item
-	add.call(&"sword_masterwork", 1.0, InventoryManager.PLACE_HERO, Vector2i(5, 0))  # legendaria (Filo ígneo), de pie en la columna derecha
+	var legend: CraftedItem = add.call(&"sword_masterwork", 1.0, InventoryManager.PLACE_HERO, Vector2i(5, 0))  # legendaria (Filo ígneo), de pie en la columna derecha
+	legend.rank = 2  # rango II: la ficha enseña «… II» (solo el nombre: la captura no mira sus números)
 	add.call(&"shield_master", 0.95, InventoryManager.PLACE_HERO, Vector2i(0, 2))
 	add.call(&"helmet_master", 0.8, InventoryManager.PLACE_HERO, Vector2i(1, 0))  # rara: 1 arista
 	add.call(&"boots_master", 0.95, InventoryManager.PLACE_HERO, Vector2i(2, 3))
@@ -352,3 +369,40 @@ func _run_inventory_plan() -> void:
 	panel._press.time = Time.get_ticks_msec() - 1000
 	await get_tree().create_timer(0.6).timeout
 	panel._on_release(start)
+
+
+func _run_ranks_plan() -> void:
+	# Rangos (spec de rangos): pedidos con numeral y materiales de bioma, biblioteca con el selector de
+	# rango y, en el Santuario del Vacío, botín con fragmento de vacío y el cartel de un hito
+	await get_tree().create_timer(1.0).timeout
+	var dm := get_node_or_null("/root/DataManager")
+	var gm := get_node_or_null("/root/GameManager")
+	var rm := get_node_or_null("/root/RequestsManager")
+	var inv := get_node_or_null("/root/InventoryManager")
+	var hud := _hud()
+	if dm == null or gm == null or rm == null or inv == null or hud == null:
+		return
+	for id in dm.get_blueprint_ids_for_tier(Ranks.TIER_BASIC):
+		dm.unlock_rank(id, 2)
+	dm.unlock_rank(&"sword_advanced", 2)
+	var mats: Array = ["wood", "iron", "leather", "cloth", "fire", "water", "ice", "poison"]
+	for mat_id in Ranks.BIOME_MATERIALS:
+		mats.append(String(mat_id))
+	for mat in mats:
+		inv.add_item(StringName(mat), 60)
+	rm.refresh_all_requests()
+	await get_tree().create_timer(2.0).timeout
+	hud._on_blueprints_pressed()
+	await get_tree().create_timer(3.0).timeout
+	if hud.blueprint_library and hud.blueprint_library.has_method("close"):
+		hud.blueprint_library.close()
+	var hero: Node = gm.get_hero()
+	if hero:
+		hero.set_invincible(true)
+	hud.get_corridor().enemy.biome_drop_chance = 1.0
+	gm.wall_room = 0
+	gm.room_locked = false
+	gm.current_enemy_level = 44
+	gm.advance_enemy_level()  # sala 45, Santuario del Vacío
+	await get_tree().create_timer(2.0).timeout
+	gm.blueprints_milestone.emit(2, Ranks.TIER_ADVANCED, [])

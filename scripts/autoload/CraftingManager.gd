@@ -38,12 +38,16 @@ class CraftingTask:
 	var trial_results: Array = []
 	var grade: String = ""
 	var gold_reward: int = 0  ## Recompensa base del request (calculado por RequestsManager)
+	var rank: int = 1  ## Rango del plano (spec de rangos)
+	var own_order: bool = false  ## Encargo propio desde la biblioteca: no da oro
 
-	func _init(task_id: int, blueprint_res: BlueprintResource, slot: int, reward: int = 0) -> void:
+	func _init(task_id: int, blueprint_res: BlueprintResource, slot: int, reward: int = 0, task_rank: int = 1, is_own_order: bool = false) -> void:
 		id = task_id
 		blueprint = blueprint_res
 		slot_index = slot
 		gold_reward = reward
+		rank = maxi(1, task_rank)
+		own_order = is_own_order
 
 var queue: Array = []
 var heat := 0
@@ -96,7 +100,7 @@ func _enqueue_defaults() -> void:
 	# print("CraftingManager: Default blueprints enqueued")
 	pass
 
-func enqueue(recipe_id, gold_reward: int = 0) -> bool:
+func enqueue(recipe_id, gold_reward: int = 0, rank: int = 1, own_order: bool = false) -> bool:
 	var blueprint := _resolve_blueprint(StringName(str(recipe_id)))
 	if blueprint == null:
 		push_warning("CraftingManager: Cannot enqueue recipe '%s' without blueprint" % recipe_id)
@@ -113,7 +117,7 @@ func enqueue(recipe_id, gold_reward: int = 0) -> bool:
 
 	for i in range(MAX_SLOTS):
 		if queue[i] == null:
-			var task := CraftingTask.new(_generate_task_id(), blueprint, i, gold_reward)
+			var task := CraftingTask.new(_generate_task_id(), blueprint, i, gold_reward, rank, own_order)
 			queue[i] = task
 			task.status = STATUS_QUEUED  # Wait for player click
 			emit_signal("craft_enqueued", i, recipe_id)
@@ -124,6 +128,34 @@ func enqueue(recipe_id, gold_reward: int = 0) -> bool:
 
 	print("CraftingManager: No free slots for recipe '%s'" % recipe_id)
 	return false
+
+
+## Encargo propio desde la biblioteca (spec de rangos, apartado 5): cobra la receta del rango y encola
+## sin recompensa de oro. Devuelve &"" si se encola, o el motivo: &"locked", &"queue_full" o &"no_materials".
+## Si falla, no cobra nada.
+func place_own_order(bp_id: StringName, rank: int) -> StringName:
+	var dm = get_node_or_null("/root/DataManager")
+	var inv = get_node_or_null("/root/InventoryManager")
+	if dm == null or inv == null:
+		return &"locked"
+	if rank < 1 or rank > dm.get_unlocked_rank(bp_id):
+		return &"locked"
+	if not queue.has(null):
+		return &"queue_full"
+	var bp: BlueprintResource = dm.get_blueprint(bp_id)
+	if bp == null:
+		return &"locked"
+	var recipe := Ranks.recipe(bp.materials, dm.blueprint_tier(bp_id), rank)
+	if not inv.has_materials(recipe):
+		return &"no_materials"
+	if not inv.consume_materials(recipe):
+		return &"no_materials"
+	if not enqueue(bp_id, 0, rank, true):
+		# No debería pasar (se comprobó el hueco): devolver lo cobrado
+		for mat_id in recipe:
+			inv.add_item(mat_id, recipe[mat_id])
+		return &"queue_full"
+	return &""
 
 
 ## Encola un blueprint aleatorio de los desbloqueados
@@ -304,6 +336,7 @@ func get_queue_snapshot() -> Array:
 			"max_score": task.max_score_accumulated,
 			"grade": task.grade,
 			"materials": materials,
+			"rank": task.rank,
 		})
 	return snapshot
 
@@ -342,14 +375,14 @@ func _start_next_trial(task: CraftingTask) -> void:
 
 	task.status = STATUS_IN_PROGRESS
 	task.current_trial_id = trial.trial_id
-	var config := _resolve_trial_config(trial, task.blueprint)
+	var config := _resolve_trial_config(trial, task.blueprint, task.rank)
 	print("CraftingManager: Starting trial %s for task %d" % [String(trial.trial_id), task.id])
 	_emit_task_update(task)
 	task.current_trial_config = config
 	# Emitir señal deferred para evitar race condition con limpieza de minijuego anterior
 	call_deferred("emit_signal", "task_started", task.id, config.duplicate_config())
 
-func _resolve_trial_config(trial: TrialResource, blueprint: BlueprintResource) -> TrialConfig:
+func _resolve_trial_config(trial: TrialResource, blueprint: BlueprintResource, rank: int = 1) -> TrialConfig:
 	if trial == null:
 		return null
 	var config: TrialConfig = null
@@ -372,6 +405,8 @@ func _resolve_trial_config(trial: TrialResource, blueprint: BlueprintResource) -
 		config.parameters = {}
 	if config.max_score <= 0.0:
 		config.max_score = 100.0
+	# Dificultad del rango sobre la copia (el recurso del plano no cambia)
+	TrialDifficulty.apply(config, rank)
 	return config
 
 func _finalize_task(task: CraftingTask) -> Dictionary:
@@ -402,7 +437,7 @@ func _finalize_task(task: CraftingTask) -> Dictionary:
 		if dm and dm.has_method("get_item_resource"):
 			var item_res = dm.get_item_resource(task.blueprint.result_item)
 			if item_res:
-				crafted_item = CraftedItem.new(item_res, quality_normalized)
+				crafted_item = CraftedItem.new(item_res, quality_normalized, task.rank)
 				# Aristas según la calidad (spec del inventario en rejilla, apartado 2.3)
 				crafted_item.aristas = PieceShape.roll_aristas(item_res, crafted_item.get_quality_tier(), rng)
 				
@@ -427,7 +462,9 @@ func _finalize_task(task: CraftingTask) -> Dictionary:
 			gold_multiplier = 1.0
 		_:
 			gold_multiplier = 0.5
-	var final_gold := int(task.gold_reward * gold_multiplier) if task.gold_reward > 0 else int(50 * gold_multiplier)
+	var final_gold := 0
+	if not task.own_order:
+		final_gold = int(task.gold_reward * gold_multiplier) if task.gold_reward > 0 else int(50 * gold_multiplier)
 
 	var result := {
 		"status": STATUS_COMPLETED,
@@ -441,6 +478,8 @@ func _finalize_task(task: CraftingTask) -> Dictionary:
 		"materials": task.blueprint.materials if task.blueprint else {},
 		"crafted_item": crafted_item,
 		"gold_reward": final_gold,
+		"rank": task.rank,
+		"own_order": task.own_order,
 		"forjamagia": forjamagia,
 		"forjamagia_bonus": fm_bonus,
 	}
@@ -504,6 +543,7 @@ func _emit_task_update(task: CraftingTask) -> void:
 		"score": task.score_accumulated,
 		"max_score": task.max_score_accumulated,
 		"grade": task.grade,
+		"rank": task.rank,
 		"current_trial_id": String(task.current_trial_id)
 	}
 	emit_signal("task_updated", task.id, payload)

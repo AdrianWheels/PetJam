@@ -6,9 +6,15 @@ extends RefCounted
 class_name SaveManager
 
 const SAVE_PATH := "user://save.json"
-## Copia de la partida anterior a la versión actual, hecha una sola vez al migrarla (ver _back_up_old_save)
-const BACKUP_V1_PATH := "user://save.v1.bak.json"
-const SAVE_VERSION := 2
+## 1: antes del inventario en rejilla; 2: la rejilla; 3: los rangos de plano (unlocked_ranks)
+const SAVE_VERSION := 3
+
+
+## Copia de la partida tal como estaba antes de migrarla desde la versión `version`: save.v1.bak.json, save.v2.bak.json…
+## Una partida sin versión cuenta como de la 1.
+static func backup_path(version: int) -> String:
+	return "user://save.v%d.bak.json" % maxi(1, version)
+
 
 ## Guarda el estado completo del juego a disco
 static func save_game() -> bool:
@@ -73,7 +79,7 @@ static func load_game() -> bool:
 	var version: int = int(save_data.get("version", 0))
 	if version < SAVE_VERSION:
 		print("SaveManager: partida de la versión %d; se migra a la %d al cargar" % [version, SAVE_VERSION])
-		_back_up_old_save()
+		_back_up_old_save(version)
 	elif version > SAVE_VERSION:
 		push_warning("SaveManager: partida de una versión más nueva (%d > %d). Se intenta cargar igualmente." % [version, SAVE_VERSION])
 
@@ -99,6 +105,11 @@ static func load_game() -> bool:
 	if gm and gm.has_method("load_save_data") and save_data.has("game"):
 		gm.load_save_data(save_data["game"])
 
+	# Hitos de rango que ya supera el récord (spec de rangos, apartado 3). Van después de GameManager, que deja el récord
+	# en el mayor entre el guardado y la sala actual. En una partida anterior a los rangos convierten el récord en planos.
+	if gm and gm.has_method("apply_record_milestones"):
+		gm.apply_record_milestones()
+
 	# RequestsManager (pedidos gratis restantes)
 	if rm and rm.has_method("load_save_data") and save_data.has("requests"):
 		rm.load_save_data(save_data["requests"])
@@ -109,17 +120,18 @@ static func load_game() -> bool:
 	return true
 
 
-## Copia save.json en save.v1.bak.json antes de que el guardado diferido de después de cargar lo reescriba en la versión
-## nueva: la partida es una sola y la comparten todas las compilaciones del juego, así que esa escritura no se deshace.
-## Solo la primera vez: una migración posterior nunca pisa la primera copia.
-static func _back_up_old_save() -> void:
-	if FileAccess.file_exists(BACKUP_V1_PATH):
+## Copia save.json en save.v<versión>.bak.json antes de que el guardado diferido de después de cargar lo reescriba en la
+## versión nueva: la partida es una sola y la comparten todas las compilaciones del juego, así que esa escritura no se
+## deshace. Una copia por versión de origen, y solo la primera vez: una migración posterior nunca la pisa.
+static func _back_up_old_save(version: int) -> void:
+	var path := backup_path(version)
+	if FileAccess.file_exists(path):
 		return
-	var err := DirAccess.copy_absolute(SAVE_PATH, BACKUP_V1_PATH)
+	var err := DirAccess.copy_absolute(SAVE_PATH, path)
 	if err != OK:
-		push_warning("SaveManager: no se pudo copiar la partida antigua a %s (error %d)" % [BACKUP_V1_PATH, err])
+		push_warning("SaveManager: no se pudo copiar la partida antigua a %s (error %d)" % [path, err])
 		return
-	print("SaveManager: copia de la partida antigua en %s" % BACKUP_V1_PATH)
+	print("SaveManager: copia de la partida antigua en %s" % path)
 
 
 ## Retorna true si existe un archivo de guardado

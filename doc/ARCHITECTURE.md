@@ -77,7 +77,7 @@ StartScreen.tscn ──(botón Play)──→ Main.tscn
 - **Estado**: `inventory: Dictionary` (materiales), `crafted_items: Array[CraftedItem]` (todas las piezas), `hero_grid` y `bag_grid` (`GearGrid`), `loot: Array[CraftedItem]`, `expansions` y `consumables` (2 huecos de pociones). Ver 4.3
 - **API clave**: `add_item(id, qty)`, `has_materials(req)`, `consume_materials(req)`, `add_crafted_item(item)` (la pieza va al botín), `move_item(item, place, cell, rot)`, `rotate_in_place(item)`, `sell_item(item)`, `sell_all_loot()`, `calculate_total_stats()`, `simulate_hero_grid(item, place, cell, rot)` (la rejilla de Tico como quedaría, para la vista previa del arrastre), `preview_stats(item, place, cell, rot)` (envoltorio fino: `GearAuras.totals()` de esa simulación; el panel hace lo mismo por su cuenta), `apply_grid_expansion(id)`, `add_potion(id)`, `take_potion(id)`, `clear()`
 - **Dependencias**: `DataManager` (resuelve las piezas al cargar el guardado) y las clases de reglas de `scripts/core/` (ver 4.3).
-- **Nota**: Guarda y carga su parte de la partida (`to_save_data()` / `load_save_data()`, versión 2). `equip_item`/`unequip_item` y los huecos fijos de equipo ya no existen: lo que cuenta para Tico es lo que hay en su rejilla. Materiales iniciales generosos si no hay partida guardada.
+- **Nota**: Guarda y carga su parte de la partida (`to_save_data()` / `load_save_data()`, versión 3). `equip_item`/`unequip_item` y los huecos fijos de equipo ya no existen: lo que cuenta para Tico es lo que hay en su rejilla. Materiales iniciales generosos si no hay partida guardada.
 
 #### CraftingManager
 - **Señales**: `craft_enqueued`, `task_started`, `task_updated`, `task_completed`
@@ -230,18 +230,54 @@ Nada se coloca solo: lo forjado va siempre al botín. La única excepción es la
 
 **Ampliación de la rejilla (provisional).** Hasta que las recetas lleguen con los rangos, `GameManager.register_enemy_defeat()` llama a `InventoryManager.apply_grid_expansion()` la primera vez que cae el jefe de la sala 10, 20, 30 o 40 del ciclo I. La rejilla crece (una columna a la derecha o una fila abajo, alternando), ninguna pieza se mueve y la señal `grid_expanded` hace salir «¡La rejilla crece!» en la franja. Ampliar no manda a Tico al muro (ver 4.1).
 
-**Guardado versión 2.** `to_save_data()` guarda en `inventory`: los materiales, las piezas (`crafted_items`, con el botín primero y en su orden; de cada pieza, `place`, `x`, `y`, `rot` y `aristas`), `hero_grid` (ancho y alto), `expansions` y `consumables`. Ya no guarda `equipped` ni `equipped_slots`. Una partida anterior (sin `hero_grid`) se migra al cargar:
+**Guardado versión 2 (la 3 es la de los rangos).** `to_save_data()` guarda en `inventory`: los materiales, las piezas (`crafted_items`, con el botín primero y en su orden; de cada pieza, `place`, `x`, `y`, `rot` y `aristas`), `hero_grid` (ancho y alto), `expansions` y `consumables`. Ya no guarda `equipped` ni `equipped_slots`. La versión 3 (apartado 4.4) no cambia esta forma: solo añade el rango de cada pieza (`rank`, 1 si falta). Una partida anterior (sin `hero_grid`) se migra al cargar:
 1. da por forjadas las ampliaciones de los jefes que su récord ya supera (el mismo récord que toma `GameManager.load_save_data()`: el mayor entre `best_enemy_level` y `current_enemy_level`, porque una partida más antigua puede no traer el primero);
 2. sortea las aristas de cada pieza con una semilla fija: la misma partida da siempre el mismo resultado;
 3. coloca con `GearPacker` lo que estaba equipado, las mejores primero, y manda el resto al botín.
 
 Una posición imposible al cargar (fuera de la rejilla o pisando otra pieza) también acaba en el botín: nunca se pierde una pieza.
 
-**Copia de la partida antigua.** La partida es una sola, la comparten todas las compilaciones del juego y el guardado de después de cargar la reescribe en la versión 2. Por eso `SaveManager.load_game()` copia `save.json` en `save.v1.bak.json` (la misma carpeta `user://`) antes de repartir los datos, cuando la versión guardada es anterior a la actual. Solo la primera vez: una migración posterior nunca pisa la primera copia.
+**Copia de la partida antigua.** La partida es una sola, la comparten todas las compilaciones del juego y el guardado de después de cargar la reescribe en la versión actual. Por eso `SaveManager.load_game()` copia `save.json` en `save.v<versión de origen>.bak.json` (la misma carpeta `user://`) antes de repartir los datos, cuando la versión guardada es anterior a la actual. Solo la primera vez de cada versión: una migración posterior nunca pisa su copia.
+
+**Rango del equipo.** `InventoryManager.grid_rank(grid)` toma la mejor pieza de cada tipo (arma, escudo, casco y botas) y delega en `Ranks.team_rank()`: el menor de esos rangos, o el I sin piezas. `equipment_rank()` es el de la rejilla de Tico. Lo usan `Hero.reset_stats()` (la base de Tico sube con él: `CombatMath.hero_stats(equipment, team_rank)`) y las estadísticas del panel de Equipo, para que lo que enseña coincida con lo que lucha. Añadir una pieza de un tipo que ya lleva nunca baja el rango.
 
 **Pruebas.** `InventoryGridTests` (`scenes/tests/InventoryGridTests.tscn`), que incluye la medida de lo que tarda en abrirse el panel con la rejilla llena, y el plan `inventory` de `VisualCapture` para capturar el panel.
 
-### 4.4 Minijuegos
+### 4.4 Rangos por ciclo
+
+Los planos suben de rango sin límite: un ciclo son los 5 biomas (50 salas) y el ciclo N da los planos de rango N. Spec: `doc/specs/2026-09-27-rangos-de-plano-por-ciclo.md`. Las reglas son clases sin nodos en `scripts/core/`:
+
+| Clase | Qué hace | Quién la usa |
+|-------|----------|--------------|
+| `Ranks` | Ciclo de una sala, hitos de jefe (`milestone_for_boss_room()`, `milestones_up_to_record()`), crecimiento de recetas, botín y oro (`mat_mult()` = 1,6^(N−1)), multiplicador de estadísticas (`stat_mult()`, sigue a la curva de enemigos a mitad de ciclo), `team_rank()`, `scale_stats()`, `recipe()`, los 5 materiales de bioma, numerales y textos de aviso | `DataManager`, `GameManager`, `RequestsManager`, `CraftingManager`, `CraftedItem`, `InventoryManager`, `Enemy` y la interfaz |
+| `EnemyScaling` | Curva de los enemigos: `EXP` 1,0455 por sala dentro del ciclo, `STEP` 10,5 al empezar cada ciclo y `BOSS_MULT` 1,15 (valores de la calibración con Balanza) | `Enemy`, `Ranks`, `CombatMath` |
+| `CombatMath` | Estadísticas de Tico (`hero_stats()`, con la base multiplicada por `EnemyScaling.cycle_mult` del rango del equipo), habilidades legendarias, mitigación de armadura (`ARMOR_K` 60) y DPS esperado | `Hero`, `InventoryManager`, `EquipmentPanel` y el enlace de Balanza |
+| `TrialDifficulty` | Sube con el rango la velocidad y la precisión de cada minijuego, con topes: `apply(config, rank)` | `CraftingManager` al arrancar cada prueba |
+
+**Flujo del rango:**
+```
+jefe vencido → GameManager.register_enemy_defeat() → Ranks.milestone_for_boss_room()
+   → DataManager.apply_milestones()  (unlocked_ranks: plano → rango máximo; 0 = bloqueado)
+   → blueprints_milestone (cartel «¡Planos avanzados II!») y un blueprint_unlocked por plano (pergaminos escalonados)
+RequestsManager: pedido con rango (80 % el más alto desbloqueado, 20 % uno menor) y receta Ranks.recipe()
+   → accept_request() consume materiales (los del plano × mat_mult y los de bioma) → CraftingManager.enqueue(rank)
+   → minijuegos con TrialDifficulty.apply() → CraftedItem(rank): estadísticas × Ranks.stat_mult()
+   → botín → rejilla de Tico → InventoryManager.equipment_rank() → base de Tico
+Enemy: al morir suelta el material del bioma de su sala (Ranks.biome_material_for_room()); un jefe lo suelta seguro solo si su muerte sube el récord (si no, vale la probabilidad normal del bioma)
+```
+
+Al cargar, `GameManager.apply_record_milestones()` aplica los hitos que el récord ya supera. El encargo propio (`CraftingManager.place_own_order(bp_id, rank)`, desde `BlueprintCard`: selector de rango y «Forjar») cobra la receta y no da oro.
+
+**Guardado versión 3.** `SaveManager.SAVE_VERSION` = 3. Migra desde la 1 (inventario a la rejilla, objetos y planos a rango I) y desde la 2 (las piezas ya guardan su rango, 1). `DataManager` guarda `unlocked_ranks` (una partida sin él lo toma de los planos desbloqueados, como rango I) y `GameManager` el candado y la sala del muro. Después se aplican los hitos del récord. Antes de migrar se copia la partida en `save.v<versión de origen>.bak.json` (ver 4.3).
+
+**Muro y farmeo** (`GameManager` y `Corridor`):
+- `GameManager` lleva el récord (`best_enemy_level`), el muro (`wall_room`: la sala donde cayó Tico; 0 si no hay), el candado (`room_locked`) y el contador de reintentos. `room_cleared()` decide tras cada victoria si Tico avanza, repite sala o prueba el muro (cada `WALL_RETRY_WINS` = 3 victorias en la sala anterior); `retry_wall_now()` lo prueba al momento con equipo nuevo.
+- Selector de sala: `travel_to_room()`, `set_room_locked()` y `selector_target()` (la sala o el bioma de al lado, entre la 1 y el récord). Por debajo del récord pone el candado.
+- El viaje es instantáneo: `GameManager` emite `room_travel` y `Corridor._on_room_travel()` abandona el combate a medias, recoloca las puertas y pone a Tico en la sala nueva con la vida llena. Cada sala es un duelo (ver 4.1). Las señales `wall_changed` y `room_lock_changed` las pinta `HeroViewOverlay` («Muro: sala N», candado y flechas).
+
+**Pruebas.** `RankTests` (`scenes/tests/RankTests.tscn`) y los planes `unlock`, `wall` y `ranks` de `VisualCapture`; `bash balance/arnes.sh check` mide los 35 objetivos de balance.
+
+### 4.5 Minijuegos
 
 Todos extienden `MinigameBase` (Control):
 

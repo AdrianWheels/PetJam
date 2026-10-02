@@ -208,7 +208,11 @@ func reset_stats():
 	var powers: Array = []
 	if inv_manager and inv_manager.has_method("active_legendary_powers"):
 		powers = inv_manager.active_legendary_powers()
-	var s := CombatMath.hero_stats_with_powers(equipment_stats, powers)
+	# Rango del equipo (spec de rangos, apartado 6, «Base de Tico»): la base de vida, daño y pulso crece con él
+	var team_rank := 1
+	if inv_manager and inv_manager.has_method("equipment_rank"):
+		team_rank = inv_manager.equipment_rank()
+	var s := CombatMath.hero_stats_with_powers(equipment_stats, powers, team_rank)
 	power = LegendaryPowers.effects(powers)
 	# Segunda oportunidad: lista si la da la rejilla y aún no se ha usado en este duelo
 	_second_chance_ready = float(power.second_chance) > 0.0 and not _second_chance_used

@@ -9,12 +9,15 @@ var _loot_seen: Array = []  # avisos de botín de material del Corridor (prueba 
 
 # ─── Materiales ────────────────────────────────────────────────────────
 
-## Materiales que pide algún plano de la librería.
+## Materiales que pide algún plano de la librería en su receta de rango I (incluye los de bioma).
 func _materials_used_by_blueprints() -> Dictionary:
 	var used := {}
 	var dm := get_node("/root/DataManager")
-	for bp in dm.get_all_blueprints().values():
-		for mat_id in bp.materials:
+	for bp_id in dm.get_all_blueprints():
+		var bp: BlueprintResource = dm.get_all_blueprints()[bp_id]
+		var item: ItemResource = dm.get_item_resource(bp.result_item)
+		var tier := Ranks.tier_from_rarity(item.rarity if item else "basic")
+		for mat_id in Ranks.recipe(bp.materials, tier, 1):
 			used[StringName(mat_id)] = true
 	return used
 
@@ -134,6 +137,7 @@ func _new_enemy() -> Node2D:
 	e.remove_from_group("enemy")
 	add_child(e)
 	e.configure_for_level(1, false)
+	e.biome_drop_chance = 0.0  # el botín de estas pruebas es solo el de siempre y el doble (el de bioma tiene la suya)
 	return e
 
 
@@ -218,6 +222,7 @@ func test_double_loot_shows_in_the_strip_like_the_first() -> void:
 	var enemy: Node2D = corridor.get_node("Enemy")
 	var fx: Node2D = corridor.get_node("CombatFX")
 	enemy.luck_roll = func() -> float: return 0.0
+	enemy.biome_drop_chance = 0.0  # sin el material de bioma (tiene su propia prueba): solo los dos botines
 	_loot_seen.clear()
 	corridor.loot_dropped.connect(_on_test_loot)
 	enemy.take_damage(enemy.hp)
@@ -238,6 +243,40 @@ func test_double_loot_shows_in_the_strip_like_the_first() -> void:
 	gm.clear_buffs()
 	_im().consume_materials(_gained_since(start))  # devuelve el botín de prueba
 	await _flush_deferred_saves()  # el avance de sala guarda la partida
+	await _silence_loot_sounds()
+
+
+func test_biome_loot_is_the_third_pop_in_the_strip() -> void:
+	var gm := _gm()
+	gm.clear_buffs()
+	gm.apply_buff(&"luck", 60.0)
+	var level_before: int = gm.current_enemy_level
+	var best_before: int = gm.best_enemy_level
+	gm.current_enemy_level = 1  # sala 1: un Limo de las Catacumbas, sin jefe
+	var start: Dictionary = _im().get_materials()
+	var corridor: Node2D = load("res://scenes/Corridor.tscn").instantiate()
+	add_child(corridor)
+	var enemy: Node2D = corridor.get_node("Enemy")
+	var fx: Node2D = corridor.get_node("CombatFX")
+	enemy.luck_roll = func() -> float: return 0.0
+	enemy.biome_drop_chance = 1.0
+	_loot_seen.clear()
+	corridor.loot_dropped.connect(_on_test_loot)
+	enemy.take_damage(enemy.hp)
+	await get_tree().process_frame
+	var icons: Array = fx._parts.filter(func(p): return p.kind == fx.Kind.ICON)
+	check(icons.size() == 3, "tres iconos de botín: el de siempre, el doble y el de bioma (%d)" % icons.size())
+	var rows: Array = icons.map(func(p): return p.text_row)
+	rows.sort()
+	check(rows == [0, 1, 2], "cada uno en su fila de etiqueta (%s)" % [rows])
+	check(_loot_seen.size() == 3, "tres avisos de botín para el HUD (%d)" % _loot_seen.size())
+	check(_loot_seen.filter(func(p): return p.get("biome", false) and p.get("id") == &"bone").size() == 1, "uno marcado como material de bioma (hueso)")
+	corridor.queue_free()
+	gm.current_enemy_level = level_before
+	gm.best_enemy_level = best_before
+	gm.clear_buffs()
+	_im().consume_materials(_gained_since(start))  # devuelve el botín de prueba
+	await _flush_deferred_saves()
 	await _silence_loot_sounds()
 
 
