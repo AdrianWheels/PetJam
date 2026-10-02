@@ -278,7 +278,7 @@ Medidas: casillas de 22×22 píxeles de arte a ×5 (110 px de pantalla), el mism
 - **Mantener pulsado** (0,4 s): ficha completa con los botones Mochila, Botín y Vender.
 - **Arrastrar** (a partir de 10 px de movimiento): la pieza se levanta y se dibuja una casilla por encima del dedo, para que se vea el destino.
   - Las casillas de destino se marcan en verde si cabe o hay intercambio, y en rojo si no.
-  - Las piezas que ganarían o perderían un aura se iluminan en verde o en rojo, y la barra de estadísticas enseña el cambio (`InventoryManager.preview_stats`).
+  - Las piezas que ganarían o perderían un aura se iluminan en verde o en rojo, y la barra de estadísticas enseña el cambio (`EquipmentPanel._show_target()`, con `InventoryManager.simulate_hero_grid()` y `GearAuras.totals()`).
   - Un segundo dedo gira la pieza sin soltarla.
 - **Soltar:** las reglas del apartado 3.2.
 - **En el ordenador** (pruebas y capturas): el ratón hace lo mismo, y la rueda o la tecla R giran.
@@ -329,7 +329,7 @@ Medidas: casillas de 22×22 píxeles de arte a ×5 (110 px de pantalla), el mism
 - **Controles de dibujo:** cada rejilla (Tico y mochila) es un solo control que se dibuja a sí mismo (`GearGridView`), y el botín es otro (`LootStripView`). No hay un nodo por casilla.
 - **Caché de texturas:** cuando llegue el arte, la textura de cada pieza (forma, aristas, calidad y giro) se compondrá una vez y se guardará en caché.
 - **Recálculo:** las auras y las estadísticas se recalculan cuando cambia algo. Durante un arrastre, solo cuando cambia la casilla de destino o el giro, nunca en cada fotograma.
-- **Empaquetador:** `GearPacker` solo se usa en la migración y en `BalanceSim`.
+- **Empaquetador:** `GearPacker` solo se usa en la migración, en `BalanceSim` y en «A la mochila» de la ficha completa, que busca el primer sitio libre de la mochila cuando lo pide el jugador.
 - **Objetivo:** abrir el panel en menos de 50 ms y arrastrar a 60 FPS en el móvil de pruebas.
 
 ## 12. Textos e idioma
@@ -377,7 +377,7 @@ Medidas: casillas de 22×22 píxeles de arte a ×5 (110 px de pantalla), el mism
     - `GearGrid.gd`: una rejilla (caber, colocar, quitar y vecinas);
     - `GearAuras.gd`: auras, zonas y tope;
     - `LegendaryPowers.gd`: habilidades;
-    - `GearPacker.gd`: colocación automática para la migración y la simulación;
+    - `GearPacker.gd`: colocación automática para la migración, la simulación y «A la mochila»;
     - `GridExpansions.gd`: recetas de ampliación.
   - Interfaz en `scripts/ui/`: `GearGridView.gd` y `LootStripView.gd`. El arrastre vive dentro de `EquipmentPanel.gd`.
   - Pruebas: `scripts/tests/InventoryGridTests.gd` y `scenes/tests/InventoryGridTests.tscn`.

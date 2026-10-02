@@ -18,26 +18,23 @@ Toda la experiencia ocurre en **una sola pantalla** dividida en 3 zonas: el hér
 ```
 StartScreen.tscn ──(botón Play)──→ Main.tscn
                                        │
-                                       ├─ ForgeUI (CanvasLayer)
-                                       │    └─ HUD_Forge.tscn
-                                       │         ├─ MinigameContainer (minijuegos dinámicos)
-                                       │         ├─ RequestSlots (cola de pedidos)
+                                       ├─ HUDLayer (CanvasLayer)
+                                       │    └─ HUD_Main.tscn
+                                       │         ├─ HeroViewPanel: panel superior, el héroe (25 % de la pantalla)
+                                       │         │    ├─ Corridor.tscn (instancia persistente; sus nodos, en 4.1)
+                                       │         │    └─ HeroOverlay (HeroViewOverlay.gd: el HUD de la franja)
+                                       │         ├─ MinigamePanel: panel central (50 %), minijuegos dinámicos
+                                       │         ├─ ForgeMagiaMeter
+                                       │         ├─ BottomLeftPanel: pedidos
+                                       │         ├─ BottomRightPanel: botones Planos, Equipo y Tienda
                                        │         ├─ BlueprintLibraryPanel (popup)
-                                       │         └─ EquipmentPanel (popup a pantalla completa: rejilla de Tico, botín y mochila; ver 4.3)
+                                       │         ├─ EquipmentPanel (popup a pantalla completa: rejilla de Tico, botín y mochila; ver 4.3)
+                                       │         └─ ShopPanel (popup)
                                        │
-                                       ├─ Corridor.tscn (instancia persistente)
-                                       │    ├─ Hero.tscn (CharacterBody2D)
-                                       │    ├─ Enemy.tscn (CharacterBody2D)
-                                       │    ├─ CombatController
-                                       │    └─ ParticleManager
-                                       │
-                                       ├─ ForgeUI/ (paneles modales)
-                                       │    ├─ DeliveryPanel.tscn
-                                       │    ├─ ItemInfoPanel.tscn
-                                       │    └─ ResultPanel.tscn
-                                       │
-                                       └─ FadeLayer
+                                       └─ FadeLayer (CanvasLayer)
 ```
+
+`HUD_Forge.tscn` y `scenes/ForgeUI/` (DeliveryPanel, ItemInfoPanel y ResultPanel) son del diseño anterior a `HUD_Main`: nada los instancia.
 
 ---
 
@@ -77,7 +74,7 @@ StartScreen.tscn ──(botón Play)──→ Main.tscn
 #### InventoryManager
 - **Señales**: `inventory_changed`, `crafted_items_changed`, `equipment_changed` (cambia la rejilla de Tico), `loot_changed`, `grid_resized`, `consumables_changed`
 - **Estado**: `inventory: Dictionary` (materiales), `crafted_items: Array[CraftedItem]` (todas las piezas), `hero_grid` y `bag_grid` (`GearGrid`), `loot: Array[CraftedItem]`, `expansions` y `consumables` (2 huecos de pociones). Ver 4.3
-- **API clave**: `add_item(id, qty)`, `has_materials(req)`, `consume_materials(req)`, `add_crafted_item(item)` (la pieza va al botín), `move_item(item, place, cell, rot)`, `rotate_in_place(item)`, `sell_item(item)`, `sell_all_loot()`, `calculate_total_stats()`, `preview_stats(item, place, cell, rot)`, `apply_grid_expansion(id)`, `add_potion(id)`, `take_potion(id)`, `clear()`
+- **API clave**: `add_item(id, qty)`, `has_materials(req)`, `consume_materials(req)`, `add_crafted_item(item)` (la pieza va al botín), `move_item(item, place, cell, rot)`, `rotate_in_place(item)`, `sell_item(item)`, `sell_all_loot()`, `calculate_total_stats()`, `simulate_hero_grid(item, place, cell, rot)` (la rejilla de Tico como quedaría, para la vista previa del arrastre), `preview_stats(item, place, cell, rot)` (envoltorio fino: `GearAuras.totals()` de esa simulación; el panel hace lo mismo por su cuenta), `apply_grid_expansion(id)`, `add_potion(id)`, `take_potion(id)`, `clear()`
 - **Dependencias**: `DataManager` (resuelve las piezas al cargar el guardado) y las clases de reglas de `scripts/core/` (ver 4.3).
 - **Nota**: Guarda y carga su parte de la partida (`to_save_data()` / `load_save_data()`, versión 2). `equip_item`/`unequip_item` y los huecos fijos de equipo ya no existen: lo que cuenta para Tico es lo que hay en su rejilla. Materiales iniciales generosos si no hay partida guardada.
 
@@ -210,7 +207,7 @@ Nada se coloca solo: lo forjado va siempre al botín. La única excepción es la
 |-------|----------|--------------|
 | `PieceShape` | Forma limpia de cada pieza (`ItemResource.shape_cells`), giros de 90° normalizados y aristas: casillas de más que no dan nada y estorban (2 en Básico y Bueno, 1 en Raro, 0 desde Épico) | `GearGrid`, `InventoryManager`, `CraftingManager` (las sortea al forjar), `EquipmentPanel` y las vistas |
 | `GearGrid` | Una rejilla de casillas: dice si una pieza cabe, la coloca o la quita, da sus vecinas por los lados y hace copias (`duplicate_grid()`) para simular sin tocar nada | `InventoryManager` (Tico y mochila), `GearAuras`, `GearPacker`, `EquipmentPanel` y `GearGridView` |
-| `GearAuras` | Auras entre vecinas (la espada da daño a las armas, el escudo armadura a las armaduras, el casco vida a todas y las botas velocidad de ataque a las armas; 0, 5, 10, 15 o 20 % según la calidad de quien la emite), zonas (+10 % en todo a la pieza con alguna casilla limpia en la suya) y tope (+50 % por estadística): `totals(grid)` y `bonuses(grid)` | `InventoryManager` (`calculate_total_stats()` y `preview_stats()`), `GearPacker`, `EquipmentPanel` (ficha y brillos) y `GearGridView` (zonas) |
+| `GearAuras` | Auras entre vecinas (la espada da daño a las armas, el escudo armadura a las armaduras, el casco vida a todas y las botas velocidad de ataque a las armas; 0, 5, 10, 15 o 20 % según la calidad de quien la emite), zonas (+10 % en todo a la pieza con alguna casilla limpia en la suya) y tope (+50 % por estadística y pieza): `totals(grid)` y `bonuses(grid)` | `InventoryManager` (`calculate_total_stats()` y `preview_stats()`), `GearPacker`, `EquipmentPanel` (ficha y brillos) y `GearGridView` (zonas) |
 | `LegendaryPowers` | Las 12 habilidades de las piezas legendarias (una por pieza; las maestras con precio), sus multiplicadores y sus efectos de combate. Dos iguales cuentan como una | `InventoryManager.active_legendary_powers()`, `CombatMath`, `Hero`, `CombatController`, `CraftResultScreen` y `EquipmentPanel` |
 | `GearPacker` | Colocación automática y determinista (`find_spot()`, `pack()`) | La migración de partidas antiguas (`InventoryManager`) y «A la mochila» (`EquipmentPanel`) |
 | `GridExpansions` | Las 4 ampliaciones (una por jefe de las salas 10, 20, 30 y 40 del ciclo I) y los tamaños 4×4 → 5×4 → 5×5 → 6×5 → 6×6 | `InventoryManager.apply_grid_expansion()`, `GameManager` y `EquipmentPanel` (dice qué jefe toca) |
@@ -223,7 +220,7 @@ Nada se coloca solo: lo forjado va siempre al botín. La única excepción es la
 - arrastrar la coloca o la intercambia: la pieza va una casilla por encima del dedo, y un segundo dedo, la rueda o la tecla R la giran;
 - mantener pulsado 0,4 s abre la ficha completa;
 - soltar en la zona de venta la vende;
-- durante el arrastre, la vista previa de estadísticas (`InventoryManager.preview_stats()`) solo se recalcula cuando cambia la casilla de destino o el giro;
+- durante el arrastre, la vista previa de estadísticas (`EquipmentPanel._show_target()`: `InventoryManager.simulate_hero_grid()` y `GearAuras.totals()`) solo se recalcula cuando cambia la casilla de destino o el giro;
 - Atrás (Android) cierra lo de más arriba: la confirmación, la ficha o el panel;
 - la insignia del botón Equipo (`HUDMain`) cuenta las piezas del botín.
 

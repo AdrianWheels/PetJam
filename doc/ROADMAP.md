@@ -27,7 +27,7 @@ El proyecto viene de una **game jam** y está en fase de **reestructuración hac
 - [x] Debug prints limpios (via DebugManager)
 - [x] Archivos obsoletos eliminados
 ### Lo que no funciona / está incompleto
-- [x] EquipmentPanel (WIP — no actualiza stats)
+- [x] EquipmentPanel — rehecho como inventario en rejilla (las estadísticas de Tico se recalculan al colocar piezas)
 - [x] Combate visual — simplificado a formas geométricas + cooldowns
 - [ ] Persistencia (todo se pierde al cerrar)
 - [x] Audio — AudioManager unificado (sin dual-context)

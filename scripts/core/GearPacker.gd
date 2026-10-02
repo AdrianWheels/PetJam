@@ -2,9 +2,10 @@ class_name GearPacker
 extends RefCounted
 
 ## Colocación automática (spec del inventario en rejilla, apartados 6 y 10). En el juego no se coloca
-## nada solo: esto lo usan la migración de partidas antiguas y BalanceSim. Determinista: prueba los
-## giros 0 a 3 y las casillas de arriba abajo y de izquierda a derecha, primero las que tocan la zona de
-## la pieza y después cualquiera.
+## nada solo: esto lo usan la migración de partidas antiguas, BalanceSim y el botón «A la mochila» de la
+## ficha completa (lo pide el jugador y aquí se busca el sitio). Determinista: prueba los giros 0 a 3 y
+## las casillas de arriba abajo y de izquierda a derecha, primero las que tocan la zona de la pieza y
+## después cualquiera.
 
 ## Primer sitio libre para `item`: {"cell": Vector2i, "rot": int}, o {} si no cabe en ninguno.
 static func find_spot(grid: GearGrid, item: CraftedItem, prefer_zone: bool = true) -> Dictionary:
