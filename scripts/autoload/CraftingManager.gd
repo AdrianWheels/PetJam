@@ -130,6 +130,34 @@ func enqueue(recipe_id, gold_reward: int = 0, rank: int = 1, own_order: bool = f
 	return false
 
 
+## Encargo propio desde la biblioteca (spec de rangos, apartado 5): cobra la receta del rango y encola
+## sin recompensa de oro. Devuelve &"" si se encola, o el motivo: &"locked", &"queue_full" o &"no_materials".
+## Si falla, no cobra nada.
+func place_own_order(bp_id: StringName, rank: int) -> StringName:
+	var dm = get_node_or_null("/root/DataManager")
+	var inv = get_node_or_null("/root/InventoryManager")
+	if dm == null or inv == null:
+		return &"locked"
+	if rank < 1 or rank > dm.get_unlocked_rank(bp_id):
+		return &"locked"
+	if not queue.has(null):
+		return &"queue_full"
+	var bp: BlueprintResource = dm.get_blueprint(bp_id)
+	if bp == null:
+		return &"locked"
+	var recipe := Ranks.recipe(bp.materials, dm.blueprint_tier(bp_id), rank)
+	if not inv.has_materials(recipe):
+		return &"no_materials"
+	if not inv.consume_materials(recipe):
+		return &"no_materials"
+	if not enqueue(bp_id, 0, rank, true):
+		# No debería pasar (se comprobó el hueco): devolver lo cobrado
+		for mat_id in recipe:
+			inv.add_item(mat_id, recipe[mat_id])
+		return &"queue_full"
+	return &""
+
+
 ## Encola un blueprint aleatorio de los desbloqueados
 func enqueue_random() -> bool:
 	var dm = get_node_or_null("/root/DataManager")

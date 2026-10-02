@@ -20,7 +20,7 @@ extends Node
 ##   unlock → hito de rango en el jefe de la sala 20: cartel «¡Planos avanzados!», 4 pergaminos escalonados y, detrás, «¡La rejilla crece!»
 ##   shop   → abre la tienda y enseña sus pestañas una a una (materiales, pociones y venta)
 ##   wall   → muro y farmeo: cae en la sala 14, farmea la 13 con «Muro: sala 14» y el selector lo lleva a la 4
-##   inventory → rejilla de 6×6 con piezas (una legendaria y una con aristas), mochila y botín; arrastra
+##   inventory → rejilla de 6×6 con piezas (una legendaria, la maestra de rango II, y una con aristas), mochila y botín; arrastra
 ##               una pieza del botín hasta Tico con intercambio y abre la ficha de la legendaria
 
 const MAIN_SCENE := preload("res://scenes/Main.tscn")
@@ -332,7 +332,8 @@ func _run_inventory_plan() -> void:
 			if not spot.is_empty():
 				im.move_item(item, place, spot.cell, spot.rot)
 		return item
-	add.call(&"sword_masterwork", 1.0, InventoryManager.PLACE_HERO, Vector2i(5, 0))  # legendaria (Filo ígneo), de pie en la columna derecha
+	var legend: CraftedItem = add.call(&"sword_masterwork", 1.0, InventoryManager.PLACE_HERO, Vector2i(5, 0))  # legendaria (Filo ígneo), de pie en la columna derecha
+	legend.rank = 2  # rango II: la ficha enseña «… II» (solo el nombre: la captura no mira sus números)
 	add.call(&"shield_master", 0.95, InventoryManager.PLACE_HERO, Vector2i(0, 2))
 	add.call(&"helmet_master", 0.8, InventoryManager.PLACE_HERO, Vector2i(1, 0))  # rara: 1 arista
 	add.call(&"boots_master", 0.95, InventoryManager.PLACE_HERO, Vector2i(2, 3))

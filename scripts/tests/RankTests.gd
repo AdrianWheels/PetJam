@@ -799,3 +799,58 @@ func test_crafting_uses_the_task_rank() -> void:
 	var c1: TrialConfig = cm._resolve_trial_config(bp.trial_sequence[0], bp, 1)
 	var c3: TrialConfig = cm._resolve_trial_config(bp.trial_sequence[0], bp, 3)
 	check(c3.parameters.forge_speed > c1.parameters.forge_speed, "la espada básica III se forja más rápido que la I")
+
+
+# ─── Tarea 11: encargo propio ──────────────────────────────────────────
+
+func test_own_order_never_charges_when_refused() -> void:
+	var cm := get_node("/root/CraftingManager")
+	var inv := get_node("/root/InventoryManager")
+	var dm := _dm()
+	var saved_ranks: Dictionary = dm.unlocked_ranks.duplicate()
+	var saved_inv: Dictionary = inv.inventory.duplicate()
+	var saved_queue: Array = cm.queue.duplicate()
+	dm.unlocked_ranks[&"sword_basic"] = 1
+	check(cm.place_own_order(&"sword_basic", 2) == &"locked" and inv.inventory == saved_inv, "un rango bloqueado no se encarga ni cobra")
+	inv.inventory = {}
+	check(cm.place_own_order(&"sword_basic", 1) == &"no_materials" and inv.inventory.is_empty(), "sin materiales no se encarga")
+	var bp: BlueprintResource = dm.get_blueprint(&"sword_basic")
+	var recipe := Ranks.recipe(bp.materials, Ranks.TIER_BASIC, 1)
+	for mat_id in recipe:
+		inv.add_item(mat_id, recipe[mat_id] * 10)
+	var Task = cm.get_script().CraftingTask  # clase interna del autoload (no tiene class_name)
+	for i in cm.MAX_SLOTS:
+		cm.queue[i] = Task.new(9000 + i, bp, i)
+	var before: Dictionary = inv.inventory.duplicate()
+	check(cm.place_own_order(&"sword_basic", 1) == &"queue_full" and inv.inventory == before, "con la cola llena no cobra")
+	cm.queue = saved_queue
+	inv.inventory = saved_inv
+	dm.unlocked_ranks = saved_ranks
+
+
+func test_own_order_charges_recipe_and_gives_no_gold() -> void:
+	var cm := get_node("/root/CraftingManager")
+	var inv := get_node("/root/InventoryManager")
+	var dm := _dm()
+	var saved_ranks: Dictionary = dm.unlocked_ranks.duplicate()
+	var saved_inv: Dictionary = inv.inventory.duplicate()
+	var saved_queue: Array = cm.queue.duplicate()
+	for i in cm.MAX_SLOTS:
+		cm.queue[i] = null
+	dm.unlocked_ranks[&"helmet_basic"] = 2
+	var bp: BlueprintResource = dm.get_blueprint(&"helmet_basic")
+	var recipe := Ranks.recipe(bp.materials, Ranks.TIER_BASIC, 2)
+	inv.inventory = {}
+	for mat_id in recipe:
+		inv.add_item(mat_id, recipe[mat_id])
+	check(cm.place_own_order(&"helmet_basic", 2) == &"", "se encarga el casco básico II")
+	check(inv.inventory.is_empty(), "cobra exactamente la receta del rango II")
+	var task = cm.queue[0]
+	check(task != null and task.own_order and task.rank == 2, "la tarea es un encargo propio de rango II")
+	if task:
+		var result: Dictionary = cm._finalize_task(task)
+		check(result.gold_reward == 0 and result.crafted_item.rank == 2, "no da oro y el objeto es de rango II")
+		inv.remove_crafted_item(result.crafted_item)
+	cm.queue = saved_queue
+	inv.inventory = saved_inv
+	dm.unlocked_ranks = saved_ranks

@@ -68,6 +68,9 @@ func _ready() -> void:
 	_crafting_manager = get_node_or_null("/root/CraftingManager")
 	_inventory_manager = get_node_or_null("/root/InventoryManager")
 	
+	if blueprint_library and blueprint_library.has_signal("own_order_requested"):
+		blueprint_library.own_order_requested.connect(_on_own_order_requested)
+
 	# Conectar botones de minijuegos
 	if forge_btn:
 		forge_btn.pressed.connect(_on_forge_pressed)
@@ -207,21 +210,36 @@ func _on_request_slot_clicked(index: int) -> void:
 			_fly_request_to_forge(ghost_texture, ghost_rect)
 			print("HUDMain: ✅ Request accepted! Starting crafting task...")
 			# Después de encolar, iniciar el task para lanzar los minijuegos
-			# El request se encola en slot 0 (el primer slot libre)
-			if _crafting_manager and _crafting_manager.has_method("start_task"):
-				# Buscar el slot que tiene el task recién encolado
-				var queue = _crafting_manager.get_queue_snapshot() if _crafting_manager.has_method("get_queue_snapshot") else []
-				for slot_info in queue:
-					if slot_info.get("status") == "queued":
-						var slot_idx = slot_info.get("slot_index", 0)
-						print("HUDMain: Starting task in slot %d" % slot_idx)
-						_crafting_manager.start_task(slot_idx)
-						break
+			_start_first_queued_task()
 		else:
 			print("HUDMain: ❌ Request rejected (no materials?)")
 			if clicked_slot and is_instance_valid(clicked_slot) and clicked_slot.has_method("reject_feedback"):
 				clicked_slot.reject_feedback()
 			Sfx.play(&"ui_tap", 0.0, 0.55)  # "tunc" grave: no se puede
+
+## Arranca la primera tarea en cola (pedido aceptado o encargo propio).
+func _start_first_queued_task() -> void:
+	if not (_crafting_manager and _crafting_manager.has_method("start_task")):
+		return
+	var queue = _crafting_manager.get_queue_snapshot() if _crafting_manager.has_method("get_queue_snapshot") else []
+	for slot_info in queue:
+		if slot_info.get("status") == "queued":
+			_crafting_manager.start_task(slot_info.get("slot_index", 0))
+			return
+
+
+## Encargo propio desde la biblioteca: cobra la receta y lanza los minijuegos, o explica por qué no.
+func _on_own_order_requested(bp_id: StringName, rank: int) -> void:
+	var reason: StringName = _crafting_manager.place_own_order(bp_id, rank) if _crafting_manager else &"locked"
+	if reason == &"":
+		Sfx.play(&"request_accept")
+		if blueprint_library and blueprint_library.has_method("close"):
+			blueprint_library.close()
+		_start_first_queued_task()
+	else:
+		Sfx.play(&"ui_tap", 0.0, 0.55)  # "tunc" grave: no se puede
+		if blueprint_library and blueprint_library.has_method("reject"):
+			blueprint_library.reject(bp_id, reason)
 
 # ========================
 # CALLBACKS DEL CRAFTING SYSTEM

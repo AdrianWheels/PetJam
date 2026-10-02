@@ -12,24 +12,32 @@ var blueprint_data: BlueprintResource
 var is_unlocked: bool = false
 var item_resource: ItemResource
 
-func set_blueprint_data(bp_id: StringName, blueprint: BlueprintResource, unlocked: bool) -> void:
+signal forge_requested(bp_id: StringName, rank: int)
+
+var max_rank: int = 0
+var selected_rank: int = 1
+var _rank_label: Label
+var _forge_btn: Button
+
+
+func set_blueprint_data(bp_id: StringName, blueprint: BlueprintResource, unlocked: bool, unlocked_rank: int = 1) -> void:
 	blueprint_id = bp_id
 	blueprint_data = blueprint
 	is_unlocked = unlocked
-	
+	max_rank = unlocked_rank if unlocked else 0
+	selected_rank = maxi(1, max_rank)
+
 	# Obtener ItemResource para las estadísticas
 	var dm = get_node_or_null("/root/DataManager")
 	if dm and blueprint.result_item != &"":
 		item_resource = dm.get_item_resource(blueprint.result_item)
-	
+
 	# Configurar Visuales
 	if blueprint_data:
-		name_label.text = _blueprint_name()
-		
 		var icon_tex = blueprint_data.get_icon()
 		if icon_tex:
 			icon_rect.texture = icon_tex
-	
+
 	# Estado de bloqueo
 	if is_unlocked:
 		lock_overlay.visible = false
@@ -37,9 +45,48 @@ func set_blueprint_data(bp_id: StringName, blueprint: BlueprintResource, unlocke
 	else:
 		lock_overlay.visible = true
 		modulate = Color(0.7, 0.7, 0.7)
-	
-	# Configurar Tooltip
+
+	_build_forge_row()
+	_refresh_rank()  # pone el nombre, con numeral desde el rango II
 	_update_tooltip()
+
+
+func _build_forge_row() -> void:
+	if _forge_btn or max_rank < 1:
+		return
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	var prev := Button.new()
+	prev.text = "◀"
+	prev.pressed.connect(func(): selected_rank = maxi(1, selected_rank - 1); _refresh_rank())
+	_rank_label = Label.new()
+	_rank_label.custom_minimum_size = Vector2(36, 0)
+	_rank_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var next := Button.new()
+	next.text = "▶"
+	next.pressed.connect(func(): selected_rank = mini(max_rank, selected_rank + 1); _refresh_rank())
+	_forge_btn = Button.new()
+	_forge_btn.text = tr("Forjar")
+	_forge_btn.pressed.connect(func(): forge_requested.emit(blueprint_id, selected_rank))
+	for n in [prev, _rank_label, next, _forge_btn]:
+		row.add_child(n)
+	$VBox.add_child(row)
+
+
+func _refresh_rank() -> void:
+	if _rank_label:
+		_rank_label.text = Biomes.roman(selected_rank)
+	name_label.text = (_blueprint_name() if blueprint_data else str(blueprint_id)) + Ranks.suffix(selected_rank)
+
+
+## Sacudida cuando el encargo no se puede hacer
+func reject_feedback() -> void:
+	var base_x := position.x
+	var tw := create_tween()
+	for i in 4:
+		tw.tween_property(self, "position:x", base_x + (8.0 if i % 2 == 0 else -8.0), 0.045)
+	tw.tween_property(self, "position:x", base_x, 0.05)
+
 
 ## Nombre del plano en el idioma del jugador.
 func _blueprint_name() -> String:
