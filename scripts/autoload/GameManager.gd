@@ -468,6 +468,19 @@ func _on_data_ready_load_save() -> void:
 		DebugManager.log_msg(&"game", "Save loaded: %s" % str(_save_loaded))
 	else:
 		DebugManager.log_msg(&"game", "No save file found — fresh start")
+	# Sin partida (o si no se pudo leer) no hay nada desbloqueado: los hitos del récord dan al menos los básicos I.
+	# Con partida ya los ha aplicado SaveManager.load_game().
+	if not _save_loaded:
+		apply_record_milestones()
+
+
+## Aplica en silencio los hitos que ya supera el récord (los básicos I siempre). Lo llama SaveManager.load_game() al
+## cargar una partida (también al migrarla) y _on_data_ready_load_save() cuando no hay partida.
+func apply_record_milestones() -> Array:
+	var dm = get_node_or_null("/root/DataManager")
+	if dm == null or not dm.has_method("apply_milestones"):
+		return []
+	return dm.apply_milestones(Ranks.milestones_up_to_record(best_enemy_level))
 
 func is_save_loaded() -> bool:
 	return _save_loaded

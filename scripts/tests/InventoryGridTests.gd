@@ -700,9 +700,9 @@ func test_v1_save_migrates_without_losing_pieces() -> void:
 	var migrated_places := _by_timestamp(im, func(it): return [it.place, it.cell, it.rot])
 	check(SaveManager.save_game(), "se guarda en la versión nueva")
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
-	check(int(data.version) == SaveManager.SAVE_VERSION and data.inventory.has("hero_grid") and not data.inventory.has("equipped_slots"), "guardado versión 2, sin huecos fijos")
-	# El fichero de la versión 2 también se carga: x, y y giro vuelven de JSON como decimales y las aristas como pares
-	check(SaveManager.load_game(), "se carga el fichero de la versión 2")
+	check(int(data.version) == SaveManager.SAVE_VERSION and data.inventory.has("hero_grid") and not data.inventory.has("equipped_slots"), "guardado en la versión actual, sin huecos fijos")
+	# El fichero de la versión actual también se carga: x, y y giro vuelven de JSON como decimales y las aristas como pares
+	check(SaveManager.load_game(), "se carga el fichero de la versión actual")
 	check(im.get_crafted_items().size() == 44, "ninguna pieza perdida al recargarlo (%d de 44)" % im.get_crafted_items().size())
 	check(im.hero_grid_size() == Vector2i(6, 5) and im.expansions.size() == 3, "la rejilla de 6×5 y las 3 ampliaciones vuelven (%s)" % im.hero_grid_size())
 	check(_by_timestamp(im, func(it): return it.aristas.duplicate()) == migrated_aristas, "las aristas vuelven iguales del fichero")
@@ -2673,8 +2673,8 @@ func test_a_hidden_shop_does_not_rebuild_its_sell_list() -> void:
 
 
 ## La partida es una sola y la comparten todas las compilaciones del juego: antes de que el guardado de después de cargar una
-## partida antigua la reescriba en la versión 2, SaveManager la copia en save.v1.bak.json con los mismos bytes, y solo la
-## primera vez (una migración posterior no pisa la primera copia). Con la partida ya en la versión 2 no hace copia.
+## partida antigua la reescriba en la versión actual, SaveManager la copia en save.v1.bak.json con los mismos bytes, y solo la
+## primera vez (una migración posterior no pisa la primera copia). Con la partida ya en la versión actual no hace copia.
 func test_loading_an_old_save_keeps_a_backup_of_it() -> void:
 	var had := FileAccess.file_exists(V1_BACKUP_PATH)
 	var kept := FileAccess.get_file_as_bytes(V1_BACKUP_PATH) if had else PackedByteArray()

@@ -400,3 +400,141 @@ func test_crafted_item_rank_survives_save() -> void:
 	var old := item.to_dict()
 	old.erase("rank")
 	check(CraftedItem.from_dict(old, res).rank == 1, "un objeto sin rango (versión 1) es de rango I")
+
+
+# ─── Tarea 6: desbloqueo por rango y guardado v3 ───────────────────────
+
+func _dm() -> Node:
+	return get_node("/root/DataManager")
+
+
+func test_blueprint_tiers() -> void:
+	var dm := _dm()
+	check(dm.blueprint_tier(&"sword_masterwork") == Ranks.TIER_MASTER and dm.blueprint_tier(&"boots_basic") == Ranks.TIER_BASIC, "nivel de pieza de cada plano")
+	for tier in Ranks.TIERS:
+		check(dm.get_blueprint_ids_for_tier(tier).size() == 4, "4 planos de nivel %s" % tier)
+
+
+func test_unlock_rank_only_goes_up() -> void:
+	var dm := _dm()
+	var saved: Dictionary = dm.unlocked_ranks.duplicate()
+	dm.unlocked_ranks[&"sword_basic"] = 0
+	check(not dm.is_blueprint_unlocked(&"sword_basic"), "rango 0 = bloqueado")
+	check(dm.unlock_rank(&"sword_basic", 2) and dm.get_unlocked_rank(&"sword_basic") == 2, "sube a II")
+	check(not dm.unlock_rank(&"sword_basic", 1) and dm.get_unlocked_rank(&"sword_basic") == 2, "no baja")
+	for id in dm.get_blueprint_ids_for_tier(Ranks.TIER_BASIC):
+		if id != &"sword_basic":
+			dm.unlocked_ranks[id] = 1
+	var newly: Array = dm.apply_milestones([{"rank": 2, "tier": Ranks.TIER_BASIC}])
+	check(newly.size() == 3, "los otros 3 básicos suben a II (%s)" % [newly])
+	dm.unlocked_ranks = saved
+
+
+## Copias de la partida antigua que había antes de una prueba (ruta → bytes, o null si no había). Las pruebas de
+## migración las crean al cargar una partida vieja; al acabar se dejan como estaban (TestSuite lo repite al final).
+func _snapshot_backups() -> Dictionary:
+	var out := {}
+	for path in OLD_SAVE_BACKUPS:
+		out[path] = FileAccess.get_file_as_bytes(path) if FileAccess.file_exists(path) else null
+	return out
+
+
+func _restore_backups(snap: Dictionary) -> void:
+	for path in snap:
+		if snap[path] == null:
+			if FileAccess.file_exists(path):
+				DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+		else:
+			var f := FileAccess.open(path, FileAccess.WRITE)
+			f.store_buffer(snap[path])
+			f.close()
+
+
+## Escribe `bytes` como save.json y lo carga, sin copias de la partida antigua delante (para ver la que hace esta carga).
+func _load_save_bytes(bytes: PackedByteArray) -> bool:
+	for path in OLD_SAVE_BACKUPS:
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	f.store_buffer(bytes)
+	f.close()
+	return SaveManager.load_game()
+
+
+## Vuelve a cargar la partida de antes de la prueba (TestSuite solo restaura el fichero al terminar).
+func _reload_user_save() -> void:
+	if _had_save:
+		var back := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+		back.store_buffer(_save_backup)
+		back.close()
+		SaveManager.load_game()
+	else:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+	await get_tree().process_frame
+
+
+func test_v1_save_with_high_record_migrates() -> void:
+	var dm := _dm()
+	var inv := _im()
+	var backups := _snapshot_backups()
+	var original := FileAccess.get_file_as_bytes("res://scripts/tests/fixtures/save_v1.json")
+	check(_load_save_bytes(original), "la partida v1 carga")
+	check(dm.get_unlocked_rank(&"sword_advanced") >= 1 and dm.get_unlocked_rank(&"sword_masterwork") >= 1, "lo ya desbloqueado se conserva")
+	check(dm.get_unlocked_rank(&"helmet_basic") == 2, "el récord 57 aplica los básicos II (casco básico: %d)" % dm.get_unlocked_rank(&"helmet_basic"))
+	check(dm.get_unlocked_rank(&"helmet_master") == 1, "el récord 57 aplica los maestros I")
+	var items: Array = inv.get_crafted_items()
+	check(items.size() == 1 and items[0].rank == 1 and items[0].calculated_stats.damage == 34, "la espada pasa a rango I con sus estadísticas")
+	check(items.size() == 1 and items[0].place == InventoryManager.PLACE_HERO and inv.best_hero_item("main_hand") == items[0], "y la que estaba equipada va a la rejilla de Tico")
+	check(FileAccess.file_exists(V1_BACKUP_PATH) and FileAccess.get_file_as_bytes(V1_BACKUP_PATH) == original, "la copia save.v1.bak.json guarda la partida original")
+	check(not FileAccess.file_exists(V2_BACKUP_PATH), "y no hace la de la versión 2")
+	check(SaveManager.save_game(), "se guarda en la versión nueva")
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
+	check(int(data.version) == 3 and data.data.has("unlocked_ranks") and not data.data.has("unlocked_blueprints"), "guardado versión 3 con unlocked_ranks")
+	await _reload_user_save()
+	_restore_backups(backups)
+
+
+## Partida de la versión 2 (la rejilla, antes de los rangos), con la forma que escriben InventoryManager.to_save_data() y
+## DataManager: récord 25, una ampliación (rejilla de 5×4), una espada con una arista en Tico y un casco en el botín.
+func _v2_save() -> Dictionary:
+	var sword := CraftedItem.new(load("res://data/items/sword_advanced.tres"), 0.8).to_dict()
+	sword.merge({"place": "hero", "x": 2, "y": 1, "rot": 0, "aristas": [[1, 0]], "timestamp": 2001}, true)
+	var helmet := CraftedItem.new(load("res://data/items/helmet_basic.tres"), 0.4).to_dict()
+	helmet.merge({"place": "loot", "timestamp": 2002}, true)
+	return {
+		"version": 2,
+		"timestamp": 1790000000.0,
+		"game": {"current_enemy_level": 24, "best_enemy_level": 25, "wall_room": 0, "room_locked": false, "death_count": 1, "enemies_defeated": {}, "hero_loadout": {}},
+		"data": {"unlocked_blueprints": {"sword_basic": true, "shield_basic": true, "boots_basic": true, "helmet_basic": false, "sword_advanced": true}},
+		"inventory": {
+			"materials": {"iron": 40, "gold": 120},
+			"crafted_items": [helmet, sword],
+			"hero_grid": [5, 4],
+			"expansions": ["grid_bone_straps"],
+			"consumables": [],
+		},
+		"requests": {"free_requests_remaining": 0},
+	}
+
+
+func test_v2_save_migrates_to_v3() -> void:
+	var dm := _dm()
+	var inv := _im()
+	var backups := _snapshot_backups()
+	var original := JSON.stringify(_v2_save()).to_utf8_buffer()
+	check(_load_save_bytes(original), "la partida v2 carga")
+	check(inv.hero_grid_size() == Vector2i(5, 4) and inv.get_crafted_items().size() == 2, "rejilla de 5×4 y las dos piezas (%s, %d)" % [inv.hero_grid_size(), inv.get_crafted_items().size()])
+	var sword: CraftedItem = inv.best_hero_item("main_hand")
+	check(sword != null and sword.cell == Vector2i(2, 1) and sword.rot == 0 and sword.aristas == [Vector2i(1, 0)], "la espada sigue en Tico, en su casilla, con su arista")
+	check(inv.get_loot().size() == 1 and inv.get_loot()[0].item_resource.item_id == &"helmet_basic", "el casco sigue en el botín")
+	check(inv.get_crafted_items().all(func(it): return it.rank == 1), "las piezas siguen en rango I")
+	check(dm.get_unlocked_rank(&"sword_advanced") == 1 and dm.get_unlocked_rank(&"shield_basic") == 1, "los planos desbloqueados pasan a rango I")
+	check(dm.get_unlocked_rank(&"helmet_basic") == 1, "los básicos I, siempre")
+	check(dm.get_unlocked_rank(&"helmet_advanced") == 1 and dm.get_unlocked_rank(&"helmet_master") == 0, "récord 25: los avanzados I sí (jefe 20) y los maestros aún no (%d, %d)" % [dm.get_unlocked_rank(&"helmet_advanced"), dm.get_unlocked_rank(&"helmet_master")])
+	check(FileAccess.file_exists(V2_BACKUP_PATH) and FileAccess.get_file_as_bytes(V2_BACKUP_PATH) == original, "la copia save.v2.bak.json guarda la partida original")
+	check(not FileAccess.file_exists(V1_BACKUP_PATH), "y no hace la de la versión 1")
+	check(SaveManager.save_game(), "se guarda")
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
+	check(int(data.version) == 3 and data.data.has("unlocked_ranks") and data.inventory.has("hero_grid"), "versión 3, con unlocked_ranks y la rejilla")
+	await _reload_user_save()
+	_restore_backups(backups)
