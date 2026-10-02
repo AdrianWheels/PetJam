@@ -9,7 +9,9 @@ extends ColorRect
 ##  - mantener pulsado abre su ficha completa, con los botones A la mochila, Al botín, Vender y Cerrar;
 ##  - arrastrar la mueve: la pieza va una casilla por encima del dedo y un segundo dedo la gira;
 ##  - soltarla en la zona de venta la vende (las Épicas y Legendarias piden confirmación);
-##  - en el botín, de lado se desplaza la tira; hacia arriba o abajo se coge la pieza.
+##  - en el botín, de lado se desplaza la tira; hacia arriba o abajo se coge la pieza;
+##  - en un hueco de consumibles, tocar enseña la poción en la ficha y mantener pulsado ofrece venderla (la pulsación larga
+##    termina la pulsación, como la de una pieza).
 ## En el ordenador el ratón hace lo mismo, y la rueda o la tecla R giran la pieza que se arrastra.
 ## Atrás (Android) llega como NOTIFICATION_WM_GO_BACK_REQUEST, no como tecla, y el árbol cierra el juego si
 ## quit_on_go_back es true: mientras el panel está abierto lo apaga. Atrás y Escape cierran lo de más arriba: la
@@ -25,6 +27,8 @@ const LOOT_RECT := Rect2(60, 970, 960, 330)
 const STATS_RECT := Rect2(60, 100, 960, 70)
 const FICHA_RECT := Rect2(60, 174, 960, 84)
 const NEXT_RECT := Rect2(760, 620, 260, 280)
+## Los dos huecos de consumibles, a la derecha de la rejilla de Tico (que llega a x = 720 con 6 columnas)
+const POTION_SLOT_RECTS := [Rect2(780, 300, 220, 120), Rect2(780, 440, 220, 120)]
 const DRAG_THRESHOLD := 10.0
 const LONG_PRESS_MS := 400
 const COLOR_UP := "7dff8a"
@@ -44,6 +48,7 @@ var _loot_view: LootStripView
 var _stats_label: RichTextLabel
 var _ficha_label: RichTextLabel
 var _next_label: Label
+var _potion_slots: Array[Label] = []
 var _ghost_layer: Control
 var _puppet: Node2D
 var _selected: CraftedItem = null
@@ -60,6 +65,7 @@ var _confirm_action: Callable = Callable()
 ## Pulsación en curso: {"item", "from", "rot", "origin", "pos", "time"}; {} si no hay.
 ## "origin" es la esquina de la caja de la pieza en la pantalla al pulsar. "item" es null si se pulsa el
 ## botín vacío (solo para desplazarlo). La pulsación larga la termina (abre la ficha).
+## En un hueco de consumibles: {"slot", "item": null, "from": &"slot", "pos", "time"}.
 var _press := {}
 var _dragging := false
 var _scrolling := false
@@ -86,6 +92,7 @@ func _ready() -> void:
 		_im.crafted_items_changed.connect(func(_items): _refresh_if_open())
 		_im.equipment_changed.connect(func(_stats): _refresh_if_open())
 		_im.grid_resized.connect(func(_size): _refresh_if_open())
+		_im.consumables_changed.connect(func(_s): _refresh_if_open())
 
 
 func _build() -> void:
@@ -107,6 +114,21 @@ func _build() -> void:
 	_next_label.add_theme_font_size_override("font_size", 24)
 	_next_label.add_theme_color_override("font_color", Color(0.75, 0.66, 0.54))
 	add_child(_next_label)
+	for r in POTION_SLOT_RECTS:
+		var slot := Label.new()
+		slot.position = r.position
+		slot.size = r.size
+		slot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		slot.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		slot.add_theme_font_size_override("font_size", 28)
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.16, 0.11, 0.09, 0.9)
+		style.border_color = Color(0.55, 0.41, 0.24)
+		style.set_border_width_all(3)
+		style.set_corner_radius_all(12)
+		slot.add_theme_stylebox_override("normal", style)
+		add_child(slot)
+		_potion_slots.append(slot)
 	_ghost_layer = Control.new()
 	_ghost_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_ghost_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -260,6 +282,7 @@ func _refresh() -> void:
 		_refresh_stats({})
 	_refresh_ficha()
 	_refresh_next()
+	_refresh_potions()
 	if _puppet and _puppet.has_method("refresh_gear"):
 		_puppet.refresh_gear()
 
@@ -349,6 +372,13 @@ func _refresh_next() -> void:
 		_next_label.text = tr("La rejilla crece al vencer al jefe de la sala %d") % int(GridExpansions.RECIPES[id].room)
 		return
 
+
+## Los huecos de consumibles: qué poción llevan y cuántas, o que están libres.
+func _refresh_potions() -> void:
+	for i in _potion_slots.size():
+		var s: Dictionary = _im.consumables[i]
+		_potion_slots[i].text = "%s ×%d" % [tr(Potions.CATALOG[s.id].short), int(s.count)] if int(s.count) > 0 else tr("Hueco libre")
+
 # ═══════════════════════════════════════════════════════════════════
 #  EL DEDO
 # ═══════════════════════════════════════════════════════════════════
@@ -381,6 +411,11 @@ func _input(event: InputEvent) -> void:
 func _on_press(pos: Vector2) -> void:
 	if _card.visible or _confirm_box.visible:
 		return  # con la ficha o la confirmación abiertas, el dedo es de sus botones
+	var potion := _potion_slot_at(pos)
+	if potion >= 0:
+		_press = {"slot": potion, "item": null, "from": &"slot", "pos": pos, "time": Time.get_ticks_msec()}
+		get_viewport().set_input_as_handled()
+		return
 	var hit := _piece_at(pos)
 	if hit.is_empty():
 		return  # botones y fondo: sigue su camino
@@ -412,9 +447,19 @@ func _piece_at(pos: Vector2) -> Dictionary:
 	return {}
 
 
+## Hueco de consumibles con pociones bajo un punto de la pantalla, o -1 (un hueco libre no se pulsa).
+func _potion_slot_at(pos: Vector2) -> int:
+	for i in POTION_SLOT_RECTS.size():
+		if POTION_SLOT_RECTS[i].has_point(pos) and int(_im.consumables[i].count) > 0:
+			return i
+	return -1
+
+
 func _on_motion(pos: Vector2) -> void:
 	if _press.is_empty():
 		return
+	if _press.has("slot"):
+		return  # un hueco solo se toca o se mantiene: el dedo no lo arrastra
 	get_viewport().set_input_as_handled()
 	if _dragging:
 		_drag_pos = pos
@@ -443,6 +488,10 @@ func _on_release(_pos: Vector2) -> void:
 	if _press.is_empty():
 		return
 	get_viewport().set_input_as_handled()
+	if _press.has("slot"):
+		_show_potion(_press.slot)  # solo llega aquí un toque: la pulsación larga ya terminó la pulsación
+		_cancel_press()
+		return
 	var item: CraftedItem = _press.item
 	if _dragging:
 		_drop(item)
@@ -451,15 +500,22 @@ func _on_release(_pos: Vector2) -> void:
 	_cancel_press()
 
 
-## Pulsación larga: abre la ficha completa de la pieza y termina la pulsación, para que mover el dedo después no
-## arrastre la pieza por debajo de la ficha ni soltarlo la gire.
+## Pulsación larga: abre la ficha completa de la pieza o, en un hueco de consumibles, ofrece vender sus pociones. Las dos
+## terminan la pulsación, para que mover el dedo después no arrastre la pieza por debajo de la ficha ni soltarlo la gire.
 func _process(_delta: float) -> void:
-	if _press.is_empty() or _dragging or _scrolling or _press.item == null:
+	if _press.is_empty() or _dragging or _scrolling:
 		return
-	if Time.get_ticks_msec() - int(_press.time) >= LONG_PRESS_MS:
-		_selected = _press.item
+	if Time.get_ticks_msec() - int(_press.time) < LONG_PRESS_MS:
+		return
+	if _press.has("slot"):
+		var index: int = _press.slot
+		_cancel_press()
+		_ask_sell_potions(index)
+	elif _press.item:  # el botín vacío no tiene ficha: solo se desplaza
+		var item: CraftedItem = _press.item
+		_selected = item
 		_refresh_ficha()
-		_open_card(_press.item)
+		_open_card(item)
 		_cancel_press()
 
 
@@ -501,6 +557,15 @@ func _tap(item: CraftedItem) -> void:
 		(_hero_view if item.place == InventoryManager.PLACE_HERO else _bag_view).start_shake(item)
 		Sfx.play(&"ui_tap", 0.0, 0.55)
 	_refresh()
+
+
+## Toque en un hueco de consumibles: enseña la poción (nombre y qué hace) en la ficha breve.
+func _show_potion(index: int) -> void:
+	var s: Dictionary = _im.consumables[index]
+	if int(s.count) <= 0:
+		return  # se ha bebido mientras el dedo estaba en el hueco
+	var info: Dictionary = Potions.CATALOG[s.id]
+	_ficha_label.text = "%s\n%s" % [tr(info.display_name), tr(info.description)]
 
 
 func _rotate_drag() -> void:
@@ -776,6 +841,20 @@ func _on_sell_all() -> void:
 		total += item.get_sell_price()
 	_confirm(tr("¿Vender %d piezas del botín por %d de oro? Las Épicas y Legendarias se quedan.") % [items.size(), total], func():
 		if _im.sell_all_loot() > 0:
+			Sfx.play(&"loot_coins")
+		_refresh()
+	)
+
+
+## Pulsación larga en un hueco: vender sus pociones a mitad de precio (la única forma de cambiar de tipo).
+func _ask_sell_potions(index: int) -> void:
+	var s: Dictionary = _im.consumables[index]
+	if int(s.count) <= 0:
+		return  # se ha bebido mientras el dedo estaba en el hueco
+	var info: Dictionary = Potions.CATALOG[s.id]
+	var gold := roundi(int(s.count) * int(info.price) * 0.5)
+	_confirm(tr("¿Vender %d %s por %d de oro?") % [int(s.count), tr(info.short), gold], func():
+		if _im.sell_potion_slot(index) > 0:
 			Sfx.play(&"loot_coins")
 		_refresh()
 	)

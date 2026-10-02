@@ -19,6 +19,7 @@ signal room_travel(room: int)  # el selector o un reintento mandan a Tico a otra
 signal wall_changed(wall_room: int)  # aparece o cae el muro (0 = sin muro)
 signal room_lock_changed(locked: bool)  # candado del selector de sala
 signal grid_expanded(recipe_id)  # la rejilla de Tico crece: primera victoria sobre el jefe 10, 20, 30 o 40
+signal potion_drunk(potion_id)  # una poción de los huecos se ha bebido sola
 
 enum DungeonState { IDLE, RUNNING, HERO_DEAD }
 
@@ -176,11 +177,45 @@ func attack_speed_multiplier() -> float:
 func double_loot_chance() -> float:
 	return LUCK_DOUBLE_LOOT_CHANCE if has_buff(BUFF_LUCK) else 0.0
 
+## Bebe una poción de los huecos si queda y aplica su efecto. true si se ha bebido.
+func drink_potion(id: StringName) -> bool:
+	var inv = get_node_or_null("/root/InventoryManager")
+	if inv == null or not inv.has_method("take_potion") or not inv.take_potion(id):
+		return false
+	var info: Dictionary = Potions.CATALOG.get(id, {})
+	if info.has("buff"):
+		apply_buff(info.buff, float(info.duration))
+	elif id == &"potion_heal" and is_instance_valid(_hero) and _hero.has_method("heal"):
+		_hero.heal(_hero.max_hp)
+	emit_signal("potion_drunk", id)
+	return true
+
+## Tico ha recibido daño (también si lo esquivó o paró): vivo y por debajo del 30 %, bebe una de Vida si la lleva.
+## hurt llega después de died en un golpe mortal, de ahí mirar si sigue vivo.
+func _on_hero_hurt(_amount: int) -> void:
+	if is_instance_valid(_hero) and _hero.alive and _hero.hp < _hero.max_hp * Potions.HEAL_BELOW:
+		drink_potion(&"potion_heal")
+
+## Aparece un jefe (lo llama el Corridor): Velocidad y Suerte, si las lleva y su efecto no está activo.
+## Delante del muro y sin candado no se beben: una poción de efecto manda a Tico al muro (apply_buff llama
+## a retry_wall_now) y dejaría este jefe a medias (spec del inventario, apartado 8).
+func on_boss_appeared() -> void:
+	if wall_room > 0 and not room_locked and current_enemy_level != wall_room:
+		return
+	for pair in [[&"potion_speed", BUFF_SPEED], [&"potion_luck", BUFF_LUCK]]:
+		if not has_buff(pair[1]):
+			drink_potion(pair[0])
+
 func get_hero() -> Node:
 	return _hero
 
 func register_hero(hero_node: Node) -> void:
+	# Solo se escucha al héroe registrado (Main y UIManager lo registran los dos): sin conexiones repetidas ni del anterior
+	if is_instance_valid(_hero) and _hero.has_signal("hurt") and _hero.hurt.is_connected(_on_hero_hurt):
+		_hero.hurt.disconnect(_on_hero_hurt)
 	_hero = hero_node
+	if is_instance_valid(_hero) and _hero.has_signal("hurt"):
+		_hero.hurt.connect(_on_hero_hurt)
 	# Aplicar stats de equipo actual al registrar héroe
 	_refresh_hero_stats()
 

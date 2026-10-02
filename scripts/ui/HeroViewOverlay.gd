@@ -9,6 +9,7 @@ extends Control
 ## mayúsculas y los segundos que le quedan, redondeados hacia arriba ("VELOCIDAD 25 s"), cada una de
 ## su color. Parpadean los últimos 5 s y desaparecen al caducar. Solo letras y cifras: sin emoji.
 ## La de Suerte da un latido cuando sale un botín doble.
+## Debajo de los efectos, una línea con las pociones que quedan en los huecos de consumibles ("VIDA ×2 · VELOCIDAD ×1").
 ## Todo lo que enseña pasa por tr() al ponerlo (locale/textos.csv): los nombres que llegan por señal
 ## (jefes, planos) vienen en español, que es el texto base.
 ## Selector de sala (spec de rangos, apartado 7), bajo la banda superior, a la derecha: flecha atrás,
@@ -51,6 +52,7 @@ var _banner_sub: Label
 var _toast: Label
 var _fade: ColorRect
 var _buff_labels: Dictionary = {}  # efecto → Label
+var _potion_label: Label  # las pociones que quedan en los huecos, debajo de los efectos
 
 var _prev_button: Button
 var _lock_button: Button
@@ -167,6 +169,11 @@ func _build() -> void:
 		buff.visible = false
 		_buff_labels[id] = buff
 
+	_potion_label = _make_label(22, Color("ffe7b0"), HORIZONTAL_ALIGNMENT_LEFT)
+	_potion_label.position = BUFF_POS
+	_potion_label.size = Vector2(250, BUFF_ROW)
+	_potion_label.visible = false
+
 	_banner_title = _make_label(64, Color("ffe7b0"), HORIZONTAL_ALIGNMENT_CENTER, 12)
 	_banner_title.position = Vector2(0, 132)
 	_banner_title.size = Vector2(1080, 80)
@@ -274,6 +281,15 @@ func _refresh_buffs() -> void:
 	luck.modulate.r = 1.0 + 0.6 * _luck_pop  # destello (el modulate admite valores mayores que 1)
 	luck.modulate.g = 1.0 + 0.6 * _luck_pop
 	luck.modulate.b = 1.0 + 0.6 * _luck_pop
+	# Pociones que quedan en los huecos (spec del inventario, apartado 8), debajo de los efectos activos
+	var parts := []
+	if _inventory and "consumables" in _inventory:
+		for s in _inventory.consumables:
+			if int(s.count) > 0:
+				parts.append("%s ×%d" % [tr(Potions.CATALOG[s.id].short).to_upper(), int(s.count)])
+	_potion_label.visible = not parts.is_empty()
+	_potion_label.text = " · ".join(parts)
+	_potion_label.position = BUFF_POS + Vector2(0, BUFF_ROW * row)
 
 
 func _refresh_room() -> void:

@@ -8,6 +8,8 @@ class_name InventoryManager
 ##  - el botín (loot): lista sin límite con lo más nuevo delante. Aquí llega todo lo forjado.
 ## Nada se coloca solo, salvo en la migración de partidas antiguas. Las reglas viven en PieceShape,
 ## GearGrid, GearAuras, LegendaryPowers, GearPacker y GridExpansions.
+## Aparte de las piezas, dos huecos de consumibles (consumables, spec apartado 8): las pociones de la tienda
+## esperan ahí y GameManager las bebe solas. Su catálogo y sus topes viven en Potions.
 
 const _SaveManager = preload("res://scripts/core/SaveManager.gd")
 
@@ -16,6 +18,7 @@ signal crafted_items_changed(items_array)
 signal equipment_changed(equipment_stats: Dictionary)  ## ha cambiado la rejilla de Tico
 signal loot_changed(count: int)
 signal grid_resized(size: Vector2i)
+signal consumables_changed(slots: Array)
 
 const PLACE_HERO := &"hero"
 const PLACE_BAG := &"bag"
@@ -32,6 +35,8 @@ var bag_grid: GearGrid = GearGrid.new(BAG_SIZE)
 var loot: Array[CraftedItem] = []
 ## Recetas de ampliación ya forjadas: la rejilla de Tico mide GridExpansions.size_after(expansions.size())
 var expansions: Array[StringName] = []
+## Huecos de consumibles: [{"id": StringName, "count": int}, …]; id vacío o count 0 = libre
+var consumables: Array = _empty_slots()
 
 func _ready() -> void:
 	"""Inicializa inventario. Si hay save, se cargará luego via load_save_data().
@@ -112,8 +117,10 @@ func clear() -> void:
 	expansions.clear()
 	hero_grid = GearGrid.new(GridExpansions.START_SIZE)
 	bag_grid = GearGrid.new(BAG_SIZE)
+	consumables = _empty_slots()
 	emit_signal("inventory_changed", inventory.duplicate())
 	grid_resized.emit(hero_grid.size)
+	consumables_changed.emit(consumables)
 	_changed(true)
 
 # ═══════════════════════════════════════════════════════════════════
@@ -361,6 +368,70 @@ func apply_grid_expansion(id: StringName) -> bool:
 	return true
 
 # ═══════════════════════════════════════════════════════════════════
+#  CONSUMIBLES
+# ═══════════════════════════════════════════════════════════════════
+
+## Dos huecos libres: un tipo de poción por hueco, hasta Potions.MAX_STACK.
+static func _empty_slots() -> Array:
+	var out := []
+	for i in Potions.SLOTS:
+		out.append({"id": &"", "count": 0})
+	return out
+
+
+## Hueco donde entraría una poción de ese tipo: el suyo si no está lleno, o uno libre. -1 si no hay.
+func potion_slot_for(id: StringName) -> int:
+	for i in consumables.size():
+		if consumables[i].id == id and int(consumables[i].count) > 0:
+			return i if int(consumables[i].count) < Potions.MAX_STACK else -1
+	for i in consumables.size():
+		if int(consumables[i].count) <= 0:
+			return i
+	return -1
+
+
+## Guarda una poción comprada. false si no hay hueco: la tienda no la cobra.
+func add_potion(id: StringName) -> bool:
+	var i := potion_slot_for(id)
+	if i < 0:
+		return false
+	var count := int(consumables[i].count) + 1 if consumables[i].id == id else 1
+	consumables[i] = {"id": id, "count": count}
+	consumables_changed.emit(consumables)
+	return true
+
+
+func potion_count(id: StringName) -> int:
+	var n := 0
+	for s in consumables:
+		if s.id == id:
+			n += int(s.count)
+	return n
+
+
+## Saca una poción para beberla. false si no queda ninguna de ese tipo.
+func take_potion(id: StringName) -> bool:
+	for i in consumables.size():
+		if consumables[i].id == id and int(consumables[i].count) > 0:
+			var left := int(consumables[i].count) - 1
+			consumables[i] = {"id": id if left > 0 else &"", "count": left}
+			consumables_changed.emit(consumables)
+			return true
+	return false
+
+
+## Vende las pociones de un hueco a mitad de precio y lo deja libre. Devuelve el oro.
+func sell_potion_slot(index: int) -> int:
+	if index < 0 or index >= consumables.size() or int(consumables[index].count) <= 0:
+		return 0
+	var info: Dictionary = Potions.CATALOG.get(consumables[index].id, {})
+	var gold := roundi(int(consumables[index].count) * int(info.get("price", 0)) * 0.5)
+	consumables[index] = {"id": &"", "count": 0}
+	add_item(&"gold", gold)
+	consumables_changed.emit(consumables)
+	return gold
+
+# ═══════════════════════════════════════════════════════════════════
 #  SITIOS (privado)
 # ═══════════════════════════════════════════════════════════════════
 
@@ -429,6 +500,7 @@ func to_save_data() -> Dictionary:
 		"crafted_items": items_arr,
 		"hero_grid": [hero_grid.size.x, hero_grid.size.y],
 		"expansions": expansions.map(func(id): return String(id)),
+		"consumables": consumables.map(func(s): return {"id": String(s.id), "count": int(s.count)}),
 	}
 
 
@@ -494,7 +566,15 @@ func load_save_data(data: Dictionary, record: int = 1) -> void:
 		to_loot.sort_custom(func(a, b): return gear_score(a) > gear_score(b))
 		for item in to_loot:
 			_put_in_loot(item, loot.size())
+	# Huecos de consumibles: solo pociones del catálogo, con la pila dentro de su tope (una partida anterior no los tiene)
+	consumables = _empty_slots()
+	var saved_slots: Array = data.get("consumables", [])
+	for i in mini(saved_slots.size(), Potions.SLOTS):
+		var s = saved_slots[i]
+		if s is Dictionary and Potions.CATALOG.has(StringName(s.get("id", ""))) and int(s.get("count", 0)) > 0:
+			consumables[i] = {"id": StringName(s.id), "count": mini(int(s.count), Potions.MAX_STACK)}
 	print("InventoryManager: %d materiales, %d piezas (Tico %d, mochila %d, botín %d)%s" % [inventory.size(), crafted_items.size(), hero_grid.items.size(), bag_grid.items.size(), loot.size(), " — partida migrada" if migrating else ""])
 	emit_signal("inventory_changed", inventory.duplicate())
 	grid_resized.emit(hero_grid.size)
+	consumables_changed.emit(consumables)
 	_changed(true)

@@ -2232,3 +2232,270 @@ func test_the_result_screen_fits_its_window_with_the_new_lines() -> void:
 		await get_tree().process_frame
 	window.queue_free()
 	await get_tree().process_frame
+
+
+# ─── Tarea 13: consumibles ─────────────────────────────────────────────
+
+func test_potion_slots_hold_two_kinds_up_to_five() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	for i in 5:
+		check(im.add_potion(&"potion_speed"), "la Velocidad %d entra en su hueco" % (i + 1))
+	check(not im.add_potion(&"potion_speed"), "la sexta no cabe (5 como máximo)")
+	check(im.add_potion(&"potion_luck"), "la Suerte va al otro hueco")
+	check(not im.add_potion(&"potion_heal"), "la Vida no tiene hueco: los dos están ocupados")
+	check(im.take_potion(&"potion_luck") and im.potion_count(&"potion_luck") == 0, "al beberse la última, el hueco queda libre")
+	check(im.add_potion(&"potion_heal"), "y ya entra la Vida")
+	var gold: int = im.sell_potion_slot(0)  # im es un Node: el tipo no se puede deducir
+	check(gold == roundi(5 * Potions.CATALOG[&"potion_speed"].price * 0.5) and im.potion_count(&"potion_speed") == 0, "vender un hueco da la mitad de lo que costó (%d)" % gold)
+	var data: Dictionary = im.to_save_data()
+	im.load_save_data(data, 1)
+	check(im.potion_count(&"potion_heal") == 1, "los huecos se guardan")
+	await _restore_inventory(saved)
+
+
+func test_boss_drinks_speed_and_luck_once() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var gm := get_node("/root/GameManager")
+	var wall: int = gm.wall_room
+	gm.wall_room = 0  # sin muro (la partida del usuario puede tener uno)
+	gm.clear_buffs()
+	im.add_potion(&"potion_speed")
+	im.add_potion(&"potion_speed")
+	im.add_potion(&"potion_luck")
+	gm.on_boss_appeared()
+	check(gm.has_buff(&"speed") and gm.has_buff(&"luck"), "al aparecer un jefe se beben Velocidad y Suerte")
+	check(im.potion_count(&"potion_speed") == 1 and im.potion_count(&"potion_luck") == 0, "una de cada")
+	gm.on_boss_appeared()
+	check(im.potion_count(&"potion_speed") == 1, "con el efecto activo no se bebe otra")
+	gm.clear_buffs()
+	gm.wall_room = wall
+	await _restore_inventory(saved)
+
+
+func test_boss_potions_wait_in_front_of_the_wall() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var gm := get_node("/root/GameManager")
+	var state := {"level": gm.current_enemy_level, "wall": gm.wall_room, "locked": gm.room_locked}
+	gm.clear_buffs()
+	im.add_potion(&"potion_speed")
+	gm.wall_room = 11
+	gm.room_locked = false
+	gm.current_enemy_level = 10  # farmea el jefe de la sala 10, delante del muro
+	gm.on_boss_appeared()
+	check(im.potion_count(&"potion_speed") == 1 and gm.current_enemy_level == 10, "delante del muro no se bebe: el jefe no se queda a medias")
+	gm.room_locked = true
+	gm.on_boss_appeared()
+	check(im.potion_count(&"potion_speed") == 0 and gm.current_enemy_level == 10, "con candado sí se bebe, y Tico sigue en su sala")
+	gm.clear_buffs()
+	gm.current_enemy_level = state.level
+	gm.wall_room = state.wall
+	gm.room_locked = state.locked
+	await _restore_inventory(saved)
+
+
+func test_heal_potion_drinks_itself_below_30_percent() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var gm := get_node("/root/GameManager")
+	var hero: Node2D = load("res://scenes/Hero.tscn").instantiate()
+	hero.remove_from_group("hero")
+	add_child(hero)
+	await get_tree().process_frame
+	var prev_hero: Node = gm.get_hero()
+	gm.register_hero(hero)
+	im.add_potion(&"potion_heal")
+	hero.take_damage(roundi(hero.max_hp * 0.5), true)
+	check(im.potion_count(&"potion_heal") == 1, "al 50 %% no se bebe")
+	hero.take_damage(roundi(hero.max_hp * 0.3), true)
+	check(hero.hp == hero.max_hp and im.potion_count(&"potion_heal") == 0, "por debajo del 30 %% se bebe sola y cura al máximo (%d/%d)" % [hero.hp, hero.max_hp])
+	im.add_potion(&"potion_heal")
+	hero.take_damage(hero.max_hp * 10, true)
+	check(not hero.alive and im.potion_count(&"potion_heal") == 1, "con Tico caído no se bebe")
+	gm.register_hero(prev_hero)
+	hero.queue_free()
+	await _restore_inventory(saved)
+
+
+## Lo guardado se revisa al cargar: una pila de más de 5 se queda en 5, lo que no es una poción no ocupa hueco, no se
+## inventan huecos y una partida sin consumibles (o con basura en su lugar) carga con los dos libres.
+func test_saved_potion_slots_are_checked_on_load() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var data: Dictionary = im.to_save_data()
+	data["consumables"] = [{"id": "potion_speed", "count": 99}, {"id": "potion_gold", "count": 3}, {"id": "potion_luck", "count": 2}]
+	var from_disk: Dictionary = JSON.parse_string(JSON.stringify(data))  # como llega del disco: los números son decimales
+	im.load_save_data(from_disk, 1)
+	check(im.potion_count(&"potion_speed") == Potions.MAX_STACK, "una pila de más de 5 se queda en 5 (%d)" % im.potion_count(&"potion_speed"))
+	check(im.consumables.size() == Potions.SLOTS and int(im.consumables[1].count) == 0, "lo que no es una poción no ocupa hueco (%s)" % [im.consumables])
+	check(im.potion_count(&"potion_luck") == 0, "y no se inventa un tercer hueco")
+	data.erase("consumables")
+	im.load_save_data(data, 1)
+	check(im.consumables.all(func(s): return int(s.count) == 0), "una partida sin consumibles carga con los huecos libres")
+	data["consumables"] = [5, null]
+	im.load_save_data(data, 1)
+	check(im.consumables.size() == Potions.SLOTS and im.consumables.all(func(s): return int(s.count) == 0), "y las entradas que no son huecos se ignoran")
+	await _restore_inventory(saved)
+
+
+## El límite es el 30 % de verdad: con la vida justo en el 30 % (o algo más) no se bebe; un punto por debajo, sí.
+func test_the_heal_potion_threshold_is_exactly_30_percent() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var gm := get_node("/root/GameManager")
+	var hero: Node2D = load("res://scenes/Hero.tscn").instantiate()
+	hero.remove_from_group("hero")
+	add_child(hero)
+	await get_tree().process_frame
+	var prev_hero: Node = gm.get_hero()
+	gm.register_hero(hero)
+	var line := ceili(hero.max_hp * 0.3)  # la menor vida que no bebe (el 30 % escrito aquí, no el de Potions)
+	im.add_potion(&"potion_heal")
+	hero.hp = line + 1
+	hero.take_damage(1, true)  # el pulso no mira la armadura: deja la vida en `line`
+	check(hero.hp == line and im.potion_count(&"potion_heal") == 1, "con %d de %d de vida no se bebe" % [hero.hp, hero.max_hp])
+	hero.take_damage(1, true)
+	check(hero.hp == hero.max_hp and im.potion_count(&"potion_heal") == 0, "un punto por debajo sí (%d/%d)" % [hero.hp, hero.max_hp])
+	gm.register_hero(prev_hero)
+	hero.queue_free()
+	await _restore_inventory(saved)
+
+
+## Todo cambio de los huecos avisa con los que quedan; vaciar el inventario los deja libres, y cargar una partida avisa.
+func test_consumables_changed_announces_every_change() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var seen := []
+	var on_changed := func(slots): seen.append(slots.map(func(s): return int(s.count)))
+	im.consumables_changed.connect(on_changed)
+	im.add_potion(&"potion_speed")
+	im.add_potion(&"potion_luck")
+	im.take_potion(&"potion_speed")
+	im.sell_potion_slot(1)
+	check(seen == [[1, 0], [1, 1], [0, 1], [0, 0]], "añadir, beber y vender avisan con los huecos que quedan (%s)" % [seen])
+	im.add_potion(&"potion_heal")
+	seen.clear()
+	im.clear()
+	check(im.potion_count(&"potion_heal") == 0 and seen.size() == 1, "vaciar el inventario libera los huecos y avisa una vez (%s)" % [seen])
+	im.load_save_data(im.to_save_data(), 1)
+	check(seen.size() == 2, "cargar una partida también avisa (%s)" % [seen])
+	im.consumables_changed.disconnect(on_changed)
+	await _restore_inventory(saved)
+
+
+## Beber avisa con la poción bebida; sin ninguna en los huecos no se bebe ni se avisa.
+func test_drinking_announces_the_potion() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var gm := get_node("/root/GameManager")
+	var seen := []
+	var on_drunk := func(id): seen.append(id)
+	gm.potion_drunk.connect(on_drunk)
+	gm.clear_buffs()
+	check(not gm.drink_potion(&"potion_speed") and seen.is_empty() and not gm.has_buff(&"speed"), "sin ninguna en el hueco no se bebe ni se avisa")
+	im.add_potion(&"potion_speed")
+	check(gm.drink_potion(&"potion_speed") and seen == [&"potion_speed"], "al beberla avisa de cuál (%s)" % [seen])
+	check(gm.has_buff(&"speed") and is_equal_approx(gm.buff_remaining(&"speed"), 30.0) and im.potion_count(&"potion_speed") == 0, "su efecto dura 30 s y el hueco queda libre")
+	gm.potion_drunk.disconnect(on_drunk)
+	gm.clear_buffs()
+	await _restore_inventory(saved)
+
+
+## GameManager solo escucha a Tico, el héroe registrado: registrarlo dos veces (Main y UIManager lo hacen) no duplica la
+## conexión, y al registrar otro héroe el anterior deja de beber.
+func test_only_the_registered_hero_drinks_for_its_hurt() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var gm := get_node("/root/GameManager")
+	var first: Node2D = load("res://scenes/Hero.tscn").instantiate()
+	var second: Node2D = load("res://scenes/Hero.tscn").instantiate()
+	for h in [first, second]:
+		h.remove_from_group("hero")
+		add_child(h)
+	await get_tree().process_frame
+	var prev_hero: Node = gm.get_hero()
+	gm.register_hero(first)
+	gm.register_hero(first)
+	im.add_potion(&"potion_heal")
+	im.add_potion(&"potion_heal")
+	first.take_damage(roundi(first.max_hp * 0.8), true)
+	check(im.potion_count(&"potion_heal") == 1 and first.hp == first.max_hp, "registrado dos veces, un golpe bebe una sola poción (%d)" % im.potion_count(&"potion_heal"))
+	gm.register_hero(second)
+	first.take_damage(roundi(first.max_hp * 0.8), true)
+	check(im.potion_count(&"potion_heal") == 1 and first.hp < first.max_hp * 0.3, "el héroe anterior ya no bebe (%d)" % im.potion_count(&"potion_heal"))
+	second.take_damage(roundi(second.max_hp * 0.8), true)
+	check(im.potion_count(&"potion_heal") == 0 and second.hp == second.max_hp, "el registrado sí")
+	gm.register_hero(prev_hero)
+	first.queue_free()
+	second.queue_free()
+	await _restore_inventory(saved)
+
+
+## El pasillo avisa a GameManager cuando aparece un jefe (y GameManager decide si beber): lo que se ha puesto en los
+## huecos se bebe en la presentación del jefe.
+func test_the_boss_intro_makes_the_potions_drink() -> void:
+	var saved := _fresh_inventory()
+	var a := await _arena([])  # sin muro ni candado
+	var gm := get_node("/root/GameManager")
+	gm.clear_buffs()
+	_im().add_potion(&"potion_speed")
+	_im().add_potion(&"potion_luck")
+	a.corridor._boss_intro()
+	check(gm.has_buff(&"speed") and gm.has_buff(&"luck"), "la presentación del jefe bebe Velocidad y Suerte")
+	check(_im().potion_count(&"potion_speed") == 0 and _im().potion_count(&"potion_luck") == 0, "y se gastan del hueco")
+	gm.clear_buffs()
+	await _close_arena(a)
+	await _restore_inventory(saved)
+
+
+## Los huecos de consumibles en el panel de Equipo: cada uno dice qué lleva; tocarlo enseña la poción en la ficha y
+## mantenerlo pulsado ofrece venderla a mitad de precio (como la pulsación larga de una pieza, termina la pulsación).
+func test_potion_slots_in_the_panel() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	im.add_potion(&"potion_speed")
+	im.add_potion(&"potion_speed")
+	var panel := _new_panel()
+	var slot0: Label = panel._potion_slots[0]
+	var slot1: Label = panel._potion_slots[1]
+	var p0: Vector2 = panel.POTION_SLOT_RECTS[0].get_center()
+	var p1: Vector2 = panel.POTION_SLOT_RECTS[1].get_center()
+	check(slot0.text == "Velocidad ×2" and slot1.text == tr("Hueco libre"), "cada hueco dice qué lleva o que está libre («%s», «%s»)" % [slot0.text, slot1.text])
+	_mouse(panel, p1, true)
+	check(panel._press.is_empty(), "un hueco libre no se pulsa")
+	_mouse(panel, p1, false)
+	im.add_potion(&"potion_luck")
+	check(slot1.text == "Suerte ×1", "con el panel abierto, el hueco se actualiza al llegar una poción («%s»)" % slot1.text)
+	_mouse(panel, p0, true)
+	check(panel._press.has("slot") and panel._press.item == null, "pulsar un hueco con pociones empieza una pulsación de hueco")
+	_mouse(panel, p0, false)
+	check(panel._ficha_label.text.contains(tr(Potions.CATALOG[&"potion_speed"].description)) and panel._press.is_empty(), "tocarlo enseña la poción en la ficha (%s)" % panel._ficha_label.text)
+	check(im.potion_count(&"potion_speed") == 2 and not panel._confirm_box.visible, "y no pregunta ni vende nada")
+	var gold: int = im.get_quantity(&"gold")
+	_long_press(panel, p0)
+	check(panel._confirm_box.visible and panel._confirm_text.text.contains("150"), "mantenerlo pulsado pregunta si vender, con el oro (%s)" % panel._confirm_text.text)
+	check(panel._press.is_empty(), "y termina la pulsación")
+	_mouse(panel, p0, false)
+	check(im.potion_count(&"potion_speed") == 2 and panel._confirm_box.visible, "soltar después no vende ni toca la pregunta")
+	panel._close_confirm()  # No
+	check(im.potion_count(&"potion_speed") == 2, "con No se queda todo")
+	_long_press(panel, p0)
+	panel._on_confirm_yes()
+	check(im.potion_count(&"potion_speed") == 0 and im.get_quantity(&"gold") == gold + 150 and slot0.text == tr("Hueco libre"), "con Sí se venden a mitad de precio y el hueco queda libre (%d de oro)" % (im.get_quantity(&"gold") - gold))
+	# Una poción que se bebe mientras el dedo sigue en el hueco: ni error al soltar ni pregunta por un hueco ya libre
+	_mouse(panel, p1, true)
+	im.take_potion(&"potion_luck")
+	_mouse(panel, p1, false)
+	check(not panel._confirm_box.visible and panel._press.is_empty(), "soltar sobre un hueco que se acaba de vaciar no hace nada")
+	im.add_potion(&"potion_luck")  # entra en el primer hueco libre: el 0, que quedó libre al vender la Velocidad
+	_mouse(panel, p0, true)
+	check(panel._press.has("slot"), "(la Suerte ha entrado en el hueco 0 y su pulsación está en marcha)")
+	im.take_potion(&"potion_luck")
+	panel._press.time = Time.get_ticks_msec() - 1000
+	panel._process(0.0)
+	check(not panel._confirm_box.visible and panel._press.is_empty(), "y mantenerlo no ofrece vender lo que ya no está")
+	await _silence_sounds()
+	panel.queue_free()
+	await _restore_inventory(saved)

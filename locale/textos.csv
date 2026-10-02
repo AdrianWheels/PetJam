@@ -291,3 +291,12 @@ Vender por %d de oro,Vender por %d de oro,Sell for %d gold
 ¡Esquiva!,¡Esquiva!,Dodged!
 ¡Otra vez!,¡Otra vez!,Again!
 ¡La rejilla crece!,¡La rejilla crece!,The grid grows!
+Se bebe sola si a Tico le queda menos del 30 % de vida: cura al máximo,Se bebe sola si a Tico le queda menos del 30 % de vida: cura al máximo,Drunk automatically when Tico drops below 30 % health: fully heals
+Se bebe sola al aparecer un jefe: ataca un 50 % más rápido (30 s),Se bebe sola al aparecer un jefe: ataca un 50 % más rápido (30 s),Drunk automatically when a boss appears: attacks 50 % faster (30 s)
+Se bebe sola al aparecer un jefe: botín doble el 20 % de las veces (60 s),Se bebe sola al aparecer un jefe: botín doble el 20 % de las veces (60 s),Drunk automatically when a boss appears: double loot 20 % of the time (60 s)
+Suerte,Suerte,Luck
+No hay hueco,No hay hueco,No free slot
+%s: %d en el hueco,%s: %d en el hueco,%s: %d in the slot
+En hueco: %d,En hueco: %d,In slot: %d
+Hueco libre,Hueco libre,Empty slot
+¿Vender %d %s por %d de oro?,¿Vender %d %s por %d de oro?,Sell %d %s for %d gold?

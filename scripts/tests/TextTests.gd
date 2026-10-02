@@ -158,6 +158,8 @@ func _code_table_texts() -> Array:
 	for id in ShopPanel.POTION_CATALOG:
 		out.append([String(ShopPanel.POTION_CATALOG[id].display_name), "ShopPanel.POTION_CATALOG"])
 		out.append([String(ShopPanel.POTION_CATALOG[id].description), "ShopPanel.POTION_CATALOG"])
+	for id in Potions.CATALOG:
+		out.append([String(Potions.CATALOG[id].short), "Potions.CATALOG"])
 	var buffs: Dictionary = _consts("res://scripts/ui/HeroViewOverlay.gd").get("BUFF_LABELS", {})
 	for id in buffs:
 		out.append([String(buffs[id][0]), "HeroViewOverlay.BUFF_LABELS"])

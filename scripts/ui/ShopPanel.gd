@@ -24,15 +24,8 @@ const MATERIAL_CATALOG := {
 	&"poison": {"display_name": "Veneno", "price": 50, "quantity": 2},
 }
 
-## Pociones. Las de efecto temporal llevan el id del efecto en GameManager ("buff") y su duración en
-## segundos: comprar una que ya está activa vuelve a la duración completa (no suma tiempo ni efecto).
-## Descripciones con el mismo formato: efecto y, si dura, sus segundos entre paréntesis ("(30 s)"),
-## con espacio antes de % y de s. Los nombres y descripciones son el texto base: se enseñan con tr().
-const POTION_CATALOG := {
-	&"potion_heal": {"display_name": "Poción de Vida", "price": 100, "description": "Cura al héroe al máximo"},
-	&"potion_speed": {"display_name": "Poción de Velocidad", "price": 150, "description": "El héroe ataca un 50 % más rápido (30 s)", "buff": &"speed", "duration": 30.0},
-	&"potion_luck": {"display_name": "Poción de Suerte", "price": 200, "description": "Botín doble el 20 % de las veces (60 s)", "buff": &"luck", "duration": 60.0},
-}
+## Pociones: el catálogo vive en Potions (se compran para los huecos de consumibles y se beben solas)
+const POTION_CATALOG := Potions.CATALOG
 
 # ═══════════════════════════════════════════════════════════════════
 #  NODOS INTERNOS (creados en _build_ui)
@@ -67,6 +60,8 @@ func _ready() -> void:
 		_inventory_manager.inventory_changed.connect(_on_inventory_changed)
 	if _inventory_manager and _inventory_manager.has_signal("crafted_items_changed"):
 		_inventory_manager.crafted_items_changed.connect(_on_crafted_items_changed)
+	if _inventory_manager and _inventory_manager.has_signal("consumables_changed"):
+		_inventory_manager.consumables_changed.connect(func(_slots): _update_potion_cards())
 
 
 func _build_ui() -> void:
@@ -204,6 +199,7 @@ func _populate_potions() -> void:
 		var info: Dictionary = POTION_CATALOG[pot_id]
 		var card := _create_potion_card(pot_id, info)
 		_potions_grid.add_child(card)
+	_update_potion_cards()
 
 
 func _create_material_card(mat_id: StringName, info: Dictionary) -> PanelContainer:
@@ -282,6 +278,13 @@ func _create_potion_card(pot_id: StringName, info: Dictionary) -> PanelContainer
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(desc_label)
 	
+	# Cuántas lleva Tico en los huecos (la rellena _update_potion_cards)
+	var owned := Label.new()
+	owned.name = "OwnedLabel"
+	owned.add_theme_font_size_override("font_size", 22)
+	owned.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(owned)
+	
 	# Botón comprar
 	var buy_btn := Button.new()
 	buy_btn.text = "%s 💰" % (tr("Comprar — %d") % info.price)
@@ -328,74 +331,15 @@ func _on_buy_potion(pot_id: StringName, price: int) -> void:
 	if gold < price:
 		_show_toast("❌ %s" % tr("Oro insuficiente"), Color(1.0, 0.3, 0.3))
 		return
-
-	# Una poción que ahora no puede hacer nada no se vende (ni se cobra)
-	var blocked := _potion_block_reason(pot_id)
-	if blocked != "":
-		_show_toast(blocked, Color(1.0, 0.65, 0.3))
+	# Se compra para llevarla en un hueco de consumibles; si no hay hueco, ni se compra ni se cobra
+	if not _inventory_manager.add_potion(pot_id):
+		_show_toast(tr("No hay hueco"), Color(1.0, 0.65, 0.3))
 		return
-	
-	var info: Dictionary = POTION_CATALOG.get(pot_id, {})
-	var gm := get_node_or_null("/root/GameManager")
-	var renewed: bool = info.has("buff") and gm != null and gm.has_method("has_buff") and gm.has_buff(info.buff)
-	
-	# Consumir oro
 	_inventory_manager.consume_materials({&"gold": price})
-	
-	# Aplicar efecto de poción
-	_apply_potion_effect(pot_id)
-	
-	var display_name: String = tr(info.get("display_name", String(pot_id)))
-	var done: String = tr("%s renovada") if renewed else tr("%s aplicada")
-	_show_toast("✅ %s" % (done % display_name), Color(0.3, 1.0, 0.3))
-	item_purchased.emit(pot_id, 1, price)
-	
-	print("ShopPanel: Comprado %s por %d oro" % [pot_id, price])
-
-
-## Motivo, en el idioma del jugador, por el que la poción no se puede usar ahora ("" si se puede). Se
-## mira antes de cobrar: la de Vida no cura a Tico caído (no resucita) ni a Tico con la vida llena.
-func _potion_block_reason(pot_id: StringName) -> String:
-	if pot_id != &"potion_heal":
-		return ""
-	var hero := _find_hero()
-	if hero == null:
-		return tr("Tico no está en la mazmorra")
-	if not hero.alive:
-		return tr("Tico está caído: la poción no resucita")
-	if hero.hp >= hero.max_hp:
-		return tr("Tico ya tiene la vida llena")
-	return ""
-
-
-func _apply_potion_effect(pot_id: StringName) -> void:
 	var info: Dictionary = POTION_CATALOG.get(pot_id, {})
-	if info.has("buff"):
-		# Velocidad y Suerte: efecto temporal en GameManager (Hero y Enemy lo consultan)
-		var gm := get_node_or_null("/root/GameManager")
-		if gm and gm.has_method("apply_buff"):
-			gm.apply_buff(info.buff, float(info.duration))
-		return
-	if pot_id == &"potion_heal":
-		var hero := _find_hero()
-		if hero and hero.has_method("heal"):
-			hero.heal(hero.max_hp)
-
-
-## El héroe de la partida (lo registra GameManager); si no hay, el primero del grupo "hero".
-func _find_hero() -> Node:
-	var gm := get_node_or_null("/root/GameManager")
-	if gm and gm.has_method("get_hero"):
-		var registered = gm.get_hero()  # sin tipo: se comprueba antes de usarlo
-		if is_instance_valid(registered):
-			return registered
-	var tree := get_tree()
-	if tree == null:
-		return null
-	var heroes := tree.get_nodes_in_group("hero")
-	if not heroes.is_empty():
-		return heroes[0]
-	return null
+	_show_toast("✅ %s" % (tr("%s: %d en el hueco") % [tr(info.get("display_name", String(pot_id))), _inventory_manager.potion_count(pot_id)]), Color(0.3, 1.0, 0.3))
+	item_purchased.emit(pot_id, 1, price)
+	_update_potion_cards()
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -421,6 +365,18 @@ func _update_material_cards() -> void:
 		if name_label:
 			var owned: int = _inventory_manager.get_quantity(mat_id)
 			name_label.text = "%s (x%d)" % [tr(info.get("display_name", "")), owned]
+
+
+## "En hueco: N" en cada tarjeta de poción.
+func _update_potion_cards() -> void:
+	if not _potions_grid or not _inventory_manager:
+		return
+	for card in _potions_grid.get_children():
+		if not card.has_meta("pot_id"):
+			continue
+		var label: Label = card.find_child("OwnedLabel", true, false)
+		if label:
+			label.text = tr("En hueco: %d") % _inventory_manager.potion_count(card.get_meta("pot_id"))
 
 
 func _on_inventory_changed(_inv: Dictionary) -> void:

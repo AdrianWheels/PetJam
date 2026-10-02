@@ -204,6 +204,9 @@ func _boss_intro() -> void:
 	camera.add_trauma(0.45)
 	boss_appeared.emit(enemy.level, enemy.display_name)
 	Sfx.play(&"boss_appear")
+	# Velocidad y Suerte se beben solas ante un jefe (GameManager decide si toca)
+	if _game_manager and _game_manager.has_method("on_boss_appeared"):
+		_game_manager.on_boss_appeared()
 
 
 func advance_enemy():

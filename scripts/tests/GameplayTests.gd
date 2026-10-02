@@ -83,30 +83,39 @@ func _set_gold(amount: int) -> int:
 	return had
 
 
-func test_speed_potion_boosts_attack_rate_for_30_seconds() -> void:
+## Vacía los huecos de consumibles y devuelve cómo estaban.
+func _empty_potion_slots() -> Array:
+	var im := _im()
+	var before: Array = im.consumables.duplicate(true)
+	for i in im.consumables.size():
+		im.consumables[i] = {"id": &"", "count": 0}
+	return before
+
+
+## Lo que hace la Velocidad bebida con el ritmo de Tico (comprarla ya no la aplica: se bebe sola, ver más abajo).
+func test_a_drunk_speed_potion_boosts_attack_rate_for_30_seconds() -> void:
 	var gm := _gm()
 	gm.clear_buffs()
-	var had := _set_gold(1000)
+	var slots := _empty_potion_slots()
 	var hero := _new_hero()
-	var shop := _new_shop()
 	var base: float = hero.aps
 	hero.hp = hero.max_hp - 10
 	var resets := [0]
 	hero.stats_reset.connect(func(): resets[0] += 1)
-	shop._on_buy_potion(&"potion_speed", _price(&"potion_speed"))
+	_im().add_potion(&"potion_speed")
+	gm.drink_potion(&"potion_speed")
 	check(is_equal_approx(hero.aps, base * 1.5), "Velocidad: ataques por segundo x1,5 (%.2f → %.2f)" % [base, hero.aps])
 	hero.prepare_for_combat()
 	check(is_equal_approx(hero.atk_timer, 1.0 / (base * 1.5)), "el tiempo entre golpes baja en proporción (%.3f s)" % hero.atk_timer)
-	check(resets[0] == 0 and hero.hp == hero.max_hp - 10, "aplicarla no recalcula el equipo ni cura (%d/%d)" % [hero.hp, hero.max_hp])
+	check(resets[0] == 0 and hero.hp == hero.max_hp - 10, "beberla no recalcula el equipo ni cura (%d/%d)" % [hero.hp, hero.max_hp])
 	check(is_equal_approx(gm.buff_remaining(&"speed"), 30.0), "dura 30 s (%.1f)" % gm.buff_remaining(&"speed"))
 	gm.tick_buffs(29.5)
 	check(is_equal_approx(hero.aps, base * 1.5), "a los 29,5 s sigue activa (%.2f)" % hero.aps)
 	gm.tick_buffs(0.5)
 	check(is_equal_approx(hero.aps, base), "a los 30 s caduca y el ritmo vuelve a %.2f (%.2f)" % [base, hero.aps])
 	check(gm.buff_remaining(&"speed") == 0.0, "sin tiempo restante al caducar (%.2f)" % gm.buff_remaining(&"speed"))
-	shop.free()
 	hero.free()
-	_set_gold(had)
+	_im().consumables = slots
 
 
 func test_effects_tick_on_their_own_every_frame() -> void:
@@ -118,31 +127,6 @@ func test_effects_tick_on_their_own_every_frame() -> void:
 	var left: float = gm.buff_remaining(&"speed")
 	check(left < 30.0 and left > 29.0, "GameManager descuenta el tiempo real en cada fotograma (%.3f)" % left)
 	gm.clear_buffs()
-
-
-func test_rebuying_an_active_potion_renews_it_without_stacking() -> void:
-	var gm := _gm()
-	gm.clear_buffs()
-	var had := _set_gold(1000)
-	var hero := _new_hero()
-	var shop := _new_shop()
-	var base: float = hero.aps
-	shop._on_buy_potion(&"potion_speed", _price(&"potion_speed"))
-	gm.tick_buffs(20.0)
-	var gold: int = _im().get_quantity(&"gold")
-	shop._on_buy_potion(&"potion_speed", _price(&"potion_speed"))
-	check(is_equal_approx(gm.buff_remaining(&"speed"), 30.0), "volver a comprar Velocidad renueva los 30 s, no los suma (%.1f)" % gm.buff_remaining(&"speed"))
-	check(is_equal_approx(hero.aps, base * 1.5), "ni acumula efecto (x%.2f)" % (hero.aps / base))
-	check(_im().get_quantity(&"gold") == gold - _price(&"potion_speed"), "la renovación se cobra")
-	shop._on_buy_potion(&"potion_luck", _price(&"potion_luck"))
-	gm.tick_buffs(45.0)
-	shop._on_buy_potion(&"potion_luck", _price(&"potion_luck"))
-	check(is_equal_approx(gm.buff_remaining(&"luck"), 60.0), "Suerte también renueva a 60 s (%.1f)" % gm.buff_remaining(&"luck"))
-	check(is_equal_approx(gm.double_loot_chance(), 0.2), "y no acumula probabilidad (%.2f)" % gm.double_loot_chance())
-	gm.clear_buffs()
-	shop.free()
-	hero.free()
-	_set_gold(had)
 
 
 func _new_enemy() -> Node2D:
@@ -285,48 +269,53 @@ func test_equipping_keeps_the_health_ratio_and_respawn_heals() -> void:
 	await _flush_deferred_saves()  # cada cambio de equipo guarda la partida
 
 
-func test_heal_potion_only_for_a_wounded_hero_standing() -> void:
-	var im := _im()
-	var saved := _empty_inventory()  # sin la rejilla de la partida: Segunda oportunidad dejaría en pie al golpe mortal
-	_set_gold(1000)
-	var hero := _new_hero()
-	var shop := _new_shop()
-	var price := _price(&"potion_heal")
-	shop._on_buy_potion(&"potion_heal", price)
-	check(im.get_quantity(&"gold") == 1000, "con la vida llena no cobra (%d)" % im.get_quantity(&"gold"))
-	check(shop._toast_label.text.contains("vida llena"), "y lo avisa («%s»)" % shop._toast_label.text)
-	hero.hp = 7
-	shop._on_buy_potion(&"potion_heal", price)
-	check(hero.hp == hero.max_hp, "herido, cura al máximo (%d/%d)" % [hero.hp, hero.max_hp])
-	check(im.get_quantity(&"gold") == 1000 - price, "y cobra %d" % price)
-	hero.take_damage(hero.hp * 10, true)
-	shop._on_buy_potion(&"potion_heal", price)
-	check(im.get_quantity(&"gold") == 1000 - price, "con Tico caído no cobra (%d)" % im.get_quantity(&"gold"))
-	check(not hero.alive and hero.hp == 0, "ni lo resucita (%d)" % hero.hp)
-	check(shop._toast_label.text.contains("caído"), "y lo avisa («%s»)" % shop._toast_label.text)
-	shop.free()
-	hero.free()
-	_restore_inventory(saved)  # devuelve también el oro
-	await _flush_deferred_saves()  # vaciar y devolver el inventario guarda la partida
-
-
-func test_no_potion_is_applied_without_enough_gold() -> void:
+func test_buying_a_potion_puts_it_in_a_slot() -> void:
 	var gm := _gm()
 	gm.clear_buffs()
-	var had := _set_gold(99)  # menos que la poción más barata
-	var hero := _new_hero()
+	var had := _set_gold(1000)
+	var slots := _empty_potion_slots()
 	var shop := _new_shop()
-	var base: float = hero.aps
-	hero.hp = 7
+	shop._on_buy_potion(&"potion_speed", _price(&"potion_speed"))
+	check(_im().potion_count(&"potion_speed") == 1, "la Velocidad va a su hueco")
+	check(not gm.has_buff(&"speed"), "no se bebe al comprarla")
+	check(_im().get_quantity(&"gold") == 1000 - _price(&"potion_speed"), "y se cobra")
+	var wall: int = gm.wall_room
+	gm.wall_room = 0  # sin muro: delante de uno no se bebe
+	gm.on_boss_appeared()
+	check(gm.has_buff(&"speed") and is_equal_approx(gm.buff_remaining(&"speed"), 30.0), "se bebe sola al aparecer un jefe: 30 s")
+	gm.clear_buffs()
+	gm.wall_room = wall
+	shop.free()
+	_im().consumables = slots
+	_set_gold(had)
+
+
+func test_no_slot_means_no_charge() -> void:
+	var had := _set_gold(10000)
+	var slots := _empty_potion_slots()
+	var shop := _new_shop()
+	shop._on_buy_potion(&"potion_speed", _price(&"potion_speed"))
+	shop._on_buy_potion(&"potion_luck", _price(&"potion_luck"))
+	var gold: int = _im().get_quantity(&"gold")
+	shop._on_buy_potion(&"potion_heal", _price(&"potion_heal"))
+	check(_im().get_quantity(&"gold") == gold, "sin hueco para la Vida no se cobra (%d)" % _im().get_quantity(&"gold"))
+	check(shop._toast_label.text.contains(tr("No hay hueco")), "y lo avisa («%s»)" % shop._toast_label.text)
+	shop.free()
+	_im().consumables = slots
+	_set_gold(had)
+
+
+func test_no_potion_is_bought_without_enough_gold() -> void:
+	var had := _set_gold(99)  # menos que la poción más barata
+	var slots := _empty_potion_slots()
+	var shop := _new_shop()
 	for pot_id in ShopPanel.POTION_CATALOG:
 		shop._on_buy_potion(pot_id, _price(pot_id))
 		check(shop._toast_label.text.contains("Oro insuficiente"), "%s sin oro: lo avisa («%s»)" % [pot_id, shop._toast_label.text])
-	check(hero.hp == 7, "Vida sin oro no cura (%d)" % hero.hp)
-	check(is_equal_approx(hero.aps, base) and gm.buff_remaining(&"speed") == 0.0, "Velocidad sin oro no se aplica")
-	check(gm.buff_remaining(&"luck") == 0.0, "Suerte sin oro no se aplica")
+		check(_im().potion_count(pot_id) == 0, "%s sin oro no entra en ningún hueco" % pot_id)
 	check(_im().get_quantity(&"gold") == 99, "no se cobra nada (%d)" % _im().get_quantity(&"gold"))
 	shop.free()
-	hero.free()
+	_im().consumables = slots
 	_set_gold(had)
 
 
@@ -360,6 +349,68 @@ func test_hud_shows_each_active_effect_with_its_time_left() -> void:
 	overlay._process(0.0)
 	check(not luck.visible, "sin efectos no se ve ninguno")
 	overlay.free()
+
+
+## La franja enseña las pociones que quedan en los huecos, debajo de los efectos activos (o en la primera fila si no hay).
+func test_hud_shows_the_potions_left_under_the_effects() -> void:
+	var gm := _gm()
+	gm.clear_buffs()
+	var slots := _empty_potion_slots()
+	var overlay := Control.new()
+	overlay.set_script(load("res://scripts/ui/HeroViewOverlay.gd"))
+	add_child(overlay)
+	var line: Label = overlay._potion_label
+	overlay._process(0.0)
+	check(not line.visible, "sin pociones en los huecos no hay línea")
+	_im().add_potion(&"potion_heal")
+	_im().add_potion(&"potion_heal")
+	_im().add_potion(&"potion_speed")
+	overlay._process(0.0)
+	check(line.visible and line.text == "VIDA ×2 · VELOCIDAD ×1", "una línea con lo que queda en cada hueco («%s»)" % line.text)
+	check(line.label_settings.font_size >= 22, "legible en el móvil (%d px)" % line.label_settings.font_size)
+	check(line.position == overlay.BUFF_POS, "sin efectos activos va en la primera fila (%s)" % line.position)
+	gm.apply_buff(&"speed", 30.0)
+	overlay._process(0.0)
+	check(is_equal_approx(line.position.y, overlay.BUFF_POS.y + overlay.BUFF_ROW), "con un efecto activo va debajo de él (%s)" % line.position)
+	gm.apply_buff(&"luck", 60.0)
+	overlay._process(0.0)
+	check(is_equal_approx(line.position.y, overlay.BUFF_POS.y + overlay.BUFF_ROW * 2.0), "con dos, debajo de los dos (%s)" % line.position)
+	_im().take_potion(&"potion_speed")
+	overlay._process(0.0)
+	check(line.text == "VIDA ×2", "al beberse la última de un tipo, su parte desaparece («%s»)" % line.text)
+	_im().take_potion(&"potion_heal")
+	_im().take_potion(&"potion_heal")
+	overlay._process(0.0)
+	check(not line.visible, "y sin ninguna, la línea también")
+	gm.clear_buffs()
+	overlay.free()
+	_im().consumables = slots
+
+
+## Cada tarjeta de poción de la tienda dice cuántas lleva Tico en los huecos y se mantiene al día con ellos.
+func test_shop_cards_show_how_many_are_in_the_slot() -> void:
+	var had := _set_gold(1000)
+	var slots := _empty_potion_slots()
+	var shop := _new_shop()
+	check(_owned_text(shop, &"potion_speed") == "En hueco: 0", "al abrir la tienda, ninguna en el hueco («%s»)" % _owned_text(shop, &"potion_speed"))
+	shop._on_buy_potion(&"potion_speed", _price(&"potion_speed"))
+	shop._on_buy_potion(&"potion_speed", _price(&"potion_speed"))
+	check(_owned_text(shop, &"potion_speed") == "En hueco: 2" and _owned_text(shop, &"potion_luck") == "En hueco: 0", "comprar la sube en su tarjeta y solo en la suya («%s»)" % _owned_text(shop, &"potion_speed"))
+	check(shop._toast_label.text.contains("Poción de Velocidad: 2 en el hueco"), "el aviso de la compra dice cuántas lleva («%s»)" % shop._toast_label.text)
+	_im().take_potion(&"potion_speed")
+	check(_owned_text(shop, &"potion_speed") == "En hueco: 1", "y baja cuando se bebe una, aunque no sea por la tienda («%s»)" % _owned_text(shop, &"potion_speed"))
+	shop.free()
+	_im().consumables = slots
+	_set_gold(had)
+
+
+## Lo que dice la etiqueta «En hueco» de la tarjeta de una poción.
+func _owned_text(shop: Control, pot_id: StringName) -> String:
+	for card in shop._potions_grid.get_children():
+		if card.get_meta("pot_id") == pot_id:
+			var label: Label = card.find_child("OwnedLabel", true, false)
+			return label.text if label else "(sin etiqueta)"
+	return "(sin tarjeta)"
 
 
 # ─── Muro, farmeo y selector de sala (spec de rangos, apartado 7) ─────

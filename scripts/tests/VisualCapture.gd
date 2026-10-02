@@ -14,8 +14,9 @@ extends Node
 ##   craft  → acepta el primer pedido y va tocando la pantalla para jugar los minijuegos
 ##   boss   → salta al nivel 9 para ver la llegada del jefe
 ##   death  → quita vida al héroe para ver muerte + respawn (sin habilidades: Segunda oportunidad lo dejaría en pie)
-##   potions → compra Velocidad, Suerte y Vida en la tienda, fuerza el botín doble y adelanta el
-##             final de la Velocidad para ver su parpadeo y cómo desaparece (sala 2, combate normal)
+##   potions → compra Velocidad y Suerte (a los huecos), las bebe al aparecer un jefe y bebe la Vida al bajar del 30 %;
+##             fuerza el botín doble y adelanta el final de la Velocidad para ver su parpadeo y cómo desaparece
+##             (sala 2, combate normal)
 ##   shop   → abre la tienda y enseña sus pestañas una a una (materiales, pociones y venta)
 ##   wall   → muro y farmeo: cae en la sala 14, farmea la 13 con «Muro: sala 14» y el selector lo lleva a la 4
 
@@ -224,8 +225,9 @@ func _run_tour_plan() -> void:
 
 
 func _run_potions_plan() -> void:
-	# Pociones compradas por la tienda de verdad (cobro, efecto e indicador del HUD) con la tirada de
-	# Suerte siempre a favor para ver el botín doble en cada muerte
+	# Pociones compradas por la tienda de verdad (cobro y huecos) y bebidas solas (efecto e indicadores del HUD) con la
+	# tirada de Suerte siempre a favor para ver el botín doble en cada muerte. No depende de la copia de la partida: los
+	# huecos se vacían antes, se quita el muro y Tico llega con la vida llena al pulso
 	await get_tree().create_timer(1.5).timeout
 	var gm := get_node_or_null("/root/GameManager")
 	var inv := get_node_or_null("/root/InventoryManager")
@@ -237,17 +239,27 @@ func _run_potions_plan() -> void:
 	var corridor: Node = hud.get_corridor()
 	corridor.enemy.luck_roll = func() -> float: return 0.0
 	inv.add_item(&"gold", 1000)
+	inv.consumables = inv._empty_slots()
 	var shop: Node = hud.shop_panel
-	for pot_id in [&"potion_speed", &"potion_luck"]:
+	# Dos de Velocidad: la segunda se queda en el hueco y sale en la línea de pociones que quedan, bajo los efectos
+	for pot_id in [&"potion_speed", &"potion_speed", &"potion_luck"]:
 		shop._on_buy_potion(pot_id, int(ShopPanel.POTION_CATALOG[pot_id].price))
-	# Poción de Vida con Tico herido, mientras camina hacia el primer enemigo: +N verde sobre él
+	await get_tree().create_timer(1.0).timeout  # comprar no aplica nada: solo se ven las pociones en la franja
+	# Aparece un "jefe": se beben Velocidad y Suerte solas (indicadores con su tiempo). Delante de un muro sin candado no
+	# se beben, y la copia de la partida puede tener uno: se quita
+	gm._set_wall(0)
+	gm.on_boss_appeared()
+	# Pociones de Vida con Tico herido: se bebe sola al bajar del 30 % (+N verde sobre él) y queda otra en el hueco
+	await get_tree().create_timer(1.5).timeout
+	for i in 2:
+		shop._on_buy_potion(&"potion_heal", int(ShopPanel.POTION_CATALOG[&"potion_heal"].price))
 	await get_tree().create_timer(1.5).timeout
 	var hero: Node = gm.get_hero()
 	if hero and hero.alive:
-		hero.take_damage(int(hero.max_hp * 0.4), true)
-		shop._on_buy_potion(&"potion_heal", int(ShopPanel.POTION_CATALOG[&"potion_heal"].price))
+		hero.hp = hero.max_hp  # a mitad de un combate, el pulso podría matarlo: con la vida llena se queda en el 25 %
+		hero.take_damage(int(hero.max_hp * 0.75), true)
 	# Adelanta el reloj: a la Velocidad le quedan 4 s (parpadea y luego desaparece)
-	await get_tree().create_timer(7.5).timeout
+	await get_tree().create_timer(4.5).timeout
 	gm.tick_buffs(gm.buff_remaining(&"speed") - 4.0)
 
 
