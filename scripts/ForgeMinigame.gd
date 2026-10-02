@@ -66,7 +66,8 @@ func start_trial(config: TrialConfig) -> void:
 	super.start_trial(config)
 	
 	# Leer configuración
-	var difficulty: float = clamp(float(config.get_parameter(&"difficulty", 0.5)), 0.0, 1.0)
+	# La dificultad de la ventana viene como `precision` en los planos (antes `difficulty`, que ninguno pasaba)
+	var difficulty: float = clamp(float(config.get_parameter(&"precision", config.get_parameter(&"difficulty", 0.5))), 0.0, 1.0)
 	_forge_speed = clamp(float(config.get_parameter(&"forge_speed", 1.0)), 0.3, 2.5)
 	_total_trials = int(config.get_parameter(&"trials", TOTAL_TRIALS))
 	_total_trials = max(_total_trials, 3)  # Mínimo 3 trials

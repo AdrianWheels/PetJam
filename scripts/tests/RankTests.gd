@@ -707,3 +707,55 @@ func test_sell_price_grows_with_the_rank() -> void:
 	var one := CraftedItem.new(res, 0.75)
 	var two := CraftedItem.new(res, 0.75, 2)
 	check(two.get_sell_price() == roundi(one.get_sell_price() * Ranks.gold_mult(2)) and two.get_sell_price() > one.get_sell_price(), "el precio de venta crece con el rango (%d y %d)" % [one.get_sell_price(), two.get_sell_price()])
+
+
+# ─── Tarea 9: claves de dificultad ─────────────────────────────────────
+
+## Claves que cada minijuego lee de verdad
+const MINIGAME_KEYS := {
+	"ForgeTemp.tscn": ["forge_speed", "precision"],
+	"HammerMinigame.tscn": ["hammer_speed", "precision"],
+	"SewOSU.tscn": ["stitch_speed", "precision"],
+	"QuenchWater.tscn": ["quench_speed", "time_window"],
+}
+
+
+func test_every_trial_passes_the_keys_its_minigame_reads() -> void:
+	var dm := _dm()
+	var cm := get_node("/root/CraftingManager")
+	for bp_id in dm.get_all_blueprints():
+		var bp: BlueprintResource = dm.get_blueprint(bp_id)
+		for trial in bp.trial_sequence:
+			var config: TrialConfig = cm._resolve_trial_config(trial, bp)
+			var scene_file: String = config.minigame_scene.resource_path.get_file() if config.minigame_scene else ""
+			check(MINIGAME_KEYS.has(scene_file), "%s: minijuego conocido (%s)" % [bp_id, scene_file])
+			for key in MINIGAME_KEYS.get(scene_file, []):
+				check(config.parameters.has(key), "%s / %s: %s lee «%s» y el plano no lo pasa" % [bp_id, trial.trial_id, scene_file, key])
+
+
+func test_boots_sewing_gets_harder_with_the_tier() -> void:
+	var dm := _dm()
+	var cm := get_node("/root/CraftingManager")
+	var p := {}
+	for id in [&"boots_basic", &"boots_advanced", &"boots_master"]:
+		var bp: BlueprintResource = dm.get_blueprint(id)
+		for trial in bp.trial_sequence:
+			var config: TrialConfig = cm._resolve_trial_config(trial, bp)
+			if config.minigame_scene and config.minigame_scene.resource_path.ends_with("SewOSU.tscn"):
+				p[id] = config.parameters
+	check(p.size() == 3, "las tres botas se cosen")
+	if p.size() == 3:
+		check(p[&"boots_basic"].stitch_speed < p[&"boots_advanced"].stitch_speed and p[&"boots_advanced"].stitch_speed < p[&"boots_master"].stitch_speed, "la aguja va más rápida del básico al maestro")
+		check(p[&"boots_basic"].precision > p[&"boots_advanced"].precision and p[&"boots_advanced"].precision > p[&"boots_master"].precision, "las ventanas se estrechan del básico al maestro")
+
+
+func test_forge_reads_precision() -> void:
+	var forge = load("res://scenes/Minigames/ForgeTemp.tscn").instantiate()
+	add_child(forge)
+	await get_tree().process_frame
+	var config := TrialConfig.new()
+	config.parameters = {"forge_speed": 1.0, "precision": 0.7, "trials": 3}
+	forge.start_trial(config)
+	check(is_equal_approx(forge._tolerance, lerpf(0.25, 0.08, 0.7)), "la forja estrecha su ventana con la precisión del plano (%.3f)" % forge._tolerance)
+	forge.queue_free()
+	await get_tree().process_frame
