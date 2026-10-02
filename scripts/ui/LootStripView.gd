@@ -12,7 +12,7 @@ const COLOR_BG := Color(0.12, 0.08, 0.07, 0.85)
 var items: Array[CraftedItem] = []
 var scroll := 0.0
 var hidden_item: CraftedItem = null  ## la pieza que se arrastra no se dibuja
-var sprite_for: Callable = Callable()
+var sprite_for: Callable = Callable(GearArt, "texture_for")
 var _slots: Array = []  # [{"item", "rot", "rect"}], rect en coordenadas sin desplazar
 
 
