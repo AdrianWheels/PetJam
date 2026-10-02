@@ -12,22 +12,27 @@
 El rango viaja como un entero junto al plano:
 - desbloqueo: `DataManager` guarda el rango máximo por plano;
 - pedidos (`RequestsManager`) y tareas (`CraftingManager`);
-- objeto forjado (`CraftedItem.rank`);
-- guardado, que pasa a la versión 2.
+- objeto forjado (`CraftedItem.rank`, que ya existe);
+- guardado, que pasa a la versión 3 (la 2 la tomó el inventario en rejilla).
 
 La calibración (tarea 3) está hecha con Balanza: el enlace `scripts/tests/BalanzaBinding.gd` simula los duelos de Tico sala a sala con las fórmulas reales y `bash balance/arnes.sh check` comprueba los objetivos del spec; ver el spec, apartado 6. No se crean ficheros de plano por rango: el rango se aplica al forjar.
+
+El equipo ya es una rejilla (spec `doc/specs/2026-09-27-inventario-en-rejilla.md`, `doc/ARCHITECTURE.md` apartado 4.3): no hay huecos fijos, lo forjado llega al botín y cuenta lo que está en la rejilla de Tico. El rango del equipo es `InventoryManager.equipment_rank()`: el menor entre las mejores piezas de cada tipo de esa rejilla.
 
 **Tech Stack:** Godot 4.5.1 (GDScript con tabuladores), Python 3 + Pillow para los iconos pixel, escenas de pruebas sin ventana sobre `scripts/tests/TestSuite.gd`.
 
 **Spec:** `doc/specs/2026-09-27-rangos-de-plano-por-ciclo.md`
 
-## Orden de ejecución (revisión del 2026-09-27)
+## Orden de ejecución (revisión del 2026-10-02)
 
-- Las tareas 1 y 2 están hechas.
-- La 3 (calibración) está hecha con Balanza (spec, apartado 6). El código que trae más abajo es la versión anterior: no lo ejecutes tal cual.
-- La 12 (muro, farmeo y selector de sala) no depende del balance y va ahora, antes que la 3.
-- Después, de la 4 a la 11 y la 13.
-- Como la 12 va antes, las tareas 4, 6 y 7 encontrarán sus cambios en `GameManager` (muro, candado, `room_cleared` y las claves `wall_room` y `room_locked` del guardado), `Corridor` (vida llena, viaje) y `HeroViewOverlay` (selector). El código de esas tareas se escribió antes y no los muestra: se conservan.
+- Hechas: las tareas 1, 2, 3 y 12.
+  - La 3 (calibración) se hizo con Balanza y está fusionada (commit c1601d8, rama `rangos-calibracion`). El código que trae más abajo es la versión anterior: no lo ejecutes.
+  - La 12 (muro, farmeo y selector de sala) se hizo antes que la 3.
+- El inventario en rejilla está integrado (commit b1191f7). Las tareas 4 a 11 y 13 están adaptadas a él y a la calibración. La adaptación aprobada está en `.superpowers/sdd/2026-09-27-rangos-de-plano-por-ciclo/adaptacion.md`.
+- Quedan, en este orden: **0, 4, 5, 6, 7, 8, 9, 10, 11 y 13.** La 5 y la 6 dependen de la 0. La 9 y la 10 no dependen de nadie, pero tocan `RankTests.gd` como las demás: van en secuencia.
+- Dónde: en el worktree `D:/Proyectos/PetJam-rangos`, rama `rangos-continuacion`, con la junction de `art/assets` (ver Global Constraints). Un commit por tarea en esa rama, no en `franja-pixel-fase-1`.
+- La 12 dejó sus cambios en `GameManager` (muro, candado, `room_cleared` y las claves `wall_room` y `room_locked` del guardado), `Corridor` (vida llena, viaje) y `HeroViewOverlay` (selector). El código de las tareas 4, 6 y 7 no los muestra: se conservan.
+- La rejilla dejó los suyos en `GameManager` (la ampliación provisional `GridExpansions` en `register_enemy_defeat`), `HeroViewOverlay` (aviso «¡La rejilla crece!»), `InventoryManager` (botín, rejillas, guardado versión 2) y `SaveManager` (copia `save.v1.bak.json`). También se conservan.
 
 ## Requisitos previos
 
@@ -72,7 +77,11 @@ Todo texto visible nuevo de este plan va en español en el código o los datos, 
   - selector de sala (de la 1 al récord) con candado;
   - el extra de jefe solo cae cuando su muerte sube el récord;
   - no hay vuelta a la sala 1 ni vuelta rápida.
-- Guardado versión 2 con migración desde la 1: lo forjado pasa a rango I, lo desbloqueado se conserva y se aplican los hitos del récord.
+- Guardado versión 3 (la 2 es la del inventario en rejilla), con migración desde la 1 y desde la 2:
+  - lo forjado sin rango pasa a rango I (las piezas de la versión 2 ya guardan `rank`, siempre 1);
+  - los planos desbloqueados (`unlocked_blueprints`, booleanos) pasan a rango I;
+  - después se aplican los hitos del récord;
+  - antes de migrar, `SaveManager` copia `save.json` en `save.v<versión de origen>.bak.json` (v1 o v2), solo si esa copia no existe.
 - Textos de la franja solo con caracteres de `PixelFont`: A-Z, ÁÉÍÓÚÜÑ, 0-9, ! ¡ ? ¿ . , : ; - + / ( ) % ' · ×.
 - `locale/textos.csv` (integrado en 24cde90):
   - columnas `keys,es,en`, con `es` igual a la clave;
@@ -81,14 +90,28 @@ Todo texto visible nuevo de este plan va en español en el código o los datos, 
   - `TextTests` comprueba que todas las filas se importan y que los datos visibles están en español con su fila en inglés.
   - Los textos de datos nuevos (nombres y descripciones de material) necesitan su fila o `TextTests` falla.
 - Pruebas:
-  - las suites extienden `res://scripts/tests/TestSuite.gd`, que protege `user://save.json`;
-  - `VisualCapture` no lo protege: copia `%APPDATA%/Godot/app_userdata/PetJam/save.json` antes de grabar y restáuralo al acabar;
-  - `<scratchpad>` en los comandos de captura es tu carpeta temporal de la sesión, fuera del repo.
-- Un commit por tarea en la rama `franja-pixel-fase-1`, sin Co-Authored-By, añadiendo por ruta (nunca `git add -A`).
+  - las suites extienden `res://scripts/tests/TestSuite.gd`, que protege `user://save.json` y las copias de la partida antigua (`save.v1.bak.json` y, desde la tarea 6, `save.v2.bak.json`);
+  - `VisualCapture` y el arranque de `Main.tscn` no las protegen;
+  - `<scratchpad>` en los comandos es tu carpeta temporal de la sesión, fuera del repo.
+- **Godot nunca toca la partida real.** La partida es una sola (`%APPDATA%/Godot/app_userdata/PetJam/save.json`) y la comparten todos los worktrees y el usuario. Toda ejecución de Godot (pruebas, capturas, arranque de `Main`) va con `APPDATA` apuntando a una carpeta temporal que tiene una copia de esa partida. En Git Bash:
+
+  ```bash
+  mkdir -p <scratchpad>/appdata/Godot/app_userdata/PetJam
+  cp "$(cygpath -u "$APPDATA")/Godot/app_userdata/PetJam/save.json" <scratchpad>/appdata/Godot/app_userdata/PetJam/save.json
+  APPDATA="$(cygpath -w <scratchpad>/appdata)" timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/RankTests.tscn
+  ```
+
+  - El `cp` solo lee la partida real. Repítelo antes de cada batería: así el arranque migra cada vez la partida de verdad (hoy, versión 2).
+  - En los comandos de este plan, `<appdata>` es `"$(cygpath -w <scratchpad>/appdata)"`, y cada orden de Godot va precedida de `APPDATA=<appdata>`. Las variables de shell no pasan de una orden a otra: escribe la ruta entera cada vez.
+  - `bash balance/arnes.sh check` no necesita nada de esto: lanza Godot con `balance/protegido.sh`, que le da un `APPDATA` temporal y vacío y lo borra al acabar.
+- Si Godot reescribe `default_bus_layout.tres` y solo cambian sus finales de línea, devuélvelo: `git checkout -- default_bus_layout.tres`.
+- Un commit por tarea en la rama `rangos-continuacion` del worktree `D:/Proyectos/PetJam-rangos`, sin Co-Authored-By, añadiendo por ruta (nunca `git add -A`). `art/assets` es una junction a la carpeta del repo principal: no la añadas nunca.
 
 ## Review Focus
 
-- **Una partida de hoy con récord alto** (versión 1, récord 57, objetos equipados) debe cargar con todo en rango I, el equipo puesto y los hitos del récord aplicados (básicos de rango II). Prueba: `test_v1_save_with_high_record_migrates` (tarea 6).
+- **Una partida antigua con récord alto** (versión 1, récord 57, espada equipada) debe cargar con todo en rango I, la espada en la rejilla de Tico (`best_hero_item("main_hand")`) y los hitos del récord aplicados (básicos de rango II). Prueba: `test_v1_save_with_high_record_migrates` (tarea 6).
+- **Una partida de la rejilla** (versión 2) debe cargar sin mover ninguna pieza, con los planos en rango I, los hitos del récord aplicados y su copia en `save.v2.bak.json`. Prueba: `test_v2_save_migrates_to_v3` (tarea 6).
+- **El rango del equipo llega a Tico:** con 4 piezas de rango II, su base es la del rango II; una pieza de rango I de un tipo que ya lleva no la baja. Prueba: `test_team_rank_reaches_tico_base` (tarea 0).
 - **Un hito desbloquea 4 planos a la vez:** la franja muestra un solo aviso y los 4 pergaminos salen escalonados, no apilados. Prueba: `test_milestone_shows_one_notice_and_staggers_scrolls` (tarea 7).
 - **Encargo propio con la cola llena, sin materiales o de un rango bloqueado:** no cobra nada. Prueba: `test_own_order_never_charges_when_refused` (tarea 11).
 - **Un pedido ya visible cuando se desbloquea un rango nuevo** conserva su rango, su receta y su oro. Prueba: `test_visible_request_keeps_its_rank` (tarea 8).
@@ -106,40 +129,45 @@ Todo texto visible nuevo de este plan va en español en el código o los datos, 
 | `scripts/core/TrialDifficulty.gd` | crear | dificultad de minijuego por rango, con topes |
 | `scripts/gameplay/Hero.gd`, `Enemy.gd` | modificar | usar `CombatMath` / `EnemyScaling`; armadura relativa; botín por ciclo y de bioma (el extra de jefe, solo con récord nuevo) |
 | `scripts/gameplay/CombatController.gd` | modificar | nivel del atacante al dañar |
-| `scripts/gameplay/Corridor.gd` | modificar | botín de bioma, avisos de hito, vida llena al entrar en cada sala y viaje del selector |
-| `scripts/data/CraftedItem.gd` | modificar | rango, estadísticas escaladas y numeral |
+| `scripts/gameplay/Corridor.gd` | modificar | botín de bioma (y el doble de la Suerte, que pasa aquí), avisos de hito, vida llena al entrar en cada sala y viaje del selector |
+| `scripts/data/CraftedItem.gd` | modificar | constructor con rango y estadísticas escaladas; numeral en el nombre visible (`rank`, `get_name_with_rank`, `get_sell_price` y el guardado del rango ya existen) |
+| `scripts/autoload/InventoryManager.gd` | modificar | `equipment_rank()` delega en `Ranks.team_rank` (tarea 0) |
+| `scripts/gameplay/Hero.gd` | modificar | `reset_stats` pasa el rango del equipo a `CombatMath` (tarea 0) |
 | `scripts/autoload/DataManager.gd` | modificar | rango máximo por plano, tiers y migración |
-| `scripts/autoload/GameManager.gd` | modificar | hitos al vencer jefes y al cargar; muro, farmeo, candado y selector de sala |
+| `scripts/autoload/GameManager.gd` | modificar | hitos al vencer jefes (con la ampliación provisional detrás) y sin partida; muro, farmeo, candado y selector de sala |
 | `scripts/autoload/RequestsManager.gd` | modificar | rango, receta y oro por pedido |
 | `scripts/autoload/CraftingManager.gd` | modificar | rango y encargo propio en las tareas; dificultad por rango |
-| `scripts/core/SaveManager.gd` | modificar | versión 2 |
+| `scripts/core/SaveManager.gd` | modificar | versión 3, hitos del récord al cargar y copia `save.v<N>.bak.json` por versión de origen |
 | `scripts/ForgeMinigame.gd`, `data/blueprints/boots_*.tres` | modificar | claves de dificultad que sí llegan |
-| `scripts/RequestSlot.gd`, `scripts/ui/HUDMain.gd`, `scripts/ui/BlueprintLibraryPanel.gd`, `scripts/ui/BlueprintCard.gd`, `scripts/ui/EquipmentPanel.gd`, `scripts/ui/CraftResultScreen.gd`, `scripts/ui/HeroViewOverlay.gd`, `scripts/ui/ShopPanel.gd`, `scripts/MaterialIcon.gd` | modificar | numerales, encargo propio, avisos, selector de sala, venta por rango e iconos pixel |
+| `scripts/RequestSlot.gd`, `scripts/ui/HUDMain.gd`, `scripts/ui/BlueprintLibraryPanel.gd`, `scripts/ui/BlueprintCard.gd`, `scripts/ui/CraftResultScreen.gd`, `scripts/ui/HeroViewOverlay.gd`, `scripts/MaterialIcon.gd` | modificar | numerales, encargo propio, avisos, selector de sala e iconos pixel (`EquipmentPanel` y `ShopPanel` ya enseñan el rango) |
 | `data/materials/{bone,moss,obsidian,frost,void_shard}.tres` | crear | materiales de bioma |
-| `tools/pixel_art/materials.py`, `tools/pixel_art/tests/test_materials.py`, `tools/pixel_art/export.py` | crear / modificar | iconos 12x12 de los materiales de bioma |
+| `tools/pixel_art/materials.py`, `tools/pixel_art/tests/test_materials.py`, `tools/pixel_art/export.py` | crear / modificar | iconos 12x12 de los materiales de bioma (provisionales: el arte va al final) |
 | `art/sprites/pixel/materials/*.png` | generados | iconos |
-| `scripts/tests/RankTests.gd`, `scenes/tests/RankTests.tscn` | crear | pruebas de las tareas 1, 2 y 4 a 11 |
-| `scripts/tests/BalanceSim.gd`, `scenes/tests/BalanceSim.tscn` | crear | simulación y objetivos de balance |
+| `scripts/tests/RankTests.gd`, `scenes/tests/RankTests.tscn` | modificar | pruebas de las tareas 0 y 4 a 11 (las de 1 y 2 ya están) |
+| `scripts/tests/BalanzaBinding.gd`, `balance/` | hecho (tarea 3) | enlace y objetivos de Balanza; `bash balance/arnes.sh check` |
+| `scripts/tests/TestSuite.gd` | modificar | protege también `save.v2.bak.json` |
+| `scripts/tests/InventoryGridTests.gd` | modificar | textos de la versión del guardado («la versión actual») |
 | `scripts/tests/fixtures/save_v1.json` | crear | partida de versión 1 para la migración |
 | `scripts/tests/GameplayTests.gd` | modificar | las pruebas de materiales usan la receta con rango; muro, farmeo y selector (tarea 12) |
-| `scripts/tests/VisualCapture.gd` | modificar | planes de capturas `wall` y `ranks` |
+| `scripts/tests/VisualCapture.gd` | modificar | planes de capturas `unlock`, `inventory` (numeral) y `ranks` |
 | `locale/textos.csv` | modificar | filas de los textos nuevos |
-| `doc/ARCHITECTURE.md`, `doc/ROADMAP.md`, `doc/specs/2026-09-27-rangos-de-plano-por-ciclo.md` | modificar | documentación y valores calibrados |
+| `doc/ARCHITECTURE.md`, `doc/ROADMAP.md`, `doc/specs/2026-09-27-rangos-de-plano-por-ciclo.md` | modificar | documentación (también el apartado 4.3 de la arquitectura) |
 
-Comandos de la batería (todos desde la raíz del repo):
+Comandos de la batería (todos desde la raíz del worktree, con la copia de la partida recién hecha; ver Global Constraints):
 
 ```bash
-timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/RankTests.tscn
-timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/BalanceSim.tscn  # desde la tarea 3
-timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/GameplayTests.tscn
-timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/PixelTests.tscn
-timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/TextTests.tscn
+APPDATA=<appdata> timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/RankTests.tscn
+APPDATA=<appdata> timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/InventoryGridTests.tscn
+APPDATA=<appdata> timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/GameplayTests.tscn
+APPDATA=<appdata> timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/PixelTests.tscn
+APPDATA=<appdata> timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/TextTests.tscn
+bash balance/arnes.sh check
 python -m unittest discover tools/pixel_art/tests
 ```
 
-Donde una tarea diga "RankTests, GameplayTests y PixelTests", añade también TextTests si la tarea toca textos o `locale/textos.csv`.
+Donde una tarea diga "la batería", son las siete órdenes. Donde diga "RankTests, InventoryGridTests, GameplayTests y PixelTests", añade también TextTests si la tarea toca textos o `locale/textos.csv`, y `bash balance/arnes.sh check` si toca combate, estadísticas o equipo.
 
-Cada escena sale con 0 si todo pasa y con 1 si algo falla, e imprime `[Suite] N comprobaciones, M fallos`.
+Cada escena sale con 0 si todo pasa y con 1 si algo falla, e imprime `[Suite] N comprobaciones, M fallos`. `arnes.sh check` imprime `✔ <variante>: 35 de 35 objetivos cumplidos` y sale con 0; si falla alguno, `✘ … objetivos incumplidos`, con su margen, y sale con otro código.
 
 ---
 
@@ -1051,6 +1079,219 @@ git commit -m "feat: curva de enemigos calibrada para los rangos (BalanceSim), a
 
 ---
 
+### Task 0: Rango del equipo en la base de Tico
+
+Es lo que conecta la calibración con el juego. Hoy el rango de las piezas no tiene ningún efecto: `Hero.reset_stats` no pasa ningún rango a `CombatMath`, y el panel de Equipo tampoco. La regla del rango del equipo está dos veces: `Ranks.team_rank(piece_ranks)` (calibración, la usa `BalanzaBinding`) e `InventoryManager.equipment_rank()` (rejilla). Esta tarea deja la regla solo en `Ranks.team_rank`.
+
+**Files:**
+- Modify: `scripts/autoload/InventoryManager.gd` (`best_hero_item`, `equipment_rank`), `scripts/gameplay/Hero.gd` (`reset_stats`), `scripts/ui/EquipmentPanel.gd` (`_refresh_stats`, `_show_target`)
+- Test: `scripts/tests/RankTests.gd`
+
+**Interfaces:**
+- Consumes: `Ranks.team_rank(piece_ranks: Array) -> int`, `CombatMath.hero_stats_with_powers(equipment, powers, team_rank)`, `EnemyScaling.cycle_mult(cycle)`
+- Produces:
+  - `InventoryManager.best_item_in(grid: GearGrid, slot: String) -> CraftedItem` (static), y `best_hero_item(slot)` la usa con la rejilla de Tico;
+  - `InventoryManager.grid_rank(grid: GearGrid) -> int` (static): el rango del equipo de una rejilla cualquiera (la de Tico o una simulada del arrastre);
+  - `InventoryManager.equipment_rank()`, que pasa a ser `grid_rank(hero_grid)`;
+  - la vista previa del arrastre de `EquipmentPanel` lleva `"rank"`.
+
+- [ ] **Step 0: Comprobar el punto de partida**
+
+En el worktree `D:/Proyectos/PetJam-rangos` (rama `rangos-continuacion`, con la junction de `art/assets`), comprueba que la fusión de la calibración dejó estas firmas:
+
+```bash
+grep -n "static func hero_stats\|static func hero_stats_with_powers\|static func armor_mitigation\|static var ARMOR_K" scripts/core/CombatMath.gd
+grep -n "static var EXP\|static var STEP\|static var BOSS_MULT\|static func cycle_mult" scripts/core/EnemyScaling.gd
+grep -n "static func team_rank" scripts/core/Ranks.gd
+grep -n "func take_damage" scripts/gameplay/Hero.gd
+grep -n "take_damage(raw, false, enemy.level)" scripts/gameplay/CombatController.gd
+grep -c "shape_cells\|arista_spots" data/items/*.tres
+```
+
+Expected:
+- `hero_stats(equipment: Dictionary, team_rank: int = 1)` y `hero_stats_with_powers(equipment: Dictionary, powers: Array, team_rank: int = 1)`;
+- `armor_mitigation(armor: int, enemy_level: int = 1)` y `ARMOR_K := 60.0`;
+- `EXP := 1.0455`, `STEP := 10.5`, `BOSS_MULT := 1.15`;
+- `take_damage(amount: int, is_pulse: bool = false, attacker_level: int = 1)` y la llamada del `CombatController` con `enemy.level`;
+- los 12 `.tres` de objeto con `shape_cells` y `arista_spots` (2 en cada uno).
+
+Pasa la batería entera (cabecera). Expected: todo en verde, y `arnes.sh check` con 35 de 35. Si algo falla aquí, para y avisa: es de la fusión, no de esta tarea.
+
+- [ ] **Step 1: Pruebas que fallan** (en `RankTests.gd`)
+
+En `test_hero_and_enemy_nodes_use_the_shared_formulas`, el esperado pasa a llevar el rango del equipo:
+
+```gdscript
+	var expected := CombatMath.hero_stats_with_powers(inv.calculate_total_stats(), inv.active_legendary_powers(), inv.equipment_rank())
+```
+
+Al final de la sección de la tarea 1 (antes de `# ─── Tarea 2`), las ayudas del inventario y la prueba nueva. Las ayudas copian las de `InventoryGridTests` (`_fresh_inventory` y `_restore_inventory`): vacían el inventario y lo devuelven tal cual al acabar.
+
+```gdscript
+# ─── Tarea 0: rango del equipo en la base de Tico ──────────────────────
+
+func _im() -> Node:
+	return get_node("/root/InventoryManager")
+
+
+## Deja el inventario vacío (rejilla de 4×4) y devuelve lo que había para restaurarlo (como InventoryGridTests).
+func _fresh_inventory() -> Dictionary:
+	var saved: Dictionary = _im().to_save_data()
+	_im().clear()
+	return saved
+
+
+func _restore_inventory(saved: Dictionary) -> void:
+	_im().load_save_data(saved, int(get_node("/root/GameManager").best_enemy_level))
+	await get_tree().process_frame  # deja pasar los guardados diferidos del cambio de equipo
+
+
+## Pieza de rango `rank` en la casilla `cell` de la rejilla de Tico, sin girar. Calidad media: no es legendaria (sin
+## habilidades) y no lleva aristas (CraftedItem.new no las sortea).
+func _hero_piece(id: StringName, rank: int, cell: Vector2i) -> CraftedItem:
+	var item := CraftedItem.new(load("res://data/items/%s.tres" % id), 0.5)
+	item.rank = rank
+	_im().add_crafted_item(item)
+	_im().move_item(item, InventoryManager.PLACE_HERO, cell, 0)
+	return item
+
+
+## Base de Tico por el rango del equipo (spec de rangos, apartado 6, «Base de Tico»): Hero.reset_stats y el panel de
+## Equipo pasan el rango de la rejilla de Tico a CombatMath, así que su vida base es × cycle_mult(rango).
+func test_team_rank_reaches_tico_base() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var hero := _new_hero()
+	await get_tree().process_frame
+	check(im.equipment_rank() == 1 and hero.max_hp == CombatMath.hero_stats(im.calculate_total_stats()).max_hp, "rejilla vacía: rango I y la base de siempre (%d)" % hero.max_hp)
+	var cells := {&"sword_basic": Vector2i(0, 0), &"shield_basic": Vector2i(1, 0), &"helmet_basic": Vector2i(2, 0), &"boots_basic": Vector2i(3, 0)}
+	for id in cells:
+		_hero_piece(id, 2, cells[id])
+	check(im.get_hero_items().size() == 4 and im.equipment_rank() == 2, "4 piezas de rango II en Tico: rango II (%d piezas)" % im.get_hero_items().size())
+	hero.reset_stats()  # el héroe de prueba no está en el grupo "hero": GameManager no lo recalcula solo
+	var base_one: int = CombatMath.hero_stats({}).max_hp
+	var gear_hp: int = CombatMath.hero_stats(im.calculate_total_stats()).max_hp - base_one  # lo que suman las piezas
+	check(hero.max_hp == roundi(base_one * EnemyScaling.cycle_mult(2)) + gear_hp, "la vida base de Tico es × cycle_mult(2) (%d)" % hero.max_hp)
+	check(hero.max_hp == CombatMath.hero_stats_with_powers(im.calculate_total_stats(), im.active_legendary_powers(), 2).max_hp, "Hero.reset_stats usa el rango del equipo")
+	var panel: Control = load("res://scenes/UI/EquipmentPanel.tscn").instantiate()
+	add_child(panel)
+	panel.open()
+	await get_tree().process_frame
+	check((tr("Vida %d") % hero.max_hp) in panel._stats_label.text, "el panel de Equipo enseña la misma vida que Tico (%s)" % panel._stats_label.text)
+	panel.queue_free()
+	var base_two: int = hero.max_hp - gear_hp
+	var extra := _hero_piece(&"sword_basic", 1, Vector2i(0, 2))
+	check(extra.place == InventoryManager.PLACE_HERO and im.equipment_rank() == 2, "otra espada de rango I no baja el rango: cuenta la mejor espada")
+	hero.reset_stats()
+	var gear_hp_now: int = CombatMath.hero_stats(im.calculate_total_stats()).max_hp - base_one
+	check(hero.max_hp - gear_hp_now == base_two, "y la base de Tico sigue siendo la del rango II (%d)" % (hero.max_hp - gear_hp_now))
+	var helmet_one := CraftedItem.new(load("res://data/items/helmet_advanced.tres"), 0.5)
+	im.add_crafted_item(helmet_one)
+	var sim: GearGrid = im.simulate_hero_grid(im.best_hero_item("head"), InventoryManager.PLACE_LOOT, Vector2i.ZERO, 0)
+	check(InventoryManager.grid_rank(sim) == 2, "sin casco en la vista previa: el tipo que falta no cuenta")
+	sim = im.simulate_hero_grid(helmet_one, InventoryManager.PLACE_HERO, Vector2i(1, 2), 0)
+	check(InventoryManager.grid_rank(sim) == 2, "un casco avanzado de rango I no baja el rango: el mejor casco sigue siendo el básico II")
+	hero.queue_free()
+	await _restore_inventory(saved)
+```
+
+La última comprobación sigue la regla de `gear_score`: el mejor casco es el de mayor rango (el básico II gana al avanzado I), así que el rango sigue en II. Si da 1, el fallo está en `best_item_in`.
+
+Run: `APPDATA=<appdata> timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/RankTests.tscn`
+Expected: error de análisis (`InventoryManager.grid_rank` no existe) y Godot no sale hasta el `timeout`. Con el Step 2 hecho y sin el 3, falla `test_team_rank_reaches_tico_base`: la vida de Tico es la del rango I.
+
+- [ ] **Step 2: La regla en un solo sitio (`InventoryManager.gd`)**
+
+Sustituye `best_hero_item` y `equipment_rank`:
+
+```gdscript
+## La mejor pieza de un tipo ("main_hand", "off_hand", "head" o "feet") en la rejilla de Tico: primero
+## el rango, después el nivel y después la calidad. Es la que dibuja su sprite.
+func best_hero_item(slot: String) -> CraftedItem:
+	return best_item_in(hero_grid, slot)
+
+
+## La mejor pieza de un tipo en una rejilla cualquiera (la de Tico o una copia simulada), con gear_score.
+static func best_item_in(grid: GearGrid, slot: String) -> CraftedItem:
+	var best: CraftedItem = null
+	for item in grid.items:
+		if item.get_equipment_slot() != slot:
+			continue
+		if best == null or gear_score(item) > gear_score(best):
+			best = item
+	return best
+```
+
+```gdscript
+## Rango del equipo (spec de rangos, apartado 6, "Base de Tico"; spec del inventario, apartado 6) de una rejilla: el
+## menor rango entre sus mejores piezas de cada tipo. La regla vive en Ranks.team_rank; aquí solo se juntan los rangos.
+## Un tipo que no lleva no cuenta, y añadir una pieza de un tipo que ya lleva nunca lo baja. Sin piezas, rango I.
+static func grid_rank(grid: GearGrid) -> int:
+	var ranks: Array = []
+	for slot in ["main_hand", "off_hand", "head", "feet"]:
+		var best := best_item_in(grid, slot)
+		if best:
+			ranks.append(best.rank)
+	return Ranks.team_rank(ranks)
+
+
+## Rango del equipo de Tico: el de su rejilla.
+func equipment_rank() -> int:
+	return grid_rank(hero_grid)
+```
+
+- [ ] **Step 3: Tico usa el rango (`Hero.gd`)**
+
+En `reset_stats()` (hacia la línea 208), el bloque de las habilidades y la llamada a `CombatMath` pasan a:
+
+```gdscript
+	var powers: Array = []
+	if inv_manager and inv_manager.has_method("active_legendary_powers"):
+		powers = inv_manager.active_legendary_powers()
+	# Rango del equipo (spec de rangos, apartado 6, «Base de Tico»): la base de vida, daño y pulso crece con él
+	var team_rank := 1
+	if inv_manager and inv_manager.has_method("equipment_rank"):
+		team_rank = inv_manager.equipment_rank()
+	var s := CombatMath.hero_stats_with_powers(equipment_stats, powers, team_rank)
+```
+
+El resto de la función no cambia.
+
+- [ ] **Step 4: El panel de Equipo usa el rango (`EquipmentPanel.gd`)**
+
+`_refresh_stats` enseña las estadísticas de Tico y, durante el arrastre, cómo quedarían. Las dos pasan a llevar el rango:
+
+```gdscript
+## Estadísticas de Tico. `preview` ({"totals", "powers", "rank"}, del arrastre) añade el cambio en verde o rojo.
+func _refresh_stats(preview: Dictionary) -> void:
+	var now := CombatMath.hero_stats_with_powers(_im.calculate_total_stats(), _im.active_legendary_powers(), _im.equipment_rank())
+	var after: Dictionary = now if preview.is_empty() else CombatMath.hero_stats_with_powers(preview.totals, preview.powers, int(preview.get("rank", 1)))
+```
+
+En `_show_target()`, los dos diccionarios `preview` llevan el rango de su rejilla simulada:
+
+```gdscript
+			preview = {"totals": GearAuras.totals(sim), "powers": LegendaryPowers.active(sim.items), "rank": InventoryManager.grid_rank(sim)}
+```
+
+```gdscript
+		preview = {"totals": GearAuras.totals(sim2), "powers": LegendaryPowers.active(sim2.items), "rank": InventoryManager.grid_rank(sim2)}
+```
+
+- [ ] **Step 5: Ejecutar y ver que pasa**
+
+Run: RankTests, InventoryGridTests, GameplayTests y PixelTests, y `bash balance/arnes.sh check`.
+Expected: 0 fallos en las cuatro y 35 de 35. `InventoryGridTests` ya prueba `equipment_rank()` (`test_equipment_rank_is_the_weakest_best_piece`) y sigue en verde sin tocarla.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add scripts/autoload/InventoryManager.gd scripts/gameplay/Hero.gd scripts/ui/EquipmentPanel.gd scripts/tests/RankTests.gd
+git commit -m "feat: el rango del equipo sube la base de Tico (Ranks.team_rank como única regla)"
+```
+
+---
+
 ### Task 4: Materiales de bioma: datos, iconos y botín
 
 **Files:**
@@ -1070,6 +1311,10 @@ git commit -m "feat: curva de enemigos calibrada para los rangos (BalanceSim), a
   - `Enemy.biome_drop_chance: float`, que las pruebas pueden forzar;
   - `Enemy.last_biome_drop: Dictionary` (`{"item_id", "quantity"}` o `{}`);
   - `death_info["biome_material"]`.
+
+**Iconos provisionales.** El pixel art se dejó para los personajes y el arte va al final (sistemas primero). Los iconos de abajo ya están diseñados y cuestan poco, así que se hacen, pero son provisionales: la tarjeta de arte puede cambiarlos.
+
+**Lo que no cambió con la rejilla:** los materiales siguen en `InventoryManager.inventory` (`add_item`), `Enemy._drop_random_materials` sigue igual y el botín doble de la Suerte sigue en `CombatController._show_bonus_loot`. `GridExpansions` ya usa los nombres hueso, musgo, obsidiana y escarcha en sus recetas, pero esta tarea solo crea los materiales: las recetas de ampliación son de otra tarjeta.
 
 - [ ] **Step 1: Pruebas de la herramienta (fallan)**
 
@@ -1353,7 +1598,7 @@ func _materials_used_by_blueprints() -> Dictionary:
 	return used
 ```
 
-Run: `timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/RankTests.tscn`
+Run: `APPDATA=<appdata> timeout 300 D:/Software/Godot/godot_ver4.5.exe --headless --path . res://scenes/tests/RankTests.tscn`
 Expected: fallan las dos pruebas nuevas (`biome_drop_chance` no existe y la tanda del ciclo II sigue en 15).
 
 - [ ] **Step 6: Botín por ciclo y de bioma en `Enemy.gd`**
@@ -1437,7 +1682,7 @@ func _give_material(mat_id: StringName) -> Dictionary:
 
 `_blueprint_materials()` sigue leyendo los materiales del `.tres` de cada plano: los de bioma no entran en la tanda de siempre, porque solo salen por `_drop_biome_material()`.
 
-Donde `_die()` rellena `death_info` (hoy `"material": last_material_drop.duplicate()`), añade:
+Donde `_die()` rellena `death_info` (hoy con `"material": last_material_drop.duplicate()` y `"bonus_material": last_bonus_drop.duplicate()`), añade detrás:
 
 ```gdscript
 		"biome_material": last_biome_drop.duplicate(),
@@ -1445,14 +1690,31 @@ Donde `_die()` rellena `death_info` (hoy `"material": last_material_drop.duplica
 
 - [ ] **Step 7: Aviso del botín de bioma en la franja**
 
-Hoy, tras integrar la tarjeta de pociones:
-- el botín de siempre lo pinta `Corridor._on_enemy_died_fx()`;
-- el doble de la Suerte lo pinta `CombatController._show_bonus_loot()`, que llama al método privado `Corridor._material_info()`, emite desde fuera la señal `loot_dropped` del pasillo y la emite antes que la del primer botín.
+Hoy, tras integrar la tarjeta de pociones y la rejilla:
+- el botín de siempre lo pinta `Corridor._on_enemy_died_fx()` (hacia la línea 379);
+- el doble de la Suerte lo pinta `CombatController._show_bonus_loot()` (hacia la línea 318), que pasa por `CombatController._material_info()` al método privado `Corridor._material_info()`, emite desde fuera la señal `loot_dropped` del pasillo y la emite antes que la del primer botín (`_on_enemy_died` la llama antes de que el `Corridor` reciba la muerte).
 
 **Ruling (integración de pociones):** los tres botines (el de siempre, el doble y el de bioma) los presenta el `Corridor`, en un solo sitio y en orden.
-- Mueve `_show_bonus_loot()` y sus constantes (`BONUS_LOOT_AHEAD`, `BONUS_LOOT_SPEED` y `BONUS_LOOT_SOUND_LAG`) de `CombatController` a `Corridor`.
-- En `CombatController`, borra `_material_info()` y la llamada a `_show_bonus_loot()` de `_on_enemy_died`.
-- En `Corridor._on_enemy_died_fx()`, tras el bloque del material de siempre (`loot_pop` + `loot_dropped` + tintineo), añade:
+- Mueve `_show_bonus_loot()` y sus constantes (`BONUS_LOOT_AHEAD`, `BONUS_LOOT_SPEED` y `BONUS_LOOT_SOUND_LAG`) de `CombatController` a `Corridor`. En el `Corridor` queda así (usa su `fx`, su `FLOOR_Y`, su `_material_info` y su señal):
+
+```gdscript
+## Segunda tanda de la Poción de Suerte, igual que la primera: icono con "+15 material" que sale del enemigo,
+## aviso loot_dropped para el HUD ("bonus": true) y tintineo. El material ya está en el inventario (lo mete Enemy).
+func _show_bonus_loot(info: Dictionary) -> void:
+	var md: Dictionary = info.get("bonus_material", {})
+	if md.is_empty():
+		return
+	var pos: Vector2 = info.get("pos", Vector2.ZERO)
+	var delay: float = 0.3 if info.get("boss", false) else 0.12  # el mismo que el primer botín
+	var mat := _material_info(StringName(md.get("item_id", "")))
+	var vx := randf_range(BONUS_LOOT_SPEED.x, BONUS_LOOT_SPEED.y)
+	fx.loot_pop(pos + Vector2(2.0 + BONUS_LOOT_AHEAD, -4), mat.get("icon"), "+%d %s" % [int(md.get("quantity", 0)), tr(mat.get("name", ""))], Color(1, 0.93, 0.7), delay, FLOOR_Y, vx, 1)
+	loot_dropped.emit(&"material", pos, {"id": md.get("item_id", ""), "quantity": md.get("quantity", 0), "bonus": true})
+	get_tree().create_timer(delay + BONUS_LOOT_SOUND_LAG).timeout.connect(func(): Sfx.play(&"loot_coins"))
+```
+
+- En `CombatController`, borra `_show_bonus_loot()`, sus tres constantes, `_material_info()` y la llamada `if enemy: _show_bonus_loot(enemy.death_info)` de `_on_enemy_died` (con su comentario). Antes, comprueba con `grep -n "_material_info\|BONUS_LOOT" scripts/gameplay/CombatController.gd` que nada más los usa.
+- En `Corridor._on_enemy_died_fx()`, tras el bloque del material de siempre (`loot_pop` + `loot_dropped` + tintineo), añade (el nombre del material pasa por `tr()`, como en el bloque de siempre):
 
 ```gdscript
 	_show_bonus_loot(info)
@@ -1461,12 +1723,12 @@ Hoy, tras integrar la tarjeta de pociones:
 		var bmat := _material_info(StringName(bd.get("item_id", "")))
 		var bdelay := (0.3 if was_boss else 0.12) + 0.18
 		# Fila 2 de etiqueta: el de siempre usa la 0 y el doble de la Suerte la 1, así no se pisan
-		fx.loot_pop(pos + Vector2(8, -8), bmat.get("icon"), "+%d %s" % [int(bd.get("quantity", 0)), bmat.get("name", "")], Color(0.8, 0.95, 1.0), bdelay, FLOOR_Y, NAN, 2)
+		fx.loot_pop(pos + Vector2(8, -8), bmat.get("icon"), "+%d %s" % [int(bd.get("quantity", 0)), tr(bmat.get("name", ""))], Color(0.8, 0.95, 1.0), bdelay, FLOOR_Y, NAN, 2)
 		loot_dropped.emit(&"material", pos, {"id": bd.get("item_id", ""), "quantity": bd.get("quantity", 0), "biome": true})
 		get_tree().create_timer(bdelay + 0.1).timeout.connect(func(): Sfx.play(&"loot_coins"))
 ```
 
-En el `_show_bonus_loot()` movido, `_material_info(...)` pasa a ser la del propio `Corridor`, y la señal se emite como `loot_dropped.emit(...)`. Las pruebas de GameplayTests que miran el botín doble tienen que seguir en verde sin tocarlas; si alguna llamaba a `CombatController._show_bonus_loot`, apúntala al `Corridor`.
+Comprueba antes la firma de `loot_pop` (`grep -n "func loot_pop" scripts -r`): el plan cuenta con `(pos, icon, text, color, delay, floor_y, vx, row)`, como la usa hoy `_show_bonus_loot`. Las pruebas de GameplayTests que miran el botín doble tienen que seguir en verde sin tocarlas; si alguna llamaba a `CombatController._show_bonus_loot`, apúntala al `Corridor`.
 
 `_material_info()` ya lee el nombre y el icono de `data/materials/<id>.tres`. Si la tarjeta de idioma lo cambió para traducir el nombre, el material de bioma usa el mismo camino.
 
@@ -1474,8 +1736,8 @@ El orden de materiales de `HUDMinigameLauncher.gd` (que cita el spec, apartado 1
 
 - [ ] **Step 8: Ejecutar y ver que pasa**
 
-Run: RankTests, GameplayTests y PixelTests.
-Expected: 0 fallos en las tres.
+Run: RankTests, InventoryGridTests, GameplayTests, PixelTests y TextTests, y `python -m unittest discover tools/pixel_art/tests`.
+Expected: 0 fallos en todas.
 
 - [ ] **Step 9: Commit**
 
@@ -1488,7 +1750,7 @@ git commit -m "feat: materiales de bioma (hueso, musgo, obsidiana, escarcha y va
 
 ### Task 5: Rango en el objeto forjado
 
-> **Nota (2026-10-01):** `Hero.reset_stats` tiene que pasar el rango del equipo a `CombatMath.hero_stats(equipo, rango)` (hoy pasa 1).
+**Ya hecho** (con la rejilla y la calibración): `CraftedItem.rank`, `get_name_with_rank()`, `get_sell_price()` con `Ranks.gold_mult(rank)`, y `rank` en `to_dict()` y `from_dict()`, junto a los campos de la rejilla (`place`, `x`, `y`, `rot` y `aristas`). Falta que el rango cambie las estadísticas al forjar y que se vea en el nombre visible.
 
 **Files:**
 - Modify: `scripts/data/CraftedItem.gd`
@@ -1497,11 +1759,9 @@ git commit -m "feat: materiales de bioma (hueso, musgo, obsidiana, escarcha y va
 **Interfaces:**
 - Consumes: `Ranks.scale_stats`, `Ranks.suffix`
 - Produces:
-  - `CraftedItem.rank: int`
-  - `CraftedItem.new(item_res: ItemResource, craft_quality: float, craft_rank: int = 1)`
-  - `CraftedItem.get_name_with_rank() -> String`, ya traducido: "Espada maestra III"
-  - `CraftedItem.get_display_name()`, que devuelve "Espada maestra III (93%)"
-  - `to_dict()` con `"rank"` y `from_dict()`, que lo lee (1 si falta)
+  - `CraftedItem.new(item_res: ItemResource, craft_quality: float, craft_rank: int = 1)`, con `calculated_stats` ya escaladas por el rango;
+  - `CraftedItem.get_display_name()`, que devuelve "Espada maestra III (93%)";
+  - `from_dict()` pasa el rango al constructor (1 si falta).
 
 - [ ] **Step 1: Pruebas que fallan**
 
@@ -1522,22 +1782,24 @@ func test_crafted_item_has_rank_and_scaled_stats() -> void:
 func test_crafted_item_rank_survives_save() -> void:
 	var res: ItemResource = load("res://data/items/helmet_master.tres")
 	var item := CraftedItem.new(res, 0.7, 2)
-	var back := CraftedItem.from_dict(item.to_dict(), res)
-	check(back.rank == 2 and back.calculated_stats == item.calculated_stats, "rango y estadísticas vuelven igual")
+	item.place = InventoryManager.PLACE_BAG
+	item.cell = Vector2i(2, 1)
+	item.rot = 3
+	var ar: Array[Vector2i] = [Vector2i(3, 0)]
+	item.aristas = ar
+	var back := CraftedItem.from_dict(JSON.parse_string(JSON.stringify(item.to_dict())), res)  # como desde el fichero
+	check(back.rank == 2 and back.calculated_stats.hp == item.calculated_stats.hp and back.calculated_stats.armor == item.calculated_stats.armor, "rango y estadísticas vuelven igual")
+	check(back.place == item.place and back.cell == item.cell and back.rot == item.rot and back.aristas == item.aristas, "y su sitio, casilla, giro y aristas (%s %s %d %s)" % [back.place, back.cell, back.rot, back.aristas])
 	var old := item.to_dict()
 	old.erase("rank")
-	check(CraftedItem.from_dict(old, res).rank == 1, "un objeto de la versión 1 (sin rango) es de rango I")
+	check(CraftedItem.from_dict(old, res).rank == 1, "un objeto sin rango (versión 1) es de rango I")
 ```
 
-Run RankTests. Expected: error de análisis o fallos (`CraftedItem.new` con tres argumentos, `get_name_with_rank` no existe).
+El viaje por `JSON` es el del fichero: los enteros vuelven como decimales y las aristas como pares.
+
+Run RankTests. Expected: error de análisis (`CraftedItem.new` con tres argumentos).
 
 - [ ] **Step 2: Implementar en `CraftedItem.gd`**
-
-Añade la variable junto a `quality`:
-
-```gdscript
-var rank: int = 1  # rango del plano con que se forjó (1 = rango I)
-```
 
 `_init`:
 
@@ -1552,66 +1814,61 @@ func _init(item_res: ItemResource, craft_quality: float, craft_rank: int = 1) ->
 		calculated_stats = Ranks.scale_stats(item_resource.calculate_stats(quality), rank)
 ```
 
-Nombres. Conserva la traducción que haya puesto la tarjeta de idioma. Si `get_display_name()` ya traduce `item_resource.display_name`, usa esa misma llamada en `get_name_with_rank()`:
+`get_display_name()` usa el nombre con numeral (la traducción ya la hace `get_name_with_rank()`):
 
 ```gdscript
-## Nombre con el numeral del rango, ya traducido: "Espada maestra III" (sin numeral en el rango I).
-func get_name_with_rank() -> String:
-	if item_resource == null:
-		return tr("Objeto desconocido")
-	return tr(item_resource.display_name) + Ranks.suffix(rank)
-
-
-## Retorna el nombre del item con rango y calidad: "Espada maestra III (93%)"
+## Nombre del objeto con su rango y su calidad, en el idioma del jugador ("Espada maestra III (93%)")
 func get_display_name() -> String:
 	if item_resource:
 		return "%s (%d%%)" % [get_name_with_rank(), get_quality_percent()]
 	return tr("Objeto desconocido")
 ```
 
-(Si la tarjeta de idioma usó otro texto para "objeto desconocido", usa el suyo y no añadas fila nueva al CSV.)
-
-Serialización:
+En `from_dict()`, el rango va al constructor y sobra la línea que lo asignaba después. El principio queda así (lo demás, igual):
 
 ```gdscript
-func to_dict() -> Dictionary:
-	return {
-		"item_id": String(item_resource.item_id) if item_resource else "",
-		"quality": quality,
-		"rank": rank,
-		"stats": calculated_stats.duplicate(),
-		"timestamp": crafted_timestamp,
-		"equipped": is_equipped
-	}
-
-
 static func from_dict(data: Dictionary, item_res: ItemResource) -> CraftedItem:
-	var item = CraftedItem.new(item_res, data.get("quality", 0.5), int(data.get("rank", 1)))
+	var item = CraftedItem.new(item_res, data.get("quality", 0.5), maxi(1, int(data.get("rank", 1))))
 	item.calculated_stats = data.get("stats", {}).duplicate()
 	item.crafted_timestamp = data.get("timestamp", 0)
-	item.is_equipped = data.get("equipped", false)
-	return item
+	item.place = StringName(data.get("place", "loot"))
 ```
+
+(Las estadísticas guardadas mandan: una pieza ya forjada no se recalcula al cargar.)
+
+`to_dict()` no cambia: ya guarda `"rank"`.
+
+Quien cree hoy piezas con `CraftedItem.new(res, q)` y les ponga el rango después (`InventoryGridTests`, la prueba de la tarea 0) sigue funcionando: el rango sin escalar las estadísticas solo se usa en pruebas.
 
 - [ ] **Step 3: Ejecutar y ver que pasa**
 
-Run: RankTests, GameplayTests y PixelTests. Expected: 0 fallos.
+Run: RankTests, InventoryGridTests, GameplayTests y PixelTests. Expected: 0 fallos.
 
 - [ ] **Step 4: Commit**
 
 ```bash
 git add scripts/data/CraftedItem.gd scripts/tests/RankTests.gd
-git commit -m "feat: el objeto forjado guarda su rango y escala sus estadísticas"
+git commit -m "feat: el objeto forjado escala sus estadísticas con su rango y lo enseña en su nombre"
 ```
 
 ---
 
-### Task 6: Desbloqueo por rango y guardado versión 2
+### Task 6: Desbloqueo por rango y guardado versión 3
 
-> **Nota (2026-10-01):** `Hero.reset_stats` tiene que pasar el rango del equipo a `CombatMath.hero_stats(equipo, rango)` (hoy pasa 1).
+La versión 2 la tomó el inventario en rejilla, así que los rangos pasan a la 3. Hay dos orígenes:
+- **Versión 1** (antes de la rejilla): `InventoryManager` migra el inventario como siempre (rejilla, aristas y `GearPacker`), y los planos desbloqueados pasan a rango I.
+- **Versión 2** (la rejilla): el inventario ya está en rejilla y sus piezas guardan `rank` (siempre 1). Solo se migran los planos: `unlocked_blueprints` pasa a `unlocked_ranks` con rango I.
+- Desde las dos, después, se aplican los hitos del récord.
+
+`SaveManager` no necesita código por versión: cada autoload reconoce la forma de sus datos (`InventoryManager`, si falta `hero_grid`; `DataManager`, si falta `unlocked_ranks`). Lo que sí cambia es la copia de la partida antigua: hoy va siempre a `save.v1.bak.json`, y una partida de la versión 2 acabaría con el nombre de la 1. Pasa a `save.v<versión de origen>.bak.json`, solo si esa copia no existe.
+
+No hay rango de pedidos ni de tareas que guardar: `CraftingManager` no se guarda y `RequestsManager` solo guarda `free_requests_remaining`.
 
 **Files:**
-- Modify: `scripts/autoload/DataManager.gd`, `scripts/autoload/GameManager.gd` (solo `_on_data_ready_load_save`), `scripts/core/SaveManager.gd`
+- Modify:
+  - `scripts/autoload/DataManager.gd`, `scripts/autoload/GameManager.gd` (`apply_record_milestones`, `_on_data_ready_load_save`), `scripts/core/SaveManager.gd`;
+  - `scripts/tests/TestSuite.gd` (protege también `save.v2.bak.json`), `scripts/tests/InventoryGridTests.gd` (textos de la versión);
+  - `doc/specs/2026-09-27-rangos-de-plano-por-ciclo.md` (apartados 8 y 10).
 - Create: `scripts/tests/fixtures/save_v1.json`
 - Test: `scripts/tests/RankTests.gd`
 
@@ -1623,12 +1880,13 @@ git commit -m "feat: el objeto forjado guarda su rango y escala sus estadística
   - Cambios: `DataManager.unlock_rank(bp_id: StringName, rank: int) -> bool`, que da true si sube.
   - Niveles de pieza: `DataManager.blueprint_tier(bp_id: StringName) -> StringName` y `DataManager.get_blueprint_ids_for_tier(tier: StringName) -> Array[StringName]`.
   - Hitos: `DataManager.apply_milestones(milestones: Array) -> Array`, que devuelve los desbloqueos nuevos (`{"id": StringName, "rank": int}`) sin emitir nada, y `GameManager.apply_record_milestones() -> Array`.
-  - Guardado: `SaveManager.SAVE_VERSION`, que pasa a 2.
+  - Guardado: `SaveManager.SAVE_VERSION`, que pasa a 3; `SaveManager.backup_path(version: int) -> String` (`"user://save.v1.bak.json"`, `"user://save.v2.bak.json"`…), que sustituye a `BACKUP_V1_PATH`.
+  - Pruebas: `TestSuite.V2_BACKUP_PATH` y `TestSuite.OLD_SAVE_BACKUPS` (las dos copias).
 - Se quita `DataManager.DEFAULT_UNLOCKED`. `unlock_blueprint(id)` se conserva como `unlock_rank(id, 1)` por compatibilidad.
 
 - [ ] **Step 1: Partida de versión 1 para la prueba**
 
-`scripts/tests/fixtures/save_v1.json` (una partida de hoy: récord 57, espada maestra equipada, planos del sistema antiguo):
+`scripts/tests/fixtures/save_v1.json` (una partida anterior a la rejilla: récord 57, espada maestra equipada, planos del sistema antiguo). El cargador de la versión 1 de `InventoryManager` la acepta tal cual: sin `hero_grid`, con `equipped` y `equipped_slots`, y con las estadísticas guardadas.
 
 ```json
 {
@@ -1659,10 +1917,12 @@ git commit -m "feat: el objeto forjado guarda su rango y escala sus estadística
 }
 ```
 
+Con el récord 57, la migración del inventario da las 4 ampliaciones (rejilla de 6×6) y `GearPacker` coloca la espada en Tico.
+
 - [ ] **Step 2: Pruebas que fallan**
 
 ```gdscript
-# ─── Tarea 6: desbloqueo por rango y guardado v2 ───────────────────────
+# ─── Tarea 6: desbloqueo por rango y guardado v3 ───────────────────────
 
 func _dm() -> Node:
 	return get_node("/root/DataManager")
@@ -1682,32 +1942,47 @@ func test_unlock_rank_only_goes_up() -> void:
 	check(not dm.is_blueprint_unlocked(&"sword_basic"), "rango 0 = bloqueado")
 	check(dm.unlock_rank(&"sword_basic", 2) and dm.get_unlocked_rank(&"sword_basic") == 2, "sube a II")
 	check(not dm.unlock_rank(&"sword_basic", 1) and dm.get_unlocked_rank(&"sword_basic") == 2, "no baja")
+	for id in dm.get_blueprint_ids_for_tier(Ranks.TIER_BASIC):
+		if id != &"sword_basic":
+			dm.unlocked_ranks[id] = 1
 	var newly: Array = dm.apply_milestones([{"rank": 2, "tier": Ranks.TIER_BASIC}])
 	check(newly.size() == 3, "los otros 3 básicos suben a II (%s)" % [newly])
 	dm.unlocked_ranks = saved
 
 
-func test_v1_save_with_high_record_migrates() -> void:
-	var dm := _dm()
-	var gm := get_node("/root/GameManager")
-	var inv := get_node("/root/InventoryManager")
-	var fixture := FileAccess.get_file_as_string("res://scripts/tests/fixtures/save_v1.json")
+## Copias de la partida antigua que había antes de una prueba (ruta → bytes, o null si no había). Las pruebas de
+## migración las crean al cargar una partida vieja; al acabar se dejan como estaban (TestSuite lo repite al final).
+func _snapshot_backups() -> Dictionary:
+	var out := {}
+	for path in OLD_SAVE_BACKUPS:
+		out[path] = FileAccess.get_file_as_bytes(path) if FileAccess.file_exists(path) else null
+	return out
+
+
+func _restore_backups(snap: Dictionary) -> void:
+	for path in snap:
+		if snap[path] == null:
+			if FileAccess.file_exists(path):
+				DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+		else:
+			var f := FileAccess.open(path, FileAccess.WRITE)
+			f.store_buffer(snap[path])
+			f.close()
+
+
+## Escribe `bytes` como save.json y lo carga, sin copias de la partida antigua delante (para ver la que hace esta carga).
+func _load_save_bytes(bytes: PackedByteArray) -> bool:
+	for path in OLD_SAVE_BACKUPS:
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	f.store_string(fixture)
+	f.store_buffer(bytes)
 	f.close()
-	check(SaveManager.load_game(), "la partida v1 carga")
-	gm.apply_record_milestones()
-	check(dm.get_unlocked_rank(&"sword_advanced") >= 1 and dm.get_unlocked_rank(&"sword_masterwork") >= 1, "lo ya desbloqueado se conserva")
-	check(dm.get_unlocked_rank(&"helmet_basic") == 2, "el récord 57 aplica los básicos II (casco básico: %d)" % dm.get_unlocked_rank(&"helmet_basic"))
-	check(dm.get_unlocked_rank(&"helmet_master") == 1, "el récord 57 aplica los maestros I")
-	var items: Array = inv.get_crafted_items()
-	check(items.size() == 1 and items[0].rank == 1 and items[0].calculated_stats.damage == 34, "la espada pasa a rango I con sus estadísticas")
-	check(inv.get_equipped_item("main_hand") == items[0], "y sigue equipada")
-	check(SaveManager.save_game(), "se guarda en la versión nueva")
-	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
-	check(int(data.version) == 2 and data.data.has("unlocked_ranks"), "guardado versión 2 con unlocked_ranks")
-	# TestSuite restaura el fichero al terminar; aquí se vuelve a cargar la partida previa para que las
-	# pruebas siguientes no vean el estado de la de prueba
+	return SaveManager.load_game()
+
+
+## Vuelve a cargar la partida de antes de la prueba (TestSuite solo restaura el fichero al terminar).
+func _reload_user_save() -> void:
 	if _had_save:
 		var back := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 		back.store_buffer(_save_backup)
@@ -1715,14 +1990,83 @@ func test_v1_save_with_high_record_migrates() -> void:
 		SaveManager.load_game()
 	else:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
-	gm.apply_record_milestones()
+	await get_tree().process_frame
+
+
+func test_v1_save_with_high_record_migrates() -> void:
+	var dm := _dm()
+	var inv := _im()
+	var backups := _snapshot_backups()
+	var original := FileAccess.get_file_as_bytes("res://scripts/tests/fixtures/save_v1.json")
+	check(_load_save_bytes(original), "la partida v1 carga")
+	check(dm.get_unlocked_rank(&"sword_advanced") >= 1 and dm.get_unlocked_rank(&"sword_masterwork") >= 1, "lo ya desbloqueado se conserva")
+	check(dm.get_unlocked_rank(&"helmet_basic") == 2, "el récord 57 aplica los básicos II (casco básico: %d)" % dm.get_unlocked_rank(&"helmet_basic"))
+	check(dm.get_unlocked_rank(&"helmet_master") == 1, "el récord 57 aplica los maestros I")
+	var items: Array = inv.get_crafted_items()
+	check(items.size() == 1 and items[0].rank == 1 and items[0].calculated_stats.damage == 34, "la espada pasa a rango I con sus estadísticas")
+	check(items.size() == 1 and items[0].place == InventoryManager.PLACE_HERO and inv.best_hero_item("main_hand") == items[0], "y la que estaba equipada va a la rejilla de Tico")
+	check(FileAccess.file_exists(V1_BACKUP_PATH) and FileAccess.get_file_as_bytes(V1_BACKUP_PATH) == original, "la copia save.v1.bak.json guarda la partida original")
+	check(not FileAccess.file_exists(V2_BACKUP_PATH), "y no hace la de la versión 2")
+	check(SaveManager.save_game(), "se guarda en la versión nueva")
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
+	check(int(data.version) == 3 and data.data.has("unlocked_ranks") and not data.data.has("unlocked_blueprints"), "guardado versión 3 con unlocked_ranks")
+	await _reload_user_save()
+	_restore_backups(backups)
+
+
+## Partida de la versión 2 (la rejilla, antes de los rangos), con la forma que escriben InventoryManager.to_save_data() y
+## DataManager: récord 25, una ampliación (rejilla de 5×4), una espada con una arista en Tico y un casco en el botín.
+func _v2_save() -> Dictionary:
+	var sword := CraftedItem.new(load("res://data/items/sword_advanced.tres"), 0.8).to_dict()
+	sword.merge({"place": "hero", "x": 2, "y": 1, "rot": 0, "aristas": [[1, 0]], "timestamp": 2001}, true)
+	var helmet := CraftedItem.new(load("res://data/items/helmet_basic.tres"), 0.4).to_dict()
+	helmet.merge({"place": "loot", "timestamp": 2002}, true)
+	return {
+		"version": 2,
+		"timestamp": 1790000000.0,
+		"game": {"current_enemy_level": 24, "best_enemy_level": 25, "wall_room": 0, "room_locked": false, "death_count": 1, "enemies_defeated": {}, "hero_loadout": {}},
+		"data": {"unlocked_blueprints": {"sword_basic": true, "shield_basic": true, "boots_basic": true, "helmet_basic": false, "sword_advanced": true}},
+		"inventory": {
+			"materials": {"iron": 40, "gold": 120},
+			"crafted_items": [helmet, sword],
+			"hero_grid": [5, 4],
+			"expansions": ["grid_bone_straps"],
+			"consumables": [],
+		},
+		"requests": {"free_requests_remaining": 0},
+	}
+
+
+func test_v2_save_migrates_to_v3() -> void:
+	var dm := _dm()
+	var inv := _im()
+	var backups := _snapshot_backups()
+	var original := JSON.stringify(_v2_save()).to_utf8_buffer()
+	check(_load_save_bytes(original), "la partida v2 carga")
+	check(inv.hero_grid_size() == Vector2i(5, 4) and inv.get_crafted_items().size() == 2, "rejilla de 5×4 y las dos piezas (%s, %d)" % [inv.hero_grid_size(), inv.get_crafted_items().size()])
+	var sword: CraftedItem = inv.best_hero_item("main_hand")
+	check(sword != null and sword.cell == Vector2i(2, 1) and sword.rot == 0 and sword.aristas == [Vector2i(1, 0)], "la espada sigue en Tico, en su casilla, con su arista")
+	check(inv.get_loot().size() == 1 and inv.get_loot()[0].item_resource.item_id == &"helmet_basic", "el casco sigue en el botín")
+	check(inv.get_crafted_items().all(func(it): return it.rank == 1), "las piezas siguen en rango I")
+	check(dm.get_unlocked_rank(&"sword_advanced") == 1 and dm.get_unlocked_rank(&"shield_basic") == 1, "los planos desbloqueados pasan a rango I")
+	check(dm.get_unlocked_rank(&"helmet_basic") == 1, "los básicos I, siempre")
+	check(dm.get_unlocked_rank(&"helmet_advanced") == 1 and dm.get_unlocked_rank(&"helmet_master") == 0, "récord 25: los avanzados I sí (jefe 20) y los maestros aún no (%d, %d)" % [dm.get_unlocked_rank(&"helmet_advanced"), dm.get_unlocked_rank(&"helmet_master")])
+	check(FileAccess.file_exists(V2_BACKUP_PATH) and FileAccess.get_file_as_bytes(V2_BACKUP_PATH) == original, "la copia save.v2.bak.json guarda la partida original")
+	check(not FileAccess.file_exists(V1_BACKUP_PATH), "y no hace la de la versión 1")
+	check(SaveManager.save_game(), "se guarda")
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
+	check(int(data.version) == 3 and data.data.has("unlocked_ranks") and data.inventory.has("hero_grid"), "versión 3, con unlocked_ranks y la rejilla")
+	await _reload_user_save()
+	_restore_backups(backups)
 ```
 
-Run RankTests. Expected: fallan (`blueprint_tier`, `unlocked_ranks` y `apply_record_milestones` no existen).
+`helmet_master == 0` pide que cargar una partida bloquee antes todo lo que ella no trae (Step 3): si no, quedarían los rangos de la partida que hubiera cargada.
+
+Run RankTests. Expected: error de análisis (`V2_BACKUP_PATH` y `OLD_SAVE_BACKUPS` no existen). Con el Step 6 hecho y sin los demás, fallan (`blueprint_tier`, `unlocked_ranks` y la versión 3 no existen).
 
 - [ ] **Step 3: `DataManager.gd` por rangos**
 
-Sustituye `unlocked_blueprints` y `DEFAULT_UNLOCKED` y las funciones de desbloqueo. El estado inicial es todo a 0: los básicos I los da `GameManager.apply_record_milestones()` al cargar o al empezar.
+Sustituye `unlocked_blueprints` y `DEFAULT_UNLOCKED` y las funciones de desbloqueo. El estado inicial es todo a 0: los básicos I los dan los hitos del récord al cargar o al empezar (Steps 4 y 5).
 
 ```gdscript
 var blueprints: Dictionary = {}
@@ -1804,7 +2148,7 @@ func apply_milestones(milestones: Array) -> Array:
 	return newly
 ```
 
-Guardado, compatible con la versión 1:
+Guardado, compatible con las versiones 1 y 2. Cargar una partida la sustituye entera: primero todo bloqueado y después lo suyo.
 
 ```gdscript
 func to_save_data() -> Dictionary:
@@ -1815,6 +2159,9 @@ func to_save_data() -> Dictionary:
 
 
 func load_save_data(data: Dictionary) -> void:
+	# La partida sustituye a lo que hubiera; los hitos de su récord los aplica SaveManager después
+	for bp_id in unlocked_ranks:
+		unlocked_ranks[bp_id] = 0
 	if data.has("unlocked_ranks"):
 		var saved: Dictionary = data.get("unlocked_ranks", {})
 		for bp_id_str in saved:
@@ -1822,7 +2169,7 @@ func load_save_data(data: Dictionary) -> void:
 			if bp_id in unlocked_ranks:
 				unlocked_ranks[bp_id] = maxi(0, int(saved[bp_id_str]))
 	else:
-		# Versión 1: planos desbloqueados como bool → rango I
+		# Versiones 1 y 2: planos desbloqueados como bool → rango I
 		var old: Dictionary = data.get("unlocked_blueprints", {})
 		for bp_id_str in old:
 			var bp_id := StringName(bp_id_str)
@@ -1831,11 +2178,15 @@ func load_save_data(data: Dictionary) -> void:
 	print("DataManager: Loaded %d unlocked blueprints from save" % get_unlocked_blueprints().size())
 ```
 
-- [ ] **Step 4: Hitos del récord al cargar (`GameManager.gd`)**
+Antes de cerrar el paso, `grep -rn "unlocked_blueprints\|DEFAULT_UNLOCKED" scripts`. Quedan dos usos, y ninguno se toca aquí:
+- `VisualCapture._run_unlock_plan` (lo reescribe la tarea 7);
+- la partida de la versión 1 de `InventoryGridTests._v1_save()` (`"data": {"unlocked_blueprints": {}}`), que `load_save_data` sigue leyendo.
+
+- [ ] **Step 4: Hitos del récord sin partida (`GameManager.gd`)**
 
 ```gdscript
-## Aplica en silencio los hitos que ya supera el récord (los básicos I siempre). Se llama al cargar la
-## partida o al empezar una nueva, y tras migrar una partida de la versión 1.
+## Aplica en silencio los hitos que ya supera el récord (los básicos I siempre). Lo llama SaveManager.load_game() al
+## cargar una partida (también al migrarla) y _on_data_ready_load_save() cuando no hay partida.
 func apply_record_milestones() -> Array:
 	var dm = get_node_or_null("/root/DataManager")
 	if dm == null or not dm.has_method("apply_milestones"):
@@ -1843,44 +2194,174 @@ func apply_record_milestones() -> Array:
 	return dm.apply_milestones(Ranks.milestones_up_to_record(best_enemy_level))
 ```
 
-En `_on_data_ready_load_save()`, al final (con o sin partida):
+En `_on_data_ready_load_save()`, al final:
 
 ```gdscript
-	apply_record_milestones()
+	# Sin partida (o si no se pudo leer) no hay nada desbloqueado: los hitos del récord dan al menos los básicos I.
+	# Con partida ya los ha aplicado SaveManager.load_game().
+	if not _save_loaded:
+		apply_record_milestones()
 ```
 
-`GameManager` está antes que `RequestsManager` en los autoloads y conecta `data_ready` en su `_ready`, así que los básicos ya están desbloqueados cuando `RequestsManager` genera los primeros pedidos. Compruébalo en el Step 6.
+`GameManager` va antes que `RequestsManager` en los autoloads, y los dos conectan `data_ready` en su `_ready` (que `DataManager` emite en diferido). Así los básicos ya están desbloqueados cuando `RequestsManager` genera los primeros pedidos. Compruébalo en el Step 8.
 
-- [ ] **Step 5: `SaveManager.gd` versión 2**
+- [ ] **Step 5: `SaveManager.gd` versión 3**
+
+Constantes (sustituyen a `BACKUP_V1_PATH`; `grep -rn "BACKUP_V1_PATH" scripts` solo da `SaveManager`):
 
 ```gdscript
-const SAVE_VERSION := 2
+const SAVE_PATH := "user://save.json"
+const SAVE_VERSION := 3
+
+
+## Copia de la partida tal como estaba antes de migrarla desde la versión `version`: save.v1.bak.json, save.v2.bak.json…
+## Una partida sin versión cuenta como de la 1.
+static func backup_path(version: int) -> String:
+	return "user://save.v%d.bak.json" % maxi(1, version)
 ```
 
-En `load_game()`, sustituye el aviso de versión por:
+En `load_game()`, la copia pasa a saber la versión de origen:
 
 ```gdscript
 	var version: int = int(save_data.get("version", 0))
 	if version < SAVE_VERSION:
 		print("SaveManager: partida de la versión %d; se migra a la %d al cargar" % [version, SAVE_VERSION])
+		_back_up_old_save(version)
 	elif version > SAVE_VERSION:
 		push_warning("SaveManager: partida de una versión más nueva (%d > %d). Se intenta cargar igualmente." % [version, SAVE_VERSION])
 ```
 
-(Si la tarjeta de guardado robusto ya cambió `SaveManager`, aplica estos cambios sobre su versión.)
+Y después de `gm.load_save_data(...)` (antes de `RequestsManager`):
 
-- [ ] **Step 6: Ejecutar y ver que pasa, y arranque real**
+```gdscript
+	# Hitos de rango que ya supera el récord (spec de rangos, apartado 3). Van después de GameManager, que deja el récord
+	# en el mayor entre el guardado y la sala actual. En una partida anterior a los rangos convierten el récord en planos.
+	if gm and gm.has_method("apply_record_milestones"):
+		gm.apply_record_milestones()
+```
 
-Run: RankTests, GameplayTests y PixelTests. Expected: 0 fallos.
+`_back_up_old_save`:
 
-Run: `timeout 120 D:/Software/Godot/godot_ver4.5.exe --headless --path . --quit-after 600 res://scenes/Main.tscn 2>&1 | grep -iE "SCRIPT ERROR|Parse Error|DataManager: Loaded|RequestsManager: Generados"`
-Expected: sin errores. Hay pedidos generados de planos desbloqueados. Restaura `save.json` después (Global Constraints).
+```gdscript
+## Copia save.json en save.v<versión>.bak.json antes de que el guardado diferido de después de cargar lo reescriba en la
+## versión nueva: la partida es una sola y la comparten todas las compilaciones del juego, así que esa escritura no se
+## deshace. Una copia por versión de origen, y solo la primera vez: una migración posterior nunca la pisa.
+static func _back_up_old_save(version: int) -> void:
+	var path := backup_path(version)
+	if FileAccess.file_exists(path):
+		return
+	var err := DirAccess.copy_absolute(SAVE_PATH, path)
+	if err != OK:
+		push_warning("SaveManager: no se pudo copiar la partida antigua a %s (error %d)" % [path, err])
+		return
+	print("SaveManager: copia de la partida antigua en %s" % path)
+```
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: `TestSuite` protege las dos copias y textos de `InventoryGridTests`**
+
+En `TestSuite.gd`, las constantes y el estado de la copia pasan a cubrir las dos versiones:
+
+```gdscript
+const SAVE_PATH := "user://save.json"
+const V1_BACKUP_PATH := "user://save.v1.bak.json"
+const V2_BACKUP_PATH := "user://save.v2.bak.json"
+## Copias que SaveManager hace al migrar, una por versión de origen (SaveManager.backup_path). Una prueba que carga una
+## partida antigua las crearía con datos de pega: la suite las deja como estaban.
+const OLD_SAVE_BACKUPS := [V1_BACKUP_PATH, V2_BACKUP_PATH]
+const TEST_LOCALE := "es"
+
+var _checks := 0
+var _failures := 0
+var _had_save := false
+var _save_backup := PackedByteArray()
+var _old_backups := {}  # ruta → bytes de cada copia que había al empezar (sin la ruta si no había)
+```
+
+```gdscript
+func _backup_save() -> void:
+	_had_save = FileAccess.file_exists(SAVE_PATH)
+	if _had_save:
+		_save_backup = FileAccess.get_file_as_bytes(SAVE_PATH)
+	_old_backups.clear()
+	for path in OLD_SAVE_BACKUPS:
+		if FileAccess.file_exists(path):
+			_old_backups[path] = FileAccess.get_file_as_bytes(path)
+
+
+func _restore_save() -> void:
+	if _had_save:
+		var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+		f.store_buffer(_save_backup)
+		f.close()
+	elif FileAccess.file_exists(SAVE_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+	# Las copias de la partida antigua quedan como estaban: con la que hubiera (la buena, hecha al arrancar) o sin ninguna
+	for path in OLD_SAVE_BACKUPS:
+		if _old_backups.has(path):
+			var b := FileAccess.open(path, FileAccess.WRITE)
+			b.store_buffer(_old_backups[path])
+			b.close()
+		elif FileAccess.file_exists(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+```
+
+En la cabecera del fichero, «y la copia save.v1.bak.json que SaveManager hace al migrar» pasa a «y las copias save.v1.bak.json y save.v2.bak.json que SaveManager hace al migrar». `grep -rn "_had_v1_backup\|_v1_backup_bytes" scripts` no debe dar nada.
+
+En `InventoryGridTests.gd`, solo textos (las comprobaciones ya usan `SaveManager.SAVE_VERSION`):
+- en `test_v1_save_migrates_without_losing_pieces`: `"guardado versión 2, sin huecos fijos"` pasa a `"guardado en la versión actual, sin huecos fijos"`; el comentario `# El fichero de la versión 2 también se carga: …` pasa a `# El fichero de la versión actual también se carga: …`; y `"se carga el fichero de la versión 2"` pasa a `"se carga el fichero de la versión actual"`;
+- en el comentario de `test_loading_an_old_save_keeps_a_backup_of_it`: «la reescriba en la versión 2» pasa a «la reescriba en la versión actual», y «Con la partida ya en la versión 2 no hace copia» pasa a «Con la partida ya en la versión actual no hace copia».
+
+Esa prueba sigue con `V1_BACKUP_PATH` y la partida de la versión 1: la copia de la 1 no cambia de nombre. Al final llama a `_reload_user_save()`, que carga la partida de la sesión; si esa partida es de la versión 2, la carga crea `save.v2.bak.json`, y `TestSuite` la deja como estaba al acabar.
+
+- [ ] **Step 7: El spec dice «versión 3»**
+
+En `doc/specs/2026-09-27-rangos-de-plano-por-ciclo.md`, apartado 8, sustituye la lista de «Datos que ganan rango» y el punto «Guardado versión 2»:
+
+```markdown
+- **Datos que ganan rango:**
+  - `CraftedItem.rank` (1 por defecto): se guarda en `to_dict` y se lee en `from_dict`. Las estadísticas calculadas ya incluyen el multiplicador.
+  - `DataManager`: rango máximo desbloqueado por plano.
+  - `RequestsManager`: el rango de cada pedido activo. No se guarda: hoy `RequestsManager` solo guarda `free_requests_remaining` y los pedidos se rehacen al arrancar.
+  - `CraftingManager`: el rango y el origen de cada tarea. Tampoco se guarda: la cola no se guarda.
+- **Guardado versión 3** (`SaveManager.SAVE_VERSION`; la 2 es la del inventario en rejilla), con migración desde la 1 y desde la 2:
+  - desde la 1, el inventario se migra a la rejilla como dice el spec del inventario (apartado 10) y los objetos forjados pasan a rango I;
+  - desde la 2, las piezas ya guardan su rango (1) y no se mueven;
+  - en las dos, los planos desbloqueados se conservan como rango I;
+  - después se aplican los hitos que ya supera el récord (apartado 3);
+  - antes de migrar, `SaveManager` copia la partida en `save.v<versión de origen>.bak.json`, solo si esa copia no existe.
+```
+
+En el apartado 10, la línea de la prueba de guardado pasa a:
+
+```markdown
+  - Guardado: una partida de versión 1 (fichero de prueba) y otra de versión 2 cargan en la versión 3 sin perder objetos ni planos, con los hitos del récord aplicados y la copia de cada una.
+```
+
+- [ ] **Step 8: Ejecutar y ver que pasa, y arranque real**
+
+Run: RankTests, InventoryGridTests, GameplayTests y PixelTests. Expected: 0 fallos.
+
+Arranque real. Cualquier ejecución anterior ya migró la partida de la carpeta temporal (la carga del arranque la reescribe en la versión 3), así que antes vuelve a copiar la partida real (Global Constraints) y borra las copias que haya allí:
 
 ```bash
-git add scripts/autoload/DataManager.gd scripts/autoload/GameManager.gd scripts/core/SaveManager.gd scripts/tests/RankTests.gd scripts/tests/fixtures/save_v1.json
-git commit -m "feat: desbloqueo por rango, hitos del récord y guardado versión 2 con migración"
+cp "$(cygpath -u "$APPDATA")/Godot/app_userdata/PetJam/save.json" <scratchpad>/appdata/Godot/app_userdata/PetJam/save.json
+rm -f <scratchpad>/appdata/Godot/app_userdata/PetJam/save.v1.bak.json <scratchpad>/appdata/Godot/app_userdata/PetJam/save.v2.bak.json
+APPDATA=<appdata> timeout 120 D:/Software/Godot/godot_ver4.5.exe --headless --path . --quit-after 600 res://scenes/Main.tscn 2>&1 | grep -iE "SCRIPT ERROR|Parse Error|SaveManager|DataManager: Loaded|RequestsManager: Generados"
+ls <scratchpad>/appdata/Godot/app_userdata/PetJam/
+grep -m1 '"version"' <scratchpad>/appdata/Godot/app_userdata/PetJam/save.json
+```
+
+Expected:
+- sin errores;
+- «partida de la versión 2; se migra a la 3» y «copia de la partida antigua en user://save.v2.bak.json»;
+- `DataManager: Loaded …` y pedidos generados (`RequestsManager: Generados`) de planos desbloqueados;
+- `save.v2.bak.json` en la carpeta, y `"version": 3` en `save.json`.
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add scripts/autoload/DataManager.gd scripts/autoload/GameManager.gd scripts/core/SaveManager.gd scripts/tests/TestSuite.gd scripts/tests/InventoryGridTests.gd scripts/tests/RankTests.gd scripts/tests/fixtures/save_v1.json doc/specs/2026-09-27-rangos-de-plano-por-ciclo.md
+git commit -m "feat: desbloqueo por rango, hitos del récord y guardado versión 3 con migración desde la 1 y la 2"
 ```
 
 ---
@@ -1901,6 +2382,8 @@ git commit -m "feat: desbloqueo por rango, hitos del récord y guardado versión
 **Cambios:**
 - Se quita el desbloqueo de un plano al azar por la primera victoria en cada sala.
 - `enemies_defeated` y `enemy_defeated_first_time` se conservan: son estadística y no desbloquean nada.
+- Detrás de los hitos se conserva tal cual el bloque de la ampliación provisional de la rejilla (`GridExpansions.recipe_for_boss_room`, `_growing_grid` y la señal `grid_expanded`).
+- **Jefes 20 y 40:** sale el cartel del hito y, la primera vez, también el aviso «¡La rejilla crece!». No chocan: el de la rejilla es un toast (`show_toast`) y los toasts esperan en cola a que acabe el cartel (`_banner_until`). La captura `unlock` (Step 5) lo comprueba.
 
 - [ ] **Step 1: Pruebas que fallan**
 
@@ -1912,10 +2395,13 @@ func test_boss_milestones_unlock_once_with_signals() -> void:
 	var dm := _dm()
 	var saved_ranks: Dictionary = dm.unlocked_ranks.duplicate()
 	var saved_state: int = gm.dungeon_state
+	var saved_best: int = gm.best_enemy_level
+	var saved_defeated: Dictionary = gm.enemies_defeated.duplicate()
 	for id in dm.unlocked_ranks:
 		dm.unlocked_ranks[id] = 0
 	dm.apply_milestones([{"rank": 1, "tier": Ranks.TIER_BASIC}])
 	gm.dungeon_state = gm.DungeonState.RUNNING
+	gm.best_enemy_level = 999  # récord ya pasado: los jefes 20 y 40 no amplían la rejilla de la partida (GridExpansions)
 	var milestones := []
 	var unlocked := []
 	var on_ms := func(rank, tier, ids): milestones.append([rank, tier, ids.size()])
@@ -1934,7 +2420,40 @@ func test_boss_milestones_unlock_once_with_signals() -> void:
 	gm.blueprints_milestone.disconnect(on_ms)
 	gm.blueprint_unlocked.disconnect(on_bp)
 	gm.dungeon_state = saved_state
+	gm.best_enemy_level = saved_best
+	gm.enemies_defeated = saved_defeated
 	dm.unlocked_ranks = saved_ranks
+
+
+## La ampliación provisional de la rejilla sigue detrás de los hitos: el jefe 20 da a la vez su hito y, la primera vez,
+## su ampliación.
+func test_boss_20_gives_its_milestone_and_its_grid_expansion() -> void:
+	var gm := get_node("/root/GameManager")
+	var dm := _dm()
+	var saved_inv := _fresh_inventory()
+	var saved_ranks: Dictionary = dm.unlocked_ranks.duplicate()
+	var saved_state: int = gm.dungeon_state
+	var saved_best: int = gm.best_enemy_level
+	var saved_defeated: Dictionary = gm.enemies_defeated.duplicate()
+	for id in dm.get_blueprint_ids_for_tier(Ranks.TIER_ADVANCED):
+		dm.unlocked_ranks[id] = 0
+	gm.dungeon_state = gm.DungeonState.RUNNING
+	gm.best_enemy_level = 20  # la primera vez que cae el jefe 20
+	var events := []
+	var on_ms := func(_rank, _tier, _ids): events.append(&"milestone")
+	var on_grid := func(_id): events.append(&"grid")
+	gm.blueprints_milestone.connect(on_ms)
+	gm.grid_expanded.connect(on_grid)
+	gm.register_enemy_defeat(20)
+	check(events == [&"milestone", &"grid"], "el jefe 20 da el hito y después la ampliación (%s)" % [events])
+	check(_im().hero_grid_size() == GridExpansions.size_after(1), "la rejilla crece (%s)" % _im().hero_grid_size())
+	gm.blueprints_milestone.disconnect(on_ms)
+	gm.grid_expanded.disconnect(on_grid)
+	gm.dungeon_state = saved_state
+	gm.best_enemy_level = saved_best
+	gm.enemies_defeated = saved_defeated
+	dm.unlocked_ranks = saved_ranks
+	await _restore_inventory(saved_inv)
 
 
 func test_milestone_shows_one_notice_and_staggers_scrolls() -> void:
@@ -1970,9 +2489,13 @@ signal blueprint_unlocked(blueprint_id, rank)  # Plano desbloqueado (o subido de
 signal blueprints_milestone(rank, tier, ids)  # Hito de rangos: se emite antes que los blueprint_unlocked
 ```
 
-En `register_enemy_defeat(level)`, sustituye el bloque que desbloqueaba un plano al azar (`get_locked_blueprints()` … `emit_signal("blueprint_unlocked", …)`) por:
+En `register_enemy_defeat(level)`, sustituye el bloque que desbloqueaba un plano al azar (desde `# Si es la primera vez que se derrota este nivel` hasta `emit_signal("blueprint_unlocked", StringName(random_bp))`) por el de abajo. El bloque de la rejilla que va detrás (`# Rejilla de Tico …` hasta `emit_signal("grid_expanded", recipe)`) no se toca. La función queda así:
 
 ```gdscript
+func register_enemy_defeat(level: int) -> void:
+	if dungeon_state != DungeonState.RUNNING:
+		return
+	DebugManager.log_msg(&"game", "Enemy level %d defeated (current: %d)" % [level, current_enemy_level])
 	if not enemies_defeated.has(level):
 		enemies_defeated[level] = true
 		emit_signal("enemy_defeated_first_time", level)
@@ -1988,7 +2511,12 @@ En `register_enemy_defeat(level)`, sustituye el bloque que desbloqueaba un plano
 				for n in newly:
 					emit_signal("blueprint_unlocked", n.id, n.rank)
 				_on_trigger_save()
+
+	# Rejilla de Tico (spec del inventario en rejilla, apartado 7). Provisional hasta que lleguen las
+	# … (el bloque de hoy, sin cambios: GridExpansions.recipe_for_boss_room, _growing_grid y grid_expanded)
 ```
+
+`Biomes.is_boss_room` existe (`scripts/gameplay/visual/Biomes.gd`; ya lo usa el `Corridor`).
 
 - [ ] **Step 3: `Corridor.gd`: un aviso por hito y pergaminos escalonados**
 
@@ -2040,11 +2568,11 @@ func _on_blueprint_unlocked(bp_id: StringName, rank: int = 1) -> void:
 
 - [ ] **Step 4: Cartel del hito en `HeroViewOverlay.gd`**
 
-En `bind_corridor()` (o en `_ready()`, donde el overlay coge `_game_manager`), conecta:
+En `_ready()`, dentro de `if _game_manager:` y junto a la conexión de `grid_expanded`, conecta:
 
 ```gdscript
-	if _game_manager and _game_manager.has_signal("blueprints_milestone"):
-		_game_manager.blueprints_milestone.connect(_on_blueprints_milestone)
+		if _game_manager.has_signal("blueprints_milestone"):
+			_game_manager.blueprints_milestone.connect(_on_blueprints_milestone)
 ```
 
 ```gdscript
@@ -2054,9 +2582,9 @@ func _on_blueprints_milestone(rank: int, tier: StringName, _ids: Array) -> void:
 	show_banner(Ranks.milestone_text(rank, tier), tr("Nuevos planos en la biblioteca"), Color("ffe08a"), 1.6)
 ```
 
-`show_banner` sustituye al cartel en curso (no encola). En la muerte de un jefe hoy no hay otro cartel, solo el toast del jefe y el texto "¡JEFE DERROTADO!" de la franja, así que el del hito puede salir enseguida.
+`show_banner` sustituye al cartel en curso (no encola). En la muerte de un jefe hoy no hay otro cartel, solo los toasts («X ha caído», «¡La rejilla crece!» en los jefes 10 a 40 la primera vez, y quizá el del récord) y el texto "¡JEFE DERROTADO!" de la franja, así que el del hito puede salir enseguida. Los toasts esperan en su cola (hasta 4) a que acabe el cartel.
 
-En `_on_loot_dropped()`, quita el toast `"¡Nuevo plano: %s!"` de los pergaminos (`kind == &"blueprint"`). Con los hitos llegan 4 a la vez y encolarían 4 avisos; el cartel del hito ya los anuncia. La rama del botín doble (`payload.bonus`, que hace latir SUERTE) se queda como está.
+En `_on_loot_dropped()`, quita el toast `"¡Nuevo plano: %s!"` de los pergaminos (`kind == &"blueprint"`). Con los hitos llegan 4 a la vez y, con los de la rejilla y el jefe, llenarían la cola de 4 avisos; el cartel del hito ya los anuncia. La rama del botín doble (`payload.bonus`, que hace latir SUERTE) se queda como está. Las filas «¡Nuevo plano!» y «¡Nuevo plano: %s!» de `locale/textos.csv` se quedan: no estorban.
 
 Fila en `locale/textos.csv`:
 
@@ -2066,38 +2594,50 @@ Fila en `locale/textos.csv`:
 
 - [ ] **Step 5: Plan de captura `unlock` con hitos**
 
-`VisualCapture._run_unlock_plan()` bloqueaba planos con `dm.unlocked_blueprints`, que ya no existe. Pasa a preparar el hito de los avanzados I y dejar que Tico venza al jefe de la sala 20:
+`VisualCapture._run_unlock_plan()` (hacia la línea 137) bloquea planos con `dm.unlocked_blueprints`, que ya no existe. Pasa a preparar el hito de los avanzados I y dejar que Tico venza al jefe de la sala 20 por primera vez. Con la rejilla vacía y sin ampliaciones, esa muerte da también la ampliación provisional: se ven el cartel del hito y, después, el aviso «¡La rejilla crece!».
 
 ```gdscript
 func _run_unlock_plan() -> void:
-	# Hito de rangos: bloquea los avanzados y lleva a Tico (invencible) al jefe de la sala 20
+	# Hito de rangos (spec de rangos, apartado 3): bloquea los avanzados, vacía la rejilla de Tico (sin ampliaciones) y
+	# lleva a Tico (invencible) al jefe de la sala 20 con el récord en ella. Su muerte da el cartel del hito y, en cola
+	# detrás de él, el aviso «¡La rejilla crece!» de la ampliación provisional.
 	await get_tree().create_timer(1.0).timeout
 	var dm := get_node_or_null("/root/DataManager")
 	var gm := get_node_or_null("/root/GameManager")
-	if dm == null or gm == null:
+	var im := get_node_or_null("/root/InventoryManager")
+	if dm == null or gm == null or im == null:
 		return
 	for id in dm.get_blueprint_ids_for_tier(Ranks.TIER_ADVANCED):
 		dm.unlocked_ranks[id] = 0
+	im.clear()
 	var hero: Node = gm.get_hero()
 	if hero:
 		hero.set_invincible(true)
+	gm.wall_room = 0
+	gm.room_locked = false
+	gm.best_enemy_level = 19
 	gm.current_enemy_level = 19
-	gm.advance_enemy_level()
+	gm.advance_enemy_level()  # sala 20, récord 20: su jefe aún no ha caído
 ```
 
-Actualiza también su línea en la cabecera de planes del fichero.
+Añade su línea a la cabecera de planes del fichero (hoy no la tiene):
 
-Graba el plan `unlock`, con `save.json` copiado antes y restaurado después:
+```gdscript
+##   unlock → hito de rango en el jefe de la sala 20: cartel «¡Planos avanzados!», 4 pergaminos escalonados y, detrás, «¡La rejilla crece!»
+```
 
-`timeout 300 D:/Software/Godot/godot_ver4.5.exe --path . --write-movie <scratchpad>/t7/f.png --fixed-fps 10 --quit-after 150 res://scenes/tests/VisualCapture.tscn -- --plan=unlock`
+Graba el plan `unlock` (con la copia de la partida en `<appdata>`, Global Constraints):
 
-Abre con Read los fotogramas de la muerte del jefe y comprueba:
+`APPDATA=<appdata> timeout 300 D:/Software/Godot/godot_ver4.5.exe --path . --write-movie <scratchpad>/t7/f.png --fixed-fps 10 --quit-after 200 res://scenes/tests/VisualCapture.tscn -- --plan=unlock`
+
+Abre con Read los fotogramas de la muerte del jefe y los 4 s siguientes, y comprueba:
 - un solo cartel "¡Planos avanzados!";
-- 4 pergaminos que salen escalonados hacia el botón de Planos.
+- 4 pergaminos que salen escalonados hacia el botón de Planos;
+- el aviso «¡La rejilla crece!» sale cuando se va el cartel, no encima de él.
 
 - [ ] **Step 6: Ejecutar y ver que pasa**
 
-Run: RankTests, GameplayTests y PixelTests. Expected: 0 fallos.
+Run: RankTests, InventoryGridTests, GameplayTests, PixelTests y TextTests. Expected: 0 fallos.
 
 - [ ] **Step 7: Commit**
 
@@ -2113,14 +2653,16 @@ git commit -m "feat: hitos de rango al vencer a los jefes, con un cartel por hit
 **Files:**
 - Modify:
   - autoloads: `scripts/autoload/RequestsManager.gd`, `scripts/autoload/CraftingManager.gd`;
-  - interfaz: `scripts/RequestSlot.gd`, `scripts/ui/HUDMain.gd` (clave de tarjeta), `scripts/ui/ShopPanel.gd` (venta), `scripts/ui/CraftResultScreen.gd` (nombre).
+  - interfaz: `scripts/RequestSlot.gd`, `scripts/ui/HUDMain.gd` (clave de tarjeta), `scripts/ui/CraftResultScreen.gd` (nombre).
 - Test: `scripts/tests/RankTests.gd`
 
+**Ya hecho:** la venta por rango. `ShopPanel._get_sell_price(item)` devuelve `item.get_sell_price()`, que ya multiplica por `Ranks.gold_mult(rank)`, y lo mismo usan la zona de venta, «Vender todo» y la ficha del panel de Equipo. La tienda vende el botín y la mochila (`InventoryManager.get_unequipped_items()`), nunca lo que lleva Tico. Aquí solo se añade una prueba que lo guarde.
+
 **Interfaces:**
-- Consumes: `Ranks.recipe`, `Ranks.gold_mult`, `Ranks.suffix`, `DataManager.get_unlocked_rank`, `DataManager.blueprint_tier`, `CraftedItem.new(res, q, rank)`
+- Consumes: `Ranks.recipe`, `Ranks.gold_mult`, `Ranks.suffix`, `DataManager.get_unlocked_rank`, `DataManager.blueprint_tier`, `CraftedItem.new(res, q, rank)`, `CraftedItem.get_name_with_rank()`
 - Produces:
   - `RequestsManager.PREVIOUS_RANK_CHANCE` (0,2) y `RequestsManager.rng: RandomNumberGenerator`, que las pruebas pueden sembrar.
-  - `RequestsManager.make_request(bp_id: StringName) -> Dictionary`, con claves `blueprint_id, blueprint, rank, materials, gold_reward, client_name`.
+  - `RequestsManager.make_request(bp_id: StringName) -> Dictionary`, con claves `blueprint_id, blueprint, rank, materials, gold_reward` y las del cliente de `_generate_client()` (`client_name`, `client_first`, `client_title`).
   - `CraftingManager.enqueue(recipe_id, gold_reward: int = 0, rank: int = 1, own_order: bool = false) -> bool`.
   - `CraftingManager.CraftingTask`: campos `rank` y `own_order`.
   - El resultado de `_finalize_task` lleva `"rank"` y `"own_order"`, y el oro es 0 si es un encargo propio.
@@ -2178,6 +2720,9 @@ func test_crafting_a_rank_makes_an_item_of_that_rank() -> void:
 	var cm := get_node("/root/CraftingManager")
 	var inv := get_node("/root/InventoryManager")
 	var items_before: int = inv.get_crafted_items().size()
+	var queue_before: Array = cm.queue.duplicate()  # _finalize_task vacía su hueco y compacta la cola
+	for i in cm.MAX_SLOTS:
+		cm.queue[i] = null
 	check(cm.enqueue(&"helmet_basic", 100, 3), "se encola el casco básico III")
 	var task = null
 	for t in cm.queue:
@@ -2186,13 +2731,27 @@ func test_crafting_a_rank_makes_an_item_of_that_rank() -> void:
 	check(task != null, "la tarea guarda el rango")
 	if task:
 		var result: Dictionary = cm._finalize_task(task)
-		check(result.rank == 3 and result.crafted_item.rank == 3, "el objeto sale de rango III")
+		var item: CraftedItem = result.crafted_item
+		check(result.rank == 3 and item.rank == 3, "el objeto sale de rango III")
+		var base: Dictionary = item.item_resource.calculate_stats(item.quality)
+		check(item.calculated_stats == Ranks.scale_stats(base, 3), "con las estadísticas del rango III (%s)" % [item.calculated_stats])
+		check(item.place == InventoryManager.PLACE_LOOT and inv.get_loot()[0] == item, "y llega al botín, delante, como todo lo forjado")
+		check(item.aristas.size() == PieceShape.aristas_for_tier(item.get_quality_tier()), "con sus aristas sorteadas (%d)" % item.aristas.size())
 		check(result.gold_reward > 0 and not result.own_order, "un pedido sí da oro")
-		inv.remove_crafted_item(result.crafted_item)
+		check(inv.remove_crafted_item(item) and not (item in inv.get_loot()), "remove_crafted_item lo saca también del botín")
 	check(inv.get_crafted_items().size() == items_before, "la prueba deja el inventario como estaba")
+	cm.queue = queue_before
+
+
+## La venta ya va por rango (CraftedItem.get_sell_price, que usan la tienda y el panel de Equipo). Esta prueba lo guarda.
+func test_sell_price_grows_with_the_rank() -> void:
+	var res: ItemResource = load("res://data/items/shield_basic.tres")
+	var one := CraftedItem.new(res, 0.75)
+	var two := CraftedItem.new(res, 0.75, 2)
+	check(two.get_sell_price() == roundi(one.get_sell_price() * Ranks.gold_mult(2)) and two.get_sell_price() > one.get_sell_price(), "el precio de venta crece con el rango (%d y %d)" % [one.get_sell_price(), two.get_sell_price()])
 ```
 
-Run RankTests. Expected: fallan (`rng`, `make_request` y `enqueue` con rango no existen).
+Run RankTests. Expected: fallan (`rng`, `make_request` y `enqueue` con rango no existen). `test_sell_price_grows_with_the_rank` ya pasa.
 
 - [ ] **Step 2: `RequestsManager.gd`**
 
@@ -2219,8 +2778,7 @@ func make_request(blueprint_id: StringName) -> Dictionary:
 		"rank": rank,
 		"materials": Ranks.recipe(blueprint.materials, tier, rank),
 		"gold_reward": _calculate_reward(blueprint, rank),
-		"client_name": _generate_client_name(),
-	}
+	}.merged(_generate_client())  # client_name, client_first y client_title (la tarjeta lo traduce al enseñarlo)
 
 
 func _pick_rank(blueprint_id: StringName) -> int:
@@ -2278,8 +2836,8 @@ func enqueue(recipe_id, gold_reward: int = 0, rank: int = 1, own_order: bool = f
 
 Dentro, la creación de la tarea pasa a `CraftingTask.new(_generate_task_id(), blueprint, i, gold_reward, rank, own_order)`.
 
-En `_finalize_task`:
-- `crafted_item = CraftedItem.new(item_res, quality_normalized, task.rank)`;
+En `_finalize_task` (lo demás se conserva: el bonus de Forjamagia sobre la calidad, el sorteo de aristas con `rng` y `add_crafted_item`, que deja la pieza en el botín):
+- `crafted_item = CraftedItem.new(item_res, quality_normalized, task.rank)` (la línea siguiente, `crafted_item.aristas = PieceShape.roll_aristas(...)`, no cambia);
 - el oro final:
 
 ```gdscript
@@ -2293,30 +2851,30 @@ En `_finalize_task`:
 
 - [ ] **Step 4: Interfaz**
 
-`RequestSlot.set_request(request)`: nombre con numeral y receta del pedido.
+`RequestSlot.set_request(request)`: nombre con numeral y receta del pedido. El cliente se sigue traduciendo con `RequestsManager.client_display_name` (tarjeta de idioma); solo cambian el nombre y los materiales.
 
 ```gdscript
-## Configura la tarjeta con el diccionario del pedido (blueprint, rank, materials, gold_reward, client_name).
+## Configura la tarjeta con el diccionario del pedido (blueprint, rank, materials, gold_reward y el cliente).
 func set_request(request: Dictionary) -> void:
 	var blueprint: BlueprintResource = request.get("blueprint")
 	set_blueprint(blueprint)
-	var rank := int(request.get("rank", 1))
 	if blueprint:
-		set_blueprint_name(tr(blueprint.display_name) + Ranks.suffix(rank))
-	# La receta del rango del pedido (materiales de bioma incluidos), no la del .tres
-	set_materials(request.get("materials", blueprint.materials if blueprint else {}))
+		set_blueprint_name((tr(blueprint.display_name) if blueprint.display_name != "" else String(blueprint.blueprint_id)) + Ranks.suffix(int(request.get("rank", 1))))
+		# La receta del rango del pedido (materiales de bioma incluidos), no la del .tres
+		set_materials(request.get("materials", blueprint.materials))
 	var reward := int(request.get("gold_reward", 0))
 	reward_label.text = str(reward) if reward > 0 else "—"
+	var rm := get_node_or_null("/root/RequestsManager")
+	# El cliente se traduce al enseñarlo ("Brenna la Guerrera" / "Brenna the Warrior")
 	var client := String(request.get("client_name", ""))
+	if rm and rm.has_method("client_display_name"):
+		client = rm.client_display_name(request)
 	client_label.text = client
 	client_label.visible = client != ""
-	var rm := get_node_or_null("/root/RequestsManager")
 	var free: bool = rm != null and rm.has_method("get_free_requests_remaining") and rm.get_free_requests_remaining() > 0
 	free_tag.visible = free
 	_refresh_material_colors()
 ```
-
-Si la tarjeta de idioma cambió cómo se escribe el cliente o el texto de "GRATIS", conserva sus líneas y cambia solo el nombre y los materiales.
 
 `HUDMain._on_requests_refreshed`: la clave de la tarjeta incluye el rango, para que una tarjeta nueva de otro rango se anime:
 
@@ -2324,34 +2882,40 @@ Si la tarjeta de idioma cambió cómo se escribe el cliente o el texto de "GRATI
 		var key := "%s|%s|%s|%s" % [request.get("blueprint_id", ""), request.get("rank", 1), request.get("client_name", ""), request.get("gold_reward", 0)]
 ```
 
-`ShopPanel._get_sell_price(item)`: el precio de venta crece con el rango del objeto.
+`ShopPanel` no se toca: la venta ya va por rango (ver arriba).
+
+`CraftResultScreen` (hacia la línea 124): el nombre sale del objeto, con su numeral; el del plano queda de respaldo. El bloque de textos e icono queda así (`_fit_to_window` y lo demás no cambian):
 
 ```gdscript
-func _get_sell_price(item: CraftedItem) -> int:
-	var tier := item.get_quality_tier()
-	return roundi(SELL_PRICE_BY_TIER.get(tier, 25) * Ranks.gold_mult(item.rank))
-```
-
-`CraftResultScreen`: donde se decide `item_name` desde el plano, usa el objeto si existe:
-
-```gdscript
+	var crafted_item = result.get("crafted_item")
 	if crafted_item is CraftedItem:
+		icon = crafted_item.get_icon()
 		item_name = crafted_item.get_name_with_rank()
+	var dm = get_node_or_null("/root/DataManager")
+	if dm:
+		var bp = dm.get_blueprint(StringName(bp_id))
+		if bp:
+			if item_name == "" and bp.display_name != "":
+				item_name = tr(bp.display_name)
+			if icon == null:
+				icon = bp.get_icon()  # resuelve icon_path (bp.icon queda vacío al cargar)
 ```
 
-(antes del bloque que lo lee de `bp.display_name`, que queda de respaldo).
+Sin el `item_name == ""`, el nombre del plano pisaría al del objeto.
 
 - [ ] **Step 5: Ejecutar y ver que pasa**
 
-Run: RankTests, GameplayTests y PixelTests. Expected: 0 fallos.
+Run: RankTests, InventoryGridTests, GameplayTests y PixelTests. Expected: 0 fallos.
 
-Captura: `timeout 300 D:/Software/Godot/godot_ver4.5.exe --path . --write-movie <scratchpad>/t8/f.png --fixed-fps 10 --quit-after 120 res://scenes/tests/VisualCapture.tscn -- --plan=main`. Copia antes `save.json` y restáuralo después. Abre 2 o 3 fotogramas con Read: las tarjetas de pedido muestran los materiales de la receta, con el de bioma incluido.
+Captura: `APPDATA=<appdata> timeout 300 D:/Software/Godot/godot_ver4.5.exe --path . --write-movie <scratchpad>/t8/f.png --fixed-fps 10 --quit-after 120 res://scenes/tests/VisualCapture.tscn -- --plan=main`. Abre 2 o 3 fotogramas con Read: las tarjetas de pedido muestran los materiales de la receta, con el de bioma incluido.
+
+Captura también el plan `result` (misma orden con `--plan=result` y `<scratchpad>/t8r/f.png`) y comprueba que la pantalla de resultado enseña el nombre del objeto y sigue cabiendo en la ventana.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add scripts/autoload/RequestsManager.gd scripts/autoload/CraftingManager.gd scripts/RequestSlot.gd scripts/ui/HUDMain.gd scripts/ui/ShopPanel.gd scripts/ui/CraftResultScreen.gd scripts/tests/RankTests.gd
-git commit -m "feat: pedidos, crafteo, oro y venta por rango"
+git add scripts/autoload/RequestsManager.gd scripts/autoload/CraftingManager.gd scripts/RequestSlot.gd scripts/ui/HUDMain.gd scripts/ui/CraftResultScreen.gd scripts/tests/RankTests.gd
+git commit -m "feat: pedidos y crafteo por rango, con su receta y su oro"
 ```
 
 ---
@@ -2366,6 +2930,8 @@ git commit -m "feat: pedidos, crafteo, oro y venta por rango"
 - La forja lee `difficulty`, pero sus planos le pasan `precision`: la ventana es igual en todos los niveles.
 - Los planos de botas pasan `circles` y `difficulty`, que el minijuego de coser no lee: se cosen igual en básico y en maestro.
 - En coser, más `precision` = ventanas más **grandes**, es decir, más fácil. Por eso las botas maestras llevan una precisión menor.
+
+Comprobado el 2026-10-02 sobre la rama con la rejilla: nada de esto cambió. `ForgeMinigame.start_trial` lee `difficulty` (hacia la línea 69), los tres `boots_*.tres` siguen con `TrialConfig.gd` (`uid://csfs6pe4ark4v`) y `circles`/`difficulty`, y `SewTrialConfig.gd` tiene `uid://dumvodck0w3no`. `boots_leather.tres` no está en la biblioteca de planos: no se toca.
 
 - [ ] **Step 1: Pruebas que fallan**
 
@@ -2462,7 +3028,7 @@ Antes de editar, comprueba con `grep -n "TrialConfig.gd\|circles" data/blueprint
 
 - [ ] **Step 4: Ejecutar y ver que pasa**
 
-Run: RankTests, GameplayTests y PixelTests. Expected: 0 fallos.
+Run: RankTests, InventoryGridTests, GameplayTests y PixelTests. Expected: 0 fallos.
 
 - [ ] **Step 5: Commit**
 
@@ -2483,6 +3049,8 @@ git commit -m "fix: la forja usa la precisión de sus planos y las botas se cose
 **Interfaces:**
 - Consumes: `CraftingTask.rank`
 - Produces: `TrialDifficulty.apply(config: TrialConfig, rank: int) -> void` (modifica `config.parameters`) y `CraftingManager._resolve_trial_config(trial, blueprint, rank: int = 1) -> TrialConfig`.
+
+Comprobado el 2026-10-02: la rejilla no tocó los minijuegos ni `CraftingManager._resolve_trial_config` (hacia la línea 352) ni `_start_next_trial` (hacia la 328); el código de abajo parte del de hoy.
 
 `TrialDifficulty` actúa según las claves que lleva la configuración, no según el id del minijuego (los planos usan ids como `Forge`, `hammer`, `Hammer`, `SewOSU` y `quench`).
 
@@ -2642,7 +3210,7 @@ En `_start_next_trial(task)`: `var config := _resolve_trial_config(trial, task.b
 
 - [ ] **Step 4: Ejecutar y ver que pasa**
 
-Run: RankTests, GameplayTests y PixelTests. Expected: 0 fallos.
+Run: RankTests, InventoryGridTests, GameplayTests y PixelTests. Expected: 0 fallos.
 
 - [ ] **Step 5: Commit**
 
@@ -2659,7 +3227,8 @@ git commit -m "feat: los minijuegos se vuelven más difíciles con el rango, con
 - Modify:
   - `scripts/autoload/CraftingManager.gd` (`place_own_order`);
   - `scripts/ui/BlueprintCard.gd` y `scripts/ui/BlueprintLibraryPanel.gd` (selector y botón);
-  - `scripts/ui/HUDMain.gd` (lanzar la tarea) y `scripts/ui/EquipmentPanel.gd` (numeral);
+  - `scripts/ui/HUDMain.gd` (lanzar la tarea);
+  - `scripts/tests/VisualCapture.gd` (plan `inventory`: una pieza de rango II para ver el numeral);
   - `locale/textos.csv`.
 - Test: `scripts/tests/RankTests.gd`
 
@@ -2831,7 +3400,7 @@ func _build_forge_row() -> void:
 func _refresh_rank() -> void:
 	if _rank_label:
 		_rank_label.text = Biomes.roman(selected_rank)
-	name_label.text = (tr(blueprint_data.display_name) if blueprint_data else str(blueprint_id)) + Ranks.suffix(selected_rank)
+	name_label.text = (_blueprint_name() if blueprint_data else str(blueprint_id)) + Ranks.suffix(selected_rank)
 
 
 ## Sacudida cuando el encargo no se puede hacer
@@ -2930,15 +3499,18 @@ func _on_own_order_requested(bp_id: StringName, rank: int) -> void:
 			blueprint_library.reject(bp_id, reason)
 ```
 
-- [ ] **Step 5: Numeral en el panel de Equipo**
+- [ ] **Step 5: Numeral en el panel de Equipo (comprobarlo)**
 
-En `EquipmentPanel.gd`, donde la tarjeta de la mochila pone `name_label.text = item.item_resource.display_name …`:
+Ya está hecho con la rejilla: `EquipmentPanel._ficha_text` usa `get_name_with_rank()`, la ficha completa (`_open_card`) la reutiliza y la confirmación de venta también. La tira del botín (`LootStripView`) no enseña nombres ni tooltip, y la tienda usa `get_display_name()`, que lleva el numeral desde la tarea 5. Solo queda verlo.
+
+En `VisualCapture._run_inventory_plan()`, la espada maestra legendaria (la primera `add.call`, cuya ficha completa abre el plan al final) pasa a ser de rango II:
 
 ```gdscript
-	name_label.text = item.get_name_with_rank() if item.item_resource else "???"
+	var legend: CraftedItem = add.call(&"sword_masterwork", 1.0, InventoryManager.PLACE_HERO, Vector2i(5, 0))  # legendaria (Filo ígneo), de pie en la columna derecha
+	legend.rank = 2  # rango II: la ficha enseña «… II» (solo el nombre: la captura no mira sus números)
 ```
 
-(`tooltip_text = equipped_item.get_display_name()` ya lleva el numeral por la tarea 5.)
+y en la cabecera, la línea del plan `inventory` añade «(la maestra, de rango II)».
 
 - [ ] **Step 6: Textos**
 
@@ -2957,14 +3529,18 @@ Run: `D:/Software/Godot/godot_ver4.5.exe --headless --path . --import`
 
 - [ ] **Step 7: Ejecutar, capturar y ver que pasa**
 
-Run: RankTests, GameplayTests y PixelTests. Expected: 0 fallos.
+Run: RankTests, InventoryGridTests, GameplayTests y PixelTests. Expected: 0 fallos.
 
-Captura el plan `panels` de VisualCapture (copia y restaura `save.json`) y abre los fotogramas de la biblioteca con Read. Las tarjetas muestran el selector y el botón sin salirse, y el nombre lleva el numeral desde el II.
+Run: TextTests (filas nuevas del CSV). Expected: 0 fallos.
+
+Captura el plan `panels` de VisualCapture (`APPDATA=<appdata> timeout 300 D:/Software/Godot/godot_ver4.5.exe --path . --write-movie <scratchpad>/t11/f.png --fixed-fps 10 --quit-after 120 res://scenes/tests/VisualCapture.tscn -- --plan=panels`) y abre los fotogramas de la biblioteca con Read. Las tarjetas muestran el selector y el botón sin salirse, y el nombre lleva el numeral desde el II.
+
+Captura el plan `inventory` (misma orden con `--plan=inventory`, `<scratchpad>/t11i/f.png` y `--quit-after 150`) y abre los últimos fotogramas: la ficha completa de la espada maestra lleva el numeral II tras su nombre. Como la ficha completa es la breve (`_ficha_text`) más las aristas, con eso quedan vistas las dos.
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add scripts/autoload/CraftingManager.gd scripts/ui/BlueprintCard.gd scenes/UI/BlueprintCard.tscn scripts/ui/BlueprintLibraryPanel.gd scripts/ui/HUDMain.gd scripts/ui/EquipmentPanel.gd scripts/tests/RankTests.gd locale/textos.csv
+git add scripts/autoload/CraftingManager.gd scripts/ui/BlueprintCard.gd scenes/UI/BlueprintCard.tscn scripts/ui/BlueprintLibraryPanel.gd scripts/ui/HUDMain.gd scripts/tests/VisualCapture.gd scripts/tests/RankTests.gd locale/textos.csv
 git commit -m "feat: encargo propio desde la biblioteca y numeral de rango en la interfaz"
 ```
 
@@ -3778,7 +4354,7 @@ git commit -m "feat: muro y farmeo (duelos, reintentos y selector de sala con ca
 ### Task 13: Capturas, verificación y documentación
 
 **Files:**
-- Modify: `scripts/tests/VisualCapture.gd` (plan `ranks`), `doc/ARCHITECTURE.md`, `doc/ROADMAP.md`, `doc/specs/2026-09-27-rangos-de-plano-por-ciclo.md` (estado)
+- Modify: `scripts/tests/VisualCapture.gd` (plan `ranks`), `doc/ARCHITECTURE.md` (apartado nuevo y apartado 4.3), `doc/ROADMAP.md`, `doc/specs/2026-09-27-rangos-de-plano-por-ciclo.md` (estado)
 
 - [ ] **Step 1: Plan de capturas `ranks`**
 
@@ -3814,15 +4390,17 @@ func _run_ranks_plan() -> void:
 	if hero:
 		hero.set_invincible(true)
 	hud.get_corridor().enemy.biome_drop_chance = 1.0
+	gm.wall_room = 0
+	gm.room_locked = false
 	gm.current_enemy_level = 44
 	gm.advance_enemy_level()  # sala 45, Santuario del Vacío
 	await get_tree().create_timer(2.0).timeout
 	gm.blueprints_milestone.emit(2, Ranks.TIER_ADVANCED, [])
 ```
 
-Graba (copia antes `save.json` y restáuralo después):
+Graba (con la copia de la partida en `<appdata>`, Global Constraints):
 
-`timeout 300 D:/Software/Godot/godot_ver4.5.exe --path . --write-movie <scratchpad>/ranks/f.png --fixed-fps 10 --quit-after 120 res://scenes/tests/VisualCapture.tscn -- --plan=ranks`
+`APPDATA=<appdata> timeout 300 D:/Software/Godot/godot_ver4.5.exe --path . --write-movie <scratchpad>/ranks/f.png --fixed-fps 10 --quit-after 120 res://scenes/tests/VisualCapture.tscn -- --plan=ranks`
 
 Abre con Read los fotogramas de 1 s, 4 s, 7 s y 9 s y comprueba:
 - las tarjetas de pedido llevan numeral y los materiales de bioma, con sus iconos pixel nítidos;
@@ -3833,26 +4411,34 @@ Repite con 720x1280 (`--resolution 720x1280`) para ver la franja a escala no ent
 
 - [ ] **Step 2: Batería completa**
 
-Run: los cinco comandos de la cabecera.
-Expected: todo en verde.
+Vuelve a copiar la partida real a `<scratchpad>/appdata` (Global Constraints) y borra allí `save.v1.bak.json` y `save.v2.bak.json`, para que la batería arranque desde la partida de verdad.
 
-Run: `timeout 120 D:/Software/Godot/godot_ver4.5.exe --headless --path . --quit-after 600 res://scenes/Main.tscn 2>&1 | grep -iE "SCRIPT ERROR|Parse Error|ERROR:" | grep -v "resources still in use at exit"`
-Expected: sin resultados. Restaura `save.json`.
+Run: la batería de la cabecera (RankTests, InventoryGridTests, GameplayTests, PixelTests, TextTests, `bash balance/arnes.sh check` y las pruebas de Python).
+Expected: todo en verde; `arnes.sh check` con 35 de 35.
+
+Run (con la partida recién copiada otra vez): `APPDATA=<appdata> timeout 120 D:/Software/Godot/godot_ver4.5.exe --headless --path . --quit-after 600 res://scenes/Main.tscn 2>&1 | grep -iE "SCRIPT ERROR|Parse Error|ERROR:" | grep -v "resources still in use at exit"`
+Expected: sin resultados.
+
+Revisa `git status`: solo deben salir los ficheros de la tarea. Si sale `default_bus_layout.tres` con solo finales de línea, `git checkout -- default_bus_layout.tres`.
 
 El aviso `1 resources still in use at exit` (el ambiente de la forja, `amb_forge_market_base.wav`) ya existía antes de este plan. Sale al cerrar desde la línea de órdenes, porque el servidor de audio del motor no suelta la reproducción en el mismo fotograma. Por eso se filtra.
 
 - [ ] **Step 3: Documentación**
 
-- `doc/ARCHITECTURE.md`: apartado "Rangos por ciclo" con las clases nuevas (`Ranks`, `EnemyScaling`, `CombatMath`, `TrialDifficulty`), el flujo del rango (hito → `DataManager` → pedido → tarea → objeto), el guardado versión 2 y el bucle del muro (`GameManager`: récord, muro, candado y reintentos; `Corridor`: duelos y viaje del selector).
+- `doc/ARCHITECTURE.md`:
+  - apartado "Rangos por ciclo" con las clases nuevas (`Ranks`, `EnemyScaling`, `CombatMath`, `TrialDifficulty`), el flujo del rango (hito → `DataManager` → pedido → tarea → objeto → botín), el rango del equipo en la base de Tico, el guardado versión 3 y el bucle del muro (`GameManager`: récord, muro, candado y reintentos; `Corridor`: duelos y viaje del selector);
+  - apartado 4.3 (inventario en rejilla): el rango del equipo (`InventoryManager.grid_rank` / `equipment_rank`, que delegan en `Ranks.team_rank`; lo usan `Hero.reset_stats` y las estadísticas del panel de Equipo); «Guardado versión 2» pasa a contar que la versión 3 es la de los rangos (el inventario no cambia de forma), y la copia de la partida antigua pasa a `save.v<versión de origen>.bak.json`;
+  - en el detalle de `InventoryManager` (apartado 3.2), «versión 2» pasa a «versión 3».
 - `doc/ROADMAP.md`:
   - en la fase 3, los rangos por ciclo sustituyen a "Más blueprints" y a la dificultad automática;
   - la decisión de publicación (gratis primero, sin anuncios al principio, medir la retención).
-- Spec: `**Estado:** implementado (pendiente de revisión humana)`.
+- Spec de rangos: `**Estado:** implementado (pendiente de revisión humana)`, conservando la fecha y lo que dice de la calibración con Balanza. El apartado 8 ya dice «versión 3» desde la tarea 6: compruébalo.
+- Spec del inventario en rejilla, apartado 10: «(la base guarda la 1; los rangos pasarán a la 3)» pasa a «(la base guarda la 1; los rangos la pasaron a la 3)», y la copia de la partida antigua, a `save.v<versión de origen>.bak.json`.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add scripts/tests/VisualCapture.gd doc/ARCHITECTURE.md doc/ROADMAP.md doc/specs/2026-09-27-rangos-de-plano-por-ciclo.md
+git add scripts/tests/VisualCapture.gd doc/ARCHITECTURE.md doc/ROADMAP.md doc/specs/2026-09-27-rangos-de-plano-por-ciclo.md doc/specs/2026-09-27-inventario-en-rejilla.md
 git commit -m "docs: rangos por ciclo en la arquitectura y el roadmap, y plan de capturas ranks"
 ```
 
@@ -3866,10 +4452,10 @@ git commit -m "docs: rangos por ciclo en la arquitectura y el roadmap, y plan de
 | 3. Desbloqueo por jefes (hitos, estado, aviso, al cargar) | 2, 6, 7 |
 | 4. Materiales de bioma (datos, iconos, receta, botín, Suerte) | 2, 4, 8 |
 | 5. Pedidos, oro, crafteo, dificultad, arreglo de claves, encargo propio | 8, 9, 10, 11 |
-| 6. Balance (objetivos, curva, simulación, armadura) | 1, 3 |
+| 6. Balance (objetivos, curva, Balanza, armadura) y base de Tico por el rango del equipo | 1, 3, 0 |
 | 7. Muro, farmeo y selector de sala | 12, y 4 (extra de jefe con récord nuevo) |
-| 8. Datos y guardado versión 2 | 5, 6, 8 |
+| 8. Datos y guardado versión 3 (migración desde la 1 y la 2, copia por versión) | 5, 6, 8 |
 | 9. Textos e idioma | 2, 4, 7, 11 |
-| 10. Pruebas | todas; capturas en 8, 11 y 13 |
+| 10. Pruebas | todas; capturas en 7, 8, 11 y 13; `arnes.sh check` en 0 y 13 |
 | 11. Qué cambia en el código | mapa de ficheros |
-| 12. Fases | tareas 1-3 (fase 1), 5-6 (fase 2), 7-8 (fase 3), 4 (fase 4), 9-10 (fase 5), 11 (fase 6), 12 (fase 7), 13 (fase 8) |
+| 12. Fases | tareas 1-3 (fase 1), 0 y 5-6 (fase 2), 7-8 (fase 3), 4 (fase 4), 9-10 (fase 5), 11 (fase 6), 12 (fase 7), 13 (fase 8) |
