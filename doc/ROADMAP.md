@@ -3,7 +3,7 @@
 > **Plataforma**: Android (Google Play)  
 > **Resolución**: 1080x1920 (portrait 9:16)  
 > **Motor**: Godot 4.5.1  
-> **Última actualización**: 2026-02-07
+> **Última actualización**: 2026-10-02
 
 ---
 
@@ -63,6 +63,7 @@ El proyecto viene de una **game jam** y está en fase de **reestructuración hac
 - [ ] **Sistema de dificultad automático**: generar TrialConfigs según nivel de blueprint
 - [x] **Simplificar final crafteo**: Al completar un item, va directo al inventario con botón "AL INVENTARIO" + animación de partículas. Se vende en la tienda (tab Vender) y se equipa desde el panel de héroe
 - [x] **Mejorar visualmente la tienda**: Textos más grandes (26-42px), tienda ocupa zona central de minijuegos (no fullscreen), nueva pestaña "Vender" para vender items crafteados por oro
+- [x] **Inventario en rejilla** (estilo Lootbound, [spec](specs/2026-09-27-inventario-en-rejilla.md)): el equipo de Tico es una rejilla de 4×4 a 6×6 sin huecos fijos. Las piezas tienen forma y aristas según su calidad, se giran y se colocan donde quepan; dan auras a sus vecinas y ganan en su zona; las legendarias traen una habilidad de combate. Mochila de 6×4, botín sin límite y 2 huecos de pociones que se beben solas. La rejilla crece al vencer a los jefes de las salas 10, 20, 30 y 40 (provisional). Pendiente aparte: las recetas de ampliación (con los rangos), el balance con Balanza y el arte. Ver [Inventario en rejilla](ARCHITECTURE.md#43-inventario-en-rejilla) en la arquitectura
 
 ### Fase 3: Contenido y profundidad
 > Objetivo: variedad y profundidad de gameplay.

@@ -2499,3 +2499,40 @@ func test_potion_slots_in_the_panel() -> void:
 	await _silence_sounds()
 	panel.queue_free()
 	await _restore_inventory(saved)
+
+
+# ─── Tarea 17: rendimiento del panel ───────────────────────────────────
+
+## Spec, apartado 11: el panel se abre en menos de 50 ms. Aquí se mide en el ordenador, con la rejilla de 6×6 llena y
+## el botín con piezas; el móvil se prueba con su tarjeta.
+func test_panel_opens_fast_with_a_full_inventory() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	for id in GridExpansions.ids():
+		im.apply_grid_expansion(id)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3
+	for i in 40:
+		var res: ItemResource = load("res://data/items/%s.tres" % ITEM_IDS[i % ITEM_IDS.size()])
+		var item := CraftedItem.new(res, rng.randf())
+		item.aristas = PieceShape.roll_aristas(res, item.get_quality_tier(), rng)
+		im.add_crafted_item(item)
+		var spot := GearPacker.find_spot(im.hero_grid, item)
+		if not spot.is_empty():
+			im.move_item(item, InventoryManager.PLACE_HERO, spot.cell, spot.rot)
+	var filled := 0  # con otra rejilla u otro empaquetado, la prueba mediría un panel a medio llenar: así se ve
+	for x in im.hero_grid.size.x:
+		for y in im.hero_grid.size.y:
+			if im.hero_grid.item_at(Vector2i(x, y)) != null:
+				filled += 1
+	check(filled >= 30 and im.get_loot_count() >= 10, "el inventario está lleno: %d de 36 casillas de Tico y %d piezas en el botín" % [filled, im.get_loot_count()])
+	var panel: Control = load("res://scenes/UI/EquipmentPanel.tscn").instantiate()
+	add_child(panel)
+	await get_tree().process_frame
+	var t0 := Time.get_ticks_usec()
+	panel.open()
+	var ms := (Time.get_ticks_usec() - t0) / 1000.0
+	print("panel de Equipo: %.1f ms (%d piezas en Tico, %d en el botín)" % [ms, im.get_hero_items().size(), im.get_loot_count()])
+	check(ms < 50.0, "se abre en menos de 50 ms (%.1f)" % ms)
+	panel.queue_free()
+	await _restore_inventory(saved)

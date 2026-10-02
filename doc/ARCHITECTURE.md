@@ -1,7 +1,7 @@
 # PetJam — Arquitectura Técnica
 
 > Documento de referencia sobre la arquitectura del proyecto.  
-> **Última actualización**: 2026-02-07
+> **Última actualización**: 2026-10-02
 
 ---
 
@@ -23,7 +23,7 @@ StartScreen.tscn ──(botón Play)──→ Main.tscn
                                        │         ├─ MinigameContainer (minijuegos dinámicos)
                                        │         ├─ RequestSlots (cola de pedidos)
                                        │         ├─ BlueprintLibraryPanel (popup)
-                                       │         └─ EquipmentPanel (popup, WIP)
+                                       │         └─ EquipmentPanel (popup a pantalla completa: rejilla de Tico, botín y mochila; ver 4.3)
                                        │
                                        ├─ Corridor.tscn (instancia persistente)
                                        │    ├─ Hero.tscn (CharacterBody2D)
@@ -62,10 +62,10 @@ StartScreen.tscn ──(botón Play)──→ Main.tscn
 ### 3.2 Detalle por autoload
 
 #### GameManager
-- **Señales**: `enemy_spawned`, `hero_died`, `hero_respawned`, `boss_defeated`, `dungeon_state_changed`, `hero_loadout_changed`, `enemy_defeated_first_time`, `enemy_level_changed`
+- **Señales**: `enemy_spawned`, `hero_died`, `hero_respawned`, `boss_defeated`, `dungeon_state_changed`, `hero_loadout_changed`, `enemy_defeated_first_time`, `enemy_level_changed`, `grid_expanded` (la rejilla de Tico crece), `potion_drunk` (una poción de los huecos se bebe sola)
 - **Enum**: `DungeonState { IDLE, RUNNING, HERO_DEAD, COMPLETED, FAILED }`
-- **API clave**: `start_run()`, `advance_enemy_level()`, `register_enemy_defeat(level)`, `register_hero_death()`, `request_respawn()`, `deliver_item_to_hero(item_id, slot)`, `register_hero(node)`
-- **Dependencias**: `DataManager` (para unlock de blueprints)
+- **API clave**: `start_run()`, `advance_enemy_level()`, `register_enemy_defeat(level)`, `register_hero_death()`, `request_respawn()`, `deliver_item_to_hero(item_id, slot)`, `register_hero(node)`, `drink_potion(id)`, `on_boss_appeared()`
+- **Dependencias**: `DataManager` (para unlock de blueprints), `InventoryManager` (estadísticas de Tico, ampliación de la rejilla y pociones)
 - **Nota**: `MAX_DEATHS` y `DungeonState.FAILED/COMPLETED` son legacy del diseño de jam. En endless mode no hay game over.
 
 #### DataManager
@@ -75,17 +75,18 @@ StartScreen.tscn ──(botón Play)──→ Main.tscn
 - **Blueprints iniciales desbloqueados**: `sword_basic`, `shield_basic`, `boots_basic`
 
 #### InventoryManager
-- **Señales**: `inventory_changed`, `crafted_items_changed`
-- **Estado**: `inventory: Dictionary` (materiales), `crafted_items: Array[CraftedItem]`, `equipped_items: Dictionary` (slot → CraftedItem)
-- **API clave**: `add_item(id, qty)`, `has_materials(req)`, `consume_materials(req)`, `add_crafted_item(item)`, `equip_item(item)`, `unequip_item(slot)`, `calculate_total_stats()`, `clear()`
-- **Dependencias**: Ninguna. Standalone.
-- **Nota**: Todo en memoria. No persiste a disco. Materiales iniciales generosos para testing.
+- **Señales**: `inventory_changed`, `crafted_items_changed`, `equipment_changed` (cambia la rejilla de Tico), `loot_changed`, `grid_resized`, `consumables_changed`
+- **Estado**: `inventory: Dictionary` (materiales), `crafted_items: Array[CraftedItem]` (todas las piezas), `hero_grid` y `bag_grid` (`GearGrid`), `loot: Array[CraftedItem]`, `expansions` y `consumables` (2 huecos de pociones). Ver 4.3
+- **API clave**: `add_item(id, qty)`, `has_materials(req)`, `consume_materials(req)`, `add_crafted_item(item)` (la pieza va al botín), `move_item(item, place, cell, rot)`, `rotate_in_place(item)`, `sell_item(item)`, `sell_all_loot()`, `calculate_total_stats()`, `preview_stats(item, place, cell, rot)`, `apply_grid_expansion(id)`, `add_potion(id)`, `take_potion(id)`, `clear()`
+- **Dependencias**: `DataManager` (resuelve las piezas al cargar el guardado) y las clases de reglas de `scripts/core/` (ver 4.3).
+- **Nota**: Guarda y carga su parte de la partida (`to_save_data()` / `load_save_data()`, versión 2). `equip_item`/`unequip_item` y los huecos fijos de equipo ya no existen: lo que cuenta para Tico es lo que hay en su rejilla. Materiales iniciales generosos si no hay partida guardada.
 
 #### CraftingManager
 - **Señales**: `craft_enqueued`, `task_started`, `task_updated`, `task_completed`
 - **Constantes**: `MAX_SLOTS = 5`, Grados: gold (90%), silver (70%), bronze (40%)
 - **API clave**: `enqueue(recipe_id)`, `start_task(slot_idx)`, `cancel(slot_idx)`, `report_trial_result(task_id, result)`, `get_queue_snapshot()`, `has_active_trial()`
 - **Dependencias**: `DataManager`, `InventoryManager`
+- **Nota**: al terminar una pieza sortea sus aristas según su calidad (`PieceShape.roll_aristas`) y la manda al botín (`InventoryManager.add_crafted_item`); nada se coloca solo.
 
 #### RequestManager (RequestsManager)
 - **Señales**: `requests_refreshed`, `request_accepted`, `request_rejected_no_materials`
@@ -144,7 +145,7 @@ Corridor (state machine: RUN → FIGHT → DEAD → RUN)        [SubViewport 108
    ├─ Backdrop (DungeonBackdrop): Parallax2D por capas + biomas cada 10 salas + viñeta/destellos
    ├─ GateA / GateB (RoomGate): arco con el número de la sala; cruzarlo = entrar en la sala
    ├─ Camera2D (CorridorCamera): héroe al 30 % del ancho, shake por trauma, punch de zoom
-   ├─ Hero: pentágono con cara y EQUIPO VISIBLE (arma/escudo/casco/botas por calidad)
+   ├─ Hero: pentágono con cara y EQUIPO VISIBLE (la mejor pieza de cada tipo de su rejilla: arma, escudo, casco y botas)
    ├─ Enemy: arquetipo por sala (Limo, Esqueleto, Murciélago, Gólem, Espectro) o jefe del bioma
    ├─ CombatFX: partículas, números de daño, cortes, anillos y botín en espacio de mundo
    └─ CombatController: daño por cooldowns (attack_triggered) + feedback de cada golpe
@@ -158,11 +159,13 @@ cooldown, así que no cambia el DPS. El HUD de la franja (oro, muertes, sala, r�
 **Señal de ataque**: `attack_triggered` — emitida cuando el timer de ataque llega a 0. CombatController escucha y ejecuta daño.
 El pulso mágico emite `pulse_hit(amount, target_pos)` (posición tomada antes del daño).
 
+**Habilidades legendarias** (ver 4.3): `CombatMath.hero_stats_with_powers()` aplica sus multiplicadores después de `hero_stats()`. `Hero` guarda las de su rejilla en `power` (`reset_stats()`) y hace la regeneración, la esquiva, la parada, la segunda oportunidad (una por duelo) y arma el Ímpetu; `CombatController` hace el golpe doble, el Ímpetu (el primer golpe contra cada enemigo), la quemadura y las espinas; `Enemy` lleva la quemadura (`apply_burn()`: daño por segundo sin armadura).
+
 **Flujo de combate**:
 1. Héroe camina (RUN); entra en combate cuando el enemigo está a `reach + half_width` (no por solape de rects)
 2. CombatController gestiona intercambio de golpes por cooldowns (FIGHT). La armadura del héroe reduce el daño físico: `armor / (armor + 40)`, máximo 60 %
 3. Enemigo muere → rellena `death_info` → CombatController registra la victoria y avanza sala → Corridor muestra botín y celebración
-4. Héroe muere → `GameManager.register_hero_death()`: la sala donde cae pasa a ser el muro → fundido → reaparición en la sala anterior con haz de luz. Delante del muro farmea y lo reintenta cada 3 victorias, o al momento con equipo nuevo o una poción de efecto (`GameManager.room_cleared()`, `retry_wall_now()`). Cada sala es un duelo: al cruzar su puerta, Tico recupera toda la vida. Selector de sala con candado en `HeroViewOverlay` (`GameManager.travel_to_room()`, `set_room_locked()`); spec de rangos, apartado 7
+4. Héroe muere → `GameManager.register_hero_death()`: la sala donde cae pasa a ser el muro → fundido → reaparición en la sala anterior con haz de luz. Delante del muro farmea y lo reintenta cada 3 victorias, o al momento con equipo nuevo (colocar, quitar, girar o intercambiar una pieza de la rejilla de Tico: `equipment_changed`) o una poción de efecto (`GameManager.room_cleared()`, `retry_wall_now()`). La ampliación de la rejilla al vencer por primera vez a un jefe (sala 10, 20, 30 o 40 del ciclo I, provisional) recalcula a Tico pero no prueba el muro: `register_enemy_defeat()` la aplica con `_growing_grid` puesto, porque el viaje en mitad de la victoria descuadraría la sala. Cada sala es un duelo: al cruzar su puerta, Tico recupera toda la vida. Selector de sala con candado en `HeroViewOverlay` (`GameManager.travel_to_room()`, `set_room_locked()`); spec de rangos, apartado 7
 5. Hit-stop: `Corridor.hitstop(s)` congela héroe, enemigo y combate (nunca los minijuegos)
 
 ### 4.2 Sistema de crafteo
@@ -184,14 +187,58 @@ TrialResult → score, grade, quality_label, normalized_score
 CraftedItem → item con calidad calculada a partir de los trial results
 ```
 
-### 4.3 Sistema de inventario
+### 4.3 Inventario en rejilla
+
+El equipo de Tico es una rejilla estilo Lootbound: cada pieza forjada ocupa una forma, se gira y se coloca donde quepa, sin huecos fijos. Todo lo que está en la rejilla de Tico cuenta para sus estadísticas, y dónde está cambia cuánto rinde. Spec: `doc/specs/2026-09-27-inventario-en-rejilla.md`.
 
 ```
 InventoryManager
   ├─ inventory: Dict[StringName, int]     # materiales (wood: 40, iron: 40, ...)
-  ├─ crafted_items: Array[CraftedItem]    # items producidos
-  └─ equipped_items: Dict[String, CraftedItem]  # 7 slots del héroe
+  ├─ crafted_items: Array[CraftedItem]    # todas las piezas; cada una está en un solo sitio (item.place)
+  ├─ hero_grid: GearGrid                  # Tico (&"hero"): 4×4, crece hasta 6×6. Solo esto cuenta para sus estadísticas
+  ├─ bag_grid: GearGrid                   # mochila (&"bag"): 6×4 fija. Guarda sin contar
+  ├─ loot: Array[CraftedItem]             # botín (&"loot"): sin límite, lo más nuevo delante. Aquí llega todo lo forjado
+  ├─ expansions: Array[StringName]        # ampliaciones ya aplicadas (GridExpansions)
+  └─ consumables: Array                   # 2 huecos de pociones: {"id", "count"}
 ```
+
+Nada se coloca solo: lo forjado va siempre al botín. La única excepción es la migración de partidas antiguas.
+
+**Clases nuevas.** Las reglas son clases sin nodos (`RefCounted`, en `scripts/core/`) y cada rejilla es un control que se dibuja a sí mismo (`scripts/ui/`). Ninguna es un autoload.
+
+| Clase | Qué hace | Quién la usa |
+|-------|----------|--------------|
+| `PieceShape` | Forma limpia de cada pieza (`ItemResource.shape_cells`), giros de 90° normalizados y aristas: casillas de más que no dan nada y estorban (2 en Básico y Bueno, 1 en Raro, 0 desde Épico) | `GearGrid`, `InventoryManager`, `CraftingManager` (las sortea al forjar), `EquipmentPanel` y las vistas |
+| `GearGrid` | Una rejilla de casillas: dice si una pieza cabe, la coloca o la quita, da sus vecinas por los lados y hace copias (`duplicate_grid()`) para simular sin tocar nada | `InventoryManager` (Tico y mochila), `GearAuras`, `GearPacker`, `EquipmentPanel` y `GearGridView` |
+| `GearAuras` | Auras entre vecinas (la espada da daño a las armas, el escudo armadura a las armaduras, el casco vida a todas y las botas velocidad de ataque a las armas; 0, 5, 10, 15 o 20 % según la calidad de quien la emite), zonas (+10 % en todo a la pieza con alguna casilla limpia en la suya) y tope (+50 % por estadística): `totals(grid)` y `bonuses(grid)` | `InventoryManager` (`calculate_total_stats()` y `preview_stats()`), `GearPacker`, `EquipmentPanel` (ficha y brillos) y `GearGridView` (zonas) |
+| `LegendaryPowers` | Las 12 habilidades de las piezas legendarias (una por pieza; las maestras con precio), sus multiplicadores y sus efectos de combate. Dos iguales cuentan como una | `InventoryManager.active_legendary_powers()`, `CombatMath`, `Hero`, `CombatController`, `CraftResultScreen` y `EquipmentPanel` |
+| `GearPacker` | Colocación automática y determinista (`find_spot()`, `pack()`) | La migración de partidas antiguas (`InventoryManager`) y «A la mochila» (`EquipmentPanel`) |
+| `GridExpansions` | Las 4 ampliaciones (una por jefe de las salas 10, 20, 30 y 40 del ciclo I) y los tamaños 4×4 → 5×4 → 5×5 → 6×5 → 6×6 | `InventoryManager.apply_grid_expansion()`, `GameManager` y `EquipmentPanel` (dice qué jefe toca) |
+| `Potions` | Catálogo de las pociones, los 2 huecos, el tope de 5 por hueco y el umbral del 30 % de vida | `InventoryManager`, `GameManager`, `ShopPanel`, `EquipmentPanel` y `HeroViewOverlay` |
+| `GearGridView` | Control que dibuja una rejilla (casillas de 110 px, piezas, aristas, zonas, destino del arrastre y brillos). Las casillas que aún no existen salen punteadas | `EquipmentPanel` (la de Tico y la mochila) y `LootStripView` (casilla y dibujo de piezas) |
+| `LootStripView` | Control que dibuja el botín: una tira con desplazamiento lateral y las piezas tumbadas | `EquipmentPanel` |
+
+**Panel de Equipo** (`EquipmentPanel`, pantalla completa). De arriba abajo: estadísticas de Tico, ficha de la última pieza tocada, su rejilla delante de su sprite (con los 2 huecos de consumibles al lado), el botín con «Vender todo», la mochila y la zona de venta. El dedo lo lleva el panel en `_input`:
+- tocar gira la pieza (en el botín solo la enseña);
+- arrastrar la coloca o la intercambia: la pieza va una casilla por encima del dedo, y un segundo dedo, la rueda o la tecla R la giran;
+- mantener pulsado 0,4 s abre la ficha completa;
+- soltar en la zona de venta la vende;
+- durante el arrastre, la vista previa de estadísticas (`InventoryManager.preview_stats()`) solo se recalcula cuando cambia la casilla de destino o el giro;
+- Atrás (Android) cierra lo de más arriba: la confirmación, la ficha o el panel;
+- la insignia del botón Equipo (`HUDMain`) cuenta las piezas del botín.
+
+**Pociones.** Las de la tienda van a un hueco (`add_potion()`; sin hueco no se cobra) y `GameManager` las bebe solas. La de Vida, cuando Tico, vivo, baja del 30 % de su vida (señal `hurt` de `Hero` → `drink_potion()`). Velocidad y Suerte, al aparecer un jefe (`on_boss_appeared()`, que llama `Corridor`) si su efecto no está activo; delante de un muro sin candado esperan, porque una poción de efecto manda a Tico a probar el muro.
+
+**Ampliación de la rejilla (provisional).** Hasta que las recetas lleguen con los rangos, `GameManager.register_enemy_defeat()` llama a `InventoryManager.apply_grid_expansion()` la primera vez que cae el jefe de la sala 10, 20, 30 o 40 del ciclo I. La rejilla crece (una columna a la derecha o una fila abajo, alternando), ninguna pieza se mueve y la señal `grid_expanded` hace salir «¡La rejilla crece!» en la franja. Ampliar no manda a Tico al muro (ver 4.1).
+
+**Guardado versión 2.** `to_save_data()` guarda en `inventory`: los materiales, las piezas (`crafted_items`, con el botín primero y en su orden; de cada pieza, `place`, `x`, `y`, `rot` y `aristas`), `hero_grid` (ancho y alto), `expansions` y `consumables`. Ya no guarda `equipped` ni `equipped_slots`. Una partida anterior (sin `hero_grid`) se migra al cargar:
+1. da por forjadas las ampliaciones de los jefes que su récord ya supera;
+2. sortea las aristas de cada pieza con una semilla fija: la misma partida da siempre el mismo resultado;
+3. coloca con `GearPacker` lo que estaba equipado, las mejores primero, y manda el resto al botín.
+
+Una posición imposible al cargar (fuera de la rejilla o pisando otra pieza) también acaba en el botín: nunca se pierde una pieza.
+
+**Pruebas.** `InventoryGridTests` (`scenes/tests/InventoryGridTests.tscn`), que incluye la medida de lo que tarda en abrirse el panel con la rejilla llena, y el plan `inventory` de `VisualCapture` para capturar el panel.
 
 ### 4.4 Minijuegos
 
@@ -220,7 +267,7 @@ _ready() → fade_in → setup_title_screen("Hammer Time!") → start_game()
 |------|-----------|----------|-------------|
 | `BlueprintResource` | `data/blueprints/` | 15 | Recetas de items con trial_sequence |
 | `BlueprintLibrary` | `data/blueprints/` | 1 | Colección de todos los blueprints |
-| `ItemResource` | `data/items/` | 12 | Templates de items (faltan 3) |
+| `ItemResource` | `data/items/` | 12 | Templates de items, con su forma en la rejilla (`shape_cells`, `arista_spots`) (faltan 3) |
 | `MaterialResource` | `data/materials/` | 9 | cloth, fire, herb, ice, iron, leather, poison, water, wood |
 | `DropTable` | `data/drops/` | 1 | Config de drops de enemigos |
 | `MinigameSoundSet` | `data/` | 2 | Sets de sonido por minijuego |
@@ -245,7 +292,7 @@ res://
 │   └── sandboxes/     # Escenas de test (dev only)
 ├── scripts/           # GDScript
 │   ├── autoload/      # 9 singletons
-│   ├── core/          # MinigameBase, launcher, configs
+│   ├── core/          # MinigameBase, launcher, configs, reglas del inventario (PieceShape, GearGrid, GearAuras…)
 │   ├── gameplay/      # Hero, Enemy, Combat, Corridor
 │   ├── data/          # Resources (Blueprint, Item, Material, Trial)
 │   ├── ui/            # UI controllers (24+ scripts)
@@ -296,5 +343,5 @@ res://
 | `_enqueue_defaults()` | `CraftingManager.gd` | Dead code (legacy) |
 | `get_blueprints()` == `get_all_blueprints()` | `DataManager.gd` | Métodos duplicados |
 | Prints excesivos | Varios autoloads | Ruido en consola |
-| `EquipmentPanel` | UI | No actualiza stats del héroe al equipar |
+| `DungeonHUD` | `scripts/ui/DungeonHUD.gd` | Sin uso (ninguna escena lo instancia) y llama a `equip_item` y `get_equipped_item`, que ya no existen: borrarlo en la limpieza |
 | `ParticleManager.gd` duplicado | `scripts/` y `scripts/core/` | Verificar cuál usa Corridor |

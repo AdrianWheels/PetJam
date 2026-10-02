@@ -19,6 +19,8 @@ extends Node
 ##             (sala 2, combate normal)
 ##   shop   → abre la tienda y enseña sus pestañas una a una (materiales, pociones y venta)
 ##   wall   → muro y farmeo: cae en la sala 14, farmea la 13 con «Muro: sala 14» y el selector lo lleva a la 4
+##   inventory → rejilla de 6×6 con piezas (una legendaria y una con aristas), mochila y botín; arrastra
+##               una pieza del botín hasta Tico con intercambio y abre la ficha de la legendaria
 
 const MAIN_SCENE := preload("res://scenes/Main.tscn")
 const START_SCENE := preload("res://scenes/UI/StartScreen.tscn")
@@ -64,6 +66,8 @@ func _ready() -> void:
 			_run_shop_plan()
 		"wall":
 			_run_wall_plan()
+		"inventory":
+			_run_inventory_plan()
 
 
 func _hud() -> Node:
@@ -291,3 +295,60 @@ func _run_wall_plan() -> void:
 	gm.set_room_locked(false)
 	await get_tree().create_timer(4.0).timeout
 	gm.travel_to_room(4)
+
+
+func _run_inventory_plan() -> void:
+	await get_tree().create_timer(1.0).timeout
+	var hud := _hud()
+	var im := get_node_or_null("/root/InventoryManager")
+	if hud == null or im == null:
+		return
+	im.clear()
+	for id in GridExpansions.ids():
+		im.apply_grid_expansion(id)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	# Pieza nueva con sus aristas. En una rejilla va a `cell` si cabe allí y, si no, al primer sitio libre
+	var add := func(id: StringName, quality: float, place: StringName, cell: Vector2i) -> CraftedItem:
+		var res: ItemResource = load("res://data/items/%s.tres" % id)
+		var item := CraftedItem.new(res, quality)
+		item.aristas = PieceShape.roll_aristas(res, item.get_quality_tier(), rng)
+		im.add_crafted_item(item)
+		var grid: GearGrid = im.grid_for(place)
+		if grid:
+			var spot: Dictionary = {"cell": cell, "rot": 0} if grid.fits(item, cell, 0) else GearPacker.find_spot(grid, item)
+			if not spot.is_empty():
+				im.move_item(item, place, spot.cell, spot.rot)
+		return item
+	add.call(&"sword_masterwork", 1.0, InventoryManager.PLACE_HERO, Vector2i(5, 0))  # legendaria (Filo ígneo), de pie en la columna derecha
+	add.call(&"shield_master", 0.95, InventoryManager.PLACE_HERO, Vector2i(0, 2))
+	add.call(&"helmet_master", 0.8, InventoryManager.PLACE_HERO, Vector2i(1, 0))  # rara: 1 arista
+	add.call(&"boots_master", 0.95, InventoryManager.PLACE_HERO, Vector2i(2, 3))
+	add.call(&"shield_basic", 0.6, InventoryManager.PLACE_BAG, Vector2i(0, 0))
+	add.call(&"boots_basic", 0.3, InventoryManager.PLACE_LOOT, Vector2i.ZERO)
+	add.call(&"helmet_advanced", 1.0, InventoryManager.PLACE_LOOT, Vector2i.ZERO)
+	add.call(&"sword_advanced", 0.93, InventoryManager.PLACE_LOOT, Vector2i.ZERO)  # épica, sin aristas: la última añadida va delante
+	hud._on_delivery_pressed()
+	await get_tree().create_timer(1.5).timeout
+	var panel: Node = hud.equipment_panel
+	# Arrastre: la espada nueva, del botín a la columna derecha de Tico. Tres giros con la R la ponen de pie
+	# y cae encima de la maestra: se intercambian y la maestra vuelve al botín, delante.
+	var start: Vector2 = panel._loot_view.global_position + Vector2(60, 165)
+	panel._on_press(start)
+	var grab: Vector2 = panel._press.origin - panel._press.pos
+	var finish: Vector2 = panel._hero_view.global_position + Vector2(5, 0) * GearGridView.CELL - grab + Vector2(0.0, GearGridView.CELL)
+	for i in 12:
+		panel._on_motion(start.lerp(finish, float(i + 1) / 12.0))
+		if i in [4, 6, 8]:
+			panel._rotate_drag()
+		await get_tree().create_timer(0.12).timeout
+	await get_tree().create_timer(1.0).timeout  # destino en verde, intercambio y cambio de estadísticas
+	panel._on_release(finish)
+	await get_tree().create_timer(1.5).timeout
+	# Ficha completa de la maestra legendaria, ya en el botín. La pulsación larga mide tiempo real (Time.get_ticks_msec) y
+	# la grabación va más deprisa que el reloj: 0,6 s del juego pueden ser menos de 0,4 s reales y la pieza solo se tocaría.
+	# Se adelanta la hora de la pulsación en vez de esperarla
+	panel._on_press(start)
+	panel._press.time = Time.get_ticks_msec() - 1000
+	await get_tree().create_timer(0.6).timeout
+	panel._on_release(start)
