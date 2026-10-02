@@ -1,6 +1,6 @@
 # Rangos de plano por ciclo
 
-**Fecha:** 2026-09-27 · **Estado:** aprobado; revisado el 2026-09-27 con el muro y el farmeo (apartado 7); tarea 3 del plan (calibración del balance) hecha con Balanza el 2026-10-01 (apartado 6); siguen las tareas 4 a 11 y la 13
+**Fecha:** 2026-09-27 · **Estado:** implementado (pendiente de revisión humana); revisado el 2026-09-27 con el muro y el farmeo (apartado 7); calibración del balance hecha con Balanza el 2026-10-01 (apartado 6)
 **Petición:** "Qué le faltaría al juego para estar completo". El análisis encontró que el juego se agota pronto: los 12 planos se desbloquean al pasar la sala 9 y el poder de Tico tiene techo, porque solo cuenta el equipo, mientras los enemigos crecen sin límite. El usuario eligió publicar **gratis primero** (medir la retención antes de monetizar) y, como eje de progresión infinito, **rangos de plano por ciclo**, con estas decisiones:
 
 | Pregunta | Elegido |

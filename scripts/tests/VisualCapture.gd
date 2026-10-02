@@ -22,6 +22,8 @@ extends Node
 ##   wall   → muro y farmeo: cae en la sala 14, farmea la 13 con «Muro: sala 14» y el selector lo lleva a la 4
 ##   inventory → rejilla de 6×6 con piezas (una legendaria, la maestra de rango II, y una con aristas), mochila y botín; arrastra
 ##               una pieza del botín hasta Tico con intercambio y abre la ficha de la legendaria
+##   ranks  → pedidos con numeral y materiales de bioma, biblioteca con el selector de rango y, en el Santuario del Vacío
+##            (sala 45), botín con fragmento de vacío y el cartel «¡Planos avanzados II!»
 
 const MAIN_SCENE := preload("res://scenes/Main.tscn")
 const START_SCENE := preload("res://scenes/UI/StartScreen.tscn")
@@ -69,6 +71,8 @@ func _ready() -> void:
 			_run_wall_plan()
 		"inventory":
 			_run_inventory_plan()
+		"ranks":
+			_run_ranks_plan()
 
 
 func _hud() -> Node:
@@ -365,3 +369,40 @@ func _run_inventory_plan() -> void:
 	panel._press.time = Time.get_ticks_msec() - 1000
 	await get_tree().create_timer(0.6).timeout
 	panel._on_release(start)
+
+
+func _run_ranks_plan() -> void:
+	# Rangos (spec de rangos): pedidos con numeral y materiales de bioma, biblioteca con el selector de
+	# rango y, en el Santuario del Vacío, botín con fragmento de vacío y el cartel de un hito
+	await get_tree().create_timer(1.0).timeout
+	var dm := get_node_or_null("/root/DataManager")
+	var gm := get_node_or_null("/root/GameManager")
+	var rm := get_node_or_null("/root/RequestsManager")
+	var inv := get_node_or_null("/root/InventoryManager")
+	var hud := _hud()
+	if dm == null or gm == null or rm == null or inv == null or hud == null:
+		return
+	for id in dm.get_blueprint_ids_for_tier(Ranks.TIER_BASIC):
+		dm.unlock_rank(id, 2)
+	dm.unlock_rank(&"sword_advanced", 2)
+	var mats: Array = ["wood", "iron", "leather", "cloth", "fire", "water", "ice", "poison"]
+	for mat_id in Ranks.BIOME_MATERIALS:
+		mats.append(String(mat_id))
+	for mat in mats:
+		inv.add_item(StringName(mat), 60)
+	rm.refresh_all_requests()
+	await get_tree().create_timer(2.0).timeout
+	hud._on_blueprints_pressed()
+	await get_tree().create_timer(3.0).timeout
+	if hud.blueprint_library and hud.blueprint_library.has_method("close"):
+		hud.blueprint_library.close()
+	var hero: Node = gm.get_hero()
+	if hero:
+		hero.set_invincible(true)
+	hud.get_corridor().enemy.biome_drop_chance = 1.0
+	gm.wall_room = 0
+	gm.room_locked = false
+	gm.current_enemy_level = 44
+	gm.advance_enemy_level()  # sala 45, Santuario del Vacío
+	await get_tree().create_timer(2.0).timeout
+	gm.blueprints_milestone.emit(2, Ranks.TIER_ADVANCED, [])

@@ -60,7 +60,7 @@ El proyecto viene de una **game jam** y está en fase de **reestructuración hac
 - [x] **Medidor de Forjamagia**: ForgeMagiaMeter con 10 segmentos, colores azul→morado→dorado, glow en overclock. Sube con Perfects (+3), baja con Misses (-1). Bonus calidad: +5%/+10%/+15%. Panel semi-transparente superpuesto al MinigamePanel
 - [ ] **Crit Craft chains**: encadenar perfectos para bonus
 - [x] **Simplificar Sew**: convertido a timing puro (tap en cualquier lugar, sin check posicional, cursor custom eliminado)
-- [ ] **Sistema de dificultad automático**: generar TrialConfigs según nivel de blueprint
+- [x] **Sistema de dificultad automático**: sustituido por los rangos (`TrialDifficulty` sube las pruebas con el rango del pedido)
 - [x] **Simplificar final crafteo**: Al completar un item, va directo al inventario con botón "AL INVENTARIO" + animación de partículas. Se vende en la tienda (tab Vender) y se equipa desde el panel de héroe
 - [x] **Mejorar visualmente la tienda**: Textos más grandes (26-42px), tienda ocupa zona central de minijuegos (no fullscreen), nueva pestaña "Vender" para vender items crafteados por oro
 - [x] **Inventario en rejilla** (estilo Lootbound, [spec](specs/2026-09-27-inventario-en-rejilla.md)): el equipo de Tico es una rejilla de 4×4 a 6×6 sin huecos fijos. Las piezas tienen forma y aristas según su calidad, se giran y se colocan donde quepan; dan auras a sus vecinas y ganan en su zona; las legendarias traen una habilidad de combate. Mochila de 6×4, botín sin límite y 2 huecos de pociones que se beben solas. La rejilla crece al vencer a los jefes de las salas 10, 20, 30 y 40 (provisional). Pendiente aparte: las recetas de ampliación (con los rangos), el balance con Balanza y el arte. Ver [Inventario en rejilla](ARCHITECTURE.md#43-inventario-en-rejilla) en la arquitectura
@@ -73,8 +73,9 @@ El proyecto viene de una **game jam** y está en fase de **reestructuración hac
 - [ ] **Infusiones elementales**: drops de enemigos → dificultad extra en recetas → encantamiento al item
 - [ ] **Eventos narrativos en RequestManager**: requests prefijados para partes de "historia"
 - [ ] **Items faltantes**: crear las 3 ItemResources pendientes
-- [ ] **Más blueprints**: expandir las categorías existentes y añadir trinkets
+- [x] **Rangos de plano por ciclo** ([spec](specs/2026-09-27-rangos-de-plano-por-ciclo.md)): sustituyen a «Más blueprints» y a la dificultad automática de la fase 2. Cada ciclo de 5 biomas (50 salas) da los planos de rango N, que piden materiales de bioma y más oro y suben la dificultad de los minijuegos; los jefes del ciclo los desbloquean (cartel «¡Planos avanzados II!»). El rango del equipo es la base de Tico; si cae, farmea delante del muro y el selector de sala le deja volver atrás. Curva calibrada con Balanza (`arnes.sh check`, 35 de 35). Pendiente: la revisión humana y la prueba en el móvil. Ver [Rangos por ciclo](ARCHITECTURE.md#44-rangos-por-ciclo)
 - [ ] **Leaderboard**: ranking por nivel máximo alcanzado
+- [ ] **Decisión de publicación**: gratis primero, sin anuncios al principio. Se mide la retención antes de monetizar
 
 ### Fase 4: Mobile Ready
 > Objetivo: publicar en Google Play.
