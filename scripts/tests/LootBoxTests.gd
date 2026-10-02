@@ -352,6 +352,42 @@ func test_a_full_box_makes_ghosts_and_selling_brings_them_back() -> void:
 	await _free_box(box)
 
 
+func test_the_sell_all_button_stays_reachable_under_a_full_pile() -> void:
+	var saved := _fresh_inventory()
+	var panel := _new_panel()
+	var box: LootBoxView = panel._loot_box
+	var btn: Button = panel.sell_all_btn
+	check(btn.get_index() > box.get_index() and panel.loot_title.get_index() > box.get_index(), "el título y «Vender todo» se dibujan sobre la pila")
+	check(btn.get_index() < panel._next_label.get_index() and btn.get_index() < panel._ghost_layer.get_index(), "pero por debajo de lo que va encima (ficha, huecos, fantasma)")
+	var center := btn.get_global_rect().get_center()
+	for ghost in [false, true]:
+		var item := _piece(&"shield_master")
+		box._make_body(item, Transform2D(0.0, box.to_local(center)), ghost)
+		check(box.piece_at(box.to_local(center)) != null, "hay un cuerpo bajo el botón (fantasma: %s)" % ghost)
+		panel._press = {}
+		_mouse(panel, center, true)
+		check(panel._press.is_empty(), "pulsar el botón no coge la pieza de debajo (fantasma: %s)" % ghost)
+		_mouse(panel, center, false)
+	panel.queue_free()
+	await _restore_inventory(saved)
+
+
+func test_the_next_queued_piece_does_not_inherit_the_blocked_counter() -> void:
+	var box := _new_box()
+	var list := _items([&"helmet_basic", &"boots_basic", &"sword_basic"])
+	box.sync(list)
+	box._blocked = LootBoxView.SPAWN_PATIENCE - LootBoxView.SPAWN_INTERVAL
+	box.sync(list.slice(1))  # se vende la cabeza de la cola
+	check(box._queue[0] == list[1] and box._blocked == 0, "al cambiar la cabeza por sync, la nueva empieza sin espera acumulada (%d)" % box._blocked)
+	box._blocked = LootBoxView.SPAWN_PATIENCE - LootBoxView.SPAWN_INTERVAL
+	box.hold(list[1])  # la coge el dedo
+	check(box._queue[0] == list[2] and box._blocked == 0, "y también al cogerla con el dedo (%d)" % box._blocked)
+	box._blocked = 50
+	box.sync(list.slice(1))  # la cabeza sigue siendo la misma: no se toca
+	check(box._blocked == 50, "si la cabeza no cambia, el contador sigue (%d)" % box._blocked)
+	await _free_box(box)
+
+
 func test_poses_come_back_where_they_were() -> void:
 	var box := _new_box()
 	var list := _items([&"shield_master", &"helmet_master", &"boots_advanced", &"sword_masterwork"])

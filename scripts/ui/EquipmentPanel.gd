@@ -114,6 +114,8 @@ func _build() -> void:
 	_loot_box = LootBoxView.new()
 	_loot_box.position = LOOT_RECT.position
 	add_child(_loot_box)  # después de la rejilla de Tico: la pila que rebosa se dibuja encima de sus últimas filas
+	move_child(loot_title, -1)  # título y «Vender todo» sobre la pila (que rebosa en la franja del techo), bajo lo que se añade después
+	move_child(sell_all_btn, -1)
 	_loot_box.poses_settled.connect(_on_poses_settled)
 	_next_label = Label.new()
 	_next_label.position = NEXT_RECT.position
@@ -446,6 +448,8 @@ func _input(event: InputEvent) -> void:
 func _on_press(pos: Vector2) -> void:
 	if _card.visible or _confirm_box.visible:
 		return  # con la ficha o la confirmación abiertas, el dedo es de sus botones
+	if sell_all_btn.visible and sell_all_btn.get_global_rect().has_point(pos):
+		return  # «Vender todo» manda sobre la pila que tenga debajo: la pulsación llega al botón
 	var potion := _potion_slot_at(pos)
 	if potion >= 0:
 		_press = {"slot": potion, "item": null, "from": &"slot", "pos": pos, "time": Time.get_ticks_msec()}

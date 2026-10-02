@@ -110,6 +110,7 @@ func sync(list: Array) -> void:
 	if _held and not (_held in list):
 		_held = null
 		changed = true
+	var old_head: CraftedItem = _queue[0] if not _queue.is_empty() else null
 	var kept: Array[CraftedItem] = []
 	for item in _queue:
 		if item in list:
@@ -117,6 +118,8 @@ func sync(list: Array) -> void:
 	if kept.size() != _queue.size():
 		changed = true
 	_queue = kept
+	if old_head != null and (kept.is_empty() or kept[0] != old_head):
+		_blocked = 0  # la cabeza que esperaba sitio se fue: la siguiente empieza su paciencia de cero
 	for item: CraftedItem in list:
 		if item == _held or _bodies.has(item) or item in _queue:
 			continue
@@ -133,6 +136,8 @@ func sync(list: Array) -> void:
 func hold(item: CraftedItem) -> void:
 	if _bodies.has(item):
 		_remove_body(item)
+	if not _queue.is_empty() and _queue[0] == item:
+		_blocked = 0
 	_queue.erase(item)
 	_held = item
 	_dirty = true
