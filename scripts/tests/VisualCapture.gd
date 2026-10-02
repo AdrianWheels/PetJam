@@ -20,7 +20,7 @@ extends Node
 ##   unlock → hito de rango en el jefe de la sala 20: cartel «¡Planos avanzados!», 4 pergaminos escalonados y, detrás, «¡La rejilla crece!»
 ##   shop   → abre la tienda y enseña sus pestañas una a una (materiales, pociones y venta)
 ##   wall   → muro y farmeo: cae en la sala 14, farmea la 13 con «Muro: sala 14» y el selector lo lleva a la 4
-##   inventory → rejilla de 6×6 con piezas (una legendaria, la maestra de rango II, y una con aristas), mochila y botín; arrastra
+##   inventory → rejilla de 6×6 con piezas (una legendaria, la maestra de rango II, y una con aristas), mochila, botín y 2 pociones de Vida; arrastra
 ##               una pieza del botín hasta Tico con intercambio y abre la ficha de la legendaria
 ##   ranks  → pedidos con numeral y materiales de bioma, biblioteca con el selector de rango y, en el Santuario del Vacío
 ##            (sala 45), botín con fragmento de vacío y el cartel «¡Planos avanzados II!»
@@ -322,6 +322,7 @@ func _run_inventory_plan() -> void:
 	im.clear()
 	for id in GridExpansions.ids():
 		im.apply_grid_expansion(id)
+	im.consumables[0] = {"id": &"potion_heal", "count": 2}  # un hueco con dibujo y el otro libre
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
 	# Pieza nueva con sus aristas. En una rejilla va a `cell` si cabe allí y, si no, al primer sitio libre

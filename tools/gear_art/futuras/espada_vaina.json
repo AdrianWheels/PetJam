@@ -1,0 +1,21 @@
+{
+ "source": "nuevas/espada_vaina.png",
+ "cells": [
+  [
+   0,
+   0
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   0,
+   2
+  ]
+ ],
+ "white_bg": true,
+ "strip_border": false,
+ "fit": "contain",
+ "rotate": 90
+}

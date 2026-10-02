@@ -49,6 +49,7 @@ var _stats_label: RichTextLabel
 var _ficha_label: RichTextLabel
 var _next_label: Label
 var _potion_slots: Array[Label] = []
+var _potion_icons: Array[TextureRect] = []  ## el dibujo de la poción, a la izquierda de su hueco
 var _ghost_layer: Control
 var _puppet: Node2D
 var _selected: CraftedItem = null
@@ -129,6 +130,12 @@ func _build() -> void:
 		slot.add_theme_stylebox_override("normal", style)
 		add_child(slot)
 		_potion_slots.append(slot)
+		var icon := TextureRect.new()
+		icon.position = Vector2(12, 8)
+		icon.size = Vector2(64, 104)
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slot.add_child(icon)
+		_potion_icons.append(icon)
 	_ghost_layer = Control.new()
 	_ghost_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_ghost_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -380,6 +387,10 @@ func _refresh_potions() -> void:
 	for i in _potion_slots.size():
 		var s: Dictionary = _im.consumables[i]
 		_potion_slots[i].text = "%s ×%d" % [tr(Potions.CATALOG[s.id].short), int(s.count)] if int(s.count) > 0 else tr("Hueco libre")
+		var icon_path: String = Potions.CATALOG[s.id].get("icon", "") if int(s.count) > 0 else ""
+		_potion_icons[i].texture = load(icon_path) if icon_path != "" else null
+		# con dibujo, el texto se aparta a su derecha
+		(_potion_slots[i].get_theme_stylebox("normal") as StyleBoxFlat).content_margin_left = 70.0 if icon_path != "" else -1.0
 
 # ═══════════════════════════════════════════════════════════════════
 #  EL DEDO

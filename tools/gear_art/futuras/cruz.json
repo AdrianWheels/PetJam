@@ -1,0 +1,29 @@
+{
+ "source": "nuevas/cruz.png",
+ "cells": [
+  [
+   1,
+   0
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   1,
+   2
+  ]
+ ],
+ "white_bg": true,
+ "strip_border": false,
+ "fit": "contain",
+ "mask": true
+}

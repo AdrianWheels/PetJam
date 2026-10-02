@@ -8,6 +8,7 @@ Uso:
     python tools/gear_art/build_gear_art.py                 # todas las piezas de pieces/
     python tools/gear_art/build_gear_art.py sword_masterwork
     python tools/gear_art/build_gear_art.py --preview=<carpeta> sword_masterwork   # y su hoja de revisión
+    python tools/gear_art/build_gear_art.py --pieces=tools/gear_art/futuras --preview=<carpeta>   # piezas que aún no están en el juego
 
 Las rutas de origen se buscan en SOURCE_DIRS, en orden: los originales viven en el repositorio de assets.
 """
@@ -215,9 +216,15 @@ def preview(item_id: str, spec: dict, path: Path) -> None:
 
 
 def main(args: list[str]) -> None:
+    global PIECES_DIR, OUT_DIR
     prev_dir = None
-    if args and args[0].startswith("--preview="):
-        prev_dir = Path(args.pop(0).split("=", 1)[1])
+    while args and args[0].startswith("--"):
+        key, _, value = args.pop(0).partition("=")
+        if key == "--preview":
+            prev_dir = Path(value)
+        elif key == "--pieces":  # otra carpeta de piezas (p. ej. futuras/) y su salida al lado
+            PIECES_DIR = Path(value).resolve()
+            OUT_DIR = PIECES_DIR / "out"
     for item_id in args or all_pieces():
         spec = load_piece(item_id)
         print(build(item_id, spec))

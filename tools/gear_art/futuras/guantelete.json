@@ -1,0 +1,24 @@
+{
+ "source": "nuevas/guantelete.png",
+ "cells": [
+  [
+   0,
+   0
+  ],
+  [
+   1,
+   0
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   1,
+   1
+  ]
+ ],
+ "white_bg": true,
+ "strip_border": false,
+ "fit": "contain"
+}

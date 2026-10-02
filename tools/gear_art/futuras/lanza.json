@@ -1,0 +1,20 @@
+{
+ "source": "nuevas/lanza.png",
+ "cells": [
+  [
+   0,
+   0
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   0,
+   2
+  ]
+ ],
+ "white_bg": true,
+ "strip_border": false,
+ "fit": "contain"
+}
