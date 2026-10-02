@@ -50,6 +50,7 @@ const WALL_RETRY_WINS := 3  # delante del muro, Tico lo reintenta cada 3 victori
 var wall_room: int = 0  # sala donde Tico perdió por última vez, hasta que la vence (0 = sin muro)
 var room_locked: bool = false  # candado: Tico repite su sala y no reintenta el muro
 var _wins_since_retry: int = 0
+var _growing_grid := false  # la rejilla de Tico crece dentro de register_enemy_defeat: ampliar no manda a Tico al muro
 
 var inventory := {}
 var blueprints_unlocked := {}
@@ -186,7 +187,8 @@ func register_hero(hero_node: Node) -> void:
 func _on_equipment_changed(_equipment_stats: Dictionary) -> void:
 	"""Cuando cambia el equipamiento, recalcular stats del héroe y, delante de un muro, probarlo ya"""
 	_refresh_hero_stats()
-	retry_wall_now()
+	if not _growing_grid:  # ampliar la rejilla en plena victoria sobre un jefe recalcula a Tico, pero no lo manda a otra sala
+		retry_wall_now()
 
 func _refresh_hero_stats() -> void:
 	if is_instance_valid(_hero) and _hero.has_method("reset_stats"):
@@ -332,12 +334,18 @@ func register_enemy_defeat(level: int) -> void:
 
 	# Rejilla de Tico (spec del inventario en rejilla, apartado 7). Provisional hasta que lleguen las
 	# recetas con los rangos: la primera vez que cae el jefe de la sala 10, 20, 30 o 40 del ciclo I, la
-	# rejilla crece sola. El récord aún no ha pasado de esta sala (room_cleared va después).
+	# rejilla crece sola. El récord aún no ha pasado de esta sala (room_cleared va después). Ampliar avisa de
+	# equipment_changed, que delante de un muro mandaría a Tico a otra sala en mitad de la victoria (el jefe
+	# aún no ha acabado de caer y room_cleared() leería la sala del muro): mientras tanto, _growing_grid.
 	var recipe := GridExpansions.recipe_for_boss_room(level)
 	if recipe != &"" and best_enemy_level <= level:
 		var inv = get_node_or_null("/root/InventoryManager")
-		if inv and inv.has_method("apply_grid_expansion") and inv.apply_grid_expansion(recipe):
-			emit_signal("grid_expanded", recipe)
+		if inv and inv.has_method("apply_grid_expansion"):
+			_growing_grid = true
+			var grew = inv.apply_grid_expansion(recipe)
+			_growing_grid = false
+			if grew:
+				emit_signal("grid_expanded", recipe)
 
 
 func register_boss_defeat():

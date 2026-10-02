@@ -2023,8 +2023,8 @@ func test_first_boss_kill_grows_the_grid() -> void:
 	var gm := get_node("/root/GameManager")
 	var state := {"dungeon": gm.dungeon_state, "best": gm.best_enemy_level, "defeated": gm.enemies_defeated.duplicate(),
 		"wall": gm.wall_room, "locked": gm.room_locked, "level": gm.current_enemy_level}
-	# Sin muro, sea cual sea la partida: la ampliación avisa de equipment_changed y retry_wall_now no puede
-	# mandar a Tico a ninguna sala durante la prueba
+	# Sin muro, sea cual sea la partida: esta prueba mira la rejilla; el muro tiene la suya
+	# (test_the_expansion_never_sends_tico_to_the_wall)
 	gm.wall_room = 0
 	# Niveles ya vencidos: así register_enemy_defeat no desbloquea planos al azar en la prueba
 	gm.enemies_defeated[10] = true
@@ -2032,6 +2032,11 @@ func test_first_boss_kill_grows_the_grid() -> void:
 	var seen := []
 	var on_grow := func(id): seen.append(id)
 	gm.grid_expanded.connect(on_grow)
+	gm.best_enemy_level = 10  # el récord deja pasar la ampliación: solo la parada de la partida puede impedirla
+	for stopped in [gm.DungeonState.HERO_DEAD, gm.DungeonState.IDLE]:
+		gm.dungeon_state = stopped
+		gm.register_enemy_defeat(10)
+		check(seen.is_empty() and im.hero_grid_size() == Vector2i(4, 4), "con la partida parada (estado %d) no cuenta la victoria: no amplía (%s)" % [stopped, seen])
 	gm.dungeon_state = gm.DungeonState.RUNNING
 	gm.best_enemy_level = 11
 	gm.register_enemy_defeat(10)
@@ -2076,6 +2081,90 @@ func test_each_boss_of_the_first_cycle_grows_the_grid_one_step() -> void:
 	gm.wall_room = state.wall
 	gm.room_locked = state.locked
 	gm.current_enemy_level = state.level
+	await _restore_inventory(saved)
+
+
+## Tico de pega: cuenta las veces que GameManager le manda recalcular sus estadísticas.
+class StatsCounter extends Node:
+	var resets := 0
+
+	func reset_stats() -> void:
+		resets += 1
+
+
+## Ampliar la rejilla no es cambiar de equipo: con un muro más abajo del jefe y sin candado, el aviso de equipo
+## mandaría a Tico al muro en mitad de la victoria (CombatController aún sigue con el jefe y room_cleared() leería
+## la sala del muro). Tico sí se recalcula (las zonas de borde se mueven), y un cambio de equipo normal justo
+## después sí vuelve a probar el muro: la parada no se queda puesta.
+func test_the_expansion_never_sends_tico_to_the_wall() -> void:
+	var saved := _fresh_inventory()
+	var im := _im()
+	var gm := get_node("/root/GameManager")
+	var state := {"dungeon": gm.dungeon_state, "best": gm.best_enemy_level, "defeated": gm.enemies_defeated.duplicate(),
+		"wall": gm.wall_room, "locked": gm.room_locked, "level": gm.current_enemy_level, "wins": gm._wins_since_retry,
+		"hero": gm.get("_hero")}
+	var tico := StatsCounter.new()
+	gm.set("_hero", tico)
+	gm.enemies_defeated[20] = true  # sin planos al azar
+	gm.wall_room = 19  # el muro, más abajo que el jefe (Tico cayó en la 19 y saltó con el selector a la 20)
+	gm.room_locked = false
+	gm.current_enemy_level = 20
+	gm.best_enemy_level = 20
+	gm.dungeon_state = gm.DungeonState.RUNNING
+	var travels := []
+	var on_travel := func(room): travels.append(room)
+	gm.room_travel.connect(on_travel)
+	gm.register_enemy_defeat(20)
+	check(im.hero_grid_size() == Vector2i(5, 4), "el jefe de la sala 20 amplía la rejilla (%s)" % [im.hero_grid_size()])
+	check(gm.current_enemy_level == 20 and gm.wall_room == 19 and travels.is_empty(), "y Tico sigue en la 20, sin viaje, con el muro en la 19 (sala %d, muro %d, viajes %s)" % [gm.current_enemy_level, gm.wall_room, travels])
+	check(tico.resets == 1, "pero sus estadísticas se recalculan (%d veces)" % tico.resets)
+	var sword := _piece(&"sword_basic", 0.5)
+	im.add_crafted_item(sword)
+	im.move_item(sword, &"hero", Vector2i(0, 0), 0)  # un cambio de equipo de verdad
+	check(travels == [19] and gm.current_enemy_level == 19, "un cambio de equipo normal justo después sí prueba el muro (viajes %s, sala %d)" % [travels, gm.current_enemy_level])
+	gm.room_travel.disconnect(on_travel)
+	gm.dungeon_state = state.dungeon
+	gm.best_enemy_level = state.best
+	gm.enemies_defeated = state.defeated
+	gm.wall_room = state.wall
+	gm.room_locked = state.locked
+	gm.current_enemy_level = state.level
+	gm._wins_since_retry = state.wins
+	gm.set("_hero", state.hero if is_instance_valid(state.hero) else null)
+	tico.free()
+	await _restore_inventory(saved)
+
+
+## Lo mismo por el camino de verdad: el jefe de la sala 10 cae de un golpe en el pasillo, con un muro en la 9 y sin
+## candado. La victoria sigue su curso: el jefe cuenta como derrotado, el récord sube, el muro cae al vencer una
+## sala más honda y Tico pasa a la 11. (Si la ampliación lo mandara al muro, el pasillo recolocaría al mismo enemigo
+## en la 9: no habría hito del jefe, ni récord, y room_cleared() leería la 9.)
+func test_a_boss_kill_with_a_lower_wall_keeps_the_room_accounting() -> void:
+	var saved := _fresh_inventory()
+	var a := await _arena([])
+	var gm := get_node("/root/GameManager")
+	var extra := {"defeated": gm.enemies_defeated.duplicate(), "boss": gm.boss_defeated_flag}
+	gm.enemies_defeated[10] = true  # sin planos al azar
+	gm.boss_defeated_flag = false
+	gm.wall_room = 9
+	gm.current_enemy_level = 10
+	gm.best_enemy_level = 10
+	gm.dungeon_state = gm.DungeonState.RUNNING
+	a.corridor.reset_combat(false)  # el pasillo pone al jefe de la sala 10, como al viajar
+	var enemy: Node2D = a.enemy
+	check(enemy.level == 10 and enemy.is_boss, "el pasillo tiene al jefe de la sala 10 (nivel %d)" % enemy.level)
+	var travels := []
+	var on_travel := func(room): travels.append(room)
+	gm.room_travel.connect(on_travel)
+	enemy.hp = 1
+	a.cc._execute_hero_attack()
+	gm.room_travel.disconnect(on_travel)
+	check(travels.is_empty(), "la victoria no manda a Tico a ninguna sala (viajes %s)" % [travels])
+	check(_im().hero_grid_size() == Vector2i(5, 4) and gm.boss_defeated_flag, "el jefe cuenta como derrotado y la rejilla crece (%s)" % [_im().hero_grid_size()])
+	check(gm.current_enemy_level == 11 and gm.best_enemy_level == 11 and gm.wall_room == 0, "el récord sube, el muro cae y Tico pasa a la 11 (sala %d, récord %d, muro %d)" % [gm.current_enemy_level, gm.best_enemy_level, gm.wall_room])
+	gm.enemies_defeated = extra.defeated
+	gm.boss_defeated_flag = extra.boss
+	await _close_arena(a)  # devuelve el resto de GameManager (sala, récord, muro, candado, muertes y estado)
 	await _restore_inventory(saved)
 
 
