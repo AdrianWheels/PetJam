@@ -618,6 +618,8 @@ func test_winning_announces_the_next_room_with_its_enemy() -> void:
 	corridor._begin_fight()
 	hero.hp = maxi(1, hero.max_hp / 2)
 	enemy.take_damage(enemy.hp)
+	check(corridor._smoke != null and not corridor._next_duel_shown, "tras vencer, el rival siguiente espera al humo")
+	corridor.skip_transition()  # sin esperar la derrota, el humo y la presentación
 	check(enemy.alive and enemy.level == 4, "tras vencer en la 3 espera el enemigo de la 4 (%d)" % enemy.level)
 	check(rooms.has(4), "y el cartel ya dice sala 4 (%s)" % [rooms])
 	check(hero.hp == hero.max_hp, "con Tico curado para el duelo siguiente (%d/%d)" % [hero.hp, hero.max_hp])
@@ -637,6 +639,7 @@ func test_farming_puts_another_enemy_of_the_same_room_ahead() -> void:
 	var corridor := _new_corridor()
 	var enemy: Node2D = corridor.get_node("Enemy")
 	enemy.take_damage(enemy.hp)
+	corridor.skip_transition()  # sin esperar el humo entre duelos
 	check(gm.current_enemy_level == 11, "tras vencer delante del muro sigue en la 11 (%d)" % gm.current_enemy_level)
 	check(enemy.alive and enemy.level == 11, "el pasillo pone otro enemigo de la 11 por delante (%d)" % enemy.level)
 	check(corridor.level == 11, "y el duelo sigue en la sala 11 (%d)" % corridor.level)  # duelo fijo: ya no hay puertas

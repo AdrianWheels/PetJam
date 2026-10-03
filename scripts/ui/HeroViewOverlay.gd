@@ -250,7 +250,9 @@ func _process(delta: float) -> void:
 	if _vitals:
 		_vitals.show_vs = _t >= _banner_until
 	# Avisos en cola: de uno en uno y nunca encima de un cartel
-	if not _toast_queue.is_empty() and _t >= _banner_until and not (_toast_tween and _toast_tween.is_valid() and _toast_tween.is_running()):
+	# (tampoco encima de la presentación «VS» de un duelo)
+	var presenting: bool = _vitals != null and _vitals.is_presenting()
+	if not _toast_queue.is_empty() and _t >= _banner_until and not presenting and not (_toast_tween and _toast_tween.is_valid() and _toast_tween.is_running()):
 		var next: Array = _toast_queue.pop_front()
 		_play_toast(next[0], next[1])
 	# Selector: mantener pulsada una flecha salta de bioma, una sola vez por pulsación

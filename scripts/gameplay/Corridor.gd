@@ -2,6 +2,8 @@ extends Node2D
 
 ## Duelos endless en posiciones fijas. Cada sala cambia el rival y el escenario por bioma.
 ## GameManager conserva el avance, muro y reaparición; el estado RUN es la pausa entre duelos.
+## Entre duelos: se ve la derrota y el botín, un humo tapa la franja hasta el negro, se pone el rival siguiente y el
+## humo baja con la presentación «VS» (duel_intro). Cada duelo nuevo (arranque, reaparición, viaje) se descubre igual.
 ## El hit-stop afecta solo al combate; los minijuegos continúan funcionando.
 
 signal room_entered(room: int, is_boss: bool)
@@ -12,6 +14,7 @@ signal loot_dropped(kind: StringName, world_pos: Vector2, payload: Dictionary)
 signal hero_fell(room: int)
 signal hero_returned
 signal room_traveled(room: int)  # viaje del selector o reintento del muro (el HUD funde desde negro)
+signal duel_intro(enemy_name: String, enemy_level: int, length: float)  # presentación «VS» del duelo que empieza
 
 @onready var hero: Node = $Hero
 @onready var enemy: Node = $Enemy
@@ -44,8 +47,11 @@ const RESPAWN_DELAY := 1.5
 const BONUS_LOOT_AHEAD := 12.0
 const BONUS_LOOT_SPEED := Vector2(22.0, 30.0)
 const BONUS_LOOT_SOUND_LAG := 0.1
-const POST_KILL_PAUSE := 0.45
-const FIRST_STEP_PAUSE := 0.35
+const SMOKE_SHADER := preload("res://shaders/duel_smoke.gdshader")
+const DEATH_LINGER := 0.55  ## la derrota y el botín se ven antes de que suba el humo
+const SMOKE_IN := 0.65
+const SMOKE_OUT := 0.7
+const VS_HOLD := 0.6  ## la presentación sigue un poco con la escena ya descubierta
 
 enum State { RUN, FIGHT, DEAD, COMPLETE }
 
@@ -64,6 +70,10 @@ var _next_gate_x := INF
 var _next_gate_room := 1
 var _next_gate: Node = null
 var _material_cache: Dictionary = {}
+var _smoke: ColorRect
+var _transition: Tween
+var _next_duel_shown := true  ## false entre la muerte del rival y el negro, cuando aún no está el siguiente
+var _intro_ends := 0.0  ## hora (Time.get_ticks_msec) en que acaba la presentación del duelo en curso
 
 
 func _ready():
@@ -100,6 +110,7 @@ func _ready():
 			_game_manager.room_travel.connect(_on_room_travel)
 
 	camera.position = Vector2(0, VIEW_H * 0.5)
+	_build_smoke()
 	reset_combat(true)
 
 
@@ -167,8 +178,6 @@ func _begin_fight() -> void:
 		_next_gate_x = INF
 		_enter_room(_next_gate_room)
 	enemy.wake()
-	if enemy.is_boss:
-		_boss_intro()
 	enemy.alert()
 	if combat_controller and combat_controller.has_method("start_combat"):
 		combat_controller.start_combat()
@@ -260,7 +269,7 @@ func reset_combat(full_reset: bool):
 	elif full_reset:
 		level = 1
 	state = State.RUN
-	_pause = FIRST_STEP_PAUSE
+	_kill_transition()
 	for g in _gates:
 		g.visible = false
 	_next_gate = null
@@ -274,6 +283,8 @@ func reset_combat(full_reset: bool):
 		fx.clear()
 	spawn_enemy(level, start.x + SPAWN_AHEAD)
 	room_entered.emit(level, Biomes.is_boss_room(level))
+	# Arranque, reaparición o viaje: el duelo se descubre desde el negro, como tras una victoria
+	_reveal_duel(true)
 	ground_offset = 0.0
 	dist_ref = enemy.position.x - hero.position.x if hero and enemy else 0.0
 
@@ -367,12 +378,105 @@ func _on_enemy_level_changed(new_level: int):
 		return
 	level = new_level
 	if state == State.RUN or state == State.FIGHT:
-		spawn_enemy(level, hero.position.x + SPAWN_AHEAD)
+		if combat_controller and combat_controller.has_method("stop_combat"):
+			combat_controller.stop_combat()
 		state = State.RUN
-		_pause = POST_KILL_PAUSE
-		# El rival nuevo ya está en su sitio y su nombre en la franja: la sala del cartel y la vida llena de Tico van
-		# con él desde ahora, no al acabar la pausa
-		_enter_room(level)
+		_play_duel_transition()
+
+
+# ─── Transición entre duelos ───────────────────────────────────────────
+
+## Capa del humo, encima del escenario y su viñeta (capa 5). El HUD de la franja va fuera del viewport y sigue visible.
+func _build_smoke() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 6
+	add_child(layer)
+	_smoke = ColorRect.new()
+	_smoke.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_smoke.size = get_viewport_rect().size
+	var mat := ShaderMaterial.new()
+	mat.shader = SMOKE_SHADER
+	mat.set_shader_parameter("aspect", _smoke.size.x / maxf(1.0, _smoke.size.y))
+	_smoke.material = mat
+	_smoke.visible = false
+	layer.add_child(_smoke)
+
+
+## Cuánto tapa el humo ahora (0 nada, 1 negro).
+func smoke_amount() -> float:
+	return float((_smoke.material as ShaderMaterial).get_shader_parameter("progress")) if _smoke and _smoke.visible else 0.0
+
+
+func _set_smoke(amount: float) -> void:
+	if _smoke == null:
+		return
+	_smoke.visible = amount > 0.001
+	(_smoke.material as ShaderMaterial).set_shader_parameter("progress", amount)
+
+
+## Tras una victoria: la derrota y el botín un momento, el humo sube hasta el negro, se pone el rival siguiente (con la sala
+## del cartel y la vida llena de Tico) y el humo baja con la presentación. El combate empieza al terminar.
+func _play_duel_transition() -> void:
+	_kill_transition()
+	_next_duel_shown = false
+	_pause = INF
+	_transition = create_tween()
+	_transition.tween_interval(DEATH_LINGER)
+	_transition.tween_method(_set_smoke, 0.0, 1.0, SMOKE_IN)  # lineal: el shader ya reparte el humo en el tiempo
+	_transition.tween_callback(_show_next_duel)
+
+
+func _show_next_duel() -> void:
+	_next_duel_shown = true
+	spawn_enemy(level, hero.position.x + SPAWN_AHEAD)
+	if fx:
+		fx.clear()  # el botín de la victoria anterior no sigue rebotando en el duelo nuevo
+	_enter_room(level)
+	_reveal_duel(false)
+
+
+## El humo baja desde el negro y se presenta el duelo: un jefe con su cartel «¡JEFE!» (y las pociones que tocan), el resto
+## con el «VS». El rival aparece mientras se descubre la escena; el combate empieza al terminar.
+func _reveal_duel(from_reset: bool) -> void:
+	if from_reset:
+		_kill_transition()
+	_set_smoke(1.0)
+	_pause = INF
+	_transition = create_tween()
+	_transition.tween_method(_set_smoke, 1.0, 0.0, SMOKE_OUT)
+	_transition.tween_interval(VS_HOLD)
+	_transition.tween_callback(func(): _pause = 0.0)
+	enemy.wake()
+	if enemy.is_boss:
+		_boss_intro()
+	else:
+		_intro_ends = Time.get_ticks_msec() + (SMOKE_OUT + VS_HOLD) * 1000.0
+		duel_intro.emit(enemy.display_name, enemy.level, SMOKE_OUT + VS_HOLD)
+
+
+## Segundos que le quedan a la presentación en curso (0 si no hay): la franja de nombres se conecta después de que el
+## pasillo presente el primer duelo de la partida y la retoma con esto.
+func intro_time_left() -> float:
+	return maxf(0.0, (_intro_ends - Time.get_ticks_msec()) / 1000.0) if _transition and _transition.is_valid() else 0.0
+
+
+func _kill_transition() -> void:
+	if _transition and _transition.is_valid():
+		_transition.kill()
+	_transition = null
+	_next_duel_shown = true
+	_set_smoke(0.0)
+
+
+## Termina ya la transición (las pruebas, que no esperan al humo): queda puesto el duelo siguiente y empieza en el
+## próximo fotograma.
+func skip_transition() -> void:
+	var pending := not _next_duel_shown
+	_kill_transition()
+	if pending:
+		_show_next_duel()
+		_kill_transition()
+	_pause = 0.0
 
 
 # ─── Botín y celebración al matar ──────────────────────────────────────

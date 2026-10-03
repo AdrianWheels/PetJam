@@ -1712,6 +1712,7 @@ func test_a_kill_never_reaches_the_next_enemy_of_the_same_room() -> void:
 	enemy.hp = 1
 	a.cc._execute_hero_attack()
 	check(deaths[0] == 1, "el primer golpe mata, una vez (%d)" % deaths[0])
+	a.corridor.skip_transition()  # el siguiente aparece tras el humo: sin esperarlo
 	check(enemy.alive and enemy.level == 5, "el pasillo ha puesto otro enemigo de la misma sala (nivel %d)" % enemy.level)
 	check(enemy.hp == enemy.max_hp, "el segundo golpe no le llega (%d/%d)" % [enemy.hp, enemy.max_hp])
 	check(not enemy.is_burning(), "y la quemadura del golpe que mató al anterior tampoco")
@@ -1737,6 +1738,7 @@ func test_thorns_kill_leaves_the_rest_of_the_frame_off_the_next_enemy() -> void:
 	enemy.died.connect(func(_drops): deaths[0] += 1)
 	a.cc._process(0.016)
 	check(deaths[0] == 1, "las Espinas matan al atacante, una vez (%d)" % deaths[0])
+	a.corridor.skip_transition()  # el siguiente aparece tras el humo: sin esperarlo
 	check(enemy.alive and enemy.level == 6 and enemy.hp == enemy.max_hp, "el nodo es ya el enemigo de la sala 6, entero (nivel %d, %d/%d)" % [enemy.level, enemy.hp, enemy.max_hp])
 	check(enemy.pulse_timer == enemy.PULSE_INTERVAL, "y el resto del fotograma no toca su pulso mágico (%.4f)" % enemy.pulse_timer)
 	await _close_arena(a)
