@@ -28,11 +28,17 @@ var _inventory: Node
 func _ready() -> void:
 	theme = UIClarity.readable_theme()
 	UIClarity.compact_panel(self)
+	# La tarjeta tiene que caber en la franja de pedidos (294 px de alto a 1080x1920): si no, el contenedor crece
+	# hacia arriba y hacia abajo, y el título «PEDIDOS» acaba encima de la herrería y las tarjetas bajo los botones
+	var card := get_theme_stylebox("panel") as StyleBoxFlat
+	if card:
+		card.content_margin_top = 6.0
+		card.content_margin_bottom = 6.0
 	for label in [name_label, reward_label]:
 		label.add_theme_font_override("font", ThemeDB.fallback_font)
-		label.add_theme_font_size_override("font_size", 30)
+		label.add_theme_font_size_override("font_size", 28)
 	client_label.add_theme_font_override("font", ThemeDB.fallback_font)
-	client_label.add_theme_font_size_override("font_size", 24)
+	client_label.add_theme_font_size_override("font_size", 22)
 	gui_input.connect(_on_gui_input)
 	pivot_offset = size * 0.5
 	resized.connect(func(): pivot_offset = size * 0.5)

@@ -911,14 +911,14 @@ func test_second_finger_rotates_while_dragging() -> void:
 	touch.pressed = true
 	touch.position = Vector2(900, 1500)
 	panel._input(touch)
-	check(panel._drag_rot == 0, "el segundo dedo queda pendiente")
+	check(panel._drag_rot == 1, "un segundo dedo gira la pieza que se arrastra (%d)" % panel._drag_rot)
 	panel._secondary_at(start)
-	check(panel._drag_rot == 1, "secundario gira durante el arrastre")
+	check(panel._drag_rot == 2, "secundario gira durante el arrastre (%d)" % panel._drag_rot)
 	var key := InputEventKey.new()
 	key.keycode = KEY_R
 	key.pressed = true
 	panel._input(key)
-	check(panel._drag_rot == 2, "en el ordenador, la tecla R también (%d)" % panel._drag_rot)
+	check(panel._drag_rot == 3, "en el ordenador, la tecla R también (%d)" % panel._drag_rot)
 	_move(panel, Vector2(540, 60))  # arriba del todo, fuera de las rejillas y del botín
 	_mouse(panel, Vector2(540, 60), false)  # soltada ahí vuelve a su sitio
 	check(sword.place == &"hero" and sword.cell == Vector2i(0, 0) and sword.rot == 0, "soltada fuera, vuelve a su sitio sin girar")

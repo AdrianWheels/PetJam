@@ -460,15 +460,13 @@ func _create_sell_card(item: CraftedItem) -> PanelContainer:
 	# Stats resumidos, con los mismos nombres que la pantalla de resultado (Daño, Vida…)
 	var stats_text := ""
 	for stat_key in item.calculated_stats:
-		var val = item.calculated_stats[stat_key]
-		if typeof(val) == TYPE_FLOAT and val < 0.01:
-			continue
-		if typeof(val) == TYPE_INT and val == 0:
+		var shown := CraftResultScreen.format_stat_value(String(stat_key), item.calculated_stats[stat_key])
+		if shown == "":
 			continue
 		if stats_text != "":
 			stats_text += " · "
 		var stat_name: String = tr(CraftResultScreen.STAT_NAMES.get(stat_key, String(stat_key).capitalize()))
-		stats_text += "%s: +%s" % [stat_name, str(snapped(val, 0.1) if typeof(val) == TYPE_FLOAT else val)]
+		stats_text += "%s: %s" % [stat_name, shown]
 	
 	if stats_text != "":
 		var stats_label := Label.new()

@@ -7,7 +7,7 @@ var _cm: Node  # CraftingManager
 var _pass_count := 0
 var _fail_count := 0
 var _test_log: Array[String] = []
-var _output_path := "res://test_results.txt"
+var _output_path := "user://test_results.txt"  # como dice la cabecera: en res:// ensuciaba la raíz del repositorio
 
 func _ready() -> void:
 	_log("\n" + "=".repeat(60))

@@ -60,7 +60,7 @@ var _minigame_debug_shown := false
 var _shown_request_keys: Array = []  # pedidos ya visibles (para no re-animar sus tarjetas)
 
 func _ready() -> void:
-	UIClarity.readable_labels($BottomLeftPanel/VBoxContainer/QueueLabel, 30)
+	UIClarity.readable_labels($BottomLeftPanel/VBoxContainer/QueueLabel, 26)
 	for button in [blueprints_btn, delivery_btn, shop_btn]:
 		UIClarity.light_button(button, 140)
 		button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER

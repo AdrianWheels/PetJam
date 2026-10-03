@@ -131,6 +131,7 @@ static func draw_piece_at(canvas: CanvasItem, item: CraftedItem, top_left: Vecto
 		for c in fp.aristas:
 			var r := Rect2(top_left + Vector2(c) * cell_px, Vector2(cell_px, cell_px)).grow(-cell_px * 0.18)
 			canvas.draw_rect(r, Color(COLOR_ARISTA, alpha * 0.85))
+			canvas.draw_rect(r, Color(edge, alpha), false, 3.0)  # el borde de su calidad dice de qué pieza es
 		var box := Rect2(top_left + Vector2(lo) * cell_px, Vector2(hi - lo + Vector2i.ONE) * cell_px)
 		canvas.draw_texture_rect(tex, box, false, Color(1, 1, 1, alpha))
 		return
@@ -141,6 +142,7 @@ static func draw_piece_at(canvas: CanvasItem, item: CraftedItem, top_left: Vecto
 	for c in fp.aristas:
 		var r := Rect2(top_left + Vector2(c) * cell_px, Vector2(cell_px, cell_px)).grow(-cell_px * 0.18)
 		canvas.draw_rect(r, Color(COLOR_ARISTA, alpha * 0.85))
+		canvas.draw_rect(r, Color(edge, alpha), false, 3.0)
 
 
 ## Zona de un tipo de pieza: una franja tenue por dentro de su borde de la rejilla (que sigue al borde al

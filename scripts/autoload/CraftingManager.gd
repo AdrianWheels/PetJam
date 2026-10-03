@@ -465,6 +465,11 @@ func _finalize_task(task: CraftingTask) -> Dictionary:
 	var final_gold := 0
 	if not task.own_order:
 		final_gold = int(task.gold_reward * gold_multiplier) if task.gold_reward > 0 else int(50 * gold_multiplier)
+	# El cliente paga al terminar el pedido (spec de rangos, apartado 5); el encargo propio no da oro
+	if final_gold > 0:
+		var gold_inv = get_node_or_null("/root/InventoryManager")
+		if gold_inv and gold_inv.has_method("add_item"):
+			gold_inv.add_item(&"gold", final_gold)
 
 	var result := {
 		"status": STATUS_COMPLETED,

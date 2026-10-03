@@ -333,12 +333,14 @@ func test_balanza_wall_has_a_ceiling() -> void:
 
 # ─── Tarea 4: materiales de bioma ──────────────────────────────────────
 
+## Desde el arte de pegatinas (2026-10-02) los iconos de material son ilustraciones cuadradas, ya no pixel art de 12x12.
 func test_biome_materials_exist_with_pixel_icons() -> void:
 	for mat_id in Ranks.BIOME_MATERIALS:
 		var path := "res://data/materials/%s.tres" % mat_id
 		check(ResourceLoader.exists(path), "existe " + path)
 		var res = load(path)
-		check(res != null and res.icon != null and res.icon.get_width() == 12, "%s tiene icono pixel de 12x12" % mat_id)
+		var icon: Texture2D = res.icon if res else null
+		check(icon != null and icon.get_width() == icon.get_height() and icon.get_width() >= 64, "%s tiene icono ilustrado cuadrado (%s)" % [mat_id, icon.get_size() if icon else "sin icono"])
 
 
 func test_enemy_loot_grows_with_the_cycle_and_drops_its_biome_material() -> void:
@@ -688,8 +690,12 @@ func test_crafting_a_rank_makes_an_item_of_that_rank() -> void:
 			task = t
 	check(task != null, "la tarea guarda el rango")
 	if task:
+		var gold_before: int = inv.get_quantity(&"gold")
 		var result: Dictionary = cm._finalize_task(task)
 		var item: CraftedItem = result.crafted_item
+		var paid: int = inv.get_quantity(&"gold") - gold_before
+		check(paid == int(result.gold_reward), "el cliente paga el oro del pedido al terminarlo (%d de %d)" % [paid, int(result.gold_reward)])
+		inv.consume_materials({&"gold": paid})  # devuelve el oro de prueba
 		check(result.rank == 3 and item.rank == 3, "el objeto sale de rango III")
 		var base: Dictionary = item.item_resource.calculate_stats(item.quality)
 		check(item.calculated_stats == Ranks.scale_stats(base, 3), "con las estadísticas del rango III (%s)" % [item.calculated_stats])
@@ -850,6 +856,7 @@ func test_own_order_charges_recipe_and_gives_no_gold() -> void:
 	if task:
 		var result: Dictionary = cm._finalize_task(task)
 		check(result.gold_reward == 0 and result.crafted_item.rank == 2, "no da oro y el objeto es de rango II")
+		check(inv.get_quantity(&"gold") == 0, "y no entra oro en el inventario (%d)" % inv.get_quantity(&"gold"))
 		inv.remove_crafted_item(result.crafted_item)
 	cm.queue = saved_queue
 	inv.inventory = saved_inv

@@ -25,7 +25,9 @@ signal room_traveled(room: int)  # viaje del selector o reintento del muro (el H
 const HERO_SPEED := 38.0
 const UNLOCK_STAGGER := 0.15  # segundos entre los pergaminos de un mismo hito
 var _unlock_burst := 0
-const FLOOR_Y := 92.0
+## Suelo del duelo: los pies apoyan en el borde de arriba de la franja de nombres y vida (DuelVitals), que así no
+## tapa a los enemigos bajos. Con Tico al 90 % del alto (86,4) la cabeza queda en el borde de arriba de la franja.
+const FLOOR_Y := 86.0
 const VIEW_W := PixelView.VIEW_W
 const VIEW_H := PixelView.VIEW_H
 const HERO_SCREEN_X := PixelView.HERO_SCREEN_X  # posición del héroe en pantalla (fracción del ancho)
@@ -132,8 +134,7 @@ func update_run(delta: float):
 		_pause -= delta
 		return
 	if hero.alive and enemy.alive:
-		_enter_room(level)
-		_begin_fight()
+		_begin_fight()  # la sala ya se anunció al aparecer su enemigo (_on_enemy_level_changed / reset_combat)
 
 
 func update_fight(_delta: float):
@@ -369,6 +370,9 @@ func _on_enemy_level_changed(new_level: int):
 		spawn_enemy(level, hero.position.x + SPAWN_AHEAD)
 		state = State.RUN
 		_pause = POST_KILL_PAUSE
+		# El rival nuevo ya está en su sitio y su nombre en la franja: la sala del cartel y la vida llena de Tico van
+		# con él desde ahora, no al acabar la pausa
+		_enter_room(level)
 
 
 # ─── Botín y celebración al matar ──────────────────────────────────────
@@ -384,7 +388,8 @@ func _on_enemy_died_fx(_drops) -> void:
 	if was_boss:
 		Sfx.play(&"boss_defeated", 2.0)
 		backdrop.flash(Color(1, 0.85, 0.4), 0.5, 0.6)
-		fx.float_text(pos + Vector2(0, -30), tr("¡JEFE DERROTADO!"), Color("ffd54a"), true, 1.8, 6.0, 0.25)
+		# Desde el pecho del jefe: más arriba subía hasta la fila de oro y sala y se cortaba en el borde
+		fx.float_text(pos + Vector2(0, -6), tr("¡JEFE DERROTADO!"), Color("ffd54a"), true, 1.8, 6.0, 0.25)
 		boss_slain.emit(int(info.get("level", level)), String(info.get("name", "")))
 	var md: Dictionary = info.get("material", {})
 	if not md.is_empty():

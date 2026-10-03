@@ -65,7 +65,8 @@ func _run() -> void:
 	touch.pressed = true
 	var touch_rot: int = panel._drag_rot
 	panel._input(touch)
-	expect(panel._drag_rot == touch_rot, "el gesto de dos dedos permanece pendiente")
+	# Gesto provisional del móvil (sin botón secundario, rueda ni R): un segundo dedo gira mientras el primero arrastra
+	expect(panel._drag_rot == (touch_rot + 1) % 4, "un segundo dedo gira durante el arrastre")
 	panel.close()
 	panel.queue_free()
 	print("PRESENTATION_TESTS: %d comprobaciones, %d fallos" % [checks, failures])

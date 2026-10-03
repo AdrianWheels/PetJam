@@ -3,9 +3,9 @@
 [ext_resource type="Script" path="res://scripts/ui/BlueprintCard.gd" id="1_x"]
 
 [node name="BlueprintCard" type="PanelContainer"]
-custom_minimum_size = Vector2(160, 262)
-offset_right = 160.0
-offset_bottom = 262.0
+custom_minimum_size = Vector2(300, 420)
+offset_right = 300.0
+offset_bottom = 420.0
 script = ExtResource("1_x")
 
 [node name="VBox" type="VBoxContainer" parent="."]
@@ -58,7 +58,7 @@ horizontal_alignment = 1
 [node name="NameLabel" type="Label" parent="VBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 26
 text = "Nombre del plano"
 horizontal_alignment = 1
 autowrap_mode = 3

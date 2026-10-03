@@ -39,6 +39,8 @@ const MAX_MITIGATION := CombatMath.MAX_MITIGATION
 const WINDUP_TIME := 0.16
 const HURT_TIME := 0.2
 const MATERIALIZE_TIME := 0.5
+## Fuerza del destello de daño en el arte de pegatinas (en pixel art, 0,8)
+const STICKER_FLASH := 0.3
 const IDLE_FRAME_TIME := 0.5
 
 ## Colores de Tico para los fragmentos al morir (chaleco, bufanda, piel, pelo)
@@ -518,7 +520,8 @@ func _update_sprite() -> void:
 	var bob := 1.0 if walking and absf(sin(_walk_phase)) > 0.5 else 0.0
 	_sprite.position = _sprite_origin() + (Vector2.ZERO if _sticker else Vector2(roundf(lunge), -bob))
 	var mat := _sprite.material as ShaderMaterial
-	mat.set_shader_parameter("flash", flash * 0.8)
+	# En las pegatinas ilustradas un destello casi blanco parece un fantasma translúcido: ya está la pose de daño, basta un toque
+	mat.set_shader_parameter("flash", flash * (STICKER_FLASH if _sticker else 0.8))
 	mat.set_shader_parameter("dissolve", 1.0 - clampf(_materialize * 1.6, 0.0, 1.0))
 
 

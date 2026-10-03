@@ -7,7 +7,7 @@ extends ColorRect
 ## El dedo lo lleva este panel, en _input:
 ##  - principal selecciona y arrastra; secundario gira, también durante el arrastre;
 ##  - mantener pulsado abre la ficha con los botones Al botín, Vender y Cerrar;
-##  - en móvil la pieza va una casilla por encima del dedo; el gesto de giro queda pendiente. Una pieza de la caja sale
+##  - en móvil la pieza va una casilla por encima del dedo y un segundo dedo la gira (gesto provisional). Una pieza de la caja sale
 ##    de la física al cogerla, enderezada al cuarto de vuelta más cercano;
 ##  - soltarla en la zona de venta la vende (las Épicas y Legendarias piden confirmación);
 ##  - soltarla en la caja la devuelve a la física donde se ve, con la inercia del gesto. Una pieza de la caja soltada fuera
@@ -448,6 +448,11 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion:
 		_on_motion(event.position)
+	elif event is InputEventScreenTouch and event.pressed and event.index >= 1 and _dragging:
+		# Segundo dedo mientras el primero arrastra: gira la pieza. En el móvil no hay botón secundario, rueda ni R; sin esto
+		# no habría forma de girar (el gesto definitivo está por decidir, pero mientras tanto este funciona)
+		_rotate_drag()
+		get_viewport().set_input_as_handled()
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R and _dragging:
 		_rotate_drag()
 		get_viewport().set_input_as_handled()
@@ -607,6 +612,11 @@ func _cancel_press() -> void:
 	var held: CraftedItem = _press.get("item")
 	if held and _loot_box.is_held(held):
 		_loot_box.drop_at(held, _loot_box.to_local(_drag_pos), Vector2.ZERO, _drag_rot)
+	# Al soltar, el aviso del destino («Cabe aquí. Suelta para equipar…») ya no vale: vuelve la ayuda de siempre. Si la
+	# pieza no cabía se deja el motivo, que explica por qué ha vuelto a su sitio
+	var refused: bool = _dragging and not _target.is_empty() and not _target.get("ok", true)
+	if _placement_label and not refused:
+		_placement_label.text = tr("Principal: seleccionar y arrastrar. Secundario: girar. Mantén pulsado para abrir la ficha.")
 	_press = {}
 	_dragging = false
 	_target = {}

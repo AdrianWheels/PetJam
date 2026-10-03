@@ -13,6 +13,8 @@ var is_unlocked: bool = false
 var item_resource: ItemResource
 
 const MATERIAL_ICON_SCENE := preload("res://scenes/UI/MaterialIcon.tscn")
+## Botones de rango y «Forjar» a tamaño de dedo: la biblioteca ocupa casi toda la pantalla del móvil (3 columnas)
+const BUTTON_SIZE := Vector2(64, 64)
 
 signal forge_requested(bp_id: StringName, rank: int)
 
@@ -71,15 +73,22 @@ func _build_forge_row() -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	var prev := Button.new()
 	prev.text = "◀"
+	prev.custom_minimum_size = BUTTON_SIZE
+	prev.add_theme_font_size_override("font_size", 28)
 	prev.pressed.connect(func(): selected_rank = maxi(1, selected_rank - 1); _refresh_rank())
 	_rank_label = Label.new()
-	_rank_label.custom_minimum_size = Vector2(36, 0)
+	_rank_label.custom_minimum_size = Vector2(52, 0)
+	_rank_label.add_theme_font_size_override("font_size", 30)
 	_rank_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var next := Button.new()
 	next.text = "▶"
+	next.custom_minimum_size = BUTTON_SIZE
+	next.add_theme_font_size_override("font_size", 28)
 	next.pressed.connect(func(): selected_rank = mini(max_rank, selected_rank + 1); _refresh_rank())
 	_forge_btn = Button.new()
 	_forge_btn.text = tr("Forjar")
+	_forge_btn.custom_minimum_size = Vector2(112, BUTTON_SIZE.y)
+	_forge_btn.add_theme_font_size_override("font_size", 26)
 	_forge_btn.pressed.connect(func(): forge_requested.emit(blueprint_id, selected_rank))
 	for n in [prev, _rank_label, next, _forge_btn]:
 		row.add_child(n)
@@ -116,14 +125,14 @@ func _refresh_cost() -> void:
 		item.add_theme_constant_override("separation", 1)
 		item.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var icon_node = MATERIAL_ICON_SCENE.instantiate()
-		icon_node.custom_minimum_size = Vector2(22, 22)
+		icon_node.custom_minimum_size = Vector2(34, 34)
 		icon_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		icon_node.set("material_name", String(mat_id))
 		item.add_child(icon_node)
 		var qty := Label.new()
 		qty.name = "Qty"
 		qty.text = "x%d" % int(shown_recipe[mat_id])
-		qty.add_theme_font_size_override("font_size", 14)
+		qty.add_theme_font_size_override("font_size", 24)
 		item.add_child(qty)
 		_cost_box.add_child(item)
 

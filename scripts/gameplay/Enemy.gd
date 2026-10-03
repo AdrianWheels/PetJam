@@ -31,6 +31,8 @@ const BIOME_DROP_QTY := 3
 const BOSS_BIOME_QTY := 10  # los jefes siempre sueltan el suyo
 const BURN_TICK := 0.5  ## la quemadura hace daño cada medio segundo: un número por tic
 
+## Destello de daño en el arte de pegatinas: casi blanco parecía un fantasma translúcido (como Hero.STICKER_FLASH)
+const STICKER_FLASH := 0.3
 var duel_presentation := false
 var level: int = 1
 var STR: float = 0.0
@@ -540,7 +542,7 @@ func _update_sprite() -> void:
 	# El enemigo mira a la izquierda: la x de cara se invierte en el mundo
 	_sprite.position = _sprite_origin() + (Vector2.ZERO if _sticker else Vector2(roundf(-off.x), roundf(off.y)))
 	var mat := _sprite.material as ShaderMaterial
-	mat.set_shader_parameter("flash", flash * 0.85)
+	mat.set_shader_parameter("flash", flash * (STICKER_FLASH if _sticker else 0.85))
 	mat.set_shader_parameter("dissolve", 1.0 - clampf(_intro * 2.2, 0.0, 1.0))
 
 

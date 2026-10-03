@@ -159,6 +159,11 @@ func show_result(result: Dictionary) -> void:
 
 	_populate_stats(result)
 
+	# Lo que paga el cliente (CraftingManager ya lo ha sumado); un encargo propio no paga
+	var paid: int = int(result.get("gold_reward", 0))
+	if paid > 0:
+		_stats_container.add_child(_result_line(tr("+%d oro") % paid, Color("ffd54a"), 32))
+
 	# Bonus de forjamagia si aplica
 	var fm_bonus: float = result.get("forjamagia_bonus", 0.0)
 	var fm_value: int = result.get("forjamagia", 0)
@@ -321,19 +326,12 @@ func _populate_stats(result: Dictionary) -> void:
 		return
 	var stats: Dictionary = crafted_item.calculated_stats
 	for key in stats:
-		var value = stats[key]
-		if typeof(value) == TYPE_FLOAT and value < 0.01:
-			continue
-		if typeof(value) == TYPE_INT and value == 0:
+		var shown := format_stat_value(String(key), stats[key])
+		if shown == "":
 			continue
 		var stat_label := Label.new()
 		var display_name: String = tr(STAT_NAMES.get(key, String(key).capitalize()))
-		if key == "crit":
-			stat_label.text = "+%d%% %s" % [roundi(float(value) * 100.0), display_name]
-		elif key == "aps":
-			stat_label.text = "+%.2f %s" % [float(value), display_name]
-		else:
-			stat_label.text = "+%d %s" % [roundi(float(value)), display_name]
+		stat_label.text = "%s %s" % [shown, display_name]
 		stat_label.add_theme_font_size_override("font_size", 30)
 		stat_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
 		stat_label.add_theme_constant_override("outline_size", 5)
@@ -344,6 +342,18 @@ func _populate_stats(result: Dictionary) -> void:
 	var power: Dictionary = LegendaryPowers.POWERS.get(StringName(crafted_item.item_resource.item_id), {})
 	if LegendaryPowers.is_legendary(crafted_item) and not power.is_empty():
 		_stats_container.add_child(_result_line("%s: %s" % [tr(power.name), tr(power.text)], Color("ffa629"), 26))
+
+
+## Valor de una estadística como se enseña («+37%» de crítico, «+0.64» de velocidad, «+4631» del resto), o "" si redondeado
+## no aporta nada. Los guardados devuelven las estadísticas como float (JSON): sin esto la tienda enseñaba «+4631.0».
+static func format_stat_value(key: String, value) -> String:
+	var v := float(value)
+	match key:
+		"crit":
+			return "+%d%%" % roundi(v * 100.0) if roundi(v * 100.0) != 0 else ""
+		"aps":
+			return "+%.2f" % v if absf(v) >= 0.005 else ""
+	return "+%d" % roundi(v) if roundi(v) != 0 else ""
 
 
 func _result_line(text: String, color: Color, font_size: int) -> Label:

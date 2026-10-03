@@ -79,6 +79,8 @@ var _hero: Node = null
 
 const AUTOSAVE_INTERVAL := 60.0  # Segundos entre auto-saves
 var _save_loaded := false
+## Se puede guardar al cerrar: los datos ya están listos y no hay un guardado en disco que no se haya podido leer
+var _close_save_allowed := false
 var _save_pending := false  # ya hay un guardado diferido en cola: los demás avisos del fotograma no piden otro
 var _autosave_timer: Timer = null
 ## Quién escribe la partida en el guardado diferido; si no es válido, SaveManager. Las pruebas ponen uno que solo cuenta
@@ -477,6 +479,7 @@ func _on_data_ready_load_save() -> void:
 	# Con partida ya los ha aplicado SaveManager.load_game().
 	if not _save_loaded:
 		apply_record_milestones()
+	_close_save_allowed = _save_loaded or not _SaveManager.has_save()
 
 
 ## Aplica en silencio los hitos que ya supera el récord (los básicos I siempre). Lo llama SaveManager.load_game() al
@@ -492,6 +495,15 @@ func is_save_loaded() -> bool:
 
 func _on_autosave_timeout() -> void:
 	_SaveManager.save_game()
+
+## Al cerrar la ventana, con el botón Atrás de Android (que cierra la app) o al mandar el juego al fondo en el móvil (donde el
+## sistema puede cerrarlo sin avisar) se guarda ya: si no, se perdía lo hecho desde el último guardado (hasta un minuto de
+## autoguardado). Nunca antes de cargar los datos, ni si había un guardado que no se pudo leer: no se pisa con el estado
+## vacío del arranque.
+func _notification(what: int) -> void:
+	if what in [NOTIFICATION_WM_CLOSE_REQUEST, NOTIFICATION_WM_GO_BACK_REQUEST, NOTIFICATION_APPLICATION_PAUSED]:
+		if _close_save_allowed:
+			_SaveManager.save_game()
 
 func _on_trigger_save(_value = null) -> void:
 	# Defer para no guardar en medio de un frame de combate. Los guardados que se piden en un mismo fotograma son una sola

@@ -27,14 +27,18 @@ const BUFF_LABELS := {
 	&"speed": ["VELOCIDAD", Color("a3e4ff")],
 	&"luck": ["SUERTE", Color("a8ee84")],
 }
-const BUFF_POS := Vector2(440, 140)
+## Efectos y pociones en la columna central, bajo el selector y el aviso (el «VS» va más abajo, a media pierna)
+const BUFF_POS := Vector2(440, 180)
 const BUFF_ROW := 36.0
 const BUFF_FONT_SIZE := 28
 const BUFF_BLINK_TIME := 5.0
 
-const SELECTOR_POS := Vector2(420, 42)
-const SELECTOR_BUTTON := Vector2(72, 72)
+## Tres botones de dedo (88 px como mínimo en el móvil) centrados bajo la fila de jefes
+const SELECTOR_BUTTON := Vector2(88, 88)
+const SELECTOR_POS := Vector2(540.0 - (SELECTOR_BUTTON.x * 3.0 + 4.0 * 2.0) * 0.5, 38)
 const SELECTOR_GAP := 4.0
+## Avisos (récord, jefe caído…) justo debajo del selector, sin pisar sus botones
+const TOAST_Y := SELECTOR_POS.y + SELECTOR_BUTTON.y + 8.0
 const LONG_PRESS := 0.45
 
 var _corridor: Node
@@ -195,7 +199,7 @@ func _build() -> void:
 	_banner_sub.modulate.a = 0.0
 
 	_toast = _make_label(30, Color("ffe08a"), HORIZONTAL_ALIGNMENT_CENTER, 8)
-	_toast.position = Vector2(0, 104)
+	_toast.position = Vector2(0, TOAST_Y)
 	_toast.size = Vector2(1080, 40)
 	_toast.modulate.a = 0.0
 
@@ -333,9 +337,16 @@ func _draw() -> void:
 	# Franja oscura tras los carteles: se leen aunque pasen por encima de placas de nombre
 	var ribbon_a := _banner_title.modulate.a
 	if ribbon_a > 0.01:
-		var r := Rect2(0, _banner_title.position.y - 6.0, size.x, 128.0)
-		SK.v_gradient(self, Rect2(r.position, Vector2(r.size.x, r.size.y * 0.5)), Color(0, 0, 0, 0.0), Color(0, 0, 0, 0.55 * ribbon_a))
-		SK.v_gradient(self, Rect2(r.position + Vector2(0, r.size.y * 0.5), Vector2(r.size.x, r.size.y * 0.5)), Color(0, 0, 0, 0.55 * ribbon_a), Color(0, 0, 0, 0.0))
+		# Cubre el título y todas las líneas del subtítulo (el de la derrota ocupa dos): con fundido arriba y abajo
+		var top_y := _banner_title.position.y - 6.0
+		var bottom_y := _banner_title.position.y + _banner_title.size.y
+		if _banner_sub.text != "":
+			bottom_y = _banner_sub.position.y + float(_banner_sub.get_line_count() * _banner_sub.get_line_height()) + 12.0
+		var dark := Color(0, 0, 0, 0.62 * ribbon_a)
+		var fade := 28.0
+		SK.v_gradient(self, Rect2(0, top_y - fade, size.x, fade), Color(0, 0, 0, 0.0), dark)
+		draw_rect(Rect2(0, top_y, size.x, bottom_y - top_y), dark)
+		SK.v_gradient(self, Rect2(0, bottom_y, size.x, fade), dark, Color(0, 0, 0, 0.0))
 
 
 func _draw_coin(c: Vector2, r: float) -> void:
@@ -456,12 +467,12 @@ func _play_toast(text: String, color: Color) -> void:
 		_toast_tween.kill()
 	_toast.text = text
 	_toast.label_settings.font_color = color
-	_toast.position.y = 118.0
+	_toast.position.y = TOAST_Y + 14.0
 	_toast.modulate.a = 0.0
 	_toast_tween = create_tween()
 	_toast_tween.set_parallel(true)
 	_toast_tween.tween_property(_toast, "modulate:a", 1.0, 0.2)
-	_toast_tween.tween_property(_toast, "position:y", 104.0, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_toast_tween.tween_property(_toast, "position:y", TOAST_Y, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_toast_tween.chain().tween_interval(1.6)
 	_toast_tween.chain().tween_property(_toast, "modulate:a", 0.0, 0.4)
 

@@ -602,6 +602,32 @@ func test_each_room_starts_with_full_health_and_travel_abandons_the_fight() -> v
 	await _silence_loot_sounds()
 
 
+## En el duelo fijo el siguiente enemigo aparece en cuanto cae el anterior: la sala del cartel y la vida llena de
+## Tico se ponen al día en ese momento, no al empezar el combate (antes el cartel decía «Sala 3» con el enemigo de la 4).
+func test_winning_announces_the_next_room_with_its_enemy() -> void:
+	var gm := _gm()
+	var snap := _gm_snapshot()
+	_gm_setup(3, 12)
+	gm.enemies_defeated[3] = true  # sin plano de primera victoria
+	var start: Dictionary = _im().get_materials()
+	var corridor := _new_corridor()
+	var rooms: Array = []
+	corridor.room_entered.connect(func(room: int, _boss: bool): rooms.append(room))
+	var hero: Node2D = corridor.get_node("Hero")
+	var enemy: Node2D = corridor.get_node("Enemy")
+	corridor._begin_fight()
+	hero.hp = maxi(1, hero.max_hp / 2)
+	enemy.take_damage(enemy.hp)
+	check(enemy.alive and enemy.level == 4, "tras vencer en la 3 espera el enemigo de la 4 (%d)" % enemy.level)
+	check(rooms.has(4), "y el cartel ya dice sala 4 (%s)" % [rooms])
+	check(hero.hp == hero.max_hp, "con Tico curado para el duelo siguiente (%d/%d)" % [hero.hp, hero.max_hp])
+	corridor.queue_free()
+	_gm_restore(snap)
+	_im().consume_materials(_gained_since(start))  # devuelve el botín de prueba
+	await _flush_deferred_saves()
+	await _silence_loot_sounds()
+
+
 func test_farming_puts_another_enemy_of_the_same_room_ahead() -> void:
 	var gm := _gm()
 	var snap := _gm_snapshot()
@@ -613,7 +639,7 @@ func test_farming_puts_another_enemy_of_the_same_room_ahead() -> void:
 	enemy.take_damage(enemy.hp)
 	check(gm.current_enemy_level == 11, "tras vencer delante del muro sigue en la 11 (%d)" % gm.current_enemy_level)
 	check(enemy.alive and enemy.level == 11, "el pasillo pone otro enemigo de la 11 por delante (%d)" % enemy.level)
-	check(corridor._next_gate_room == 11, "con su puerta de la sala 11 (%d)" % corridor._next_gate_room)
+	check(corridor.level == 11, "y el duelo sigue en la sala 11 (%d)" % corridor.level)  # duelo fijo: ya no hay puertas
 	corridor.queue_free()
 	_gm_restore(snap)
 	_im().consume_materials(_gained_since(start))  # devuelve el botín de prueba
