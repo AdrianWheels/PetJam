@@ -1,7 +1,7 @@
 extends Camera2D
 
-## Cámara del corredor pixel: sigue al héroe en X con suavizado, altura fija y shake por "trauma".
-## Todo en píxeles enteros del arte (216x96): sin giro ni zoom, que deforman el pixel art.
+## Cámara del corredor: conserva el mundo lógico 216×96 con escala fija según el viewport.
+## Sigue al héroe en X con suavizado, altura fija y temblor por "trauma".
 ## El trauma decae solo; el desplazamiento es trauma² para que los golpes pequeños apenas muevan.
 
 const MAX_OFFSET := Vector2(3, 2)
@@ -16,6 +16,9 @@ var _x := 0.0  # posición suavizada, sin redondear
 
 func _ready() -> void:
 	ignore_rotation = true
+	# El mundo conserva sus unidades; el viewport pinta las ilustraciones a resolución completa.
+	var factor := get_viewport_rect().size.x / float(PixelView.VIEW_W)
+	zoom = Vector2.ONE * factor
 	_x = position.x
 
 

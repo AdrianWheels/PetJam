@@ -31,6 +31,7 @@ const BIOME_DROP_QTY := 3
 const BOSS_BIOME_QTY := 10  # los jefes siempre sueltan el suyo
 const BURN_TICK := 0.5  ## la quemadura hace daño cada medio segundo: un número por tic
 
+var duel_presentation := false
 var level: int = 1
 var STR: float = 0.0
 var AGI: float = 0.0
@@ -97,6 +98,7 @@ var _burn_tick := 0.0
 var _sprite: Sprite2D
 var _hud: Node2D
 var _metrics: Dictionary = {}
+var _sticker := false
 
 
 ## Pinta barra, nombre y alerta por encima del sprite.
@@ -201,6 +203,10 @@ func _apply_archetype(id: StringName) -> void:
 	if _sprite:
 		_sprite.texture = PixelSprites.texture(key)
 		_sprite.hframes = maxi(1, int(_metrics.get("frames", 1)))
+		var sticker_key := key.get_file()
+		_sticker = StickerSprites.apply_height(_sprite, sticker_key, 86.4 if id == &"boss" else {&"slime": 46.0, &"bat": 58.0}.get(id, 78.0))
+		if not _sticker:
+			_sprite.scale = Vector2.ONE
 
 
 ## Empieza la animación de entrada (el Corridor la llama cuando entra en pantalla).
@@ -349,7 +355,7 @@ func cast_origin() -> Vector2:
 
 ## Centro de la caja de píxeles del sprite (para chispas y números).
 func body_center() -> Vector2:
-	return position + Vector2(0, float(_metrics.get("center_y", -body_height * 0.5)))
+	return position + Vector2(0, -float(_sprite.get_meta("sticker_height", body_height)) * 0.5 if _sticker else float(_metrics.get("center_y", -body_height * 0.5)))
 
 
 func generate_drops() -> Array:
@@ -464,6 +470,8 @@ func _die() -> void:
 
 
 func _spawn_death_fx() -> void:
+	if _sticker and _sprite:
+		StickerSprites.show_defeat(_sprite)
 	if fx == null:
 		return
 	var center := body_center()
@@ -502,7 +510,7 @@ func _update_sprite() -> void:
 	_sprite.visible = _awake and alive
 	if not _sprite.visible:
 		return
-	_sprite.frame = int(_t / IDLE_FRAME_TIME) % _sprite.hframes
+	_sprite.frame = StickerSprites.pose_index(alive, _hurt, _strike) if _sticker else int(_t / IDLE_FRAME_TIME) % _sprite.hframes
 	var e := _ease_out_back(_intro)
 	var st := pow(_strike, 1.6)
 	var w := _windup
@@ -530,7 +538,7 @@ func _update_sprite() -> void:
 		"cast":
 			off.y += 5.0 * (1.0 - e)
 	# El enemigo mira a la izquierda: la x de cara se invierte en el mundo
-	_sprite.position = _sprite_origin() + Vector2(roundf(-off.x), roundf(off.y))
+	_sprite.position = _sprite_origin() + (Vector2.ZERO if _sticker else Vector2(roundf(-off.x), roundf(off.y)))
 	var mat := _sprite.material as ShaderMaterial
 	mat.set_shader_parameter("flash", flash * 0.85)
 	mat.set_shader_parameter("dissolve", 1.0 - clampf(_intro * 2.2, 0.0, 1.0))
@@ -538,6 +546,8 @@ func _update_sprite() -> void:
 
 ## Esquina superior izquierda del fotograma para que los pies apoyen en el origen del nodo.
 func _sprite_origin() -> Vector2:
+	if _sticker:
+		return _sprite.get_meta("sticker_origin", Vector2.ZERO)
 	var fw := float(_metrics.get("frame_w", 32))
 	var ground := float(_metrics.get("ground_row", 28))
 	return Vector2(-fw * 0.5, -(ground + 1.0))
@@ -573,7 +583,7 @@ func _draw() -> void:
 
 
 func _draw_hud(canvas: CanvasItem) -> void:
-	if not _awake or not alive:
+	if duel_presentation or not _awake or not alive:
 		return
 	var a := clampf(_intro * 2.2, 0.0, 1.0)
 	var boss := archetype == &"boss"

@@ -247,22 +247,22 @@ Segunda oportunidad,Segunda oportunidad,Second Chance
 Paso ligero,Paso ligero,Light Step
 Esquiva,Esquiva,Dodge
 Ímpetu,Ímpetu,Momentum
-"Daño ×1,25","Daño ×1,25","Damage ×1.25"
+"Daño ×1,25","Daño ×1,25",Damage ×1.25
 25 % de golpear dos veces,25 % de golpear dos veces,25 % chance to strike twice
 "Cada golpe quema: el 40 % de su daño en 3 s, sin contar la armadura","Cada golpe quema: el 40 % de su daño en 3 s, sin contar la armadura","Each hit burns: 40 % of its damage over 3 s, ignoring armor"
-"Vida máxima ×1,2","Vida máxima ×1,2","Max health ×1.2"
+"Vida máxima ×1,2","Vida máxima ×1,2",Max health ×1.2
 15 % de parar un golpe entero,15 % de parar un golpe entero,15 % chance to block a whole hit
 Devuelve el 30 % del daño recibido,Devuelve el 30 % del daño recibido,Returns 30 % of damage taken
-"Probabilidad de crítico ×1,5","Probabilidad de crítico ×1,5","Critical chance ×1.5"
-"Recupera el 1,5 % de la vida máxima por segundo","Recupera el 1,5 % de la vida máxima por segundo","Recovers 1.5 % of max health per second"
+"Probabilidad de crítico ×1,5","Probabilidad de crítico ×1,5",Critical chance ×1.5
+"Recupera el 1,5 % de la vida máxima por segundo","Recupera el 1,5 % de la vida máxima por segundo",Recovers 1.5 % of max health per second
 "Una vez por duelo, al caer vuelve con el 40 % de la vida","Una vez por duelo, al caer vuelve con el 40 % de la vida","Once per fight, gets back up with 40 % health"
-"Velocidad de ataque ×1,15","Velocidad de ataque ×1,15","Attack speed ×1.15"
+"Velocidad de ataque ×1,15","Velocidad de ataque ×1,15",Attack speed ×1.15
 12 % de esquivar un golpe,12 % de esquivar un golpe,12 % chance to dodge a hit
 El primer golpe contra cada enemigo hace ×3,El primer golpe contra cada enemigo hace ×3,The first hit on each enemy deals ×3
-"Probabilidad de crítico ×0,5","Probabilidad de crítico ×0,5","Critical chance ×0.5"
-"Velocidad de ataque ×0,85","Velocidad de ataque ×0,85","Attack speed ×0.85"
-"Vida máxima ×0,85","Vida máxima ×0,85","Max health ×0.85"
-"Armadura ×0,8","Armadura ×0,8","Armor ×0.8"
+"Probabilidad de crítico ×0,5","Probabilidad de crítico ×0,5",Critical chance ×0.5
+"Velocidad de ataque ×0,85","Velocidad de ataque ×0,85",Attack speed ×0.85
+"Vida máxima ×0,85","Vida máxima ×0,85",Max health ×0.85
+"Armadura ×0,8","Armadura ×0,8",Armor ×0.8
 Correas de hueso,Correas de hueso,Bone Straps
 Bolsas de musgo,Bolsas de musgo,Moss Pouches
 Hebillas de obsidiana,Hebillas de obsidiana,Obsidian Buckles
@@ -311,8 +311,17 @@ Escarcha,Escarcha,Frost
 Hielo eterno del Glaciar Olvidado.,Hielo eterno del Glaciar Olvidado.,Everlasting ice from the Forgotten Glacier.
 Fragmento de vacío,Fragmento de vacío,Void shard
 Esquirla del Santuario del Vacío.,Esquirla del Santuario del Vacío.,A shard from the Void Sanctum.
-"Nuevos planos en la biblioteca","Nuevos planos en la biblioteca","New blueprints in the library"
-"Forjar","Forjar","Forge"
-"La forja está llena","La forja está llena","The forge is full"
-"Rango bloqueado","Rango bloqueado","Rank locked"
-"Faltan materiales","Faltan materiales","Missing materials"
+Nuevos planos en la biblioteca,Nuevos planos en la biblioteca,New blueprints in the library
+Forjar,Forjar,Forge
+La forja está llena,La forja está llena,The forge is full
+Rango bloqueado,Rango bloqueado,Rank locked
+Faltan materiales,Faltan materiales,Missing materials
+Principal: seleccionar y arrastrar. Secundario: girar. Mantén pulsado para abrir la ficha.,Principal: seleccionar y arrastrar. Secundario: girar. Mantén pulsado para abrir la ficha.,Primary: select and drag. Secondary: rotate. Hold to open details.
+No cabe girada: ocupa una casilla bloqueada o sale de la rejilla.,No cabe girada: ocupa una casilla bloqueada o sale de la rejilla.,Cannot rotate here: it touches a locked cell or extends outside the grid.
+Cabe aquí. Suelta para equipar; arriba ves lo que ganas y pierdes.,Cabe aquí. Suelta para equipar; arriba ves lo que ganas y pierdes.,Fits here. Release to equip; gains and losses are shown above.
+Intercambio: la pieza resaltada vuelve al botín si no cabe en el origen. Compara los atributos arriba.,Intercambio: la pieza resaltada vuelve al botín si no cabe en el origen. Compara los atributos arriba.,Swap: the highlighted piece goes to loot if it cannot fit in the original position. Compare attributes above.
+No cabe: la pieza o sus aristas salen de las casillas disponibles. Gírala o cambia de posición.,No cabe: la pieza o sus aristas salen de las casillas disponibles. Gírala o cambia de posición.,Does not fit: the piece or its protrusions extend beyond available cells. Rotate it or try another position.
+No cabe: toca varias piezas. Solo puedes intercambiar con una a la vez.,No cabe: toca varias piezas. Solo puedes intercambiar con una a la vez.,Does not fit: overlaps several pieces. You can swap with one at a time.
+Puntos verdes: cabe. Dorados: intercambio. Suelta en el botín para guardar.,Puntos verdes: cabe. Dorados: intercambio. Suelta en el botín para guardar.,Green dots: fits. Gold dots: swap. Release in loot to store.
+Tienes %d,Tienes %d,Owned: %d
+Derrota en sala %d. Reapareces en la %d con toda la vida; conservas el equipo y el botín.,Derrota en sala %d. Reapareces en la %d con toda la vida; conservas el equipo y el botín.,Defeated in room %d. Return to room %d at full health; keep your equipment and loot.

@@ -50,6 +50,9 @@ var _quench_speed := 1.0  # Multiplicador de velocidad
 var _time_window := 0.3   # Ventana de tiempo (segundos)
 
 func _ready():
+	UIClarity.readable_labels(self)
+	if _water_bucket_back and ResourceLoader.exists("res://art/stickers/sources/stations/quench.png"):
+		_water_bucket_back.modulate.a = 0.0
 	# 🎶 Configurar SoundSet específico para Quench (feedback de calidad)
 	var quench_soundset := MinigameSoundSet.new()
 	quench_soundset.sound_perfect = load("res://art/sounds/perfect.mp3")

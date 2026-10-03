@@ -1,0 +1,13 @@
+config_version=5
+[application]
+config/name="PetJam — catálogo de arte"
+run/main_scene="res://Review.tscn"
+[display]
+window/size/viewport_width=1080
+window/size/viewport_height=1920
+window/size/window_width_override=540
+window/size/window_height_override=960
+window/stretch/mode="canvas_items"
+[rendering]
+renderer/rendering_method="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.07, 0.055, 0.05, 1)

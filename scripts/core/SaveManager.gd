@@ -5,7 +5,18 @@ extends RefCounted
 ## NO es autoload — se usa como clase estática desde otros scripts.
 class_name SaveManager
 
-const SAVE_PATH := "user://save.json"
+static var SAVE_PATH: String = _resolve_save_path()
+
+## Las pruebas de persistencia escriben en un espacio aislado dentro del proyecto.
+## Sin esta opción explícita se utiliza siempre la partida normal.
+static func _resolve_save_path() -> String:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--test-save-slot="):
+			var slot := arg.trim_prefix("--test-save-slot=").validate_filename()
+			var directory := "res://logs/test-saves/" + slot
+			DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(directory))
+			return directory.path_join("save.json")
+	return "user://save.json"
 ## 1: antes del inventario en rejilla; 2: la rejilla; 3: los rangos de plano (unlocked_ranks)
 const SAVE_VERSION := 3
 
@@ -13,11 +24,13 @@ const SAVE_VERSION := 3
 ## Copia de la partida tal como estaba antes de migrarla desde la versión `version`: save.v1.bak.json, save.v2.bak.json…
 ## Una partida sin versión cuenta como de la 1.
 static func backup_path(version: int) -> String:
-	return "user://save.v%d.bak.json" % maxi(1, version)
+	return SAVE_PATH.get_base_dir().path_join("save.v%d.bak.json" % maxi(1, version))
 
 
 ## Guarda el estado completo del juego a disco
 static func save_game() -> bool:
+	if OS.get_cmdline_user_args().has("--art-preview"):
+		return true
 	var save_data := {
 		"version": SAVE_VERSION,
 		"timestamp": Time.get_unix_time_from_system(),
@@ -53,6 +66,8 @@ static func save_game() -> bool:
 
 ## Carga el estado del juego desde disco y lo distribuye a los autoloads
 static func load_game() -> bool:
+	if OS.get_cmdline_user_args().has("--art-preview"):
+		return false
 	if not has_save():
 		print("SaveManager: No hay partida guardada")
 		return false
@@ -136,6 +151,8 @@ static func _back_up_old_save(version: int) -> void:
 
 ## Retorna true si existe un archivo de guardado
 static func has_save() -> bool:
+	if OS.get_cmdline_user_args().has("--art-preview"):
+		return false
 	return FileAccess.file_exists(SAVE_PATH)
 
 

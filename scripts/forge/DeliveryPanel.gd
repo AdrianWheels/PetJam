@@ -14,6 +14,10 @@ var _current_item_data: Dictionary = {}
 func _ready() -> void:
 	visible = false
 	if client_button:
+		client_button.icon = load("res://art/stickers/sources/ui/delivery.png")
+		client_button.expand_icon = true
+		client_button.add_theme_constant_override("icon_max_width", 40)
+	if client_button:
 		client_button.pressed.connect(_on_client_pressed)
 	if hero_button:
 		hero_button.pressed.connect(_on_hero_pressed)

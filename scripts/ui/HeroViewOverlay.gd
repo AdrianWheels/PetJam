@@ -19,21 +19,21 @@ extends Control
 const SK := preload("res://scripts/gameplay/visual/ShapeKit.gd")
 
 const TOP_BAND := 96.0
-const PIP_Y := 86.0
-const PIP_SPACING := 30.0
+const PIP_Y := 24.0
+const PIP_SPACING := 20.0
 
 ## Efecto → [nombre (texto base), color]. El orden es el de las filas.
 const BUFF_LABELS := {
 	&"speed": ["VELOCIDAD", Color("a3e4ff")],
 	&"luck": ["SUERTE", Color("a8ee84")],
 }
-const BUFF_POS := Vector2(236, 8)
+const BUFF_POS := Vector2(440, 140)
 const BUFF_ROW := 36.0
 const BUFF_FONT_SIZE := 28
 const BUFF_BLINK_TIME := 5.0
 
-const SELECTOR_POS := Vector2(776, 100)
-const SELECTOR_BUTTON := Vector2(96, 96)
+const SELECTOR_POS := Vector2(420, 42)
+const SELECTOR_BUTTON := Vector2(72, 72)
 const SELECTOR_GAP := 4.0
 const LONG_PRESS := 0.45
 
@@ -41,6 +41,7 @@ var _corridor: Node
 var _game_manager: Node
 var _inventory: Node
 var _font: Font
+var _coin_icon: Texture2D = preload("res://art/stickers/sources/ui/coin.png")
 
 var _gold_label: Label
 var _death_label: Label
@@ -50,6 +51,7 @@ var _record_label: Label
 var _banner_title: Label
 var _banner_sub: Label
 var _toast: Label
+var _vitals: Control
 var _fade: ColorRect
 var _buff_labels: Dictionary = {}  # efecto → Label
 var _potion_label: Label  # las pociones que quedan en los huecos, debajo de los efectos
@@ -79,7 +81,7 @@ var _fade_tween: Tween
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_font = load("res://art/font/PirataOne-Regular.ttf")
+	_font = ThemeDB.fallback_font
 	_game_manager = get_node_or_null("/root/GameManager")
 	_inventory = get_node_or_null("/root/InventoryManager")
 	_build()
@@ -106,6 +108,10 @@ func _ready() -> void:
 
 ## HUDMain la llama con el Corridor del viewport del héroe.
 func bind_corridor(corridor: Node) -> void:
+	var vitals := preload("res://scripts/ui/DuelVitals.gd").new()
+	vitals.corridor = corridor
+	_vitals = vitals
+	add_child(vitals)
 	_corridor = corridor
 	if corridor == null:
 		return
@@ -147,7 +153,7 @@ func _build() -> void:
 	_gold_label.pivot_offset = Vector2(0, 26)
 
 	_death_label = _make_label(36, Color("f1e4cf"), HORIZONTAL_ALIGNMENT_LEFT)
-	_death_label.position = Vector2(540 - 6, 12)
+	_death_label.position = Vector2(276, 12)
 	_death_label.size = Vector2(160, 52)
 	_death_label.pivot_offset = Vector2(20, 26)
 
@@ -183,7 +189,9 @@ func _build() -> void:
 	_banner_title.modulate.a = 0.0
 	_banner_sub = _make_label(30, Color("e8d6bf"), HORIZONTAL_ALIGNMENT_CENTER, 8)
 	_banner_sub.position = Vector2(0, 204)
-	_banner_sub.size = Vector2(1080, 40)
+	_banner_sub.size = Vector2(1020, 100)
+	_banner_sub.position.x = 30
+	_banner_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_banner_sub.modulate.a = 0.0
 
 	_toast = _make_label(30, Color("ffe08a"), HORIZONTAL_ALIGNMENT_CENTER, 8)
@@ -235,6 +243,8 @@ func _process(delta: float) -> void:
 	_death_label.scale = Vector2.ONE * (1.0 + 0.35 * _death_pop)
 	_luck_pop = maxf(0.0, _luck_pop - delta * 2.0)
 	_refresh_buffs()
+	if _vitals:
+		_vitals.show_vs = _t >= _banner_until
 	# Avisos en cola: de uno en uno y nunca encima de un cartel
 	if not _toast_queue.is_empty() and _t >= _banner_until and not (_toast_tween and _toast_tween.is_valid() and _toast_tween.is_running()):
 		var next: Array = _toast_queue.pop_front()
@@ -317,7 +327,7 @@ func _draw() -> void:
 	# Banda oscura superior para que el HUD se lea sobre cualquier bioma
 	SK.v_gradient(self, Rect2(0, 0, size.x, TOP_BAND + 20.0), Color(0, 0, 0, 0.62), Color(0, 0, 0, 0.0))
 	_draw_coin(Vector2(38, 38), 17.0)
-	_draw_skull(Vector2(512, 38), 15.0, _death_pop)
+	_draw_skull(Vector2(248, 38), 15.0, _death_pop)
 	_draw_boss_pips()
 	_draw_selector()
 	# Franja oscura tras los carteles: se leen aunque pasen por encima de placas de nombre
@@ -329,6 +339,9 @@ func _draw() -> void:
 
 
 func _draw_coin(c: Vector2, r: float) -> void:
+	if _coin_icon:
+		draw_texture_rect(_coin_icon, Rect2(c - Vector2.ONE * r, Vector2.ONE * r * 2), false)
+		return
 	var spin := absf(cos(_t * 2.0)) * 0.3 + 0.7
 	var pts := SK.ellipse_pts(c, r * spin, r, 20)
 	SK.outlined_poly(self, pts, Color("f2b53a"), SK.OUTLINE, 3.0)
@@ -408,6 +421,11 @@ func _draw_lock(button: Button) -> void:
 # ─── Carteles ──────────────────────────────────────────────────────────
 
 func show_banner(title: String, subtitle: String, color: Color = Color("ffe7b0"), hold: float = 1.3) -> void:
+	if _toast.modulate.a > 0.01:
+		_toast_queue.push_front([_toast.text, _toast.label_settings.font_color])
+	if _toast_tween and _toast_tween.is_valid():
+		_toast_tween.kill()
+	_toast.modulate.a = 0.0
 	if _banner_tween and _banner_tween.is_valid():
 		_banner_tween.kill()
 	_banner_title.text = title
@@ -483,7 +501,7 @@ func _on_boss_slain(_room_num: int, boss_name: String) -> void:
 
 
 func _on_hero_fell(room: int) -> void:
-	show_banner(tr("El héroe ha caído"), tr("Muro en la sala %d") % room, Color("ff8a7a"), 0.7)
+	show_banner(tr("El héroe ha caído"), tr("Derrota en sala %d. Reapareces en la %d con toda la vida; conservas el equipo y el botín.") % [room, maxi(1, room - 1)], Color("ff8a7a"), 1.1)
 	_fade_to(0.85, 0.35, 0.95)
 
 

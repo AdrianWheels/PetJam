@@ -9,12 +9,12 @@ extends Node
 ## Las pruebas corren en español (el texto base del juego) aunque el sistema esté en otro idioma; al
 ## terminar se deja el idioma que había.
 
-const SAVE_PATH := "user://save.json"
-const V1_BACKUP_PATH := "user://save.v1.bak.json"
-const V2_BACKUP_PATH := "user://save.v2.bak.json"
+var SAVE_PATH: String = SaveManager.SAVE_PATH
+var V1_BACKUP_PATH: String = SaveManager.backup_path(1)
+var V2_BACKUP_PATH: String = SaveManager.backup_path(2)
 ## Copias que SaveManager hace al migrar, una por versión de origen (SaveManager.backup_path). Una prueba que carga una
 ## partida antigua las crearía con datos de pega: la suite las deja como estaban.
-const OLD_SAVE_BACKUPS := [V1_BACKUP_PATH, V2_BACKUP_PATH]
+var OLD_SAVE_BACKUPS := [V1_BACKUP_PATH, V2_BACKUP_PATH]
 const TEST_LOCALE := "es"
 
 var _checks := 0
@@ -87,6 +87,11 @@ func _wait_for_game_data() -> void:
 
 
 func _backup_save() -> void:
+	if OS.get_cmdline_user_args().has("--art-preview"):
+		return
+	if SaveManager.SAVE_PATH.begins_with("res://logs/test-saves/"):
+		# Incluso una partida de pruebas recién creada necesita un estado al que volver.
+		SaveManager.save_game()
 	_had_save = FileAccess.file_exists(SAVE_PATH)
 	if _had_save:
 		_save_backup = FileAccess.get_file_as_bytes(SAVE_PATH)
@@ -97,6 +102,8 @@ func _backup_save() -> void:
 
 
 func _restore_save() -> void:
+	if OS.get_cmdline_user_args().has("--art-preview"):
+		return
 	if _had_save:
 		var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 		f.store_buffer(_save_backup)

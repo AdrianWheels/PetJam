@@ -1,0 +1,88 @@
+{
+  "generator": "built-in image_gen",
+  "date": "2026-10-02",
+  "assets": [
+    {
+      "file": "sword_basic.png",
+      "width": 887,
+      "height": 1774,
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "sha256": "a77cb237a29415df8e5ab1fb4a5a412fbf92dc7c7815d17186afc4729bee5be2"
+    },
+    {
+      "file": "hammer_fit.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "sha256": "b0ced8ff77064c22d37f27805902eae411249f87c1fead70de03a41709e7cca1"
+    },
+    {
+      "file": "tico.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "sha256": "3b9c85226307079e6488281e167ede7f23c469ca69fa19ae8cb1a2b38891e39c"
+    },
+    {
+      "file": "skeleton.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "sha256": "570aa9db938d271197fbf25077b48aa124040362cb65522acbca2e9eab84f14d"
+    },
+    {
+      "file": "catacombs.png",
+      "width": 2172,
+      "height": 724,
+      "mode": "RGB",
+      "alpha_extrema": null,
+      "sha256": "e74bdd74e62cc5768e6f192d42d3c107b40875dc6b5d312b3d358a6d50d30a68"
+    },
+    {
+      "file": "forge.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGB",
+      "alpha_extrema": null,
+      "sha256": "4a130c2877fe3fb9bb9ea70f9bf9749fec404a277a5ec9c1de6eecc7363360c8"
+    },
+    {
+      "file": "preview.png",
+      "width": 540,
+      "height": 960,
+      "mode": "RGBA",
+      "alpha_extrema": [
+        255,
+        255
+      ],
+      "sha256": "288d8686e7815e1bba9e017e6f8eb738b066f5a5b2c9143d1aa8946de4ca5602"
+    },
+    {
+      "file": "preview_rotation_1.png",
+      "width": 540,
+      "height": 960,
+      "mode": "RGBA",
+      "alpha_extrema": [
+        255,
+        255
+      ],
+      "sha256": "ddcc8e359435a57238f470b9bd5ffe52708eb19b930f3e9a6be3375127ce20f7"
+    }
+  ]
+}

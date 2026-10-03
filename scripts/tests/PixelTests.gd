@@ -71,12 +71,16 @@ func _wait_for_game_data() -> void:
 
 
 func _backup_save() -> void:
+	if OS.get_cmdline_user_args().has("--art-preview"):
+		return
 	_had_save = FileAccess.file_exists(SAVE_PATH)
 	if _had_save:
 		_save_backup = FileAccess.get_file_as_bytes(SAVE_PATH)
 
 
 func _restore_save() -> void:
+	if OS.get_cmdline_user_args().has("--art-preview"):
+		return
 	if _had_save:
 		var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 		f.store_buffer(_save_backup)
@@ -123,16 +127,15 @@ func test_pixel_fonts() -> void:
 
 # ─── Tarea 4: viewport x5 ──────────────────────────────────────────────
 
-func test_hero_strip_renders_at_216x96() -> void:
+func test_hero_strip_renders_illustrations_at_full_resolution() -> void:
 	var hud: Node = load("res://scenes/UI/HUD_Main.tscn").instantiate()
 	var panel: SubViewportContainer = hud.get_node("HeroViewPanel")
 	var vp: SubViewport = hud.get_node("HeroViewPanel/HeroViewport")
-	check(panel.stretch and panel.stretch_shrink == PixelView.SCALE, "el contenedor pinta a 1/5 (%d)" % panel.stretch_shrink)
+	check(panel.stretch and panel.stretch_shrink == 1, "el contenedor pinta a resolución completa")
 	check(panel.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR, "el contenedor amplía con filtro lineal (lo pide el sombreador)")
-	var mat := panel.material as ShaderMaterial
-	check(mat != null and mat.shader.resource_path == "res://shaders/pixel_upscale.gdshader", "el contenedor usa pixel_upscale")
-	check(vp.canvas_item_default_texture_filter == Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST, "dentro del viewport no se suaviza")
-	check(vp.snap_2d_transforms_to_pixel and vp.snap_2d_vertices_to_pixel, "el viewport ajusta a píxel entero")
+	check(panel.material == null, "las ilustraciones no pasan por pixel_upscale")
+	check(vp.canvas_item_default_texture_filter == Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_LINEAR, "filtrado lineal para ilustración")
+	check(vp.size == Vector2i(1080, 480), "viewport 1080×480")
 	hud.free()
 
 
@@ -161,7 +164,8 @@ func test_camera_moves_in_whole_pixels() -> void:
 		check(cam.offset == cam.offset.round(), "el temblor es de píxeles enteros (%s)" % cam.offset)
 	cam.punch(0.2)
 	cam._process(0.016)
-	check(cam.rotation == 0.0 and cam.zoom == Vector2.ONE, "sin giro ni zoom")
+	var expected_zoom := cam.get_viewport_rect().size.x / float(PixelView.VIEW_W)
+	check(cam.rotation == 0.0 and cam.zoom == Vector2.ONE * expected_zoom, "escala fija conserva el mundo lógico")
 	cam.queue_free()
 
 
@@ -180,7 +184,7 @@ func test_hero_uses_pixel_units() -> void:
 	hero.respawn(PixelView.HERO_START)
 	check(hero.position == PixelView.HERO_START, "reaparece en HERO_START")
 	var c: Vector2 = hero.body_center()
-	check(c.x == hero.position.x and c.y < hero.position.y - 8.0 and c.y > hero.position.y - 20.0, "centro del cuerpo a media altura (%s)" % c)
+	check(c.x == hero.position.x and c.y < hero.position.y - 8.0 and is_equal_approx(c.y, hero.position.y - 43.2), "centro del cuerpo a media altura (%s)" % c)
 	hero.queue_free()
 
 
@@ -188,36 +192,37 @@ func test_hero_sprite_stands_on_the_floor() -> void:
 	var hero := _new_hero()
 	hero._update_sprite()
 	var spr: Sprite2D = hero._sprite
-	check(spr.position == Vector2(-16, -29), "en reposo el fotograma apoya los pies en el origen (%s)" % spr.position)
-	check(spr.hframes == 2, "tira de reposo de 2 fotogramas")
+	check(spr.position.is_equal_approx(spr.get_meta("sticker_origin")), "posición de la pegatina respecto a los pies (%s)" % spr.position)
+	check(spr.hframes == 4 and spr.frame == 0, "cuatro poses con reposo fijo")
 	check((spr.material as ShaderMaterial).shader.resource_path == "res://shaders/pixel_sprite.gdshader", "usa pixel_sprite")
 	hero._strike = 1.0
 	hero._update_sprite()
-	check(spr.position.x > -16.0, "la estocada lo adelanta hacia el enemigo (%s)" % spr.position)
+	check(spr.position.is_equal_approx(spr.get_meta("sticker_origin")) and spr.frame == 1, "el golpe cambia de pose y conserva la posición")
 	hero.queue_free()
 
 
 func test_hero_sprite_follows_the_sword() -> void:
 	var hero := _new_hero()
 	var cases := [
-		[{}, "tico_0"],
-		[{"main_hand": {"tier": "rare", "rarity": "advanced"}}, "tico_1"],
-		[{"main_hand": {"tier": "legendary", "rarity": "master"}}, "tico_2"],
+		[{}, "tico_none"],
+		[{"main_hand": {"tier": "common", "rarity": "basic"}}, "tico_basic"],
+		[{"main_hand": {"tier": "rare", "rarity": "advanced"}}, "tico_advanced"],
+		[{"main_hand": {"tier": "legendary", "rarity": "master"}}, "tico_master"],
 	]
 	for c in cases:
 		hero.gear = c[0]
 		hero._apply_sprite()
-		check(hero._sprite.texture.resource_path.ends_with("hero/%s.png" % c[1]), "espada %s → %s" % [c[0], c[1]])
+		check(hero._sprite.get_meta("sticker_key", "") == c[1], "espada %s → %s" % [c[0], c[1]])
 	hero.queue_free()
 
 
-func test_dead_hero_stays_hidden_after_equipping() -> void:
+func test_dead_hero_keeps_defeat_pose_after_equipping() -> void:
 	var hero := _new_hero()
 	hero.alive = false
 	hero.gear = {"main_hand": {"tier": "common", "rarity": "basic"}}
 	hero._apply_sprite()
 	hero._update_sprite()
-	check(not hero._sprite.visible, "equipar durante la caída no hace reaparecer el sprite")
+	check(hero._sprite.visible and hero._sprite.frame == 3, "equipar durante la caída mantiene la pose derrotada")
 	hero.queue_free()
 
 
@@ -236,7 +241,7 @@ func test_enemy_takes_sprite_and_size_from_metrics() -> void:
 	check(e.archetype == &"slime", "la sala 1 trae un Limo")
 	var m := PixelSprites.metrics("enemies/slime")
 	check(e.half_width == float(m.half_width) and e.body_height == float(m.body_height), "medidas del sprite")
-	check(e._sprite.texture.resource_path.ends_with("enemies/slime.png"), "tira del Limo")
+	check(e._sprite.get_meta("sticker_key", "") == "slime", "hoja de poses del Limo")
 	check(e.body_center().y < e.position.y and e.cast_origin().x < e.position.x, "centro sobre los pies y orbe hacia el héroe")
 	e.queue_free()
 
@@ -245,7 +250,7 @@ func test_each_biome_has_its_boss_sprite() -> void:
 	var e := _new_enemy()
 	for i in 5:
 		e.configure_for_level((i + 1) * 10, true)
-		check(e._sprite.texture.resource_path.ends_with("bosses/boss_%d.png" % i), "jefe de la sala %d" % ((i + 1) * 10))
+		check(e._sprite.get_meta("sticker_key", "") == "boss_%d" % i, "jefe de la sala %d" % ((i + 1) * 10))
 		check(e.display_name == EnemyArchetypes.BOSS_NAMES[i], "nombre del jefe %d" % i)
 	e.queue_free()
 
@@ -257,10 +262,10 @@ func test_enemy_sprite_faces_the_hero_and_stands_on_floor() -> void:
 	e._intro = 1.0
 	e._update_sprite()
 	check(e._sprite.visible, "despierto y vivo se ve")
-	check(e._sprite.position == Vector2(-16, -29), "en reposo apoya los pies en el origen (%s)" % e._sprite.position)
+	check(e._sprite.position.is_equal_approx(e._sprite.get_meta("sticker_origin")), "posición de la pegatina del enemigo (%s)" % e._sprite.position)
 	e._strike = 1.0
 	e._update_sprite()
-	check(e._sprite.position.x < -16.0, "el golpe lo acerca al héroe (%s)" % e._sprite.position)
+	check(e._sprite.position.is_equal_approx(e._sprite.get_meta("sticker_origin")) and e._sprite.frame == 1, "pose de golpe hacia el héroe (%s)" % e._sprite.position)
 	e.queue_free()
 
 
@@ -322,11 +327,16 @@ func test_fx_shatter_bounces_on_pixel_floor() -> void:
 
 # ─── Tarea 9: pasillo ──────────────────────────────────────────────────
 
-func test_backdrop_is_plain_and_pixel_sized() -> void:
+func test_backdrop_illustrations_cover_the_logical_strip() -> void:
 	var bd := Node2D.new()
 	bd.set_script(load("res://scripts/gameplay/visual/DungeonBackdrop.gd"))
 	add_child(bd)
-	check(bd._layers.size() == 1 and bd._layers[0].kind == "plain", "fase 1: una sola capa lisa")
+	for index in 5:
+		bd.set_biome(index, false)
+		check(bd._illustrated.texture.resource_path.ends_with("biome_%d.png" % index), "ilustración del bioma %d" % index)
+		var coverage: Vector2 = bd._illustrated.texture.get_size() * bd._illustrated.scale
+		check(coverage.is_equal_approx(PixelView.VIEW_SIZE), "el fondo cubre toda la franja sin huecos")
+	check(not bd._layers[0].visible, "el fondo procedural queda como respaldo")
 	check(bd._flash_rect.size == PixelView.VIEW_SIZE, "el destello cubre la franja de 216x96")
 	check(bd._torches.is_empty(), "sin antorchas vectoriales")
 	bd.queue_free()
@@ -344,28 +354,30 @@ func test_gate_plate_fits_the_room_number() -> void:
 	gate.queue_free()
 
 
-func test_corridor_engages_at_pixel_distance() -> void:
+func test_corridor_duels_use_fixed_positions() -> void:
 	var corridor: Node2D = load("res://scenes/Corridor.tscn").instantiate()
 	add_child(corridor)
-	var hero: Node2D = corridor.get_node("Hero")
-	var enemy: Node2D = corridor.get_node("Enemy")
-	check(hero.position == PixelView.HERO_START, "el héroe arranca en HERO_START (%s)" % hero.position)
-	check(enemy.position.y == PixelView.FLOOR_Y, "el enemigo pisa el suelo")
-	var gap: float = enemy.position.x - hero.position.x
-	check(gap >= 150.0, "el enemigo aparece fuera de pantalla por la derecha (a %d px)" % int(gap))
+	var hero: Node2D = corridor.hero
+	var enemy: Node2D = corridor.enemy
+	var hero_spot: Vector2 = hero.position
+	var enemy_spot: Vector2 = enemy.position
+	check(hero_spot == corridor.HERO_START and enemy_spot == corridor.ENEMY_SPOT, "frente a frente en las posiciones del duelo")
 	var t := 0.0
-	while t < 8.0 and corridor.state != corridor.State.FIGHT:
+	while t < 2.0 and corridor.state != corridor.State.FIGHT:
 		await get_tree().process_frame
 		t += get_process_delta_time()
-	check(corridor.state == corridor.State.FIGHT, "el héroe llega al enemigo y empieza el combate")
-	var dist: float = enemy.position.x - hero.position.x
-	check(dist <= hero.reach + enemy.half_width + corridor.ENGAGE_GAP + 1.0, "se engancha a distancia de píxeles (%.1f)" % dist)
-	check(dist >= 8.0, "no se solapan (%.1f)" % dist)
+	check(corridor.state == corridor.State.FIGHT, "el duelo comienza sin desplazamiento")
+	check(hero.position == hero_spot and enemy.position == enemy_spot, "el inicio conserva ambas posiciones")
+	check(not hero.walking and not hero.show_hud and enemy.duel_presentation, "reposo fijo y HUD separado")
+	for i in 20:
+		await get_tree().process_frame
+	check(hero.position == hero_spot and enemy.position == enemy_spot, "golpear no mueve a los combatientes")
+	var atlas := StickerSprites.sheet("tico_none")
+	var height: float = atlas.idle_rect.size.y * hero._sprite.scale.y
+	check(is_equal_approx(height / PixelView.VIEW_H, 0.90), "Tico visible ocupa el 90 % de la altura")
 	corridor.queue_free()
 	await get_tree().process_frame
 
-
-# ─── Revisión final ────────────────────────────────────────────────────
 
 func test_next_enemy_stays_hidden_during_hitstop() -> void:
 	var e := _new_enemy()

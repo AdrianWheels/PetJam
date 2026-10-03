@@ -40,6 +40,10 @@ func _ready() -> void:
 	_embers.scale_amount_min = 0.03
 	_embers.scale_amount_max = 0.08
 	_embers.texture = SK.glow_texture()
+	if ResourceLoader.exists("res://art/stickers/sources/ui/spark.png"):
+		_embers.texture = load("res://art/stickers/sources/ui/spark.png")
+		_embers.scale_amount_min = 0.003
+		_embers.scale_amount_max = 0.008
 	_embers.material = SK.additive_material()
 	_embers.color = Color(1.0, 0.65, 0.3, 0.9)
 	var ramp := Gradient.new()

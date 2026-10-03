@@ -1,12 +1,12 @@
 [gd_resource type="Resource" script_class="BlueprintResource" load_steps=10 format=3 uid="uid://njl21ol7l85m"]
 
 [ext_resource type="Script" uid="uid://c8d1uaeb55e1" path="res://scripts/data/BlueprintResource.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://m74cr4m4blpm" path="res://art/assets/Imagenes Raw/Blueprints/helmet_basic_bp_raw.png" id="1_1tofw"]
+[ext_resource type="Texture2D" path="res://art/stickers/sources/gear/helmet_basic.png" id="1_1tofw"]
 [ext_resource type="Script" uid="uid://dtkp3d357pf8g" path="res://scripts/data/TrialResource.gd" id="2"]
 [ext_resource type="PackedScene" uid="uid://bius0ofgpw8m5" path="res://scenes/Minigames/HammerMinigame.tscn" id="4"]
 [ext_resource type="Resource" uid="uid://cb3oy7puti61q" path="res://data/items/helmet_basic.tres" id="5"]
 [ext_resource type="Script" uid="uid://cya7b64jx7qe" path="res://scripts/data/HammerTrialConfig.gd" id="5_accye"]
-[ext_resource type="Texture2D" uid="uid://4n00t3n7gs4x" path="res://art/placeholders/forge/background_default.png" id="6"]
+[ext_resource type="Texture2D" path="res://art/stickers/sources/backgrounds/workshop.png" id="6"]
 
 [sub_resource type="Resource" id="Resource_yg3e4"]
 script = ExtResource("5_accye")

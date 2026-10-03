@@ -48,12 +48,14 @@ var _inventory_manager: Node
 
 
 func _ready() -> void:
+	theme = UIClarity.readable_theme()
 	_inventory_manager = get_node_or_null("/root/InventoryManager")
 	_build_ui()
 	_populate_materials()
 	_populate_potions()
 	_populate_sell_items()
 	_update_gold_display()
+	_update_material_cards()
 	
 	# Conectar señal de inventario para actualizar oro y cantidades
 	if _inventory_manager and _inventory_manager.has_signal("inventory_changed"):
@@ -78,14 +80,15 @@ func _build_ui() -> void:
 	# Panel central — misma zona que el MinigamePanel
 	_panel = PanelContainer.new()
 	_panel.anchor_left = 0.0
-	_panel.anchor_top = 0.25
+	_panel.anchor_top = 0.30
 	_panel.anchor_right = 1.0
 	_panel.anchor_bottom = 0.75
-	_panel.offset_left = 20
+	_panel.offset_left = 40
 	_panel.offset_top = 10
-	_panel.offset_right = -20
+	_panel.offset_right = -40
 	_panel.offset_bottom = -10
 	add_child(_panel)
+	UIClarity.compact_panel(_panel)
 	
 	var main_vbox := VBoxContainer.new()
 	main_vbox.add_theme_constant_override("separation", 12)
@@ -97,7 +100,7 @@ func _build_ui() -> void:
 	main_vbox.add_child(header)
 	
 	_title_label = Label.new()
-	_title_label.text = "🏪 %s" % tr("TIENDA")
+	_title_label.text = tr("TIENDA")
 	_title_label.add_theme_font_size_override("font_size", 42)
 	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(_title_label)
@@ -115,6 +118,7 @@ func _build_ui() -> void:
 	_close_btn.add_theme_font_size_override("font_size", 38)
 	_close_btn.pressed.connect(_on_close_pressed)
 	header.add_child(_close_btn)
+	UIClarity.light_button(_close_btn)
 	
 	# ── Separador ──
 	var sep := HSeparator.new()
@@ -124,6 +128,8 @@ func _build_ui() -> void:
 	_tab_container = TabContainer.new()
 	_tab_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	main_vbox.add_child(_tab_container)
+	_tab_container.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	_tab_container.get_tab_bar().add_theme_font_size_override("font_size", 32)
 	
 	# Tab Materiales
 	var materials_scroll := ScrollContainer.new()
@@ -204,103 +210,85 @@ func _populate_potions() -> void:
 
 func _create_material_card(mat_id: StringName, info: Dictionary) -> PanelContainer:
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(0, 140)
+	card.custom_minimum_size = Vector2(0, 126)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	
-	var vbox := VBoxContainer.new()
-	vbox.name = "VBoxContainer"  # _update_material_cards busca "VBoxContainer/Row/NameLabel"
-	vbox.add_theme_constant_override("separation", 6)
-	card.add_child(vbox)
-	
-	# Icono del material + nombre + cantidad actual
+	card.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	var row := HBoxContainer.new()
-	row.name = "Row"
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 10)
-	vbox.add_child(row)
+	row.add_theme_constant_override("separation", 8)
+	card.add_child(row)
 	var icon := TextureRect.new()
-	icon.custom_minimum_size = Vector2(56, 56)
+	icon.custom_minimum_size = Vector2(90, 100)
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	var mat_res_path := "res://data/materials/%s.tres" % String(mat_id)
-	if ResourceLoader.exists(mat_res_path):
-		var mat_res = load(mat_res_path)
-		if mat_res and "icon" in mat_res:
-			icon.texture = mat_res.icon
+	var material := load("res://data/materials/%s.tres" % mat_id)
+	icon.texture = material.icon
 	row.add_child(icon)
+	var info_box := VBoxContainer.new()
+	info_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_child(info_box)
 	var name_label := Label.new()
 	name_label.name = "NameLabel"
-	var owned: int = _inventory_manager.get_quantity(mat_id) if _inventory_manager else 0
-	name_label.text = "%s (x%d)" % [tr(info.display_name), owned]
-	name_label.add_theme_font_size_override("font_size", 28)
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	row.add_child(name_label)
-	
-	# Botón comprar
-	var buy_btn := Button.new()
-	buy_btn.name = "BuyBtn"
-	var qty: int = info.quantity
-	var price: int = info.price
-	buy_btn.text = "%s 💰" % (tr("Comprar %dx — %d") % [qty, price])
-	buy_btn.custom_minimum_size = Vector2(0, 70)
-	buy_btn.add_theme_font_size_override("font_size", 26)
-	buy_btn.pressed.connect(_on_buy_material.bind(mat_id, qty, price))
-	vbox.add_child(buy_btn)
-	
-	# Almacenar referencia para updates
+	name_label.text = tr(info.display_name)
+	name_label.add_theme_font_size_override("font_size", 30)
+	info_box.add_child(name_label)
+	var owned := Label.new()
+	owned.name = "OwnedLabel"
+	owned.add_theme_font_size_override("font_size", 26)
+	owned.add_theme_color_override("font_color", Color("e5cdb0"))
+	info_box.add_child(owned)
+	var buy := Button.new()
+	buy.name = "BuyBtn"
+	buy.text = "×%d\n%d %s" % [info.quantity, info.price, tr("oro")]
+	buy.custom_minimum_size = Vector2(112, 100)
+	UIClarity.light_button(buy)
+	buy.add_theme_font_size_override("font_size", 28)
+	buy.pressed.connect(_on_buy_material.bind(mat_id, info.quantity, info.price))
+	row.add_child(buy)
 	card.set_meta("mat_id", mat_id)
-	
 	return card
 
 
 func _create_potion_card(pot_id: StringName, info: Dictionary) -> PanelContainer:
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(0, 150)
+	card.custom_minimum_size = Vector2(0, 172)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 6)
-	card.add_child(vbox)
-	
-	# Nombre
-	var name_label := Label.new()
-	name_label.text = "🧪 %s" % tr(info.display_name)
-	name_label.add_theme_font_size_override("font_size", 30)
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(name_label)
-
-	# Descripción
-	var desc_label := Label.new()
-	desc_label.text = tr(info.description)
-	desc_label.add_theme_font_size_override("font_size", 24)
-	desc_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
-	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	vbox.add_child(desc_label)
-	
-	# Cuántas lleva Tico en los huecos (la rellena _update_potion_cards)
+	card.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	card.add_child(row)
+	var icon := TextureRect.new()
+	icon.texture = load(info.icon)
+	icon.custom_minimum_size = Vector2(100, 140)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	row.add_child(icon)
+	var box := VBoxContainer.new()
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(box)
+	var label := Label.new()
+	label.text = tr(info.display_name)
+	label.add_theme_font_size_override("font_size", 34)
+	box.add_child(label)
+	var description := Label.new()
+	description.text = tr(info.description)
+	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	description.add_theme_font_size_override("font_size", 28)
+	description.add_theme_color_override("font_color", Color("f0deca"))
+	box.add_child(description)
 	var owned := Label.new()
 	owned.name = "OwnedLabel"
-	owned.add_theme_font_size_override("font_size", 22)
-	owned.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(owned)
-	
-	# Botón comprar
-	var buy_btn := Button.new()
-	buy_btn.text = "%s 💰" % (tr("Comprar — %d") % info.price)
-	buy_btn.custom_minimum_size = Vector2(0, 70)
-	buy_btn.add_theme_font_size_override("font_size", 26)
-	buy_btn.pressed.connect(_on_buy_potion.bind(pot_id, info.price))
-	vbox.add_child(buy_btn)
-	
+	owned.add_theme_font_size_override("font_size", 26)
+	box.add_child(owned)
+	var buy := Button.new()
+	buy.text = "%d %s" % [info.price, tr("oro")]
+	buy.custom_minimum_size = Vector2(140, 96)
+	UIClarity.light_button(buy)
+	buy.pressed.connect(_on_buy_potion.bind(pot_id, info.price))
+	row.add_child(buy)
 	card.set_meta("pot_id", pot_id)
-	
 	return card
 
-
-# ═══════════════════════════════════════════════════════════════════
-#  LÓGICA DE COMPRA
-# ═══════════════════════════════════════════════════════════════════
 
 func _on_buy_material(mat_id: StringName, quantity: int, price: int) -> void:
 	if not _inventory_manager:
@@ -349,25 +337,22 @@ func _on_buy_potion(pot_id: StringName, price: int) -> void:
 func _update_gold_display() -> void:
 	if _gold_label and _inventory_manager:
 		var gold: int = _inventory_manager.get_quantity(&"gold")
-		_gold_label.text = "💰 %d" % gold
+		_gold_label.text = "%d %s" % [gold, tr("oro")]
 
 
 func _update_material_cards() -> void:
 	if not _materials_grid or not _inventory_manager:
 		return
-	
 	for card in _materials_grid.get_children():
 		if not card.has_meta("mat_id"):
 			continue
-		var mat_id: StringName = card.get_meta("mat_id")
-		var info: Dictionary = MATERIAL_CATALOG.get(mat_id, {})
-		var name_label = card.get_node_or_null("VBoxContainer/Row/NameLabel")
-		if name_label:
-			var owned: int = _inventory_manager.get_quantity(mat_id)
-			name_label.text = "%s (x%d)" % [tr(info.get("display_name", "")), owned]
+		var id: StringName = card.get_meta("mat_id")
+		var owned := card.find_child("OwnedLabel", true, false) as Label
+		owned.text = tr("Tienes %d") % _inventory_manager.get_quantity(id)
+		var buy := card.find_child("BuyBtn", true, false) as Button
+		buy.disabled = _inventory_manager.get_quantity(&"gold") < int(MATERIAL_CATALOG[id].price)
 
 
-## "En hueco: N" en cada tarjeta de poción.
 func _update_potion_cards() -> void:
 	if not _potions_grid or not _inventory_manager:
 		return
@@ -381,6 +366,7 @@ func _update_potion_cards() -> void:
 
 func _on_inventory_changed(_inv: Dictionary) -> void:
 	_update_gold_display()
+	_update_material_cards()
 	_update_material_cards()
 
 
@@ -440,9 +426,9 @@ func _create_sell_card(item: CraftedItem) -> PanelContainer:
 	
 	# Borde de color según tier
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.12, 0.12, 0.16, 1.0)
+	style.bg_color = Color(0.12, 0.09, 0.07, 0.25)
 	style.border_color = item.get_quality_color()
-	style.set_border_width_all(2)
+	style.set_border_width_all(0)
 	style.set_corner_radius_all(8)
 	style.set_content_margin_all(12)
 	card.add_theme_stylebox_override("panel", style)
@@ -487,8 +473,8 @@ func _create_sell_card(item: CraftedItem) -> PanelContainer:
 	if stats_text != "":
 		var stats_label := Label.new()
 		stats_label.text = stats_text
-		stats_label.add_theme_font_size_override("font_size", 18)
-		stats_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.75))
+		stats_label.add_theme_font_size_override("font_size", 28)
+		stats_label.add_theme_color_override("font_color", Color("ecdfd0"))
 		stats_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		info_vbox.add_child(stats_label)
 	
@@ -556,6 +542,7 @@ func _show_toast(text: String, color: Color = Color.WHITE) -> void:
 func open() -> void:
 	visible = true
 	_update_gold_display()
+	_update_material_cards()
 	_update_material_cards()
 	_populate_sell_items()
 	# Ocultar fondo de forja si existe (estamos sobre el MinigamePanel)

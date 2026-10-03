@@ -3,16 +3,17 @@
 [ext_resource type="Script" path="res://scripts/ui/HUDMain.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://dnldhcl8qe2km" path="res://scenes/Corridor.tscn" id="2_corridor"]
 [ext_resource type="PackedScene" uid="uid://bplib8x3v7ia" path="res://scenes/UI/BlueprintLibraryPanel.tscn" id="3_blueprints"]
-[ext_resource type="Texture2D" path="res://art/assets/Imagenes/Menu/blueprints_icon.png" id="4_blueprints_icon"]
+[ext_resource type="Texture2D" path="res://art/stickers/sources/ui/blueprints.png" id="4_blueprints_icon"]
 [ext_resource type="PackedScene" uid="uid://28clsjg2fun" path="res://scenes/UI/EquipmentPanel.tscn" id="6_equipment"]
-[ext_resource type="Texture2D" path="res://art/placeholders/forge_background.png" id="7_forge_bg"]
+[ext_resource type="Texture2D" path="res://art/stickers/sources/backgrounds/workshop.png" id="7_forge_bg"]
 [ext_resource type="PackedScene" path="res://scenes/UI/ShopPanel.tscn" id="8_shop"]
 [ext_resource type="Script" path="res://scripts/ui/ForgeMagiaMeter.gd" id="9_forjamagia"]
 [ext_resource type="Script" path="res://scripts/ui/HeroViewOverlay.gd" id="10_hero_overlay"]
-[ext_resource type="Texture2D" path="res://art/assets/Imagenes/Menu/closet_icon.png" id="11_closet_icon"]
-[ext_resource type="Texture2D" path="res://art/assets/Imagenes/Menu/forge_icon.png" id="12_shop_icon"]
+[ext_resource type="Texture2D" path="res://art/stickers/sources/ui/equipment.png" id="11_closet_icon"]
+[ext_resource type="Texture2D" path="res://art/stickers/sources/ui/shop.png" id="12_shop_icon"]
 [ext_resource type="Script" path="res://scripts/ui/ForgeIdleFX.gd" id="13_forge_idle"]
 [ext_resource type="Shader" path="res://shaders/pixel_upscale.gdshader" id="14_pixel_upscale"]
+[ext_resource type="Script" path="res://scripts/forge/BrasaSticker.gd" id="15_brasa"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dock_left"]
 bg_color = Color(0.085, 0.062, 0.055, 1)
@@ -48,22 +49,19 @@ script = ExtResource("1")
 ; ============================================
 [node name="HeroViewPanel" type="SubViewportContainer" parent="."]
 texture_filter = 2
-material = SubResource("ShaderMaterial_pixel_upscale")
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_bottom = 480.0
 grow_horizontal = 2
 stretch = true
-stretch_shrink = 5
+stretch_shrink = 1
 
 [node name="HeroViewport" type="SubViewport" parent="HeroViewPanel"]
 transparent_bg = true
 handle_input_locally = false
-snap_2d_transforms_to_pixel = true
-snap_2d_vertices_to_pixel = true
-canvas_item_default_texture_filter = 0
-size = Vector2i(216, 96)
+canvas_item_default_texture_filter = 1
+size = Vector2i(1080, 480)
 render_target_update_mode = 4
 
 [node name="Corridor" parent="HeroViewPanel/HeroViewport" instance=ExtResource("2_corridor")]
@@ -96,6 +94,13 @@ handle_input_locally = false
 size = Vector2i(1080, 960)
 render_target_update_mode = 4
 
+[node name="WorkshopBase" type="ColorRect" parent="MinigamePanel/MinigameViewport"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.105, 0.075, 0.058, 1)
+
 [node name="ForgeBackground" type="TextureRect" parent="MinigamePanel/MinigameViewport"]
 anchors_preset = 15
 anchor_right = 1.0
@@ -115,6 +120,10 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("13_forge_idle")
+
+[node name="Brasa" type="Node2D" parent="MinigamePanel/MinigameViewport/ForgeBackground"]
+position = Vector2(285, 925)
+script = ExtResource("15_brasa")
 
 ; ============================================
 ; MEDIDOR DE FORJAMAGIA (superpuesto a la derecha del MinigamePanel)
@@ -144,8 +153,9 @@ script = ExtResource("9_forjamagia")
 layout_mode = 1
 anchors_preset = -1
 anchor_top = 0.75
-anchor_right = 0.7
+anchor_right = 1.0
 anchor_bottom = 1.0
+offset_bottom = -156.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_dock_left")
@@ -216,23 +226,24 @@ alignment = 1
 [node name="BottomRightPanel" type="Panel" parent="."]
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.7
-anchor_top = 0.75
+anchor_left = 0.0
+anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_top = -156.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_dock_right")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="BottomRightPanel"]
+[node name="VBoxContainer" type="HBoxContainer" parent="BottomRightPanel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 14.0
-offset_top = 16.0
-offset_right = -14.0
-offset_bottom = -18.0
+offset_left = 12.0
+offset_top = 8.0
+offset_right = -12.0
+offset_bottom = -8.0
 theme_override_constants/separation = 12
 alignment = 1
 
@@ -245,7 +256,7 @@ tooltip_text = "Ver biblioteca de planos"
 theme_override_font_sizes/font_size = 26
 text = "Planos"
 icon = ExtResource("4_blueprints_icon")
-icon_alignment = 1
+icon_alignment = 0
 vertical_icon_alignment = 0
 expand_icon = true
 
@@ -258,7 +269,7 @@ tooltip_text = "Equipar al héroe"
 theme_override_font_sizes/font_size = 26
 text = "Equipo"
 icon = ExtResource("11_closet_icon")
-icon_alignment = 1
+icon_alignment = 0
 vertical_icon_alignment = 0
 expand_icon = true
 
@@ -271,7 +282,7 @@ tooltip_text = "Abrir tienda"
 theme_override_font_sizes/font_size = 26
 text = "Tienda"
 icon = ExtResource("12_shop_icon")
-icon_alignment = 1
+icon_alignment = 0
 vertical_icon_alignment = 0
 expand_icon = true
 

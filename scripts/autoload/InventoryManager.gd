@@ -171,7 +171,7 @@ func grid_for(place: StringName) -> GearGrid:
 	if place == PLACE_HERO:
 		return hero_grid
 	if place == PLACE_BAG:
-		return bag_grid
+		return null  # mochila retirada: su contenido guardado pasa al botín
 	return null
 
 
@@ -183,22 +183,25 @@ func hero_grid_size() -> Vector2i:
 ## En el botín siempre cabe. En una rejilla, en casillas libres, o encima de una sola pieza si cabe al
 ## quitarla (intercambio).
 func drop_result(item: CraftedItem, place: StringName, cell: Vector2i = Vector2i.ZERO, rot: int = 0) -> Dictionary:
+	if item == null:
+		return {"ok": false, "swap": null, "reason": "invalid"}
 	if place == PLACE_LOOT:
-		return {"ok": true, "swap": null}
+		return {"ok": true, "swap": null, "reason": "loot"}
 	var grid := grid_for(place)
-	if grid == null or item == null:
-		return {"ok": false, "swap": null}
+	if grid == null:
+		return {"ok": false, "swap": null, "reason": "invalid"}
+	var cells := grid.cells_at(item, cell, rot)
+	for c in cells.clean + cells.aristas:
+		if not grid.in_bounds(c):
+			return {"ok": false, "swap": null, "reason": "outside"}
 	var others := grid.overlapping(item, cell, rot)
 	if others.is_empty():
-		return {"ok": grid.fits(item, cell, rot, [item]), "swap": null}
+		return {"ok": true, "swap": null, "reason": "fits"}
 	if others.size() == 1 and grid.fits(item, cell, rot, [item, others[0]]):
-		return {"ok": true, "swap": others[0]}
-	return {"ok": false, "swap": null}
+		return {"ok": true, "swap": others[0], "reason": "swap"}
+	return {"ok": false, "swap": null, "reason": "overlap"}
 
 
-## Mueve una pieza. Encima de una sola pieza se intercambian: la otra va al sitio de donde salió la
-## primera (con su propio giro) si cabe allí; si no, al botín. true si la suelta vale. Soltarla donde ya
-## está (misma casilla y giro de su rejilla, o del botín al botín) no mueve nada ni avisa de nada.
 func move_item(item: CraftedItem, place: StringName, cell: Vector2i = Vector2i.ZERO, rot: int = 0) -> bool:
 	if item == null or not (item in crafted_items):
 		return false
@@ -501,7 +504,18 @@ func _changed(hero_changed: bool) -> void:
 #  PERSISTENCIA
 # ═══════════════════════════════════════════════════════════════════
 
+func migrate_retired_bag() -> void:
+	var moved := bag_grid.items.duplicate()
+	for item: CraftedItem in moved:
+		bag_grid.remove(item)
+		item.loot_pose = {}
+		if not item in loot:
+			_put_in_loot(item, loot.size())
+	if not moved.is_empty():
+		_changed(false)
+
 func to_save_data() -> Dictionary:
+	migrate_retired_bag()
 	var mats := {}
 	for mat_id in inventory:
 		mats[String(mat_id)] = inventory[mat_id]

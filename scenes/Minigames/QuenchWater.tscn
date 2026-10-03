@@ -1,7 +1,7 @@
 [gd_scene load_steps=6 format=3 uid="uid://c0djy4jj2gkpp"]
 
 [ext_resource type="Script" uid="uid://bt2uqaddbj2cv" path="res://scripts/QuenchMinigame.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://banh3oms5vors" path="res://art/assets/Imagenes/Trial Resources/Tempered/steel_bar.png" id="2_steel_bar"]
+[ext_resource type="Texture2D" path="res://art/stickers/sources/tools/steel_bar.png" id="2_steel_bar"]
 [ext_resource type="Script" uid="uid://sxj052xetctb" path="res://scripts/forge/AnimatedSteelBarBackground.gd" id="3_steel_bg_script"]
 
 [sub_resource type="Curve" id="Curve_bubble_scale"]

@@ -323,7 +323,12 @@ func _draw_text(p: Dictionary, life_t: float) -> void:
 	var big: bool = p.get("big", false)
 	var lift := 1.0 if p.t < 0.1 else 0.0  # rebote de 1 px al aparecer (sin escalar)
 	var top: Vector2 = p.pos - Vector2(0, PixelFont.line_size(big) * 0.5 + lift)
-	PixelFont.draw_centered(self, top, p.text, p.color, alpha, big)
+	var font := ThemeDB.fallback_font
+	var font_size := 10 if big else 8
+	var width := font.get_string_size(p.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	var baseline := top + Vector2(-width * 0.5, font_size * 0.7)
+	draw_string_outline(font, baseline, p.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 2, Color(0, 0, 0, alpha))
+	draw_string(font, baseline, p.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(p.color, alpha))
 
 
 func _draw_icon(p: Dictionary, life_t: float) -> void:

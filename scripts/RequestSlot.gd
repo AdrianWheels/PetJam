@@ -26,6 +26,13 @@ var _inventory: Node
 
 
 func _ready() -> void:
+	theme = UIClarity.readable_theme()
+	UIClarity.compact_panel(self)
+	for label in [name_label, reward_label]:
+		label.add_theme_font_override("font", ThemeDB.fallback_font)
+		label.add_theme_font_size_override("font_size", 30)
+	client_label.add_theme_font_override("font", ThemeDB.fallback_font)
+	client_label.add_theme_font_size_override("font_size", 24)
 	gui_input.connect(_on_gui_input)
 	pivot_offset = size * 0.5
 	resized.connect(func(): pivot_offset = size * 0.5)
@@ -119,7 +126,8 @@ func _add_material_row(material_name: String, quantity) -> void:
 	var qty_label := Label.new()
 	qty_label.name = "Qty"
 	qty_label.text = "x%s" % str(quantity)
-	qty_label.add_theme_font_size_override("font_size", 20)
+	qty_label.add_theme_font_override("font", ThemeDB.fallback_font)
+	qty_label.add_theme_font_size_override("font_size", 28)
 	qty_label.add_theme_color_override("font_color", COLOR_OK)
 	qty_label.add_theme_constant_override("outline_size", 4)
 	container.add_child(qty_label)

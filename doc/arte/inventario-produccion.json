@@ -1,0 +1,1706 @@
+{
+  "date": "2026-10-02",
+  "style": "Ilustración de armas antiguas; personajes sticker con 4 poses",
+  "records": [
+    {
+      "id": "characters/tico_none",
+      "category": "characters",
+      "brief": "Tico con palo: reposo, golpe, daño, derrota",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/characters/tico_none.png",
+      "poses": 4,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "characters/tico_basic",
+      "category": "characters",
+      "brief": "Tico con espada básica: reposo, golpe, daño, derrota",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/characters/tico_basic.png",
+      "poses": 4,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "characters/tico_advanced",
+      "category": "characters",
+      "brief": "Tico con espada avanzada: reposo, golpe, daño, derrota",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/characters/tico_advanced.png",
+      "poses": 4,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "characters/tico_master",
+      "category": "characters",
+      "brief": "Tico con espada maestra: reposo, golpe, daño, derrota",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/characters/tico_master.png",
+      "poses": 4,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "characters/slime",
+      "category": "characters",
+      "brief": "slime: reposo, ataque, daño, derrota",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/characters/slime.png",
+      "poses": 4,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "characters/skeleton",
+      "category": "characters",
+      "brief": "skeleton: reposo, ataque, daño, derrota",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/characters/skeleton.png",
+      "poses": 4,
+      "dimensions": [
+        1269,
+        1240
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "characters/bat",
+      "category": "characters",
+      "brief": "bat: reposo, ataque, daño, derrota",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/characters/bat.png",
+      "poses": 4,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "characters/golem",
+      "category": "characters",
+      "brief": "golem: reposo, ataque, daño, derrota",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/characters/golem.png",
+      "poses": 4,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "characters/wraith",
+      "category": "characters",
+      "brief": "wraith: reposo, ataque, daño, derrota",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/characters/wraith.png",
+      "poses": 4,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "characters/boss_0",
+      "category": "characters",
+      "brief": "Rey Osario: reposo, ataque, daño, derrota",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/characters/boss_0.png",
+      "poses": 4,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "characters/boss_1",
+      "category": "characters",
+      "brief": "Madre del Musgo: reposo, ataque, daño, derrota",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/characters/boss_1.png",
+      "poses": 4,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "characters/boss_2",
+      "category": "characters",
+      "brief": "Señor del Magma: reposo, ataque, daño, derrota",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/characters/boss_2.png",
+      "poses": 4,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "characters/boss_3",
+      "category": "characters",
+      "brief": "Coloso de Escarcha: reposo, ataque, daño, derrota",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/characters/boss_3.png",
+      "poses": 4,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "characters/boss_4",
+      "category": "characters",
+      "brief": "Heraldo del Vacío: reposo, ataque, daño, derrota",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/characters/boss_4.png",
+      "poses": 4,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "characters/brasa",
+      "category": "characters",
+      "brief": "Brasa: reposo, martillo, coser, celebrar",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/characters/brasa.png",
+      "poses": 4,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "gear/boots_advanced",
+      "category": "gear",
+      "brief": "boots_advanced",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/gear/boots_advanced.png",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "kind": "equipo_activo",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "gear/boots_basic",
+      "category": "gear",
+      "brief": "boots_basic",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/gear/boots_basic.png",
+      "cells": [
+        [
+          0,
+          0
+        ]
+      ],
+      "kind": "equipo_activo",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "gear/boots_master",
+      "category": "gear",
+      "brief": "boots_master",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/gear/boots_master.png",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      "kind": "equipo_activo",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "alpha": [
+        0,
+        254
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "gear/helmet_advanced",
+      "category": "gear",
+      "brief": "helmet_advanced",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/gear/helmet_advanced.png",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "kind": "equipo_activo",
+      "dimensions": [
+        1774,
+        887
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "gear/helmet_basic",
+      "category": "gear",
+      "brief": "helmet_basic",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/gear/helmet_basic.png",
+      "cells": [
+        [
+          0,
+          0
+        ]
+      ],
+      "kind": "equipo_activo",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "gear/helmet_master",
+      "category": "gear",
+      "brief": "helmet_master",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/gear/helmet_master.png",
+      "cells": [
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          1
+        ]
+      ],
+      "kind": "equipo_activo",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "alpha": [
+        0,
+        254
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "gear/shield_advanced",
+      "category": "gear",
+      "brief": "shield_advanced",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/gear/shield_advanced.png",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "kind": "equipo_activo",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "gear/shield_basic",
+      "category": "gear",
+      "brief": "shield_basic",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/gear/shield_basic.png",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "kind": "equipo_activo",
+      "dimensions": [
+        887,
+        1774
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "gear/shield_master",
+      "category": "gear",
+      "brief": "shield_master",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/gear/shield_master.png",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      "kind": "equipo_activo",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "alpha": [
+        0,
+        254
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "gear/sword_advanced",
+      "category": "gear",
+      "brief": "sword_advanced",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/gear/sword_advanced.png",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ]
+      ],
+      "kind": "equipo_activo",
+      "dimensions": [
+        724,
+        2172
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "gear/sword_basic",
+      "category": "gear",
+      "brief": "sword_basic",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/gear/sword_basic.png",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "kind": "equipo_activo",
+      "dimensions": [
+        887,
+        1774
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "gear/sword_masterwork",
+      "category": "gear",
+      "brief": "sword_masterwork",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/gear/sword_masterwork.png",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          0,
+          3
+        ]
+      ],
+      "kind": "equipo_activo",
+      "dimensions": [
+        793,
+        1983
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "gear/aro",
+      "category": "gear",
+      "brief": "aro",
+      "active": false,
+      "status": "preparado_futuro",
+      "source": "art/stickers/sources/gear/aro.png",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      "kind": "arma_futura",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true,
+      "note": "Original y textura de rejilla listos; sin estadísticas, recetas ni recurso de objeto."
+    },
+    {
+      "id": "gear/ballesta",
+      "category": "gear",
+      "brief": "ballesta",
+      "active": false,
+      "status": "preparado_futuro",
+      "source": "art/stickers/sources/gear/ballesta.png",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "kind": "arma_futura",
+      "dimensions": [
+        1774,
+        887
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true,
+      "note": "Original y textura de rejilla listos; sin estadísticas, recetas ni recurso de objeto."
+    },
+    {
+      "id": "gear/cruz",
+      "category": "gear",
+      "brief": "cruz",
+      "active": false,
+      "status": "preparado_futuro",
+      "source": "art/stickers/sources/gear/cruz.png",
+      "cells": [
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      "kind": "arma_futura",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true,
+      "note": "Original y textura de rejilla listos; sin estadísticas, recetas ni recurso de objeto."
+    },
+    {
+      "id": "gear/espada_vaina",
+      "category": "gear",
+      "brief": "espada_vaina",
+      "active": false,
+      "status": "preparado_futuro",
+      "source": "art/stickers/sources/gear/espada_vaina.png",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ]
+      ],
+      "kind": "arma_futura",
+      "dimensions": [
+        724,
+        2172
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true,
+      "note": "Original y textura de rejilla listos; sin estadísticas, recetas ni recurso de objeto."
+    },
+    {
+      "id": "gear/guadana",
+      "category": "gear",
+      "brief": "guadana",
+      "active": false,
+      "status": "preparado_futuro",
+      "source": "art/stickers/sources/gear/guadana.png",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      "kind": "arma_futura",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "alpha": [
+        0,
+        254
+      ],
+      "reviewed": true,
+      "note": "Original y textura de rejilla listos; sin estadísticas, recetas ni recurso de objeto."
+    },
+    {
+      "id": "gear/guantelete",
+      "category": "gear",
+      "brief": "guantelete",
+      "active": false,
+      "status": "preparado_futuro",
+      "source": "art/stickers/sources/gear/guantelete.png",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "kind": "arma_futura",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true,
+      "note": "Original y textura de rejilla listos; sin estadísticas, recetas ni recurso de objeto."
+    },
+    {
+      "id": "gear/lanza",
+      "category": "gear",
+      "brief": "lanza",
+      "active": false,
+      "status": "preparado_futuro",
+      "source": "art/stickers/sources/gear/lanza.png",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ]
+      ],
+      "kind": "arma_futura",
+      "dimensions": [
+        724,
+        2172
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true,
+      "note": "Original y textura de rejilla listos; sin estadísticas, recetas ni recurso de objeto."
+    },
+    {
+      "id": "gear/martillo",
+      "category": "gear",
+      "brief": "martillo",
+      "active": false,
+      "status": "preparado_futuro",
+      "source": "art/stickers/sources/gear/martillo.png",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "kind": "arma_futura",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "alpha": [
+        0,
+        254
+      ],
+      "reviewed": true,
+      "note": "Original y textura de rejilla listos; sin estadísticas, recetas ni recurso de objeto."
+    },
+    {
+      "id": "gear/maza",
+      "category": "gear",
+      "brief": "maza",
+      "active": false,
+      "status": "preparado_futuro",
+      "source": "art/stickers/sources/gear/maza.png",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "kind": "arma_futura",
+      "dimensions": [
+        887,
+        1774
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true,
+      "note": "Original y textura de rejilla listos; sin estadísticas, recetas ni recurso de objeto."
+    },
+    {
+      "id": "gear/pico",
+      "category": "gear",
+      "brief": "pico",
+      "active": false,
+      "status": "preparado_futuro",
+      "source": "art/stickers/sources/gear/pico.png",
+      "cells": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "kind": "arma_futura",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true,
+      "note": "Original y textura de rejilla listos; sin estadísticas, recetas ni recurso de objeto."
+    },
+    {
+      "id": "materials/bone",
+      "category": "materials",
+      "brief": "bone",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/materials/bone.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "materials/cloth",
+      "category": "materials",
+      "brief": "cloth",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/materials/cloth.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "materials/fire",
+      "category": "materials",
+      "brief": "fire",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/materials/fire.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "materials/frost",
+      "category": "materials",
+      "brief": "frost",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/materials/frost.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "materials/herb",
+      "category": "materials",
+      "brief": "herb",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/materials/herb.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "materials/ice",
+      "category": "materials",
+      "brief": "ice",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/materials/ice.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "materials/iron",
+      "category": "materials",
+      "brief": "iron",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/materials/iron.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "materials/leather",
+      "category": "materials",
+      "brief": "leather",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/materials/leather.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "materials/moss",
+      "category": "materials",
+      "brief": "moss",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/materials/moss.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "materials/obsidian",
+      "category": "materials",
+      "brief": "obsidian",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/materials/obsidian.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "materials/poison",
+      "category": "materials",
+      "brief": "poison",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/materials/poison.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "materials/void_shard",
+      "category": "materials",
+      "brief": "void_shard",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/materials/void_shard.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "materials/water",
+      "category": "materials",
+      "brief": "water",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/materials/water.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "materials/wood",
+      "category": "materials",
+      "brief": "wood",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/materials/wood.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "potions/potion_heal",
+      "category": "potions",
+      "brief": "heal",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/potions/potion_heal.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "potions/potion_speed",
+      "category": "potions",
+      "brief": "speed",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/potions/potion_speed.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "potions/potion_luck",
+      "category": "potions",
+      "brief": "luck",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/potions/potion_luck.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "backgrounds/biome_0",
+      "category": "backgrounds",
+      "brief": "Fondo lateral del bioma 0",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/backgrounds/biome_0.png",
+      "dimensions": [
+        2172,
+        724
+      ],
+      "alpha": null,
+      "reviewed": true
+    },
+    {
+      "id": "backgrounds/biome_1",
+      "category": "backgrounds",
+      "brief": "Fondo lateral del bioma 1",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/backgrounds/biome_1.png",
+      "dimensions": [
+        2172,
+        724
+      ],
+      "alpha": null,
+      "reviewed": true
+    },
+    {
+      "id": "backgrounds/biome_2",
+      "category": "backgrounds",
+      "brief": "Fondo lateral del bioma 2",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/backgrounds/biome_2.png",
+      "dimensions": [
+        2172,
+        724
+      ],
+      "alpha": null,
+      "reviewed": true
+    },
+    {
+      "id": "backgrounds/biome_3",
+      "category": "backgrounds",
+      "brief": "Fondo lateral del bioma 3",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/backgrounds/biome_3.png",
+      "dimensions": [
+        2172,
+        724
+      ],
+      "alpha": null,
+      "reviewed": true
+    },
+    {
+      "id": "backgrounds/biome_4",
+      "category": "backgrounds",
+      "brief": "Fondo lateral del bioma 4",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/backgrounds/biome_4.png",
+      "dimensions": [
+        2172,
+        724
+      ],
+      "alpha": null,
+      "reviewed": true
+    },
+    {
+      "id": "stations/forge",
+      "category": "stations",
+      "brief": "Estación de forge",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/stations/forge.png",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "alpha": [
+        0,
+        254
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "stations/hammer",
+      "category": "stations",
+      "brief": "Estación de hammer",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/stations/hammer.png",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "alpha": [
+        0,
+        254
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "stations/sew",
+      "category": "stations",
+      "brief": "Estación de sew",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/stations/sew.png",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "alpha": [
+        0,
+        254
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "stations/quench",
+      "category": "stations",
+      "brief": "Estación de quench",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/stations/quench.png",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "alpha": [
+        0,
+        254
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "tools/hammer",
+      "category": "tools",
+      "brief": "hammer",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/tools/hammer.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "tools/needle",
+      "category": "tools",
+      "brief": "needle",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/tools/needle.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "tools/steel_bar",
+      "category": "tools",
+      "brief": "steel_bar",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/tools/steel_bar.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "tools/water_bucket",
+      "category": "tools",
+      "brief": "water_bucket",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/tools/water_bucket.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "ui/blueprints",
+      "category": "ui",
+      "brief": "blueprints",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/ui/blueprints.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "ui/equipment",
+      "category": "ui",
+      "brief": "equipment",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/ui/equipment.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "ui/shop",
+      "category": "ui",
+      "brief": "shop",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/ui/shop.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "ui/delivery",
+      "category": "ui",
+      "brief": "delivery",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/ui/delivery.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "ui/backpack",
+      "category": "ui",
+      "brief": "backpack",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/ui/backpack.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "ui/coin",
+      "category": "ui",
+      "brief": "coin",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/ui/coin.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "ui/anvil",
+      "category": "ui",
+      "brief": "anvil",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/ui/anvil.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "ui/spark",
+      "category": "ui",
+      "brief": "spark",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/ui/spark.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "alpha": [
+        0,
+        255
+      ],
+      "reviewed": true
+    },
+    {
+      "id": "screens/start",
+      "category": "screens",
+      "brief": "start",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/screens/start.png",
+      "dimensions": [
+        941,
+        1672
+      ],
+      "alpha": null,
+      "reviewed": true
+    },
+    {
+      "id": "screens/defeat",
+      "category": "screens",
+      "brief": "defeat",
+      "active": false,
+      "status": "preparado_opcional",
+      "source": "art/stickers/sources/screens/defeat.png",
+      "dimensions": [
+        941,
+        1672
+      ],
+      "alpha": null,
+      "reviewed": true,
+      "note": "El juego actual reaparece automáticamente; la pose de derrota sí está integrada."
+    },
+    {
+      "id": "backgrounds/workshop",
+      "category": "backgrounds",
+      "brief": "Taller ilustrado: reutiliza el piloto aprobado",
+      "active": true,
+      "status": "integrado",
+      "source": "art/stickers/sources/backgrounds/workshop.png",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "alpha": null,
+      "reviewed": true
+    }
+  ],
+  "retained": [
+    "Efectos actuales de combate y fabricación",
+    "Tipografía legible y textos localizables",
+    "Componentes de interfaz procedurales y marcos de calidad",
+    "Sonido fuera del alcance de arte visual"
+  ]
+}

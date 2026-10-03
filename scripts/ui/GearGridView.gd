@@ -26,6 +26,7 @@ var show_zones := false  ## la rejilla de Tico marca las zonas de GearAuras.ZONE
 var max_size := Vector2i(6, 6)  ## casillas que se dibujan; las que aún no existen, punteadas
 var hidden_item: CraftedItem = null  ## la pieza que se arrastra no se dibuja en su sitio
 var drop_cells: Dictionary = {}  ## casilla → color del destino del arrastre
+var fit_anchors: Dictionary = {}  ## esquinas donde cabe la pieza: verde libre, dorado intercambio
 var swap_item: CraftedItem = null  ## pieza con la que se intercambiaría (contorno amarillo)
 var glow: Dictionary = {}  ## pieza → color: gana (verde) o pierde (rojo) aumento con el arrastre
 var sprite_for: Callable = Callable(GearArt, "texture_for")  ## (pieza, giro) → Texture2D; sin textura, casillas de color
@@ -103,6 +104,10 @@ func _draw() -> void:
 		_outline(swap_item, COLOR_SWAP)
 	for c in drop_cells:
 		draw_rect(cell_rect(c).grow(-3.0), drop_cells[c])
+	for c in fit_anchors:
+		var marker := cell_rect(c).position + Vector2(15, 15)
+		draw_circle(marker, 9, Color(0.02, 0.02, 0.02, 0.95))
+		draw_circle(marker, 6, fit_anchors[c])
 
 
 ## Dibuja una pieza con la esquina de su caja en `top_left` y casillas de `cell_px`. Lo usan la rejilla,

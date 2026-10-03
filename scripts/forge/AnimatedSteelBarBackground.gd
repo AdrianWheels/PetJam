@@ -15,6 +15,17 @@ func _ready() -> void:
 	play("steel_bar_loop")
 
 func _load_animation_frames() -> void:
+	var front := String(name).contains("Front")
+	var path := "res://art/stickers/sources/stations/quench.png"
+	var illustrated := load(path) as Texture2D
+	if illustrated:
+		sprite_frames = SpriteFrames.new()
+		sprite_frames.add_animation("steel_bar_loop")
+		sprite_frames.add_frame("steel_bar_loop", illustrated)
+		scale = Vector2(900, 700) / illustrated.get_size()
+		# La copia frontal se recorta en la superficie del agua para ocultar el metal sumergido.
+		position.y = 140.0 if front else 490.0
+		return
 	_sprite_frames = SpriteFrames.new()
 	_sprite_frames.add_animation("steel_bar_loop")
 	_sprite_frames.set_animation_loop("steel_bar_loop", true)

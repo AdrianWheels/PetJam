@@ -1,7 +1,7 @@
 [gd_scene load_steps=6 format=3 uid="uid://cka0tg466h1e7"]
 
 [ext_resource type="Script" path="res://scripts/RequestSlot.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://b76omfj8u1a44" path="res://art/placeholders/forge/blueprint_armor_leather.png" id="2_2p12a"]
+[ext_resource type="Texture2D" path="res://art/stickers/sources/ui/blueprints.png" id="2_2p12a"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
 content_margin_left = 8.0

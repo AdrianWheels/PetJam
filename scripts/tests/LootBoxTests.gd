@@ -144,7 +144,7 @@ func test_inventory_keeps_loot_poses_and_forgets_them_outside_the_loot() -> void
 	var shield: CraftedItem = by_id[&"shield_master"]
 	var helmet: CraftedItem = by_id[&"helmet_basic"]
 	check(shield.loot_pose.get("pos", Vector2.INF).is_equal_approx(Vector2(300, 274)) and is_equal_approx(float(shield.loot_pose.get("ang", 0.0)), 0.5), "la pose vuelve al cargar la partida (%s)" % [shield.loot_pose])
-	im.move_item(helmet, &"bag", Vector2i(0, 0), 0)
+	im.move_item(helmet, &"hero", Vector2i(0, 0), 0)
 	check(helmet.loot_pose.is_empty(), "al salir del botín la pieza pierde su pose")
 	im.move_item(helmet, &"loot")
 	check(helmet.loot_pose.is_empty() and helmet in im.get_loot(), "y vuelve al botín sin pose: caerá desde arriba")
@@ -563,7 +563,7 @@ func _move(panel: Control, pos: Vector2) -> void:
 ## Dónde poner el dedo para que la pieza cogida caiga con su caja en `cell` de `view` (va una casilla por encima del dedo).
 func _finger_for(panel: Control, view: Control, cell: Vector2i) -> Vector2:
 	var grab: Vector2 = panel._press.origin - panel._press.pos
-	return view.global_position + Vector2(cell) * CELL - grab + Vector2(0, CELL)
+	return view.global_position + Vector2(cell) * CELL - grab + (Vector2(0, CELL) if DisplayServer.is_touchscreen_available() else Vector2.ZERO)
 
 
 ## Deja una pieza del botín apoyada en el suelo de la caja, en la x dada (px de la caja) y con ese ángulo: con pose, la
@@ -592,10 +592,10 @@ func _silence_sounds() -> void:
 
 func test_the_panel_makes_room_for_the_box() -> void:
 	var panel := _new_panel()
-	check(panel._loot_box.rect_global() == Rect2(60, 970, 960, 440), "la caja mide 960×440 desde y = 970 (%s)" % panel._loot_box.rect_global())
-	check(panel._bag_view.global_position == Vector2(60, 1460), "la mochila baja a y = 1460 (%s)" % panel._bag_view.global_position)
-	check(panel.sell_zone.get_global_rect() == Rect2(760, 1460, 260, 440), "y la zona de venta con ella (%s)" % panel.sell_zone.get_global_rect())
-	check(panel.get_node("BagIcon").position.y == 1410.0 and panel.get_node("BagTitle").position.y == 1416.0, "el título de la mochila, con su icono, entre la caja y la mochila")
+	check(panel._loot_box.rect_global() == Rect2(60, 1070, 960, 440), "la caja mide 960×440 desde y = 970 (%s)" % panel._loot_box.rect_global())
+	check(not ("_bag_view" in panel), "la mochila adicional está retirada")
+	check(panel.sell_zone.get_global_rect() == Rect2(760, 1540, 260, 200), "y la zona de venta con ella (%s)" % panel.sell_zone.get_global_rect())
+	check(not panel.has_node("BagIcon") and not panel.has_node("BagTitle"), "sin título ni icono de mochila")
 	check(not ("_scrolling" in panel) and not ("_loot_view" in panel), "sin la tira ni su desplazamiento")
 	panel.queue_free()
 	await get_tree().process_frame
@@ -671,7 +671,7 @@ func test_a_piece_from_the_grid_lands_where_it_is_dropped() -> void:
 	_mouse(panel, finger, false)
 	var body := box.body_of(helmet)
 	check(helmet.place == &"loot" and body != null and box._queue.is_empty(), "sale de Tico y entra en la caja sin caer desde arriba")
-	check(body.position.is_equal_approx(Vector2(480, 190)), "donde se soltó: una casilla por encima del dedo (%s)" % body.position)
+	check(body.position.is_equal_approx(Vector2(480, 190 if DisplayServer.is_touchscreen_available() else 300)), "donde se soltó: una casilla por encima del dedo (%s)" % body.position)
 	panel.queue_free()
 	await _restore_inventory(saved)
 
@@ -944,7 +944,7 @@ func test_the_release_point_is_the_drop_point() -> void:
 	_move(panel, start + Vector2(0, -40))
 	_move(panel, box.to_global(Vector2(300, 300)))
 	var finger := box.to_global(Vector2(700, 300))
-	var center: Vector2 = finger + (panel._press.origin - panel._press.pos) + Vector2(0, -panel.CELL) + PieceShape.mass_center(PieceShape.of_item(helmet, 0), panel.DRAG_CELL)
+	var center: Vector2 = finger + (panel._press.origin - panel._press.pos) + (Vector2(0, -panel.CELL) if DisplayServer.is_touchscreen_available() else Vector2.ZERO) + PieceShape.mass_center(PieceShape.of_item(helmet, 0), panel.DRAG_CELL)
 	_mouse(panel, finger, false)  # sin movimiento previo hasta este punto
 	var body := box.body_of(helmet)
 	check(body != null and body.position.is_equal_approx(box.to_local(center)), "entra bajo el punto donde se soltó (%s)" % (body.position if body else Vector2.INF))

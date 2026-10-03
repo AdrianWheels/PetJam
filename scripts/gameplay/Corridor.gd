@@ -1,10 +1,8 @@
 extends Node2D
 
-## Corredor endless: el héroe avanza sala a sala y lucha contra un enemigo por sala.
-## El estado de juego vive en GameManager; aquí va la presentación del combate:
-## cámara (héroe al tercio izquierdo), escenario por biomas, puertas numeradas, despertar de enemigos,
-## hit-stop local (nunca congela los minijuegos), botín visible, transiciones de muerte/reaparición y
-## viajes del selector de sala.
+## Duelos endless en posiciones fijas. Cada sala cambia el rival y el escenario por bioma.
+## GameManager conserva el avance, muro y reaparición; el estado RUN es la pausa entre duelos.
+## El hit-stop afecta solo al combate; los minijuegos continúan funcionando.
 
 signal room_entered(room: int, is_boss: bool)
 signal biome_entered(biome_index: int, display_name: String)
@@ -27,7 +25,7 @@ signal room_traveled(room: int)  # viaje del selector o reintento del muro (el H
 const HERO_SPEED := 38.0
 const UNLOCK_STAGGER := 0.15  # segundos entre los pergaminos de un mismo hito
 var _unlock_burst := 0
-const FLOOR_Y := PixelView.FLOOR_Y
+const FLOOR_Y := 92.0
 const VIEW_W := PixelView.VIEW_W
 const VIEW_H := PixelView.VIEW_H
 const HERO_SCREEN_X := PixelView.HERO_SCREEN_X  # posición del héroe en pantalla (fracción del ancho)
@@ -35,7 +33,8 @@ const SPAWN_AHEAD := 160.0  # el enemigo aparece justo fuera de pantalla por la 
 const BOSS_EXTRA_DISTANCE := 52.0  # el jefe entra en pantalla andando, no de golpe
 const GATE_BEFORE_ENEMY := 66.0
 const ENGAGE_GAP := 3.0
-const HERO_START := PixelView.HERO_START
+const HERO_START := Vector2(50.0, FLOOR_Y)
+const ENEMY_SPOT := Vector2(166.0, FLOOR_Y)
 const BOSS_INTERVAL := 10  # Boss cada 10 niveles (coincide con Biomes.ROOMS_PER_BIOME)
 const RESPAWN_DELAY := 1.5
 ## Botín doble (Poción de Suerte): la segunda tanda sale a la vez que la primera, un icono más adelante,
@@ -128,20 +127,12 @@ func _process(delta: float):
 
 
 func update_run(delta: float):
+	hero.walking = false
 	if _pause > 0.0:
 		_pause -= delta
-		hero.walking = false
 		return
-	if hero.alive:
-		hero.position.x += HERO_SPEED * delta
-		hero.walking = true
-		hero.walk_speed = HERO_SPEED
-		ground_offset += HERO_SPEED * delta
-		# Cruzar la puerta = entrar en la sala (y en el bioma nuevo si toca)
-		if hero.position.x >= _next_gate_x:
-			_next_gate_x = INF
-			_enter_room(_next_gate_room)
-	if hero.alive and enemy.alive and _in_engage_range():
+	if hero.alive and enemy.alive:
+		_enter_room(level)
 		_begin_fight()
 
 
@@ -163,7 +154,7 @@ func is_advancing() -> bool:
 
 
 func _in_engage_range() -> bool:
-	return enemy.position.x - hero.position.x <= hero.reach + enemy.half_width + ENGAGE_GAP
+	return hero.alive and enemy.alive  # duelo fijo; no depende de distancia de corredor
 
 
 func _begin_fight() -> void:
@@ -175,6 +166,8 @@ func _begin_fight() -> void:
 		_next_gate_x = INF
 		_enter_room(_next_gate_room)
 	enemy.wake()
+	if enemy.is_boss:
+		_boss_intro()
 	enemy.alert()
 	if combat_controller and combat_controller.has_method("start_combat"):
 		combat_controller.start_combat()
@@ -189,23 +182,14 @@ func _enter_room(room: int) -> void:
 
 
 func _update_camera() -> void:
-	if hero == null or camera == null:
-		return
-	camera.set_target_x(hero.position.x + VIEW_W * (0.5 - HERO_SCREEN_X))
-	backdrop.follow_camera(camera.position)
+	if camera:
+		camera.set_target_x(VIEW_W * 0.5)
+		backdrop.follow_camera(Vector2(VIEW_W * 0.5, VIEW_H * 0.5))
 
 
 func _update_enemy_wake() -> void:
-	if not enemy.alive or enemy.is_awake():
-		return
-	# Deja terminar la celebración de la muerte anterior antes de presentar al siguiente
-	if _pause > 0.0 and state == State.RUN:
-		return
-	var right_edge := camera.position.x + VIEW_W * 0.5
-	if enemy.position.x - enemy.half_width * 0.6 < right_edge:
+	if state == State.FIGHT and enemy.alive and not enemy.is_awake():
 		enemy.wake()
-		if enemy.is_boss:
-			_boss_intro()
 
 
 func _boss_intro() -> void:
@@ -240,13 +224,17 @@ func spawn_enemy(lv: int, x: float):
 		enemy.level = lv
 		enemy.is_boss = boss
 		enemy.reset_stats()
-	if boss:
-		x += BOSS_EXTRA_DISTANCE
-	enemy.position = Vector2(x, FLOOR_Y)
+	enemy.position = ENEMY_SPOT
+	hero.position = HERO_START
+	hero.walking = false
+	hero.show_hud = false
+	enemy.duel_presentation = true
 	enemy.velocity = Vector2.ZERO
 	if combat_controller and combat_controller.has_method("stop_combat"):
 		combat_controller.stop_combat()
-	_place_gate(lv, x - GATE_BEFORE_ENEMY)
+	for gate in _gates:
+		gate.hide()
+	_next_gate_x = INF
 
 
 func _place_gate(room: int, x: float) -> void:
@@ -276,7 +264,7 @@ func reset_combat(full_reset: bool):
 		g.visible = false
 	_next_gate = null
 	_next_gate_x = INF
-	camera.snap_to(start.x + VIEW_W * (0.5 - HERO_SCREEN_X), VIEW_H * 0.5)
+	camera.snap_to(VIEW_W * 0.5, VIEW_H * 0.5)
 	backdrop.set_room(level, false)
 	# Las partículas viven en el mundo: tras el salto de cámara hay que rellenarlas donde está ahora
 	backdrop.follow_camera(camera.position)

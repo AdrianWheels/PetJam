@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="BlueprintResource" load_steps=9 format=3 uid="uid://c28g2xsjpue4r"]
 
 [ext_resource type="Script" uid="uid://c8d1uaeb55e1" path="res://scripts/data/BlueprintResource.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://cuxij6wwfw1vo" path="res://art/assets/Imagenes Raw/Blueprints/boots_basic_bp_raw.png" id="1_uw3w7"]
+[ext_resource type="Texture2D" path="res://art/stickers/sources/gear/boots_basic.png" id="1_uw3w7"]
 [ext_resource type="Script" uid="uid://dtkp3d357pf8g" path="res://scripts/data/TrialResource.gd" id="2"]
 [ext_resource type="Script" uid="uid://dumvodck0w3no" path="res://scripts/data/SewTrialConfig.gd" id="3"]
 [ext_resource type="PackedScene" uid="uid://cj5b2mfsvqaos" path="res://scenes/Minigames/SewOSU.tscn" id="4"]

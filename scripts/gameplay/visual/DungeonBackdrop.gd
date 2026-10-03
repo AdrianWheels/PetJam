@@ -1,7 +1,7 @@
 extends Node2D
 
-## Escenario procedural de la mazmorra: parallax por capas + biomas + atmósfera.
-## Todo se dibuja con vectores (sin texturas grandes) y cada capa se cachea hasta que cambia la paleta.
+## Fondos ilustrados por bioma, con desplazamiento continuo y efectos de atmósfera.
+## Las capas procedurales sirven como respaldo cuando falta una ilustración.
 ## El Corridor llama a set_room(sala) y a follow_camera(pos) cada frame.
 
 signal biome_changed(biome_index: int, display_name: String)
@@ -38,6 +38,7 @@ var _dust_decor := ""  # decor con el que se configuró el polvo (cambiarlo rein
 var _transition_tween: Tween
 var _from_palette: Dictionary = {}
 var _to_palette: Dictionary = {}
+var _illustrated: Sprite2D
 
 
 func _ready() -> void:
@@ -54,6 +55,7 @@ func _build_sky() -> void:
 	# El cielo va en pantalla (no se mueve con la cámara)
 	var sky_layer := CanvasLayer.new()
 	sky_layer.layer = -10
+	sky_layer.transform = Transform2D(0.0, Vector2.ONE * get_viewport_rect().size.x / VIEW_SIZE.x, 0.0, Vector2.ZERO)
 	add_child(sky_layer)
 	_sky = Node2D.new()
 	_sky.set_script(LayerScript)
@@ -62,6 +64,19 @@ func _build_sky() -> void:
 
 
 func _build_layers() -> void:
+	var parallax := CanvasLayer.new()
+	parallax.layer = -9
+	parallax.transform = Transform2D(0.0, Vector2.ONE * get_viewport_rect().size.x / VIEW_SIZE.x, 0.0, Vector2.ZERO)
+	add_child(parallax)
+	_illustrated = Sprite2D.new()
+	_illustrated.centered = false
+	_illustrated.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	var scroll_shader := Shader.new()
+	scroll_shader.code = "shader_type canvas_item; uniform float scroll = 0.0; void fragment() { COLOR = texture(TEXTURE, vec2(fract(UV.x + scroll), UV.y)); }"
+	var scroll_material := ShaderMaterial.new()
+	scroll_material.shader = scroll_shader
+	_illustrated.material = scroll_material
+	parallax.add_child(_illustrated)
 	for spec in LAYERS:
 		var par := Parallax2D.new()
 		par.scroll_scale = Vector2(spec[1], 1.0)
@@ -90,6 +105,7 @@ func _build_layers() -> void:
 func _build_screen_fx() -> void:
 	_screen = CanvasLayer.new()
 	_screen.layer = 5
+	_screen.transform = Transform2D(0.0, Vector2.ONE * get_viewport_rect().size.x / VIEW_SIZE.x, 0.0, Vector2.ZERO)
 	add_child(_screen)
 	# Viñeta: centro transparente, bordes oscuros
 	var grad := Gradient.new()
@@ -150,6 +166,8 @@ func _build_dust() -> void:
 
 ## Sitúa el emisor de polvo con la cámara (las partículas viven en el mundo).
 func follow_camera(cam_center: Vector2) -> void:
+	if _illustrated and _illustrated.material:
+		_illustrated.material.set_shader_parameter("scroll", cam_center.x / VIEW_SIZE.x)
 	if _dust:
 		_dust.position = Vector2(cam_center.x, VIEW_SIZE.y * 0.5)
 
@@ -167,6 +185,12 @@ func set_biome(index: int, animated: bool = true) -> void:
 	var target: Dictionary = Biomes.get_biome(index)
 	var changed := index != biome_index
 	biome_index = index
+	var image_path := "res://art/stickers/sources/backgrounds/biome_%d.png" % posmod(index, 5)
+	if ResourceLoader.exists(image_path):
+		_illustrated.texture = load(image_path)
+		_illustrated.scale = VIEW_SIZE / _illustrated.texture.get_size()
+		for layer in _layers:
+			layer.visible = false
 	if _transition_tween and _transition_tween.is_valid():
 		_transition_tween.kill()
 	if not animated or palette.is_empty():

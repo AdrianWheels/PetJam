@@ -61,6 +61,7 @@ var _stitch_speed := 1.0
 var _spawn_indices: Array[int] = []  # Índices personalizados (vacío = random)
 
 func _ready():
+	UIClarity.readable_labels(self)
 	# 🎶 Configurar SoundSet específico para Sew
 	var sew_soundset := MinigameSoundSet.new()
 	sew_soundset.sound_perfect = load("res://art/sounds/sfx/minigames/sew/stitch_pierce_leather_perfect.wav")

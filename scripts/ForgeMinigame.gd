@@ -38,6 +38,7 @@ var _trial_qualities: Array[String] = []
 var _forge_speed := 1.0  # Velocidad del cursor (multiplicador)
 
 func _ready():
+	UIClarity.readable_labels(self)
 	# 🎶 Configurar SoundSet específico para Forge (usar sonidos genéricos por ahora)
 	var forge_soundset := MinigameSoundSet.new()
 	forge_soundset.sound_perfect = load("res://art/sounds/perfect.mp3")

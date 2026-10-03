@@ -409,10 +409,10 @@ func test_swap_sends_the_other_to_loot_if_it_does_not_fit_back() -> void:
 	var small := _piece(&"helmet_basic")   # 1×1
 	im.add_crafted_item(tower)
 	im.add_crafted_item(small)
-	check(im.move_item(small, &"bag", Vector2i(5, 3), 0), "el casco en la esquina de la mochila")
+	check(im.move_item(small, &"hero", Vector2i(3, 3), 0), "el casco en la esquina de la rejilla de Tico")
 	check(im.move_item(tower, &"hero", Vector2i(0, 0), 0), "el escudo torre en Tico")
 	check(im.move_item(small, &"hero", Vector2i(0, 0), 0), "el casco encima del escudo: intercambio")
-	check(small.place == &"hero" and tower.place == &"loot", "el escudo no cabe en la esquina de la mochila: va al botín y no se pierde")
+	check(small.place == &"hero" and tower.place == &"loot", "el escudo no cabe en la esquina de la rejilla de Tico: va al botín y no se pierde")
 	await _restore_inventory(saved)
 
 
@@ -441,18 +441,18 @@ func test_dropping_a_piece_where_it_already_is_changes_nothing() -> void:
 	for p in [loot_a, loot_b, loot_c, sword, helmet]:
 		im.add_crafted_item(p)
 	check(im.move_item(sword, &"hero", Vector2i(1, 1), 1), "la espada tumbada en Tico")
-	check(im.move_item(helmet, &"bag", Vector2i(2, 2), 0), "el casco en la mochila")
+	check(im.move_item(helmet, &"hero", Vector2i(2, 2), 0), "el casco en la rejilla de Tico")
 	var order: Array = im.get_loot().duplicate()
 	check(order == [loot_c, loot_b, loot_a], "el botín, lo más nuevo delante (%s)" % [order])
 	_listen_to_inventory()
 	check(im.move_item(sword, &"hero", Vector2i(1, 1), 1), "soltar la espada en su casilla y con su giro vale")
 	check(im.move_item(sword, &"hero", Vector2i(1, 1), 5) and im.move_item(sword, &"hero", Vector2i(1, 1), -3), "con más vueltas, el mismo giro")
-	check(im.move_item(helmet, &"bag", Vector2i(2, 2), 0), "lo mismo con el casco en la mochila")
+	check(im.move_item(helmet, &"hero", Vector2i(2, 2), 0), "lo mismo con el casco en la rejilla de Tico")
 	check(im.move_item(loot_b, &"loot") and im.move_item(loot_c, &"loot") and im.move_item(loot_a, &"loot"), "y con las del botín, en el botín")
 	var ev := _take_events()
 	check(ev.equipment == 0 and ev.crafted == 0 and ev.loot == 0, "ningún aviso (%s)" % [ev])
 	check(im.get_loot() == order, "el botín conserva su orden (%s)" % [im.get_loot()])
-	check(sword.place == &"hero" and sword.cell == Vector2i(1, 1) and sword.rot == 1 and helmet.place == &"bag" and helmet.cell == Vector2i(2, 2), "y las piezas siguen donde estaban")
+	check(sword.place == &"hero" and sword.cell == Vector2i(1, 1) and sword.rot == 1 and helmet.place == &"hero" and helmet.cell == Vector2i(2, 2), "y las piezas siguen donde estaban")
 	check(im.move_item(sword, &"hero", Vector2i(1, 2), 1), "mover la espada a otra casilla sí la mueve")
 	ev = _take_events()
 	check(ev.equipment == 1 and ev.crafted == 1, "y esa sí avisa (%s)" % [ev])
@@ -497,17 +497,12 @@ func test_equipment_changed_only_when_tico_grid_changes() -> void:
 	check(_take_events().equipment == 1, "quitar de Tico avisa una vez")
 	check(im.sell_item(boots) > 0, "vender las botas de Tico")
 	check(_take_events().equipment == 1, "vender de Tico avisa una vez")
-	# No avisa: el botín y la mochila no son de Tico
-	check(im.move_item(shield, &"bag", Vector2i(0, 0), 0) and im.rotate_in_place(shield) and im.move_item(shield, &"loot"), "el escudo del botín a la mochila, girado allí y de vuelta al botín")
-	check(_take_events().equipment == 0, "botín, mochila y giros en la mochila no avisan del equipo")
-	# Avisa una vez: el intercambio entre la mochila y Tico
-	im.move_item(shield, &"bag", Vector2i(0, 0), 0)
-	_take_events()
-	check(im.move_item(shield, &"hero", Vector2i(1, 1), 0) and sword.place == &"bag", "el escudo de la mochila encima de la espada de Tico: la espada pasa a la mochila")
-	check(_take_events().equipment == 1, "intercambiar con la mochila avisa una vez")
+	check(not im.move_item(shield, &"bag"), "la mochila retirada no acepta piezas")
+	check(_take_events().equipment == 0, "rechazar no cambia equipo")
+	check(im.move_item(shield, &"hero", Vector2i(1, 1), 0) and sword.place == &"loot", "intercambiar desde el botín devuelve la espada al botín")
+	check(_take_events().equipment == 1, "intercambiar avisa una vez")
 	_stop_listening()
 	await _restore_inventory(saved)
-
 
 func test_sell_and_sell_all_keep_the_best() -> void:
 	var saved := _fresh_inventory()
@@ -518,11 +513,11 @@ func test_sell_and_sell_all_keep_the_best() -> void:
 	var kept := _piece(&"helmet_basic", 0.5)
 	for p in [common, epic, legend, kept]:
 		im.add_crafted_item(p)
-	check(im.move_item(kept, &"bag", Vector2i(0, 0), 0), "una pieza en la mochila")
+	check(im.move_item(kept, &"hero", Vector2i(0, 0), 0), "una pieza en la equipo de Tico")
 	var gold: int = im.sell_all_loot()
 	check(gold == common.get_sell_price(), "Vender todo solo vende lo que no es Épico ni Legendario (%d)" % gold)
 	check(im.get_loot().size() == 2 and epic in im.get_loot() and legend in im.get_loot(), "la épica y la legendaria siguen en el botín")
-	check(kept.place == &"bag", "la mochila no se toca")
+	check(kept.place == &"hero", "la equipo de Tico no se toca")
 	check(im.sell_item(legend) == legend.get_sell_price() and not (legend in im.get_crafted_items()), "vender una suelta")
 	check(im.get_quantity(&"gold") == gold + legend.get_sell_price(), "el oro sube lo vendido")
 	await _restore_inventory(saved)
@@ -536,12 +531,12 @@ func test_totals_and_preview_use_the_hero_grid_only() -> void:
 	im.add_crafted_item(shield)
 	im.add_crafted_item(helmet)
 	im.move_item(shield, &"hero", Vector2i(0, 1), 0)
-	im.move_item(helmet, &"bag", Vector2i(0, 0), 0)
+	im.move_item(helmet, &"loot")
 	check(im.calculate_total_stats() == GearAuras.totals(im.hero_grid), "las estadísticas de Tico son las de su rejilla")
 	var before: Dictionary = im.calculate_total_stats()
 	var preview: Dictionary = im.preview_stats(helmet, &"hero", Vector2i(1, 1), 0)
 	check(preview.hp > before.hp, "la vista previa suma el casco con su aura (%d → %d)" % [before.hp, preview.hp])
-	check(im.calculate_total_stats() == before and helmet.place == &"bag", "la vista previa no mueve nada")
+	check(im.calculate_total_stats() == before and helmet.place == &"loot", "la vista previa no mueve nada")
 	await _restore_inventory(saved)
 
 
@@ -719,14 +714,14 @@ func test_v2_save_round_trip() -> void:
 	for p in [a, b, c]:
 		im.add_crafted_item(p)
 	im.move_item(a, &"hero", Vector2i(0, 0), 0)
-	im.move_item(b, &"bag", Vector2i(2, 1), 3)
+	b.rot = 3
 	var data: Dictionary = im.to_save_data()
 	im.load_save_data(data, 1)
 	var by_id := {}
 	for it in im.get_crafted_items():
 		by_id[it.item_resource.item_id] = it
 	check(by_id[&"shield_master"].place == &"hero" and by_id[&"shield_master"].aristas == [Vector2i(2, 1)], "el escudo vuelve a Tico con su arista")
-	check(by_id[&"boots_advanced"].place == &"bag" and by_id[&"boots_advanced"].cell == Vector2i(2, 1) and by_id[&"boots_advanced"].rot == 3, "las botas vuelven a su casilla y giro de la mochila")
+	check(by_id[&"boots_advanced"].place == &"loot" and by_id[&"boots_advanced"].rot == 3, "las botas vuelven al botín con su giro")
 	check(by_id[&"sword_basic"].place == &"loot", "la espada sigue en el botín")
 	await _restore_inventory(saved)
 
@@ -739,7 +734,7 @@ func test_impossible_saved_position_goes_to_loot() -> void:
 	im.add_crafted_item(a)
 	im.add_crafted_item(b)
 	im.move_item(a, &"hero", Vector2i(0, 0), 0)
-	im.move_item(b, &"bag", Vector2i(5, 3), 0)
+	im.move_item(b, &"hero", Vector2i(3, 3), 0)
 	var data: Dictionary = im.to_save_data()
 	for d in data.crafted_items:
 		if d.item_id == "shield_master":
@@ -750,7 +745,7 @@ func test_impossible_saved_position_goes_to_loot() -> void:
 		by_id[it.item_resource.item_id] = it
 	check(by_id.size() == 2, "las dos piezas siguen ahí")
 	check(by_id[&"shield_master"].place == &"loot", "el escudo con una posición imposible pasa al botín")
-	check(by_id[&"helmet_basic"].place == &"bag" and by_id[&"helmet_basic"].cell == Vector2i(5, 3), "el casco sigue en su sitio de la mochila")
+	check(by_id[&"helmet_basic"].place == &"hero" and by_id[&"helmet_basic"].cell == Vector2i(3, 3), "el casco sigue en su sitio de la rejilla de Tico")
 	await _restore_inventory(saved)
 
 
@@ -829,7 +824,7 @@ func _cell_center(view: Control, cell: Vector2i) -> Vector2:
 ## por encima del dedo).
 func _finger_for(panel: Control, view: Control, cell: Vector2i) -> Vector2:
 	var grab: Vector2 = panel._press.origin - panel._press.pos
-	return view.global_position + Vector2(cell) * GearGridView.CELL - grab + Vector2(0, GearGridView.CELL)
+	return view.global_position + Vector2(cell) * GearGridView.CELL - grab + (Vector2(0, GearGridView.CELL) if DisplayServer.is_touchscreen_available() else Vector2.ZERO)
 
 
 ## Deja una pieza del botín apoyada en el suelo de la caja, en la x dada (px de la caja) y con ese ángulo: con pose, la
@@ -867,7 +862,9 @@ func test_tap_rotates_a_piece_in_the_grid() -> void:
 	var p := _cell_center(panel._hero_view, Vector2i(1, 1))
 	_mouse(panel, p, true)
 	_mouse(panel, p, false)
-	check(sword.rot == 1, "un toque la gira (%d)" % sword.rot)
+	check(sword.rot == 0, "principal selecciona sin girar")
+	panel._secondary_at(p)
+	check(sword.rot == 1, "secundario gira la pieza")
 	check(panel._selected == sword, "y la enseña en la ficha")
 	panel.queue_free()
 	await _restore_inventory(saved)
@@ -904,9 +901,9 @@ func test_second_finger_rotates_while_dragging() -> void:
 	var im := _im()
 	var sword := _piece(&"sword_advanced")
 	im.add_crafted_item(sword)
-	im.move_item(sword, &"bag", Vector2i(0, 0), 0)
+	im.move_item(sword, &"hero", Vector2i(0, 0), 0)
 	var panel := _new_panel()
-	var start := _cell_center(panel._bag_view, Vector2i(0, 1))
+	var start := _cell_center(panel._hero_view, Vector2i(0, 1))
 	_mouse(panel, start, true)
 	_move(panel, start + Vector2(40, 40))
 	var touch := InputEventScreenTouch.new()
@@ -914,7 +911,9 @@ func test_second_finger_rotates_while_dragging() -> void:
 	touch.pressed = true
 	touch.position = Vector2(900, 1500)
 	panel._input(touch)
-	check(panel._drag_rot == 1, "un segundo dedo gira la pieza que se arrastra (%d)" % panel._drag_rot)
+	check(panel._drag_rot == 0, "el segundo dedo queda pendiente")
+	panel._secondary_at(start)
+	check(panel._drag_rot == 1, "secundario gira durante el arrastre")
 	var key := InputEventKey.new()
 	key.keycode = KEY_R
 	key.pressed = true
@@ -922,7 +921,7 @@ func test_second_finger_rotates_while_dragging() -> void:
 	check(panel._drag_rot == 2, "en el ordenador, la tecla R también (%d)" % panel._drag_rot)
 	_move(panel, Vector2(540, 60))  # arriba del todo, fuera de las rejillas y del botín
 	_mouse(panel, Vector2(540, 60), false)  # soltada ahí vuelve a su sitio
-	check(sword.place == &"bag" and sword.cell == Vector2i(0, 0) and sword.rot == 0, "soltada fuera, vuelve a su sitio sin girar")
+	check(sword.place == &"hero" and sword.cell == Vector2i(0, 0) and sword.rot == 0, "soltada fuera, vuelve a su sitio sin girar")
 	panel.queue_free()
 	await _restore_inventory(saved)
 
@@ -1076,7 +1075,7 @@ func test_dropping_on_the_last_row_of_a_full_grid_places_the_piece() -> void:
 	_mouse(panel, start, true)
 	_move(panel, start + Vector2(0, -30))
 	var finger := _finger_for(panel, panel._hero_view, Vector2i(2, 5))
-	check(panel._loot_box.rect_global().has_point(finger), "el dedo ya está dentro de la caja del botín (%s)" % finger)
+	check(Rect2(panel._hero_view.global_position, panel._hero_view.size).has_point(finger), "en ordenador el cursor coincide con la casilla")
 	_move(panel, finger)
 	check(panel._target.get("place") == &"hero" and panel._target.get("cell") == Vector2i(2, 5) and panel._target.get("ok", false), "el destino es la casilla de Tico bajo la pieza (%s)" % [panel._target])
 	_mouse(panel, finger, false)
@@ -1098,11 +1097,11 @@ func test_dashed_rows_do_not_steal_a_drop_meant_for_the_loot() -> void:
 	_mouse(panel, start, true)
 	_move(panel, start + Vector2(30, 30))
 	var finger := _finger_for(panel, panel._hero_view, Vector2i(2, 5))  # la pieza sobre la fila 5, que en 4×4 aún no existe
-	check(panel._loot_box.rect_global().has_point(finger), "el dedo está dentro de la caja del botín (%s)" % finger)
+	check(not panel._loot_box.rect_global().has_point(finger), "las filas bloqueadas no se confunden con el botín")
 	_move(panel, finger)
-	check(panel._target.get("place") == &"loot", "sobre una casilla que no existe manda el botín (%s)" % [panel._target])
+	check(not panel._target.get("ok", true) and panel._target.get("reason") == "outside", "la fila bloqueada explica el rechazo")
 	_mouse(panel, finger, false)
-	check(helmet.place == &"loot" and panel._loot_box.body_of(helmet) != null, "y la pieza sale de Tico a la caja del botín")
+	check(helmet.place == &"hero" and helmet.cell == Vector2i.ZERO, "un rechazo conserva la pieza en su lugar")
 	panel.queue_free()
 	await _restore_inventory(saved)
 
@@ -1113,9 +1112,9 @@ func test_holding_r_rotates_only_once() -> void:
 	var im := _im()
 	var sword := _piece(&"sword_advanced")
 	im.add_crafted_item(sword)
-	im.move_item(sword, &"bag", Vector2i(0, 0), 0)
+	im.move_item(sword, &"hero", Vector2i(0, 0), 0)
 	var panel := _new_panel()
-	var start := _cell_center(panel._bag_view, Vector2i(0, 1))
+	var start := _cell_center(panel._hero_view, Vector2i(0, 1))
 	_mouse(panel, start, true)
 	_move(panel, start + Vector2(40, 40))
 	var key := InputEventKey.new()
@@ -1247,8 +1246,8 @@ func test_long_press_opens_the_card() -> void:
 	check(panel._card_text.text.contains(tr("Regeneración")), "la ficha enseña la habilidad legendaria (%s)" % panel._card_text.text)
 	_mouse(panel, p, false)
 	check(helmet.rot == 0, "soltar tras la pulsación larga no gira")
-	panel._card_to_bag()
-	check(helmet.place == &"bag" and not panel._card.visible, "A la mochila la manda al primer hueco libre y cierra")
+	panel._card_to_loot()
+	check(helmet.place == &"loot" and not panel._card.visible, "Al botín conserva la pieza y cierra")
 	panel.queue_free()
 	await _restore_inventory(saved)
 
@@ -1260,12 +1259,12 @@ func test_sell_zone_sells_and_asks_for_the_best() -> void:
 	var epic := _piece(&"boots_basic", 0.95)
 	for p in [plain, epic]:
 		im.add_crafted_item(p)
-	im.move_item(plain, &"bag", Vector2i(0, 0), 0)
-	im.move_item(epic, &"bag", Vector2i(2, 0), 0)
+	im.move_item(plain, &"hero", Vector2i(0, 0), 0)
+	im.move_item(epic, &"hero", Vector2i(2, 0), 0)
 	var panel := _new_panel()
 	var sell_point: Vector2 = panel.sell_zone.get_global_rect().get_center()
 	for item in [plain, epic]:
-		var start := _cell_center(panel._bag_view, item.cell)
+		var start := _cell_center(panel._hero_view, item.cell)
 		_mouse(panel, start, true)
 		_move(panel, start + Vector2(0, -40))
 		_move(panel, sell_point)
@@ -1366,40 +1365,16 @@ func test_dragging_a_piece_of_tico_to_the_sell_zone_sells_it() -> void:
 
 ## La zona de venta se mira primero y por el dedo: con el dedo en ella, una pieza ancha cogida por la derecha puede estar
 ## aún sobre la mochila, y no por eso el destino es la mochila.
-func test_sell_zone_wins_over_the_bag_under_the_piece() -> void:
-	var saved := _fresh_inventory()
-	var im := _im()
-	var helmet := _piece(&"helmet_master", 0.95)  # caja de 3×2
-	im.add_crafted_item(helmet)
-	im.move_item(helmet, &"bag", Vector2i(0, 0), 0)
-	var panel := _new_panel()
-	var start := _cell_center(panel._bag_view, Vector2i(2, 1))  # su casilla de abajo a la derecha
-	_mouse(panel, start, true)
-	_move(panel, start + Vector2(0, -30))
-	check(panel._dragging, "se coge el casco maestro por su extremo derecho")
-	_move(panel, panel.sell_zone.get_global_rect().position + Vector2(20, 250))  # en la zona, cerca de su borde izquierdo
-	var anchor: Vector2 = panel._ghost_origin() + Vector2(GearGridView.CELL, GearGridView.CELL) * 0.5
-	var under: Vector2i = panel._bag_view.cell_at(anchor - panel._bag_view.global_position)
-	check(panel._bag_view.grid.in_bounds(under), "la pieza sigue sobre una casilla de la mochila (%s)" % under)
-	check(panel._target.get("place") == &"sell", "pero el destino es la zona de venta (%s)" % [panel._target])
-	_move(panel, Vector2(540, 60))  # fuera de todo: se cancela
-	_mouse(panel, Vector2(540, 60), false)
-	check(helmet.place == &"bag" and helmet.cell == Vector2i(0, 0), "soltada fuera, la pieza vuelve a su sitio")
-	panel.queue_free()
-	await _restore_inventory(saved)
-
-
-## La zona de venta enseña el precio y se ilumina solo mientras la pieza está sobre ella.
 func test_sell_zone_lights_up_only_while_the_piece_is_over_it() -> void:
 	var saved := _fresh_inventory()
 	var im := _im()
 	var epic := _piece(&"helmet_basic", 0.95)  # épica: soltarla en la zona pregunta antes de vender
 	im.add_crafted_item(epic)
-	im.move_item(epic, &"bag", Vector2i(0, 0), 0)
+	im.move_item(epic, &"hero", Vector2i(0, 0), 0)
 	var panel := _new_panel()
 	var idle: String = panel.sell_label.text
 	var inside: Vector2 = panel.sell_zone.get_global_rect().get_center()
-	var start := _cell_center(panel._bag_view, Vector2i(0, 0))
+	var start := _cell_center(panel._hero_view, Vector2i(0, 0))
 	_mouse(panel, start, true)
 	_move(panel, start + Vector2(0, -40))
 	check(panel.sell_label.text == idle and panel.sell_zone.modulate == Color.WHITE, "arrastrando fuera de la zona, ni precio ni brillo")
@@ -1414,7 +1389,7 @@ func test_sell_zone_lights_up_only_while_the_piece_is_over_it() -> void:
 	await _restore_inventory(saved)
 
 
-## Los botones de la ficha completa: Al botín, A la mochila (con y sin sitio) y Vender (con y sin confirmación).
+## Los botones de la ficha completa: Al botín, A la rejilla de Tico (con y sin sitio) y Vender (con y sin confirmación).
 func test_card_buttons_send_and_sell() -> void:
 	var saved := _fresh_inventory()
 	var im := _im()
@@ -1442,10 +1417,10 @@ func test_card_buttons_send_and_sell() -> void:
 		for x in 6:
 			var filler := _piece(&"helmet_basic", 0.5)
 			im.add_crafted_item(filler)
-			im.move_item(filler, &"bag", Vector2i(x, y), 0)
+			im.move_item(filler, &"loot", Vector2i(x, y), 0)
 	panel._open_card(epic)
-	panel._card_to_bag()
-	check(epic.place == &"loot" and not panel._card.visible, "con la mochila llena, A la mochila no mueve la pieza")
+	panel._card_to_loot()
+	check(epic.place == &"loot" and not panel._card.visible, "con la mochila llena, Al botín no mueve la pieza")
 	await _silence_sounds()
 	panel.queue_free()
 	await _restore_inventory(saved)
@@ -1472,7 +1447,9 @@ func test_overlays_take_the_finger() -> void:
 	panel._close_confirm()
 	_mouse(panel, p, true)
 	_mouse(panel, p, false)
-	check(sword.rot == 1, "y con las dos cerradas el toque vuelve a girarla (%d)" % sword.rot)
+	check(sword.rot == 0 and panel._selected == sword, "principal vuelve a seleccionar")
+	panel._secondary_at(p)
+	check(sword.rot == 1, "secundario vuelve a girar tras cerrar las capas")
 	panel.queue_free()
 	await _restore_inventory(saved)
 
@@ -2628,7 +2605,7 @@ func test_changes_in_the_same_frame_write_one_save() -> void:
 		await get_tree().process_frame
 	check(_save_writes == 1, "un cambio de la rejilla de Tico escribe la partida una vez, no dos (%d)" % _save_writes)
 	_save_writes = 0
-	im.move_item(helmet, &"bag", Vector2i(0, 0), 0)  # fuera de Tico: solo avisa de las piezas
+	im.sell_item(helmet)  # fuera de Tico: solo avisa de las piezas
 	for i in 2:
 		await get_tree().process_frame
 	check(_save_writes == 1, "un movimiento que no es de Tico también escribe una vez (%d)" % _save_writes)
@@ -2740,30 +2717,3 @@ func test_cells_at_takes_a_negative_rotation_as_its_turn() -> void:
 
 ## «A la mochila» con la mochila llena no mueve nada: la ficha breve dice por qué (antes solo sonaba un toque grave). El aviso
 ## se va con el siguiente refresco, y con sitio la pieza pasa a la mochila sin decir nada.
-func test_a_full_bag_says_so_in_the_ficha() -> void:
-	var saved := _fresh_inventory()
-	var im := _im()
-	var epic := _piece(&"helmet_basic", 0.95)
-	im.add_crafted_item(epic)
-	var fillers: Array[CraftedItem] = []
-	for y in InventoryManager.BAG_SIZE.y:
-		for x in InventoryManager.BAG_SIZE.x:
-			var filler := _piece(&"helmet_basic", 0.5)
-			im.add_crafted_item(filler)
-			im.move_item(filler, &"bag", Vector2i(x, y), 0)
-			fillers.append(filler)
-	var panel := _new_panel()
-	var full := tr("La mochila está llena")
-	check(not panel._ficha_label.text.contains(full), "(la ficha no lo dice antes de intentarlo)")
-	panel._open_card(epic)
-	panel._card_to_bag()
-	check(epic.place == &"loot" and not panel._card.visible, "con la mochila llena no mueve la pieza y cierra la ficha completa")
-	check(panel._ficha_label.text.contains(full), "y la ficha breve dice por qué («%s»)" % panel._ficha_label.text)
-	im.move_item(fillers[0], &"loot")  # queda un hueco: cualquier cambio de piezas refresca la ficha
-	check(not panel._ficha_label.text.contains(full), "el aviso se va con el siguiente refresco («%s»)" % panel._ficha_label.text)
-	panel._open_card(epic)
-	panel._card_to_bag()
-	check(epic.place == &"bag" and not panel._ficha_label.text.contains(full), "con sitio pasa a la mochila sin avisar de nada")
-	await _silence_sounds()
-	panel.queue_free()
-	await _restore_inventory(saved)

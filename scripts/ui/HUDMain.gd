@@ -60,6 +60,26 @@ var _minigame_debug_shown := false
 var _shown_request_keys: Array = []  # pedidos ya visibles (para no re-animar sus tarjetas)
 
 func _ready() -> void:
+	UIClarity.readable_labels($BottomLeftPanel/VBoxContainer/QueueLabel, 30)
+	for button in [blueprints_btn, delivery_btn, shop_btn]:
+		UIClarity.light_button(button, 140)
+		button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		if button.icon:
+			var cropped := AtlasTexture.new()
+			cropped.atlas = button.icon
+			cropped.region = button.icon.get_image().get_used_rect()
+			button.icon = cropped
+	for panel in [minigames_panel, bottom_right_panel]:
+		var light := StyleBoxFlat.new()
+		light.bg_color = Color(0.07, 0.05, 0.04, 0.90)
+		panel.add_theme_stylebox_override("panel", light)
+	var tool_icons := [[forge_btn, "ui/anvil"], [hammer_btn, "tools/hammer"], [sew_btn, "tools/needle"], [quench_btn, "tools/water_bucket"]]
+	for pair in tool_icons:
+		var button: Button = pair[0]
+		if button:
+			button.icon = load("res://art/stickers/sources/%s.png" % pair[1])
+			button.add_theme_constant_override("icon_max_width", 36)
+			button.expand_icon = true
 	print("HUDMain: Ready")
 	
 	# Obtener managers
@@ -281,13 +301,11 @@ func _on_task_started(task_id: int, config) -> void:
 		push_error("HUDMain: Could not load minigame scene for task %d" % task_id)
 		return
 	
-	# Ocultar fondo de forja cuando hay minijuego
-	if forge_background:
-		forge_background.visible = false
+	set_workshop_trial(minigame_scene.resource_path.get_file().get_basename())
 	
 	# Limpiar viewport de minijuegos anteriores (excepto el fondo)
 	for child in minigame_viewport.get_children():
-		if child != forge_background:
+		if child != forge_background and child.name != "WorkshopBase":
 			child.queue_free()
 	
 	var minigame_instance = minigame_scene.instantiate()
@@ -350,7 +368,7 @@ func _on_task_completed(slot_idx: int, result: Dictionary) -> void:
 	# ── Transición: fade out minijuego + barra → resultado ──
 	var minigame_node: Node = null
 	for child in minigame_viewport.get_children():
-		if child != forge_background:
+		if child != forge_background and child.name != "WorkshopBase":
 			minigame_node = child
 			break
 	
@@ -384,12 +402,12 @@ func _on_task_completed(slot_idx: int, result: Dictionary) -> void:
 func _show_craft_result(result: Dictionary) -> void:
 	# Limpiar el viewport del minijuego (excepto el fondo)
 	for child in minigame_viewport.get_children():
-		if child != forge_background:
+		if child != forge_background and child.name != "WorkshopBase":
 			child.queue_free()
 	
 	# NO mostrar fondo durante la pantalla de resultado
 	if forge_background:
-		forge_background.visible = false
+		forge_background.visible = true
 	
 	# Mostrar pantalla de resultado con barra de calidad animada
 	var result_screen := CraftResultScreen.new()
@@ -412,6 +430,7 @@ func _show_craft_result(result: Dictionary) -> void:
 
 ## Limpieza post-crafteo (volver a estado idle)
 func _on_delivery_finished() -> void:
+	set_workshop_trial("")
 	print("HUDMain: Delivery finished, returning to idle state")
 	# Refrescar la lista de requests
 	if _requests_manager and _requests_manager.has_method("get_active_requests"):
@@ -462,11 +481,20 @@ func _launch_minigame(type: String) -> void:
 	
 	# Limpiar viewport y agregar nuevo minijuego
 	for child in minigame_viewport.get_children():
-		child.queue_free()
+		if child != forge_background and child.name != "WorkshopBase":
+			child.queue_free()
 	
+	set_workshop_trial(type)
 	var minigame_instance = minigame_scene.instantiate()
 	minigame_viewport.add_child(minigame_instance)
 	print("HUDMain: Launched minigame: " + type)
+
+## Las estaciones ocupan el primer plano; Brasa permanece visible en el horno.
+func set_workshop_trial(kind: String) -> void:
+	forge_background.show()
+	var brasa := forge_background.get_node_or_null("Brasa") as CanvasItem
+	if brasa:
+		brasa.visible = kind.is_empty() or kind.to_lower().begins_with("forge")
 
 # ========================
 # CALLBACKS PANEL DERECHO

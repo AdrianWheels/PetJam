@@ -13,8 +13,17 @@ var _sprite_frames: SpriteFrames
 func _ready() -> void:
 	_load_animation_frames()
 	play("heat_loop")
+	if get_viewport().get_node_or_null("ForgeBackground"):
+		hide()
 
 func _load_animation_frames() -> void:
+	var illustrated := load("res://art/stickers/sources/stations/forge.png") as Texture2D
+	if illustrated:
+		sprite_frames = SpriteFrames.new()
+		sprite_frames.add_animation("heat_loop")
+		sprite_frames.add_frame("heat_loop", illustrated)
+		scale = Vector2(1080, 900) / illustrated.get_size()
+		return
 	_sprite_frames = SpriteFrames.new()
 	_sprite_frames.add_animation("heat_loop")
 	_sprite_frames.set_animation_loop("heat_loop", true)

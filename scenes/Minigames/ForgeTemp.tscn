@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cipmxdcg2apoq" path="res://scripts/ForgeMinigame.gd" id="1"]
 [ext_resource type="Script" uid="uid://c7itf3t0v8wtd" path="res://scripts/forge/AnimatedHeatBackground.gd" id="2_heat_script"]
-[ext_resource type="Texture2D" uid="uid://ccyijhi357vsg" path="res://art/assets/Imagenes/Trial Resources/Heat/Heat.png" id="3_kfvqx"]
+[ext_resource type="Texture2D" path="res://art/stickers/sources/materials/fire.png" id="3_kfvqx"]
 
 [node name="ForgeTemp" type="Control"]
 layout_mode = 3
@@ -22,7 +22,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="AnimatedHeatBackground" type="AnimatedSprite2D" parent="GameArea"]
-z_index = -10
+z_index = 0
 texture_repeat = 2
 position = Vector2(540, 480)
 scale = Vector2(1.0, 1.0)
@@ -36,7 +36,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.1, 0.1, 0.12, 0.5)
+color = Color(0.08, 0.05, 0.035, 0.25)
 
 [node name="ProgressBar" type="Panel" parent="GameArea"]
 unique_name_in_owner = true
@@ -54,8 +54,8 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Heat" type="Sprite2D" parent="GameArea/ProgressBar"]
-position = Vector2(142.90009, 15)
-scale = Vector2(0.20478651, 0.20478651)
+position = Vector2(-35, 15)
+scale = Vector2(0.04, 0.04)
 texture = ExtResource("3_kfvqx")
 
 [node name="background" type="ColorRect" parent="GameArea/ProgressBar"]

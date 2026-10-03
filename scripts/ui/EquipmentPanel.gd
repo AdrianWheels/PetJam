@@ -3,11 +3,11 @@ extends ColorRect
 
 ## Panel de Equipo a pantalla completa (spec doc/specs/2026-09-27-inventario-en-rejilla.md, apartado 9, y
 ## doc/specs/2026-10-02-botin-con-fisica.md). De arriba abajo: estadísticas de Tico, ficha de la última pieza tocada, rejilla
-## de Tico delante de su sprite (con los consumibles al lado), la caja del botín con física, mochila y zona de venta.
+## de Tico delante de su sprite (con los consumibles al lado), botín físico, ayuda de colocación y zona de venta.
 ## El dedo lo lleva este panel, en _input:
-##  - tocar una pieza de una rejilla la gira (si girada no cabe, tiembla); en la caja solo la enseña;
-##  - mantener pulsado abre su ficha completa, con los botones A la mochila, Al botín, Vender y Cerrar;
-##  - arrastrar la mueve: la pieza va una casilla por encima del dedo y un segundo dedo la gira. Una pieza de la caja sale
+##  - principal selecciona y arrastra; secundario gira, también durante el arrastre;
+##  - mantener pulsado abre la ficha con los botones Al botín, Vender y Cerrar;
+##  - en móvil la pieza va una casilla por encima del dedo; el gesto de giro queda pendiente. Una pieza de la caja sale
 ##    de la física al cogerla, enderezada al cuarto de vuelta más cercano;
 ##  - soltarla en la zona de venta la vende (las Épicas y Legendarias piden confirmación);
 ##  - soltarla en la caja la devuelve a la física donde se ve, con la inercia del gesto. Una pieza de la caja soltada fuera
@@ -24,10 +24,9 @@ signal panel_closed
 
 const HERO_SCENE := preload("res://scenes/Hero.tscn")
 const CELL := GearGridView.CELL
-const HERO_GRID_POS := Vector2(60, 262)
-const BAG_POS := Vector2(60, 1460)
+const HERO_GRID_POS := Vector2(60, 324)
 ## La caja del botín (LootBoxView.SIZE); su techo invisible queda 165 px más arriba
-const LOOT_RECT := Rect2(60, 970, 960, 440)
+const LOOT_RECT := Rect2(60, 1070, 960, 440)
 const STATS_RECT := Rect2(60, 100, 960, 70)
 const FICHA_RECT := Rect2(60, 174, 960, 84)
 const NEXT_RECT := Rect2(760, 620, 260, 280)
@@ -52,7 +51,7 @@ const COLOR_DOWN := "ff7a6e"
 var _im: Node
 var _gm: Node
 var _hero_view: GearGridView
-var _bag_view: GearGridView
+var _placement_label: Label
 var _loot_box: LootBoxView
 var _stats_label: RichTextLabel
 var _ficha_label: RichTextLabel
@@ -91,6 +90,7 @@ var _go_back_owed := false
 
 
 func _ready() -> void:
+	theme = UIClarity.readable_theme()
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_im = get_node_or_null("/root/InventoryManager")
@@ -105,12 +105,18 @@ func _ready() -> void:
 
 
 func _build() -> void:
-	_stats_label = _rich(STATS_RECT, 30)
-	_ficha_label = _rich(FICHA_RECT, 22)
+	_stats_label = _rich(Rect2(60, 100, 960, 100), 34)
+	_ficha_label = _rich(Rect2(60, 204, 960, 110), 30)
 	_puppet_setup()
 	_hero_view = _grid_view(HERO_GRID_POS)
 	_hero_view.show_zones = true  # la mochila no tiene zonas
-	_bag_view = _grid_view(BAG_POS)
+	_placement_label = Label.new()
+	_placement_label.position = Vector2(60, 1540)
+	_placement_label.size = Vector2(660, 300)
+	_placement_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_placement_label.add_theme_font_size_override("font_size", 32)
+	_placement_label.text = tr("Principal: seleccionar y arrastrar. Secundario: girar. Mantén pulsado para abrir la ficha.")
+	add_child(_placement_label)
 	_loot_box = LootBoxView.new()
 	_loot_box.position = LOOT_RECT.position
 	add_child(_loot_box)  # después de la rejilla de Tico: la pila que rebosa se dibuja encima de sus últimas filas
@@ -142,6 +148,8 @@ func _build() -> void:
 		var icon := TextureRect.new()
 		icon.position = Vector2(12, 8)
 		icon.size = Vector2(64, 104)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		slot.add_child(icon)
 		_potion_icons.append(icon)
@@ -180,7 +188,7 @@ func _puppet_setup() -> void:
 	_puppet = HERO_SCENE.instantiate()
 	_puppet.remove_from_group("hero")  # que no lo confundan con el héroe de la partida
 	_puppet.set("show_hud", false)
-	_puppet.scale = Vector2(18, 18)  # 32 px de arte a ×18: casi el alto de la rejilla
+	_puppet.scale = Vector2(7, 7)  # 32 px de arte a ×18: casi el alto de la rejilla
 	_puppet.position = HERO_GRID_POS + Vector2(330, 640)  # pies al fondo de la rejilla, centrado
 	_puppet.modulate = Color(1, 1, 1, 0.35)
 	_puppet.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -191,6 +199,7 @@ func _puppet_setup() -> void:
 
 func open() -> void:
 	if is_node_ready():
+		_im.migrate_retired_bag()
 		_loot_box.set_active(true)  # antes de cancelar: una pieza de la caja que se arrastraba vuelve a la física
 		# Por si algo ocultó el panel sin pasar por close(): ni arrastre, ni ficha, ni confirmación de la vez anterior
 		_cancel_press()
@@ -297,7 +306,6 @@ func _refresh() -> void:
 	if _im == null or not is_node_ready():
 		return
 	_hero_view.setup(_im.hero_grid, GridExpansions.MAX_SIZE)
-	_bag_view.setup(_im.bag_grid, InventoryManager.BAG_SIZE)
 	# Solo con la caja activa: congelada, sus cuerpos están fuera de la física y las poses que se pisan no se verían (no
 	# entrarían como fantasmas). Lo que cambie con el panel cerrado entra al abrirlo, que la activa antes de refrescar
 	if _loot_box.active:
@@ -332,7 +340,7 @@ func _refresh_stats(preview: Dictionary) -> void:
 		tr("Crítico %.0f%%") % (now.crit_p * 100.0) + _delta((after.crit_p - now.crit_p) * 100.0, "%+.0f"),
 		tr("Velocidad %.2f") % now.aps + _delta(after.aps - now.aps, "%+.2f"),
 	]
-	_stats_label.text = "   ".join(parts)
+	_stats_label.text = "   ".join(parts.slice(0, 3)) + "\n" + "   ".join(parts.slice(3))
 
 
 ## Cambio de la vista previa: verde si sube, rojo si baja, nada si no cambia.
@@ -344,7 +352,7 @@ func _delta(d: float, fmt: String) -> String:
 
 func _refresh_ficha() -> void:
 	if _selected:
-		_ficha_label.text = _ficha_text(_selected)
+		_ficha_label.text = _ficha_text(_selected).split("\n")[0]
 	else:
 		_ficha_label.text = "[color=#a89a86]%s[/color]" % tr("Toca una pieza para verla; arrástrala para colocarla")
 
@@ -432,14 +440,14 @@ func _input(event: InputEvent) -> void:
 				_on_press(event.position)
 			else:
 				_on_release(event.position)
+		elif event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+			_secondary_at(event.position)
+			get_viewport().set_input_as_handled()
 		elif event.pressed and _dragging and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
 			_rotate_drag()
 			get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion:
 		_on_motion(event.position)
-	elif event is InputEventScreenTouch and event.pressed and event.index >= 1 and _dragging:
-		_rotate_drag()  # segundo dedo
-		get_viewport().set_input_as_handled()
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R and _dragging:
 		_rotate_drag()
 		get_viewport().set_input_as_handled()
@@ -472,7 +480,7 @@ func _piece_at(pos: Vector2) -> Dictionary:
 	var body := _loot_box.piece_at(_loot_box.to_local(pos))
 	if body and not body.is_ghost:
 		return _box_hit(body)
-	for view in [_hero_view, _bag_view]:
+	for view in [_hero_view]:
 		var local: Vector2 = pos - view.global_position
 		if Rect2(Vector2.ZERO, view.size).has_point(local):
 			var item: CraftedItem = view.item_at_local(local)
@@ -514,6 +522,8 @@ func _on_motion(pos: Vector2) -> void:
 	if moved.length() < DRAG_THRESHOLD:
 		return
 	_dragging = true
+	_selected = _press.item
+	_refresh_ficha()
 	_drag_rot = int(_press.rot)
 	_drag_pos = pos
 	_drag_trail.clear()
@@ -607,35 +617,54 @@ func _cancel_press() -> void:
 	sell_zone.modulate = Color.WHITE
 	if _im and is_node_ready():
 		_refresh_stats({})
+	_placement_label.modulate = Color.WHITE
 	_ghost_layer.queue_redraw()
 
 
 ## La pieza que se arrastra no se dibuja en su rejilla (en la caja ya no tiene cuerpo).
 func _set_hidden(item: CraftedItem) -> void:
 	_hero_view.hidden_item = item
-	_bag_view.hidden_item = item
 	_hero_view.queue_redraw()
-	_bag_view.queue_redraw()
 
 
 func _clear_highlights() -> void:
-	for view in [_hero_view, _bag_view]:
+	for view in [_hero_view]:
 		view.drop_cells = {}
+		view.fit_anchors = {}
 		view.swap_item = null
 		view.glow = {}
 		view.queue_redraw()
 
 
-## Toque: en una rejilla gira la pieza (si no cabe girada, tiembla); en el botín solo la enseña.
+## El toque principal selecciona la pieza y enseña su ficha.
 func _tap(item: CraftedItem) -> void:
 	_selected = item
-	if item.place != InventoryManager.PLACE_LOOT and not _im.rotate_in_place(item):
-		(_hero_view if item.place == InventoryManager.PLACE_HERO else _bag_view).start_shake(item)
-		Sfx.play(&"ui_tap", 0.0, 0.55)
+	_refresh()
+
+func _secondary_at(pos: Vector2) -> void:
+	if _card.visible or _confirm_box.visible:
+		return
+	if _dragging:
+		_rotate_drag()
+		return
+	var hit := _piece_at(pos)
+	if hit.is_empty():
+		return
+	var item: CraftedItem = hit.item
+	_selected = item
+	if item.place == InventoryManager.PLACE_LOOT:
+		var body := _loot_box.body_of(item)
+		var local := body.position if body else _loot_box.to_local(pos)
+		var rot := (body.straight_rot() + 1) % 4 if body else (item.rot + 1) % 4
+		_loot_box.hold(item)
+		_loot_box.drop_at(item, local, Vector2.ZERO, rot)
+	else:
+		if not _im.rotate_in_place(item):
+			_hero_view.start_shake(item)
+			_placement_label.text = tr("No cabe girada: ocupa una casilla bloqueada o sale de la rejilla.")
 	_refresh()
 
 
-## Toque en un hueco de consumibles: enseña la poción (nombre y qué hace) en la ficha breve.
 func _show_potion(index: int) -> void:
 	var s: Dictionary = _im.consumables[index]
 	if int(s.count) <= 0:
@@ -654,13 +683,10 @@ func _rotate_drag() -> void:
 ## que el dedo no tape el destino.
 func _ghost_origin() -> Vector2:
 	var grab: Vector2 = _press.origin - _press.pos
-	return _drag_pos + grab + Vector2(0.0, -CELL)
+	return _drag_pos + grab + (Vector2(0.0, -CELL) if DisplayServer.is_touchscreen_available() else Vector2.ZERO)
 
 
-## Busca el destino y lo enseña. Primero la zona de venta, por el dedo: con el dedo en ella, la parte cogida ya está fuera
-## de la mochila, pero una pieza ancha puede tener aún su primera casilla encima de ella y saldría un rojo. Después las
-## rejillas, por la casilla que hay bajo la pieza (el centro de la primera casilla de su caja; solo cuentan las que ya
-## existen, no las punteadas, que sobre una rejilla pequeña taparían el botín). Si no hay ninguna, la caja del botín, por el dedo.
+## La zona de venta tiene prioridad bajo el puntero; después se comprueban el equipo y el botín.
 func _update_target() -> void:
 	var item: CraftedItem = _press.item
 	var t := {}
@@ -668,16 +694,14 @@ func _update_target() -> void:
 		t = {"place": &"sell", "ok": true}
 	if t.is_empty():
 		var anchor := _ghost_origin() + Vector2(CELL, CELL) * 0.5
-		for view in [_hero_view, _bag_view]:
+		for view in [_hero_view]:
 			var local: Vector2 = anchor - view.global_position
 			if not Rect2(Vector2.ZERO, view.size).has_point(local):
 				continue
 			var cell: Vector2i = view.cell_at(local)
-			if not view.grid.in_bounds(cell):
-				continue
 			var place: StringName = InventoryManager.PLACE_HERO if view == _hero_view else InventoryManager.PLACE_BAG
 			var res: Dictionary = _im.drop_result(item, place, cell, _drag_rot)
-			t = {"place": place, "cell": cell, "ok": res.ok, "swap": res.swap, "view": view}
+			t = {"place": place, "cell": cell, "ok": res.ok, "swap": res.swap, "reason": res.reason, "view": view}
 			break
 	if t.is_empty() and _loot_box.rect_global().has_point(_drag_pos):
 		t = {"place": InventoryManager.PLACE_LOOT, "ok": true}
@@ -690,6 +714,12 @@ func _update_target() -> void:
 func _show_target() -> void:
 	_clear_highlights()
 	var item: CraftedItem = _press.item
+	for y in _hero_view.grid.size.y:
+		for x in _hero_view.grid.size.x:
+			var cell := Vector2i(x, y)
+			var result: Dictionary = _im.drop_result(item, InventoryManager.PLACE_HERO, cell, _drag_rot)
+			if result.ok:
+				_hero_view.fit_anchors[cell] = GearGridView.COLOR_SWAP if result.swap else Color("7dff8a")
 	var preview := {}
 	if _target.has("view"):
 		var view: GearGridView = _target.view
@@ -714,7 +744,16 @@ func _show_target() -> void:
 	sell_label.text = tr("Vender por %d de oro") % item.get_sell_price() if selling else tr("Suelta aquí para vender")
 	sell_zone.modulate = Color(1.4, 1.25, 0.8) if selling else Color.WHITE
 	_refresh_stats(preview)
-	for view in [_hero_view, _bag_view]:
+	var reason: String = _target.get("reason", "")
+	var messages := {
+		"fits": tr("Cabe aquí. Suelta para equipar; arriba ves lo que ganas y pierdes."),
+		"swap": tr("Intercambio: la pieza resaltada vuelve al botín si no cabe en el origen. Compara los atributos arriba."),
+		"outside": tr("No cabe: la pieza o sus aristas salen de las casillas disponibles. Gírala o cambia de posición."),
+		"overlap": tr("No cabe: toca varias piezas. Solo puedes intercambiar con una a la vez."),
+	}
+	_placement_label.text = messages.get(reason, tr("Puntos verdes: cabe. Dorados: intercambio. Suelta en el botín para guardar."))
+	_placement_label.modulate = Color(COLOR_DOWN) if not _target.get("ok", true) else Color.WHITE
+	for view in [_hero_view]:
 		view.queue_redraw()
 
 
@@ -815,7 +854,6 @@ func _build_card() -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 14)
 	parts[1].add_child(row)
-	row.add_child(_button(tr("A la mochila"), _card_to_bag))
 	row.add_child(_button(tr("Al botín"), _card_to_loot))
 	_card_sell_btn = _button(tr("Vender"), _card_sell)
 	row.add_child(_card_sell_btn)
@@ -854,15 +892,7 @@ func _close_card() -> void:
 
 
 func _card_to_bag() -> void:
-	var item := _card_item
-	_close_card()
-	if item == null or item.place == InventoryManager.PLACE_BAG:
-		return
-	var spot := GearPacker.find_spot(_im.bag_grid, item, false)
-	if spot.is_empty() or not _im.move_item(item, InventoryManager.PLACE_BAG, spot.cell, spot.rot):
-		Sfx.play(&"ui_tap", 0.0, 0.55)  # la mochila está llena
-		# Y se dice en la ficha breve, que si no parece que el botón no ha hecho nada. Se va con el siguiente refresco
-		_ficha_label.text = "[color=#%s]%s[/color]" % [COLOR_DOWN, tr("La mochila está llena")]
+	_card_to_loot()  # compatibilidad con llamadas antiguas
 
 
 func _card_to_loot() -> void:

@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="MaterialResource" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/MaterialResource.gd" id="1"]
-[ext_resource type="Texture2D" path="res://art/assets/Imagenes/Materials/poison.png" id="2"]
+[ext_resource type="Texture2D" path="res://art/stickers/sources/materials/poison.png" id="2"]
 
 [resource]
 script = ExtResource("1")

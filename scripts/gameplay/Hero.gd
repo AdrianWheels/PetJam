@@ -1,8 +1,8 @@
 extends CharacterBody2D
 
-## Héroe del corredor (IA) en pixel art. La lógica es la de siempre (stats del equipo + ataques por cooldown):
-##  - sprite de 32x32 con reposo de 2 fotogramas. Provisional hasta la fase 2 del spec
-##    doc/specs/2026-09-27-franja-combate-pixel-art.md: la tira se elige según la espada que lleva,
+## Héroe del corredor (IA), con cuatro poses sticker según su espada.
+## La lógica conserva estadísticas del equipo y ataques por cooldown:
+##  - reposo, ataque, daño y derrota; sin ciclos completos ni interpolación de poses,
 ##  - carga, estocada y retroceso como desplazamientos en píxeles enteros; destello al recibir daño y
 ##    disolución al reaparecer con shaders/pixel_sprite.gdshader,
 ##  - barra de vida y nombre en fuente pixel,
@@ -119,6 +119,7 @@ var _sprite: Sprite2D
 var _hud: Node2D
 var _sprite_key := ""
 var _metrics: Dictionary = {}
+var _sticker := false
 
 
 ## Pinta barra y nombre por encima del sprite (los hijos se dibujan después que el padre).
@@ -455,7 +456,7 @@ func apply_loadout(_loadout: Dictionary) -> void:
 
 
 func body_center() -> Vector2:
-	return position + Vector2(0, float(_metrics.get("center_y", -14.0)))
+	return position + Vector2(0, -PixelView.VIEW_H * 0.45 if _sticker else float(_metrics.get("center_y", -14.0)))
 
 
 func _spawn_death_fx() -> void:
@@ -477,7 +478,7 @@ func _rarity(slot: String) -> String:
 	return String(gear[slot].get("rarity", "basic")) if gear.has(slot) else ""
 
 
-## Provisional (fase 1): la tira de Tico según la espada. La fase 2 compone una capa por pieza.
+## Clave del arte anterior para las medidas de juego y el respaldo visual.
 func _hero_sprite_key() -> String:
 	match _rarity("main_hand"):
 		"":
@@ -492,25 +493,30 @@ func _apply_sprite() -> void:
 	if _sprite == null:
 		return
 	var key := _hero_sprite_key()
-	if key == _sprite_key:
+	var visual_key := key + "/" + _rarity("main_hand")
+	if visual_key == _sprite_key:
 		return
-	_sprite_key = key
+	_sprite_key = visual_key
 	_metrics = PixelSprites.metrics(key)
 	_sprite.texture = PixelSprites.texture(key)
 	_sprite.hframes = maxi(1, int(_metrics.get("frames", 1)))
+	var sticker_key := "tico_" + (_rarity("main_hand") if not _rarity("main_hand").is_empty() else "none")
+	_sticker = StickerSprites.apply_height(_sprite, sticker_key, PixelView.VIEW_H * 0.90)
+	if not _sticker:
+		_sprite.scale = Vector2.ONE
 
 
 func _update_sprite() -> void:
 	if _sprite == null:
 		return
-	_sprite.visible = alive
-	if not alive:
+	_sprite.visible = alive or _sticker
+	if not alive and not _sticker:
 		return
-	_sprite.frame = int(_t / IDLE_FRAME_TIME) % _sprite.hframes
+	_sprite.frame = StickerSprites.pose_index(alive, _hurt, _strike) if _sticker else int(_t / IDLE_FRAME_TIME) % _sprite.hframes
 	var flash := clampf(_hurt / HURT_TIME, 0.0, 1.0)
 	var lunge := -1.6 * _windup + 5.2 * pow(_strike, 1.4) - 2.4 * flash
 	var bob := 1.0 if walking and absf(sin(_walk_phase)) > 0.5 else 0.0
-	_sprite.position = _sprite_origin() + Vector2(roundf(lunge), -bob)
+	_sprite.position = _sprite_origin() + (Vector2.ZERO if _sticker else Vector2(roundf(lunge), -bob))
 	var mat := _sprite.material as ShaderMaterial
 	mat.set_shader_parameter("flash", flash * 0.8)
 	mat.set_shader_parameter("dissolve", 1.0 - clampf(_materialize * 1.6, 0.0, 1.0))
@@ -518,6 +524,8 @@ func _update_sprite() -> void:
 
 ## Esquina superior izquierda del fotograma para que los pies apoyen en el origen del nodo.
 func _sprite_origin() -> Vector2:
+	if _sticker:
+		return _sprite.get_meta("sticker_origin", Vector2(-18.0, -33.0))
 	var fw := float(_metrics.get("frame_w", 32))
 	var ground := float(_metrics.get("ground_row", 28))
 	return Vector2(-fw * 0.5, -(ground + 1.0))

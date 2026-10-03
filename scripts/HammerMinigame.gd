@@ -42,6 +42,7 @@ var _can_hit := false
 var _max_score := 650.0
 
 func _ready():
+	UIClarity.readable_labels(self)
 	# 🎶 Configurar SoundSet específico para Hammer
 	var hammer_soundset := MinigameSoundSet.new()
 	hammer_soundset.sound_perfect = load("res://art/sounds/sfx/minigames/hammer/hammer_perfect.wav")
