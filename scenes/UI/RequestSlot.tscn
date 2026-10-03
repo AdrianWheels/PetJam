@@ -75,7 +75,7 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="IconContainer" type="Panel" parent="VBox/IconCenter"]
-custom_minimum_size = Vector2(84, 84)
+custom_minimum_size = Vector2(96, 96)
 layout_mode = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_icon_bg")
@@ -86,10 +86,10 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 6.0
-offset_top = 6.0
-offset_right = -6.0
-offset_bottom = -6.0
+offset_left = -4.0
+offset_top = -4.0
+offset_right = 4.0
+offset_bottom = 4.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2

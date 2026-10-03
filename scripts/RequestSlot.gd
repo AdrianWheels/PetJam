@@ -27,13 +27,14 @@ var _inventory: Node
 
 func _ready() -> void:
 	theme = UIClarity.readable_theme()
-	UIClarity.compact_panel(self)
-	# La tarjeta tiene que caber en la franja de pedidos (294 px de alto a 1080x1920): si no, el contenedor crece
-	# hacia arriba y hacia abajo, y el título «PEDIDOS» acaba encima de la herrería y las tarjetas bajo los botones
-	var card := get_theme_stylebox("panel") as StyleBoxFlat
-	if card:
-		card.content_margin_top = 6.0
-		card.content_margin_bottom = 6.0
+	# Sin panel ni plato detrás del icono: el pedido es su icono y sus textos sobre el fondo del muelle. Tiene que caber en
+	# la franja de pedidos (294 px de alto a 1080x1920): si no, el contenedor crece hacia arriba y hacia abajo, y el título
+	# «PEDIDOS» acaba encima de la herrería y las tarjetas bajo los botones
+	var bare := StyleBoxEmpty.new()
+	bare.content_margin_left = 8.0
+	bare.content_margin_right = 8.0
+	add_theme_stylebox_override("panel", bare)
+	$VBox/IconCenter/IconContainer.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	for label in [name_label, reward_label]:
 		label.add_theme_font_override("font", ThemeDB.fallback_font)
 		label.add_theme_font_size_override("font_size", 28)

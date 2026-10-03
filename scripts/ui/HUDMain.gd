@@ -58,6 +58,8 @@ var _blueprint_badge: Label
 var _new_blueprints := 0
 var _minigame_debug_shown := false
 var _shown_request_keys: Array = []  # pedidos ya visibles (para no re-animar sus tarjetas)
+const NAV_HOVER := 1.08  ## escala de un botón de la botonera con el ratón encima
+const NAV_PRESSED := 0.9
 
 func _ready() -> void:
 	UIClarity.readable_labels($BottomLeftPanel/VBoxContainer/QueueLabel, 26)
@@ -69,6 +71,7 @@ func _ready() -> void:
 			cropped.atlas = button.icon
 			cropped.region = button.icon.get_image().get_used_rect()
 			button.icon = cropped
+		_emphasize_nav_button(button)
 	for panel in [minigames_panel, bottom_right_panel]:
 		var light := StyleBoxFlat.new()
 		light.bg_color = Color(0.07, 0.05, 0.04, 0.90)
@@ -791,6 +794,35 @@ func _fly_request_to_forge(texture: Texture2D, from_rect: Rect2) -> void:
 
 func _on_progress_loaded() -> void:
 	_update_badges()
+
+
+## Botones de la botonera con más peso, sin panel detrás: icono grande, texto grande con contorno y respuesta al pasar el
+## ratón (crece un poco) y al pulsar (se hunde y rebota). El énfasis lo dan el tamaño, el color y el movimiento.
+func _emphasize_nav_button(button: Button) -> void:
+	button.add_theme_font_size_override("font_size", 34)
+	button.add_theme_color_override("font_color", Color("ffe7b0"))
+	button.add_theme_color_override("font_hover_color", Color("fff6dc"))
+	button.add_theme_color_override("font_pressed_color", Color("ffd76a"))
+	button.add_theme_color_override("font_focus_color", Color("ffe7b0"))
+	button.add_theme_color_override("font_hover_pressed_color", Color("ffd76a"))
+	button.add_theme_color_override("font_outline_color", Color(0.02, 0.012, 0.01))
+	button.add_theme_constant_override("outline_size", 8)
+	button.add_theme_constant_override("icon_max_width", 150)
+	for state in ["normal", "hover", "pressed", "hover_pressed", "focus", "disabled"]:
+		var bare := StyleBoxEmpty.new()
+		bare.set_content_margin_all(2.0)
+		button.add_theme_stylebox_override(state, bare)
+	button.pivot_offset = button.size * 0.5
+	button.resized.connect(func(): button.pivot_offset = button.size * 0.5)
+	button.mouse_entered.connect(func(): _nav_scale(button, NAV_HOVER))
+	button.mouse_exited.connect(func(): _nav_scale(button, 1.0))
+	button.button_down.connect(func(): _nav_scale(button, NAV_PRESSED))
+	button.button_up.connect(func(): _nav_scale(button, NAV_HOVER if button.is_hovered() else 1.0))
+
+
+func _nav_scale(button: Button, target: float) -> void:
+	var tw := button.create_tween()
+	tw.tween_property(button, "scale", Vector2.ONE * target, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 ## Marco entre la franja del héroe y la forja: listón de bronce y sombra sobre la forja.
