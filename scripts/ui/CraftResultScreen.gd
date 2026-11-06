@@ -32,6 +32,8 @@ const STAT_NAMES := {
 	"aps": "Velocidad", "str": "Fuerza", "agi": "Agilidad", "int": "Intelecto",
 }
 
+const COLOR_BETTER := Color("7be08a")  ## estadística que mejora la de la pieza que ya lleva Tico
+const COLOR_WORSE := Color("ff7f6e")  ## y la que empeora
 const BAR_SIZE := Vector2(120, 540)
 ## Lo más que se reduce la pantalla para caber en su ventana (ver _fit_to_window).
 const MIN_FIT := 0.6
@@ -325,23 +327,61 @@ func _populate_stats(result: Dictionary) -> void:
 	if crafted_item == null or not (crafted_item is CraftedItem):
 		return
 	var stats: Dictionary = crafted_item.calculated_stats
+	var rival := _best_rival(crafted_item)
 	for key in stats:
 		var shown := format_stat_value(String(key), stats[key])
 		if shown == "":
 			continue
-		var stat_label := Label.new()
+		# Cada estadística en su fila: «+30 » +34 Daño» («»» y no una flecha: PirataOne no tiene →) si Tico ya lleva una pieza de este tipo (la de antes en gris y la
+		# nueva en verde si mejora o en rojo si empeora), o «+34 Daño» si no lleva ninguna. Va en la misma línea para que la
+		# pantalla no crezca: ya llena la ventana del minijuego
+		var row := HBoxContainer.new()
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		row.add_theme_constant_override("separation", 10)
+		var color := Color(0.95, 0.9, 0.8)
+		if rival:
+			var old_v := float(rival.calculated_stats.get(key, 0))
+			var old_shown := format_stat_value(String(key), old_v)
+			row.add_child(_stat_part("%s »" % (old_shown if old_shown != "" else "0"), Color(0.62, 0.56, 0.48), 24))
+			var new_v := float(stats[key])
+			if not is_equal_approx(new_v, old_v):
+				color = COLOR_BETTER if new_v > old_v else COLOR_WORSE
 		var display_name: String = tr(STAT_NAMES.get(key, String(key).capitalize()))
-		stat_label.text = "%s %s" % [shown, display_name]
-		stat_label.add_theme_font_size_override("font_size", 30)
-		stat_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
-		stat_label.add_theme_constant_override("outline_size", 5)
-		stat_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_stats_container.add_child(stat_label)
+		row.add_child(_stat_part("%s %s" % [shown, display_name], color, 30))
+		_stats_container.add_child(row)
 	var aristas_text := tr("Sin aristas") if crafted_item.aristas.is_empty() else tr("Aristas: %d") % crafted_item.aristas.size()
 	_stats_container.add_child(_result_line(aristas_text, Color(0.75, 0.7, 0.62), 24))
 	var power: Dictionary = LegendaryPowers.POWERS.get(StringName(crafted_item.item_resource.item_id), {})
 	if LegendaryPowers.is_legendary(crafted_item) and not power.is_empty():
 		_stats_container.add_child(_result_line("%s: %s" % [tr(power.name), tr(power.text)], Color("ffa629"), 26))
+
+
+## Con qué se compara la pieza nueva (el «antes → después» de Dungeonbound): la mejor pieza del mismo tipo que ya lleva
+## Tico, según la primera estadística de la nueva (el daño de un arma, la vida de unas botas). Es el dato, no un veredicto:
+## en la rejilla cuentan también las auras y las zonas, y la cuenta exacta la da el panel de Equipo al arrastrarla.
+func _best_rival(item: CraftedItem) -> CraftedItem:
+	var im := get_node_or_null("/root/InventoryManager")
+	if im == null or not im.has_method("get_crafted_items") or item.calculated_stats.is_empty():
+		return null
+	var slot := item.get_equipment_slot()
+	var main_key: String = String(item.calculated_stats.keys()[0])
+	var best: CraftedItem = null
+	for other: CraftedItem in im.get_crafted_items():
+		if other == item or other.place != InventoryManager.PLACE_HERO or other.get_equipment_slot() != slot:
+			continue
+		if best == null or float(other.calculated_stats.get(main_key, 0)) > float(best.calculated_stats.get(main_key, 0)):
+			best = other
+	return best
+
+
+func _stat_part(text: String, color: Color, font_size: int) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_size_override("font_size", font_size)
+	l.add_theme_color_override("font_color", color)
+	l.add_theme_constant_override("outline_size", 5)
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	return l
 
 
 ## Valor de una estadística como se enseña («+37%» de crítico, «+0.64» de velocidad, «+4631» del resto), o "" si redondeado
@@ -462,13 +502,14 @@ func _build_ui() -> void:
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_continue_container.add_child(btn_row)
 	_continue_btn = Button.new()
-	_continue_btn.text = tr("AL INVENTARIO")
+	# La pieza va al botín del panel de Equipo: el juego no tiene ninguna pantalla que se llame «inventario»
+	_continue_btn.text = tr("AL BOTÍN")
 	_continue_btn.custom_minimum_size = Vector2(460, 104)
 	_continue_btn.add_theme_font_size_override("font_size", 36)
 	_continue_btn.pressed.connect(_on_continue_pressed)
 	btn_row.add_child(_continue_btn)
 	var hint_label := _label(22, Color(0.7, 0.62, 0.52), 4)
-	hint_label.text = tr("Equípalo desde «Equipo» · véndelo en «Tienda»")
+	hint_label.text = tr("En «Equipo», arrástralo a Tico o véndelo")
 	_continue_container.add_child(hint_label)
 
 	# Destello a pantalla completa (encima de todo)

@@ -326,3 +326,11 @@ Puntos verdes: cabe. Dorados: intercambio. Suelta en el botín para guardar.,Pun
 Tienes %d,Tienes %d,Owned: %d
 Derrota en sala %d. Reapareces en la %d con toda la vida; conservas el equipo y el botín.,Derrota en sala %d. Reapareces en la %d con toda la vida; conservas el equipo y el botín.,Defeated in room %d. Return to room %d at full health; keep your equipment and loot.
 +%d oro,+%d oro,+%d gold
+Armadura %d (-%d%% daño),Armadura %d (-%d%% daño),Armor %d (-%d%% damage)
+"Girar: mientras arrastras una pieza, toca con otro dedo. Mantén pulsada una pieza para ver su ficha.","Girar: mientras arrastras una pieza, toca con otro dedo. Mantén pulsada una pieza para ver su ficha.","Rotate: while dragging a piece, tap with another finger. Hold a piece to see its details."
+"Girar: clic derecho, rueda o R mientras arrastras. Mantén pulsada una pieza para ver su ficha.","Girar: clic derecho, rueda o R mientras arrastras. Mantén pulsada una pieza para ver su ficha.","Rotate: right click, wheel or R while dragging. Hold a piece to see its details."
+AL BOTÍN,AL BOTÍN,TO LOOT
+"En «Equipo», arrástralo a Tico o véndelo","En «Equipo», arrástralo a Tico o véndelo","In Gear, drag it onto Tico or sell it"
+Aquí caen las piezas que forjas. Arrástralas a Tico para equiparlas.,Aquí caen las piezas que forjas. Arrástralas a Tico para equiparlas.,Pieces you forge land here. Drag them onto Tico to equip them.
+Muro: sala %d · %d %%,Muro: sala %d · %d %%,Wall: room %d · %d %%
+Le quitaste el %d %% de su vida. Vuelves a la sala %d sin perder nada y lo reintentas cada %d victorias.,Le quitaste el %d %% de su vida. Vuelves a la sala %d sin perder nada y lo reintentas cada %d victorias.,"You took %d %% of its life. You go back to room %d, lose nothing, and retry every %d wins."

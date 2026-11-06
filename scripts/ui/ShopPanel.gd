@@ -100,8 +100,8 @@ func _build_ui() -> void:
 	main_vbox.add_child(header)
 	
 	_title_label = Label.new()
-	_title_label.text = tr("TIENDA")
-	_title_label.add_theme_font_size_override("font_size", 42)
+	_title_label.text = tr("Tienda")
+	UIClarity.panel_title(_title_label)
 	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(_title_label)
 	
@@ -113,12 +113,9 @@ func _build_ui() -> void:
 	header.add_child(_gold_label)
 	
 	_close_btn = Button.new()
-	_close_btn.text = "✕"
-	_close_btn.custom_minimum_size = Vector2(90, 90)
-	_close_btn.add_theme_font_size_override("font_size", 38)
+	UIClarity.close_button(_close_btn)
 	_close_btn.pressed.connect(_on_close_pressed)
 	header.add_child(_close_btn)
-	UIClarity.light_button(_close_btn)
 	
 	# ── Separador ──
 	var sep := HSeparator.new()

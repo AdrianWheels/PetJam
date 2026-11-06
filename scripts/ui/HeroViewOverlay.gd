@@ -73,6 +73,9 @@ var _gold_pop := 0.0
 var _luck_pop := 0.0  # latido de la etiqueta de Suerte al salir un botín doble
 var _death_pop := 0.0
 var _room := 1
+## Lo más que Tico le ha quitado a cada muro, en fracción de su vida (sala → 0..1). Solo en esta sesión: dice lo cerca
+## que está del siguiente intento sin tocar el guardado.
+var _wall_best := {}
 var _record := 1
 var _record_announced := false  # un solo aviso de récord por vida del héroe
 var _t := 0.0
@@ -316,7 +319,10 @@ func _refresh_room() -> void:
 	_biome_label.text = Biomes.display_name(idx)  # ya traducido
 	_record = maxi(_record, _room)
 	var wall: int = int(_game_manager.wall_room) if _game_manager and "wall_room" in _game_manager else 0
-	_record_label.text = tr("Muro: sala %d") % wall if wall > 0 else tr("Récord: sala %d") % _record
+	if wall > 0 and _wall_best.has(wall):
+		_record_label.text = tr("Muro: sala %d · %d %%") % [wall, floori(float(_wall_best[wall]) * 100.0)]
+	else:
+		_record_label.text = tr("Muro: sala %d") % wall if wall > 0 else tr("Récord: sala %d") % _record
 	_refresh_selector()
 
 
@@ -335,6 +341,7 @@ func _draw() -> void:
 	_draw_coin(Vector2(38, 38), 17.0)
 	_draw_skull(Vector2(248, 38), 15.0, _death_pop)
 	_draw_boss_pips()
+	_draw_retry_pips()
 	_draw_selector()
 	# Franja oscura tras los carteles: se leen aunque pasen por encima de placas de nombre
 	var ribbon_a := _banner_title.modulate.a
@@ -372,6 +379,21 @@ func _draw_skull(c: Vector2, r: float, pop: float) -> void:
 	draw_colored_polygon(SK.ellipse_pts(c + Vector2(r * 0.38, 0), r * 0.26, r * 0.3, 10), SK.OUTLINE)
 	draw_polyline(SK.closed(SK.ellipse_pts(c, r, r * 0.92, 16)), SK.OUTLINE, 2.5, true)
 
+
+## Victorias hacia el siguiente intento contra el muro, a la derecha de «Muro: sala N», mientras Tico farmea la sala de
+## antes: se van llenando y con la última vuelve al muro.
+func _draw_retry_pips() -> void:
+	if _game_manager == null or not _game_manager.has_method("is_farming_wall") or not _game_manager.is_farming_wall():
+		return
+	var ls := _record_label.label_settings
+	var text_w := ls.font.get_string_size(_record_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, ls.font_size).x
+	var wins: int = _game_manager.wall_retry_wins()
+	var total: int = _game_manager.wall_retry_goal()
+	var y := _record_label.position.y + _record_label.size.y * 0.5
+	for i in total:
+		var c := Vector2(_record_label.position.x + text_w + 18.0 + 20.0 * float(i), y)
+		var fill := Color("ffd76a") if i < wins else Color(0.42, 0.35, 0.33, 0.95)
+		SK.outlined_poly(self, SK.diamond_pts(c, 6.5, 8.5), fill, SK.OUTLINE, 2.0)
 
 func _draw_boss_pips() -> void:
 	var in_biome := Biomes.room_in_biome(_room)
@@ -509,12 +531,25 @@ func _on_boss_appeared(room: int, boss_name: String) -> void:
 	show_banner(tr("¡JEFE!"), tr("%s · Sala %d") % [tr(boss_name), room], Color("ff6a4a"), 1.1)
 
 
-func _on_boss_slain(_room_num: int, boss_name: String) -> void:
-	show_toast(tr("%s ha caído") % tr(boss_name), Color("ffd76a"))
+## Sin aviso propio: el «¡JEFE DERROTADO!» que sale del pecho del jefe (Corridor) ya lo dice. El aviso «X ha caído» salía
+## a la vez en la misma franja, se montaba con él y con el botín, y como esperaba en cola seguía en pantalla en el duelo
+## siguiente, sobre otro enemigo.
+func _on_boss_slain(_room_num: int, _boss_name: String) -> void:
+	pass
 
 
+## Ficha del muro (idea de Dungeonbound): el cartel dice cuánta vida le quitó Tico al enemigo que lo ha tumbado, que es
+## lo cerca que está de pasar, y la barra de arriba lo guarda junto al muro mientras farmea.
 func _on_hero_fell(room: int) -> void:
-	show_banner(tr("El héroe ha caído"), tr("Derrota en sala %d. Reapareces en la %d con toda la vida; conservas el equipo y el botín.") % [room, maxi(1, room - 1)], Color("ff8a7a"), 1.1)
+	var dealt := 0.0
+	var foe: Node = _corridor.enemy if _corridor and "enemy" in _corridor else null
+	if foe and int(foe.max_hp) > 0:
+		dealt = clampf(1.0 - float(maxi(0, foe.hp)) / float(foe.max_hp), 0.0, 1.0)
+	# Hacia abajo al enseñarlo: un 99,6 % no puede decir «100 %» si Tico ha perdido
+	_wall_best[room] = maxf(float(_wall_best.get(room, 0.0)), dealt)
+	_refresh_room()
+	var retry_wins: int = _game_manager.wall_retry_goal() if _game_manager and _game_manager.has_method("wall_retry_goal") else 3
+	show_banner(tr("El héroe ha caído"), tr("Le quitaste el %d %% de su vida. Vuelves a la sala %d sin perder nada y lo reintentas cada %d victorias.") % [floori(dealt * 100.0), maxi(1, room - 1), retry_wins], Color("ff8a7a"), 1.1)
 	_fade_to(0.85, 0.35, 0.95)
 
 

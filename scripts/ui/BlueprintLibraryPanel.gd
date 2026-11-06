@@ -21,6 +21,8 @@ signal own_order_requested(bp_id: StringName, rank: int)
 var _cards: Dictionary = {}  # bp_id -> tarjeta
 
 func _ready() -> void:
+	UIClarity.panel_title($PanelContainer/VBox/TitleBar/Title)
+	UIClarity.close_button(close_btn)
 	close_btn.pressed.connect(_on_close_pressed)
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_STOP  # Capturar clicks en el fondo

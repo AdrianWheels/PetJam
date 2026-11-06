@@ -315,6 +315,18 @@ func set_room_locked(locked: bool) -> void:
 
 
 ## Con muro y sin candado, Tico lo prueba ya (equipo nuevo o poción de efecto). Solo con la partida en marcha.
+## Para el HUD: Tico farmea la sala de antes del muro y lo reintentará al llegar a WALL_RETRY_WINS victorias.
+func is_farming_wall() -> bool:
+	return wall_room > 0 and not room_locked and current_enemy_level == wall_room - 1
+
+## Victorias seguidas en la sala de antes del muro desde el último intento (0..WALL_RETRY_WINS-1).
+func wall_retry_wins() -> int:
+	return _wins_since_retry
+
+## Cuántas victorias hacen falta para volver al muro (para el HUD y el cartel de derrota).
+func wall_retry_goal() -> int:
+	return WALL_RETRY_WINS
+
 func retry_wall_now() -> void:
 	if wall_room <= 0 or room_locked or dungeon_state != DungeonState.RUNNING:
 		return

@@ -1,6 +1,9 @@
 class_name UIClarity
 extends RefCounted
 
+const TITLE_FONT := preload("res://art/font/PirataOne-Regular.ttf")
+const TITLE_GOLD := Color(0.91, 0.72, 0.29)
+
 static func readable_theme() -> Theme:
 	var theme := Theme.new()
 	theme.default_font = ThemeDB.fallback_font
@@ -19,6 +22,23 @@ static func light_button(button: Button, icon_width: int = 120) -> void:
 		style.set_content_margin_all(8)
 		style.set_corner_radius_all(10)
 		button.add_theme_stylebox_override(state, style)
+
+## Título de panel (Tienda, Equipo, Biblioteca de planos): la letra del juego en oro, como el logo y los carteles. Cada
+## panel tenía el suyo (mayúsculas sin adorno, blanco grande, oro gótico) y no parecían del mismo juego.
+static func panel_title(label: Label) -> void:
+	label.add_theme_font_override("font", TITLE_FONT)
+	label.add_theme_font_size_override("font_size", 48)
+	label.add_theme_color_override("font_color", TITLE_GOLD)
+	label.add_theme_color_override("font_outline_color", Color(0.04, 0.025, 0.02))
+	label.add_theme_constant_override("outline_size", 8)
+
+## Botón de cerrar de los paneles: la misma «X» en todos, cuadrada y grande para el dedo (88 px).
+static func close_button(button: Button) -> void:
+	button.text = "X"
+	button.custom_minimum_size = Vector2(88, 88)
+	button.add_theme_font_override("font", ThemeDB.fallback_font)
+	button.add_theme_font_size_override("font_size", 38)
+	button.add_theme_color_override("font_color", Color("fff2df"))
 
 static func compact_panel(panel: Control) -> void:
 	var style := StyleBoxFlat.new()

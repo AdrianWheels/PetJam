@@ -9,6 +9,7 @@ signal blueprint_clicked(slot_index: int)
 const MATERIAL_ICON_SCENE := preload("res://scenes/UI/MaterialIcon.tscn")
 const COLOR_OK := Color(0.93, 0.88, 0.8)
 const COLOR_MISSING := Color(1.0, 0.42, 0.36)
+const COMPACT_FROM := 5  ## desde cuántos materiales la receta va en letra e iconos menores
 
 var slot_index: int = -1
 ## false para tarjetas que ya estaban en la cola (al reconstruirla no deben parpadear)
@@ -19,7 +20,8 @@ var _inventory: Node
 
 @onready var icon_rect: TextureRect = %Icon
 @onready var name_label: Label = %NameLabel
-@onready var materials_container: HBoxContainer = %MaterialsContainer
+## Fila que salta de línea: con 5 o 6 materiales y tres pedidos en pantalla, una sola fila se salía por los bordes
+@onready var materials_container: HFlowContainer = %MaterialsContainer
 @onready var reward_label: Label = %RewardLabel
 @onready var free_tag: Label = %FreeTag
 @onready var client_label: Label = %ClientLabel
@@ -111,22 +113,24 @@ func set_materials(materials) -> void:
 	if typeof(materials) == TYPE_DICTIONARY:
 		for mat_id in materials.keys():
 			_materials[StringName(str(mat_id))] = int(materials[mat_id])
-			_add_material_row(str(mat_id), materials[mat_id])
 	elif typeof(materials) == TYPE_ARRAY:
 		for entry in materials:
 			if typeof(entry) == TYPE_DICTIONARY and entry.has("id") and entry.has("qty"):
 				_materials[StringName(str(entry["id"]))] = int(entry["qty"])
-				_add_material_row(str(entry["id"]), entry["qty"])
+	# Con muchos materiales, iconos y cifras algo menores: la receta cabe en dos líneas sin agrandar la franja
+	var compact := _materials.size() >= COMPACT_FROM
+	for mat_id in _materials:
+		_add_material_row(str(mat_id), _materials[mat_id], compact)
 	_refresh_material_colors()
 
 
-func _add_material_row(material_name: String, quantity) -> void:
+func _add_material_row(material_name: String, quantity, compact: bool = false) -> void:
 	var container := HBoxContainer.new()
 	container.add_theme_constant_override("separation", 1)
 	container.set_meta("material_id", StringName(material_name))
 
 	var icon_node = MATERIAL_ICON_SCENE.instantiate()
-	icon_node.custom_minimum_size = Vector2(34, 34)
+	icon_node.custom_minimum_size = Vector2(28, 28) if compact else Vector2(34, 34)
 	icon_node.set("material_name", material_name)
 	container.add_child(icon_node)
 
@@ -134,7 +138,7 @@ func _add_material_row(material_name: String, quantity) -> void:
 	qty_label.name = "Qty"
 	qty_label.text = "x%s" % str(quantity)
 	qty_label.add_theme_font_override("font", ThemeDB.fallback_font)
-	qty_label.add_theme_font_size_override("font_size", 28)
+	qty_label.add_theme_font_size_override("font_size", 23 if compact else 28)
 	qty_label.add_theme_color_override("font_color", COLOR_OK)
 	qty_label.add_theme_constant_override("outline_size", 4)
 	container.add_child(qty_label)

@@ -56,6 +56,7 @@ var _loot_box: LootBoxView
 var _stats_label: RichTextLabel
 var _ficha_label: RichTextLabel
 var _next_label: Label
+var _loot_empty_label: Label  ## estado vacío del botín: qué cae ahí y de dónde
 var _potion_slots: Array[Label] = []
 var _potion_icons: Array[TextureRect] = []  ## el dibujo de la poción, a la izquierda de su hueco
 var _ghost_layer: Control
@@ -96,6 +97,8 @@ func _ready() -> void:
 	_im = get_node_or_null("/root/InventoryManager")
 	_gm = get_node_or_null("/root/GameManager")
 	close_btn.pressed.connect(close)
+	UIClarity.panel_title($Title)
+	UIClarity.close_button(close_btn)
 	_build()
 	if _im:
 		_im.crafted_items_changed.connect(func(_items): _refresh_if_open())
@@ -115,7 +118,7 @@ func _build() -> void:
 	_placement_label.size = Vector2(660, 300)
 	_placement_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_placement_label.add_theme_font_size_override("font_size", 32)
-	_placement_label.text = tr("Principal: seleccionar y arrastrar. Secundario: girar. Mantén pulsado para abrir la ficha.")
+	_placement_label.text = _idle_help()
 	add_child(_placement_label)
 	_loot_box = LootBoxView.new()
 	_loot_box.position = LOOT_RECT.position
@@ -130,6 +133,18 @@ func _build() -> void:
 	_next_label.add_theme_font_size_override("font_size", 24)
 	_next_label.add_theme_color_override("font_color", Color(0.75, 0.66, 0.54))
 	add_child(_next_label)
+	# Con el botín vacío la caja era un hueco oscuro de 960x440 sin explicación
+	_loot_empty_label = Label.new()
+	_loot_empty_label.position = LOOT_RECT.position + Vector2(40, 0)
+	_loot_empty_label.size = LOOT_RECT.size - Vector2(80, 0)
+	_loot_empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_loot_empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_loot_empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_loot_empty_label.add_theme_font_size_override("font_size", 28)
+	_loot_empty_label.add_theme_color_override("font_color", Color(0.66, 0.58, 0.48))
+	_loot_empty_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_loot_empty_label.text = tr("Aquí caen las piezas que forjas. Arrástralas a Tico para equiparlas.")
+	add_child(_loot_empty_label)
 	for r in POTION_SLOT_RECTS:
 		var slot := Label.new()
 		slot.position = r.position
@@ -142,6 +157,7 @@ func _build() -> void:
 		style.border_color = Color(0.55, 0.41, 0.24)
 		style.set_border_width_all(3)
 		style.set_corner_radius_all(12)
+		style.content_margin_right = 18.0
 		slot.add_theme_stylebox_override("normal", style)
 		add_child(slot)
 		_potion_slots.append(slot)
@@ -311,6 +327,7 @@ func _refresh() -> void:
 	if _loot_box.active:
 		_loot_box.sync(_im.get_loot())
 	loot_title.text = tr("Botín · %d") % _im.get_loot_count()
+	_loot_empty_label.visible = _im.get_loot_count() == 0
 	if _selected and not (_selected in _im.get_crafted_items()):
 		_selected = null
 	if _dragging:
@@ -336,7 +353,7 @@ func _refresh_stats(preview: Dictionary) -> void:
 	var parts := [
 		tr("Vida %d") % now.max_hp + _delta(after.max_hp - now.max_hp, "%+d"),
 		tr("Daño %.0f") % now.dmg + _delta(after.dmg - now.dmg, "%+.0f"),
-		tr("Armadura %d (-%d%%)") % [now.armor, mitigation] + _delta(after.armor - now.armor, "%+d"),
+		tr("Armadura %d (-%d%% daño)") % [now.armor, mitigation] + _delta(after.armor - now.armor, "%+d"),
 		tr("Crítico %.0f%%") % (now.crit_p * 100.0) + _delta((after.crit_p - now.crit_p) * 100.0, "%+.0f"),
 		tr("Velocidad %.2f") % now.aps + _delta(after.aps - now.aps, "%+.2f"),
 	]
@@ -359,7 +376,7 @@ func _refresh_ficha() -> void:
 
 ## Ficha breve (spec, apartado 9.1): nombre y calidad, estadísticas con su aumento, aura, zona y, si es
 ## legendaria, su habilidad y su precio.
-func _ficha_text(item: CraftedItem) -> String:
+func _ficha_text(item: CraftedItem, full: bool = false) -> String:
 	var pct: Dictionary = _im.hero_bonuses().get(item, {}) if item.place == InventoryManager.PLACE_HERO else {}
 	var head := "[color=#%s]%s · %s[/color]" % [item.get_quality_color().to_html(false), item.get_name_with_rank(), item.get_quality_label()]
 	var stats := []
@@ -385,6 +402,10 @@ func _ficha_text(item: CraftedItem) -> String:
 		if String(power.price) != "":
 			p += " [color=#%s](%s)[/color]" % [COLOR_DOWN, tr(power.price)]
 		extras.append(p)
+	if full:
+		# Ficha completa: una idea por línea (nombre, estadísticas, y cada efecto y la habilidad aparte). En un solo
+		# párrafo la habilidad de una legendaria quedaba enterrada a media frase
+		return "%s\n%s\n%s" % [head, "  ".join(stats), "\n".join(extras)]
 	return "%s   %s\n%s" % [head, "  ".join(stats), " · ".join(extras)]
 
 
@@ -414,6 +435,15 @@ func _refresh_next() -> void:
 		return
 
 
+## Ayuda de abajo con el panel en reposo, según el aparato: en el móvil no hay botón «secundario», y lo que gira
+## una pieza es un segundo dedo mientras el primero la arrastra. La línea de arriba ya dice «toca para ver, arrastra para
+## colocar»: esta solo cuenta lo que no se ve (girar y la ficha completa).
+func _idle_help() -> String:
+	if DisplayServer.is_touchscreen_available():
+		return tr("Girar: mientras arrastras una pieza, toca con otro dedo. Mantén pulsada una pieza para ver su ficha.")
+	return tr("Girar: clic derecho, rueda o R mientras arrastras. Mantén pulsada una pieza para ver su ficha.")
+
+
 ## Los huecos de consumibles: qué poción llevan y cuántas, o que están libres.
 func _refresh_potions() -> void:
 	for i in _potion_slots.size():
@@ -421,8 +451,10 @@ func _refresh_potions() -> void:
 		_potion_slots[i].text = "%s ×%d" % [tr(Potions.CATALOG[s.id].short), int(s.count)] if int(s.count) > 0 else tr("Hueco libre")
 		var icon_path: String = Potions.CATALOG[s.id].get("icon", "") if int(s.count) > 0 else ""
 		_potion_icons[i].texture = load(icon_path) if icon_path != "" else null
-		# con dibujo, el texto se aparta a su derecha
+		# Con dibujo, el texto va a la derecha del hueco: centrado, «Vida ×2» quedaba encima del frasco (el margen izquierdo
+		# del estilo no bastaba para apartarlo)
 		(_potion_slots[i].get_theme_stylebox("normal") as StyleBoxFlat).content_margin_left = 70.0 if icon_path != "" else -1.0
+		_potion_slots[i].horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if icon_path != "" else HORIZONTAL_ALIGNMENT_CENTER
 
 # ═══════════════════════════════════════════════════════════════════
 #  EL DEDO
@@ -616,7 +648,7 @@ func _cancel_press() -> void:
 	# pieza no cabía se deja el motivo, que explica por qué ha vuelto a su sitio
 	var refused: bool = _dragging and not _target.is_empty() and not _target.get("ok", true)
 	if _placement_label and not refused:
-		_placement_label.text = tr("Principal: seleccionar y arrastrar. Secundario: girar. Mantén pulsado para abrir la ficha.")
+		_placement_label.text = _idle_help()
 	_press = {}
 	_dragging = false
 	_target = {}
@@ -891,7 +923,7 @@ func _build_confirm() -> void:
 func _open_card(item: CraftedItem) -> void:
 	_card_item = item
 	var aristas := tr("Sin aristas") if item.aristas.is_empty() else tr("Aristas: %d") % item.aristas.size()
-	_card_text.text = "%s\n[color=#a89a86]%s[/color]" % [_ficha_text(item), aristas]
+	_card_text.text = "%s\n[color=#a89a86]%s[/color]" % [_ficha_text(item, true), aristas]
 	_card_sell_btn.text = tr("Vender por %d") % item.get_sell_price()
 	_card.visible = true
 

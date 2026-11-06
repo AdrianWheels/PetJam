@@ -9,6 +9,8 @@ extends Control
 const SIDE_X := [40.0, 580.0]
 const SIDE_W := 460.0
 const NAME_SIZE := 28
+const NAME_MIN := 22  ## un nombre largo baja hasta aquí antes de cortarse
+const NAME_GAP := 18.0  ## aire entre el nombre y la vida de su lado
 const HP_SIZE := 26
 const BAR_H := 12.0
 const TITLE_FONT := preload("res://art/font/PirataOne-Regular.ttf")
@@ -75,7 +77,24 @@ func _process(delta: float) -> void:
 		_enemy_name.position = Vector2(SIDE_X[1], top + 1.0)
 		_hero_name.text = "Tico"
 		_enemy_name.text = tr(corridor.enemy.display_name) + " · " + str(corridor.enemy.level)
+		_fit_name(_hero_name, corridor.hero)
+		_fit_name(_enemy_name, corridor.enemy)
 	queue_redraw()
+
+## El nombre ocupa lo que deja libre la vida de su lado («Señor del Magma · 130» pisaba «18430 / 18430»): primero baja la
+## letra hasta NAME_MIN y, si aun así no cabe, se corta con puntos suspensivos.
+func _fit_name(label: Label, unit: Node) -> void:
+	var font := ThemeDB.fallback_font
+	var hp_w := font.get_string_size(_hp_text(unit), HORIZONTAL_ALIGNMENT_LEFT, -1, HP_SIZE).x
+	var room := maxf(80.0, SIDE_W - hp_w - NAME_GAP)
+	var font_size := NAME_SIZE
+	while font_size > NAME_MIN and font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > room:
+		font_size -= 2
+	label.add_theme_font_size_override("font_size", font_size)
+	label.size.x = room
+
+func _hp_text(unit: Node) -> String:
+	return "%d / %d" % [maxi(0, unit.hp), unit.max_hp]
 
 func _draw() -> void:
 	if not corridor:
@@ -87,8 +106,8 @@ func _draw() -> void:
 	for side in 2:
 		var unit: Node = fighters[side]
 		var x: float = SIDE_X[side]
-		draw_string_outline(ThemeDB.fallback_font, Vector2(x, top + 27.0), "%d / %d" % [maxi(0, unit.hp), unit.max_hp], HORIZONTAL_ALIGNMENT_RIGHT, SIDE_W, HP_SIZE, 4, Color.BLACK)
-		draw_string(ThemeDB.fallback_font, Vector2(x, top + 27.0), "%d / %d" % [maxi(0, unit.hp), unit.max_hp], HORIZONTAL_ALIGNMENT_RIGHT, SIDE_W, HP_SIZE, Color("fff4df"))
+		draw_string_outline(ThemeDB.fallback_font, Vector2(x, top + 27.0), _hp_text(unit), HORIZONTAL_ALIGNMENT_RIGHT, SIDE_W, HP_SIZE, 4, Color.BLACK)
+		draw_string(ThemeDB.fallback_font, Vector2(x, top + 27.0), _hp_text(unit), HORIZONTAL_ALIGNMENT_RIGHT, SIDE_W, HP_SIZE, Color("fff4df"))
 		var at := Vector2(x, top + 34.0)
 		draw_rect(Rect2(at, Vector2(SIDE_W, BAR_H)), Color(0.22, 0.16, 0.13))
 		var ratio := clampf(float(unit.hp) / maxf(1.0, unit.max_hp), 0, 1)
