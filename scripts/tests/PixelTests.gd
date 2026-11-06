@@ -193,11 +193,11 @@ func test_hero_sprite_stands_on_the_floor() -> void:
 	hero._update_sprite()
 	var spr: Sprite2D = hero._sprite
 	check(spr.position.is_equal_approx(spr.get_meta("sticker_origin")), "posición de la pegatina respecto a los pies (%s)" % spr.position)
-	check(spr.hframes == 4 and spr.frame == 0, "cuatro poses con reposo fijo")
+	check(spr.hframes == StickerSprites.ANIM_COLS and spr.vframes == StickerSprites.ANIM_ROWS and spr.frame < StickerSprites.ANIM_COLS, "rejilla animada, en la fila del reposo")
 	check((spr.material as ShaderMaterial).shader.resource_path == "res://shaders/pixel_sprite.gdshader", "usa pixel_sprite")
 	hero._strike = 1.0
 	hero._update_sprite()
-	check(spr.position.is_equal_approx(spr.get_meta("sticker_origin")) and spr.frame == 1, "el golpe cambia de pose y conserva la posición")
+	check(spr.position.is_equal_approx(spr.get_meta("sticker_origin")) and spr.frame == StickerSprites.ANIM_COLS + 4, "el golpe muestra el impacto y conserva la posición")
 	hero.queue_free()
 
 
@@ -222,7 +222,7 @@ func test_dead_hero_keeps_defeat_pose_after_equipping() -> void:
 	hero.gear = {"main_hand": {"tier": "common", "rarity": "basic"}}
 	hero._apply_sprite()
 	hero._update_sprite()
-	check(hero._sprite.visible and hero._sprite.frame == 3, "equipar durante la caída mantiene la pose derrotada")
+	check(hero._sprite.visible and hero._sprite.frame / StickerSprites.ANIM_COLS == StickerSprites.Row.DEFEAT, "equipar durante la caída mantiene la derrota")
 	hero.queue_free()
 
 
@@ -265,7 +265,7 @@ func test_enemy_sprite_faces_the_hero_and_stands_on_floor() -> void:
 	check(e._sprite.position.is_equal_approx(e._sprite.get_meta("sticker_origin")), "posición de la pegatina del enemigo (%s)" % e._sprite.position)
 	e._strike = 1.0
 	e._update_sprite()
-	check(e._sprite.position.is_equal_approx(e._sprite.get_meta("sticker_origin")) and e._sprite.frame == 1, "pose de golpe hacia el héroe (%s)" % e._sprite.position)
+	check(e._sprite.position.is_equal_approx(e._sprite.get_meta("sticker_origin")) and e._sprite.frame == StickerSprites.ANIM_COLS + 4, "impacto del golpe hacia el héroe (%s)" % e._sprite.position)
 	e.queue_free()
 
 

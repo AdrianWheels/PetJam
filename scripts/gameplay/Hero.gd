@@ -113,6 +113,9 @@ var _windup := 0.0
 var _strike := 0.0
 var _strike_time := 0.22
 var _hurt := 0.0
+## Segundos desde el último golpe recibido y desde la caída: llevan las animaciones de daño y derrota.
+var _since_hurt := 99.0
+var _since_defeat := 0.0
 var _materialize := 1.0
 var _hp_ghost := 1.0
 var _ghost_delay := 0.0
@@ -152,6 +155,8 @@ func _ready():
 func _process(delta: float) -> void:
 	_t += delta
 	_hurt = maxf(0.0, _hurt - delta)
+	_since_hurt += delta
+	_since_defeat = 0.0 if alive else _since_defeat + delta
 	_block_flash = maxf(0.0, _block_flash - delta * 3.0)
 	# Regeneración (casco avanzado legendario): solo con Tico vivo; un "+N" verde cada 2 s como mucho
 	if alive and float(power.regen) > 0.0 and hp < max_hp:
@@ -332,6 +337,7 @@ func take_damage(amount: int, is_pulse: bool = false, attacker_level: int = 1) -
 		if final < amount and mitigation >= 0.15:
 			_block_flash = 1.0
 	_hurt = HURT_TIME
+	_since_hurt = 0.0
 	_ghost_delay = 0.35
 	if final >= hp and _second_chance_ready:
 		_second_chance_ready = false
@@ -447,6 +453,8 @@ func respawn(start_position: Vector2 = PixelView.HERO_START) -> void:
 	_windup = 0.0
 	_strike = 0.0
 	_hurt = 0.0
+	_since_hurt = 99.0
+	_since_defeat = 0.0
 	_materialize = 0.0
 	_regen_acc = 0.0
 	_regen_shown = 0  # ni un "+N" pendiente de antes (reaparecer también es viajar de sala)
@@ -502,6 +510,7 @@ func _apply_sprite() -> void:
 	_metrics = PixelSprites.metrics(key)
 	_sprite.texture = PixelSprites.texture(key)
 	_sprite.hframes = maxi(1, int(_metrics.get("frames", 1)))
+	_sprite.vframes = 1
 	var sticker_key := "tico_" + (_rarity("main_hand") if not _rarity("main_hand").is_empty() else "none")
 	_sticker = StickerSprites.apply_height(_sprite, sticker_key, PixelView.VIEW_H * 0.90)
 	if not _sticker:
@@ -514,7 +523,7 @@ func _update_sprite() -> void:
 	_sprite.visible = alive or _sticker
 	if not alive and not _sticker:
 		return
-	_sprite.frame = StickerSprites.pose_index(alive, _hurt, _strike) if _sticker else int(_t / IDLE_FRAME_TIME) % _sprite.hframes
+	_sprite.frame = StickerSprites.frame_for(_sprite, alive, _t, _since_defeat, _since_hurt, _hurt, _windup, _strike) if _sticker else int(_t / IDLE_FRAME_TIME) % _sprite.hframes
 	var flash := clampf(_hurt / HURT_TIME, 0.0, 1.0)
 	var lunge := -1.6 * _windup + 5.2 * pow(_strike, 1.4) - 2.4 * flash
 	var bob := 1.0 if walking and absf(sin(_walk_phase)) > 0.5 else 0.0

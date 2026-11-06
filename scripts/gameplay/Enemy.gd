@@ -84,6 +84,8 @@ var death_info: Dictionary = {}
 var _rng := RandomNumberGenerator.new()
 var _t := 0.0
 var _hurt := 0.0
+## Segundos desde el último golpe recibido: lleva la animación de daño.
+var _since_hurt := 99.0
 var _windup := 0.0
 var _strike := 0.0
 var _intro := 1.0
@@ -133,6 +135,7 @@ func _process(delta: float) -> void:
 	_tick_burn(delta)
 	_t += delta
 	_hurt = maxf(0.0, _hurt - delta)
+	_since_hurt += delta
 	if _strike > 0.0:
 		_strike = maxf(0.0, _strike - delta / strike_time)
 	if not is_attacking:
@@ -171,6 +174,7 @@ func configure_for_level(lv: int, boss: bool) -> void:
 	_windup = 0.0
 	_strike = 0.0
 	_hurt = 0.0
+	_since_hurt = 99.0
 	_hp_ghost = 1.0
 	_cast_launched = false
 	queue_redraw()
@@ -205,6 +209,7 @@ func _apply_archetype(id: StringName) -> void:
 	if _sprite:
 		_sprite.texture = PixelSprites.texture(key)
 		_sprite.hframes = maxi(1, int(_metrics.get("frames", 1)))
+		_sprite.vframes = 1
 		var sticker_key := key.get_file()
 		_sticker = StickerSprites.apply_height(_sprite, sticker_key, 86.4 if id == &"boss" else {&"slime": 46.0, &"bat": 58.0}.get(id, 78.0))
 		if not _sticker:
@@ -260,6 +265,7 @@ func take_damage(amount: int, _is_pulse: bool = false) -> int:
 		return 0
 	hp = max(0, hp - amount)
 	_hurt = HURT_TIME
+	_since_hurt = 0.0
 	_ghost_delay = 0.3
 	if hp == 0:
 		_die()
@@ -512,7 +518,7 @@ func _update_sprite() -> void:
 	_sprite.visible = _awake and alive
 	if not _sprite.visible:
 		return
-	_sprite.frame = StickerSprites.pose_index(alive, _hurt, _strike) if _sticker else int(_t / IDLE_FRAME_TIME) % _sprite.hframes
+	_sprite.frame = StickerSprites.frame_for(_sprite, alive, _t, 0.0, _since_hurt, _hurt, _windup, _strike) if _sticker else int(_t / IDLE_FRAME_TIME) % _sprite.hframes
 	var e := _ease_out_back(_intro)
 	var st := pow(_strike, 1.6)
 	var w := _windup
