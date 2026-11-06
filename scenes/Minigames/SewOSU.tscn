@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://cj5b2mfsvqaos"]
 
 [ext_resource type="Script" uid="uid://bux5vlfei1vrb" path="res://scripts/SewMinigame.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://dd7kswfkox0yk" path="res://art/assets/Imagenes/Trial Resources/Stitches/leather_background.png" id="2_osgrj"]
+[ext_resource type="Texture2D" path="res://art/stickers/sources/stations/sew.png" id="2_osgrj"]
 
 [node name="SewOSU" type="Control"]
 layout_mode = 3
@@ -36,7 +36,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.08, 0.08, 0.1, 1)
+color = Color(0.08, 0.08, 0.1, 0)
 
 [node name="TextureRect" type="TextureRect" parent="GameArea"]
 layout_mode = 1

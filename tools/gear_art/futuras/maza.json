@@ -1,0 +1,16 @@
+{
+ "source": "nuevas/maza.png",
+ "cells": [
+  [
+   0,
+   0
+  ],
+  [
+   0,
+   1
+  ]
+ ],
+ "white_bg": true,
+ "strip_border": false,
+ "fit": "contain"
+}

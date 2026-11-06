@@ -1,0 +1,263 @@
+{
+  "version": 1,
+  "complete": true,
+  "events": [
+    {
+      "id": "enemy_shatter",
+      "kind": "pool",
+      "files": [
+        "combat/enemy_shatter_1.wav",
+        "combat/enemy_shatter_2.wav",
+        "combat/enemy_shatter_3.wav"
+      ],
+      "sources": [
+        "combat/enemy_shatter_v1.wav",
+        "combat/enemy_shatter_v2.wav",
+        "combat/enemy_shatter_v5.wav"
+      ],
+      "description": "Un enemigo geométrico se rompe en fragmentos",
+      "when": "Cada vez que el héroe mata a un enemigo, cada pocos segundos",
+      "mix_db": -6.0,
+      "usage": "Play one variant per event; avoid immediately repeating the same variant."
+    },
+    {
+      "id": "boss_appear",
+      "kind": "one_shot",
+      "files": [
+        "combat/boss_appear.wav"
+      ],
+      "sources": [
+        "combat/boss_appear_v1.wav"
+      ],
+      "description": "Aparece el jefe de la sala",
+      "when": "Al entrar en pantalla el jefe, cada 10 salas",
+      "mix_db": 0.0,
+      "usage": "Play once per event."
+    },
+    {
+      "id": "boss_defeated",
+      "kind": "one_shot",
+      "files": [
+        "feedback/boss_defeated.wav"
+      ],
+      "sources": [
+        "feedback/boss_defeated_v4.wav"
+      ],
+      "description": "Jefe derrotado",
+      "when": "Al matar al jefe, un momento especial poco frecuente",
+      "mix_db": 0.0,
+      "usage": "Play once per event."
+    },
+    {
+      "id": "hero_fall",
+      "kind": "one_shot",
+      "files": [
+        "combat/hero_fall.wav"
+      ],
+      "sources": [
+        "combat/hero_fall_v1.wav"
+      ],
+      "description": "El héroe cae",
+      "when": "Cuando el héroe muere, cada pocos minutos",
+      "mix_db": -3.0,
+      "usage": "Play once per event."
+    },
+    {
+      "id": "hero_respawn",
+      "kind": "one_shot",
+      "files": [
+        "feedback/hero_respawn.wav"
+      ],
+      "sources": [
+        "feedback/hero_respawn_v1.wav"
+      ],
+      "description": "El héroe reaparece en un haz de luz",
+      "when": "Tras cada muerte, al volver a la sala 1",
+      "mix_db": -6.0,
+      "usage": "Play once per event."
+    },
+    {
+      "id": "loot_coins",
+      "kind": "pool",
+      "files": [
+        "feedback/loot_coins_1.wav",
+        "feedback/loot_coins_2.wav",
+        "feedback/loot_coins_3.wav"
+      ],
+      "sources": [
+        "feedback/loot_coins_v2.wav",
+        "feedback/loot_coins_v3.wav",
+        "feedback/loot_coins_v5.wav"
+      ],
+      "description": "Botín de materiales al matar",
+      "when": "Con cada muerte de enemigo, junto a la rotura",
+      "mix_db": -9.0,
+      "usage": "Play one variant per event; avoid immediately repeating the same variant."
+    },
+    {
+      "id": "blueprint_found",
+      "kind": "one_shot",
+      "files": [
+        "feedback/blueprint_found.wav"
+      ],
+      "sources": [
+        "feedback/blueprint_found_v2.wav"
+      ],
+      "description": "Plano nuevo desbloqueado",
+      "when": "La primera vez que se mata a un enemigo de cierto nivel, raro",
+      "mix_db": -3.0,
+      "usage": "Play once per event."
+    },
+    {
+      "id": "biome_enter",
+      "kind": "one_shot",
+      "files": [
+        "ambience/biome_enter.wav"
+      ],
+      "sources": [
+        "ambience/biome_enter_v3.wav"
+      ],
+      "description": "Entrada a un bioma nuevo",
+      "when": "Al cruzar la puerta de la primera sala de un bioma, cada 10 salas",
+      "mix_db": -6.0,
+      "usage": "Play once per event."
+    },
+    {
+      "id": "wraith_orb",
+      "kind": "pool",
+      "files": [
+        "combat/wraith_orb_1.wav",
+        "combat/wraith_orb_2.wav",
+        "combat/wraith_orb_3.wav"
+      ],
+      "sources": [
+        "combat/wraith_orb_v1.wav",
+        "combat/wraith_orb_v3.wav",
+        "combat/wraith_orb_v4.wav"
+      ],
+      "description": "Orbe mágico del espectro",
+      "when": "Cada ataque del espectro, alrededor de una vez por segundo mientras pelea",
+      "mix_db": -9.0,
+      "usage": "Play one variant per event; avoid immediately repeating the same variant."
+    },
+    {
+      "id": "golem_slam",
+      "kind": "pool",
+      "files": [
+        "combat/golem_slam_1.wav",
+        "combat/golem_slam_2.wav",
+        "combat/golem_slam_3.wav"
+      ],
+      "sources": [
+        "combat/golem_slam_v3.wav",
+        "combat/golem_slam_v4.wav",
+        "combat/golem_slam_v5.wav"
+      ],
+      "description": "Puñetazo del gólem contra el suelo",
+      "when": "Cada golpe del gólem o del jefe, cada dos segundos en su sala",
+      "mix_db": -3.0,
+      "usage": "Play one variant per event; avoid immediately repeating the same variant."
+    },
+    {
+      "id": "equip_clink",
+      "kind": "one_shot",
+      "files": [
+        "ui/equip_clink.wav"
+      ],
+      "sources": [
+        "ui/equip_clink_v2.wav"
+      ],
+      "description": "Equipar un objeto al héroe",
+      "when": "Al tocar un objeto en el panel de Equipo",
+      "mix_db": -9.0,
+      "usage": "Play once per event."
+    },
+    {
+      "id": "request_accept",
+      "kind": "one_shot",
+      "files": [
+        "ui/request_accept.wav"
+      ],
+      "sources": [
+        "ui/request_accept_v1.wav"
+      ],
+      "description": "Aceptar un pedido",
+      "when": "Al tocar una tarjeta de pedido y empezar a forjar",
+      "mix_db": -9.0,
+      "usage": "Play once per event."
+    },
+    {
+      "id": "ui_tap",
+      "kind": "one_shot",
+      "files": [
+        "ui/ui_tap.wav"
+      ],
+      "sources": [
+        "ui/ui_tap_v2.wav"
+      ],
+      "description": "Toque de botón",
+      "when": "Al pulsar botones del panel inferior, muy frecuente",
+      "mix_db": -12.0,
+      "usage": "Play once per event."
+    }
+  ],
+  "project": {
+    "name": "PetJam / AFK Armory",
+    "brief": "Idle móvil: un herrero forja equipo con minijuegos mientras un héroe geométrico baja por una mazmorra endless. SFX para el combate del corredor, sus hitos (jefe, bioma, muerte) y la interfaz.",
+    "direction": "Piedra, metal y cristal; impactos cercanos y secos. La magia suena a vidrio y aire, nunca a voces. Los enemigos son figuras geométricas: al morir se rompen como cerámica. Sonidos cortos porque se repiten mucho en móvil; los hitos (jefe, récord) destacan por encima.",
+    "assumptions": [
+      "La interfaz queda por debajo del combate y el combate por debajo de los hitos",
+      "Sin criaturas ni voces: el modelo es débil en sonidos orgánicos",
+      "Los golpes de espada ya existen (art/sounds/sfx/combat) y se mantienen"
+    ]
+  },
+  "target_lufs": -20.0,
+  "mix_offsets_baked_in": true,
+  "note": "Do not apply mix_db again in the engine. Artistic quality requires listening.",
+  "sha256": {
+    "ambience/biome_enter.wav": "f81ba19a790bb831cff3398c61ed6b748b02e0a9252d3b1cd16b05ee99eac3d6",
+    "combat/boss_appear.wav": "bf6171100bc4e15795baa431eeb31a6cad8dc82f242cd6f95c1d82f5c2822c25",
+    "combat/enemy_shatter_1.wav": "17fbdf39a1abbff050633a9b8900e0a8a0dd5be864a48f70938997b0c56badc8",
+    "combat/enemy_shatter_2.wav": "5489de254a7574cd9f9906fa31835de537d6092ffbccd30bb15a3114d6d18437",
+    "combat/enemy_shatter_3.wav": "fedb56a74e57545225d4a81cfeb51d714e80e6400232e9a3c8a592ae52000fd9",
+    "combat/golem_slam_1.wav": "023b9da568f63d7c6fe30b6e589b69ea2cd587bcadba19954baf1aefa599ce65",
+    "combat/golem_slam_2.wav": "b1a260a96ada8bd9c9fd0294c122aa15a37d997397a72680ddb2ceb8b643c5a9",
+    "combat/golem_slam_3.wav": "9c84c1319234fd4587a3a6490142824fceb34014760b68a1972ad179d423330a",
+    "combat/hero_fall.wav": "a22e2d7047ecf4f3314ccaac52b2326eebc6a23dd76cc85268746dfb51663be1",
+    "combat/wraith_orb_1.wav": "ab6aa8e6591e395f80f224cfe9e4cb2a9a24540db8cf91276a90ae5be5e351a1",
+    "combat/wraith_orb_2.wav": "66096f2236f8880696e05822b3b569c85dd6a24f5e0b080b7dd64859269910ce",
+    "combat/wraith_orb_3.wav": "488dd1d5ba01003f26112c3a19b2a4c68cbdc61beb0133df884a268169cc6959",
+    "feedback/blueprint_found.wav": "9da375160db156f6ac420798d33fc2a8842486212ef0b7474a397bbea537542e",
+    "feedback/boss_defeated.wav": "39609243f643aed2067eb7969ba9b54b9f7fa0e0a072f2f4d07334dc46f957aa",
+    "feedback/hero_respawn.wav": "bfcbd5a4244b0877c3bd7a59fc8f6b53fa618393aac65c7091f1eacc07335603",
+    "feedback/loot_coins_1.wav": "5b931afc7cccf6a81e23e93f3e68c640cd60af98eda181a6720577b51fe0ecae",
+    "feedback/loot_coins_2.wav": "e7c721166911ce402df3138109cbe75dc64881aae019dc3c0ad7e59c29bab573",
+    "feedback/loot_coins_3.wav": "e221c3fb42436f369b8614db3b0233ee0edc13cea958a17c110b312e1be8440d",
+    "ui/equip_clink.wav": "26b9033b23510d59b2eab6d0ed36b7abcde2eff460b065c9d2ebc403ee1cc022",
+    "ui/request_accept.wav": "a71c600eb8ccbb2d8c787f5c3274d60fef92b9395fb3ae576912fb287a093ac2",
+    "ui/ui_tap.wav": "19da18d478ac32a913b71ccda5a2c989df40e232228890872f9291e6c0bab4f2"
+  },
+  "source_sha256": {
+    "ambience/biome_enter_v3.wav": "55cf421212c0e3fd48a1b708c52923e49fbce4aec02d7d396af33eb1361e7aa9",
+    "combat/boss_appear_v1.wav": "a15732a4a0058377d0b775109356db202f690646f430904daac61b49fb98875e",
+    "combat/enemy_shatter_v1.wav": "ca05d8921c3356ed09d9b50c6ed2b8a0b40d1b016a5cd07bded7482b3c037a44",
+    "combat/enemy_shatter_v2.wav": "8ae6dce7766566635be63c33508bb6be6e5de3b7c8d4325d9a4c682f263678d0",
+    "combat/enemy_shatter_v5.wav": "0097dbb6db9623b6574007f1dda5200c6f98bc4ab8c7ed3e5ef31fb8affa2cbf",
+    "combat/golem_slam_v3.wav": "3b42005d148ea30c80af02d49b21a6cedd6e1e8fb978a1bed88f98771a38b6e5",
+    "combat/golem_slam_v4.wav": "f7fda6a2b5876111feaf47c3dc908d45fd13f66e90c3a6ada983208c72e9a175",
+    "combat/golem_slam_v5.wav": "e9569fc9e4e87f7adbe2d7e0fdc983da77c1e369a66aeee930e1d71fd7aea626",
+    "combat/hero_fall_v1.wav": "e1afea8c8f9140c4ad78bac3f0821468049fa28a01de697a192f807eb103ac70",
+    "combat/wraith_orb_v1.wav": "e6d6636d892ac168ddebebf3833491413ba5960ddc826755478a22c4281c5696",
+    "combat/wraith_orb_v3.wav": "523b86e7238841fe18ffeb19c04ec5766715319edda55a8027e97488567d59e4",
+    "combat/wraith_orb_v4.wav": "2cf92dccafab7f8bd42fba58256da89b4133bba8b0b61b8989cfaa1fc24ca779",
+    "feedback/blueprint_found_v2.wav": "b79a8d9b363341509e64e3521385a4602e425b1afd637b18cca1a892812336b3",
+    "feedback/boss_defeated_v4.wav": "eab37d197b79109f76e698dc06bded8ced6aeb8bf5aa88e8cccf25c49a53952d",
+    "feedback/hero_respawn_v1.wav": "bffd00c7a44ac2f266e82f5da234cc15ef289d109309854bc797878d712f809c",
+    "feedback/loot_coins_v2.wav": "6d4a3a6e1b5a7247fd698c0ff3bb29836406f5399d2a1b1678189b93faf725ba",
+    "feedback/loot_coins_v3.wav": "67c920afddb794cd402b682a38558de887f95fe42268e777f3bdf76bff78cf0f",
+    "feedback/loot_coins_v5.wav": "2a714ba3772d2cad2ead8c85a1ee6ca5a61e4975594622e1fba89311e8a04e39",
+    "ui/equip_clink_v2.wav": "1360d8261df0d7bf356465becc142f6594d58e778ec82fd1c5292d6c99a1be4f",
+    "ui/request_accept_v1.wav": "aaf198e63ff2f5c9beb5ae3398932731df41a2d12beb76bd509f825533b75520",
+    "ui/ui_tap_v2.wav": "c843f284e1f1a8246e13305d8841597923301bf9fb51212ce296db35581a6e2e"
+  }
+}

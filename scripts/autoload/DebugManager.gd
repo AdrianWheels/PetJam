@@ -10,6 +10,7 @@ extends Node
 @export var show_audio_debug := false
 @export var show_crafting_debug := false
 @export var show_combat_debug := true
+@export var show_game_debug := true
 
 @export_group("General Settings")
 @export var timestamp_logs := false
@@ -48,6 +49,32 @@ func log_combat(message: String) -> void:
 	if show_combat_debug:
 		_print_colored("[COMBAT] %s" % message, "")
 
+## Log de game manager (estado global, nivel, respawn)
+func log_game(message: String) -> void:
+	if show_game_debug:
+		_print_colored("[GAME] %s" % message, "")
+
+## Log genérico por categoría (StringName) — usar desde cualquier sistema
+static func log_msg(category: StringName, message: String) -> void:
+	var instance = Engine.get_singleton("DebugManager") if Engine.has_singleton("DebugManager") else null
+	if instance == null:
+		# Fallback: buscar en árbol
+		var tree = Engine.get_main_loop()
+		if tree:
+			instance = tree.root.get_node_or_null("/root/DebugManager")
+	if instance == null:
+		print("[%s] %s" % [category.to_upper(), message])
+		return
+	match category:
+		&"forge": instance.log_forge(message)
+		&"dungeon": instance.log_dungeon(message)
+		&"minigame": instance.log_minigame(message)
+		&"audio": instance.log_audio(message)
+		&"crafting": instance.log_crafting(message)
+		&"combat": instance.log_combat(message)
+		&"game": instance.log_game(message)
+		_: instance.log_info(message)
+
 ## Log genérico (siempre visible)
 func log_info(message: String) -> void:
 	print("[INFO] %s" % message)
@@ -71,6 +98,8 @@ func set_category_enabled(category: StringName, enabled: bool) -> void:
 			show_crafting_debug = enabled
 		&"combat":
 			show_combat_debug = enabled
+		&"game":
+			show_game_debug = enabled
 		_:
 			push_warning("DebugManager: Unknown category '%s'" % category)
 	
@@ -84,6 +113,7 @@ func enable_all() -> void:
 	show_audio_debug = true
 	show_crafting_debug = true
 	show_combat_debug = true
+	show_game_debug = true
 	print("DebugManager: All categories enabled")
 
 ## Desactiva todas las categorías
@@ -94,6 +124,7 @@ func disable_all() -> void:
 	show_audio_debug = false
 	show_crafting_debug = false
 	show_combat_debug = false
+	show_game_debug = false
 	print("DebugManager: All categories disabled")
 
 func _print_colored(message: String, _color: String) -> void:

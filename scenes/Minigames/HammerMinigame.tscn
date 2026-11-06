@@ -1,8 +1,8 @@
 [gd_scene load_steps=4 format=3 uid="uid://bius0ofgpw8m5"]
 
 [ext_resource type="Script" uid="uid://dhalbdpooexrp" path="res://scripts/HammerMinigame.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://c1gvqcv1ut0o0" path="res://art/assets/Imagenes/Trial Resources/Hammer/hammer_background.png" id="2_yq32g"]
-[ext_resource type="Texture2D" uid="uid://dyjee13f3ba7b" path="res://art/assets/Imagenes/Trial Resources/Hammer/hammer.png" id="3_hammer"]
+[ext_resource type="Texture2D" path="res://art/stickers/sources/stations/hammer.png" id="2_yq32g"]
+[ext_resource type="Texture2D" path="res://art/stickers/sources/tools/hammer.png" id="3_hammer"]
 
 [node name="HammerMinigame" type="Control"]
 layout_mode = 3
@@ -15,15 +15,9 @@ script = ExtResource("1")
 
 [node name="GameArea" type="Control" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -450.0
-offset_top = -350.0
-offset_right = 450.0
-offset_bottom = 350.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -57,13 +51,12 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -290.0
-offset_top = -137.0
-offset_right = 410.0
-offset_bottom = 23.0
+offset_left = -350.0
+offset_top = -100.0
+offset_right = 350.0
+offset_bottom = 100.0
 grow_horizontal = 2
 grow_vertical = 2
-scale = Vector2(0.6572818, 1)
 
 [node name="TrackLine" type="Panel" parent="GameArea/GameplayContainer"]
 unique_name_in_owner = true

@@ -1,0 +1,721 @@
+[
+  {
+    "id": "characters/tico_basic",
+    "prompt": "Hand-inked fantasy illustration matching the supplied old weapons: thin irregular dark outlines, restrained scratch marks and simple muted shading, desaturated blue-grey iron, warm worn brown leather and dusty red accents. Drawn 2D STICKER art with a clean narrow warm-white cutout border around EACH pose, TRUE transparent background. Not pixel art, not 3D, not photorealistic. No words, numbers, grid lines, motion trails or backdrop. A SINGLE sprite sheet with exactly FOUR full-body poses in an exact regular 2 by 2 grid of EQUAL square cells. Top left=neutral REST; top right=ATTACK at impact; bottom left=HURT recoil; bottom right=DEFEATED collapsed. Each pose entirely contained in its cell with 8 percent safe margin, no objects crossing cells. Same identity, outfit, weapon, drawing scale and direction in every cell. Standing poses share baseline near bottom of cell; defeated pose at that same floor baseline. No intermediate frames or walk cycle. Tico, youthful adult male adventurer, messy brown hair, red trailing scarf, brown leather vest and belt with brass buckle, dark trousers, brown boots, game-friendly compact proportions with slightly enlarged head, looks RIGHT in all poses. He holds the broad simple iron sword from the reference, riveted straight crossguard, brown wrapped handle, octagonal pommel, muted red lower blade reflection. Rest blade raised diagonally forward, attack blade extended to the right, hurt recoils backward, defeat on one knee head down with weapon lowered. Maintain the supplied character image's face and clothing.",
+    "refs": [
+      "D:/Proyectos/PetJam/art/pilot_illustrated_2026_10_02/tico.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "transparent": true,
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-b4984a31-0b76-433b-9d8b-97776e17ac4d.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "characters/tico_none",
+    "prompt": "Edit target is this 2x2 Tico four-pose sheet. Preserve ALL four character poses, identity, clothing, wooden stick and existing narrow white sticker outline unchanged. REMOVE ALL irregular white background patches, colored speckles, paper texture and noise outside the sticker silhouettes. All space outside each narrow sticker border must have alpha=0 and be perfectly clean transparent. Do not add a white page or cell boundaries. Preserve the four square-cell arrangement.",
+    "refs": [
+      "D:/Proyectos/PetJam/art/stickers/sources/characters/tico_none.png"
+    ],
+    "transparent": true,
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-5a0b95d8-80cc-475c-9e26-0121add32ede.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "characters/tico_advanced",
+    "prompt": "Hand-inked fantasy illustration matching the supplied old weapons: thin irregular dark outlines, restrained scratch marks and simple muted shading, desaturated blue-grey iron, warm worn brown leather and dusty red accents. Drawn 2D STICKER art with a clean narrow warm-white cutout border around EACH pose, TRUE transparent background. Not pixel art, not 3D, not photorealistic. No words, numbers, grid lines, motion trails or backdrop. A SINGLE sprite sheet with exactly FOUR full-body poses in an exact regular 2 by 2 grid of EQUAL square cells. Top left=neutral REST; top right=ATTACK at impact; bottom left=HURT recoil; bottom right=DEFEATED collapsed. Each pose entirely contained in its cell with 8 percent safe margin, no objects crossing cells. Same identity, outfit, weapon, drawing scale and direction in every cell. Standing poses share baseline near bottom of cell; defeated pose at that same floor baseline. No intermediate frames or walk cycle. Tico, youthful adult male adventurer, messy brown hair, red trailing scarf, brown leather vest and belt with brass buckle, dark trousers, brown boots, game-friendly compact proportions with slightly enlarged head, looks RIGHT in all poses. He holds the advanced long steel sword, with slightly refined crossguard and brown grip, cold steel blade. Rest, lateral sword strike to right, recoil, on one knee defeated. SAME supplied character identity.",
+    "refs": [
+      "D:/Proyectos/PetJam/art/pilot_illustrated_2026_10_02/tico.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "transparent": true,
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-b9b2b811-4626-4de3-87d9-c296902aa551.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "characters/tico_master",
+    "prompt": "Hand-inked fantasy illustration matching the supplied old weapons: thin irregular dark outlines, restrained scratch marks and simple muted shading, desaturated blue-grey iron, warm worn brown leather and dusty red accents. Drawn 2D STICKER art with a clean narrow warm-white cutout border around EACH pose, TRUE transparent background. Not pixel art, not 3D, not photorealistic. No words, numbers, grid lines, motion trails or backdrop. A SINGLE sprite sheet with exactly FOUR full-body poses in an exact regular 2 by 2 grid of EQUAL square cells. Top left=neutral REST; top right=ATTACK at impact; bottom left=HURT recoil; bottom right=DEFEATED collapsed. Each pose entirely contained in its cell with 8 percent safe margin, no objects crossing cells. Same identity, outfit, weapon, drawing scale and direction in every cell. Standing poses share baseline near bottom of cell; defeated pose at that same floor baseline. No intermediate frames or walk cycle. Tico, youthful adult male adventurer, messy brown hair, red trailing scarf, brown leather vest and belt with brass buckle, dark trousers, brown boots, game-friendly compact proportions with slightly enlarged head, looks RIGHT in all poses. He holds the supplied ornate masterwork broad sword, worn gold accents on guard, blue-grey steel and dusty red blade reflection. Rest, powerful sweep toward right, recoils, on one knee defeated. SAME supplied character identity.",
+    "refs": [
+      "D:/Proyectos/PetJam/art/pilot_illustrated_2026_10_02/tico.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "transparent": true,
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-a4bf0181-461d-4ca9-9719-5705aeaf7575.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "characters/skeleton",
+    "prompt": "Hand-inked fantasy illustration matching the supplied old weapons: thin irregular dark outlines, restrained scratch marks and simple muted shading, desaturated blue-grey iron, warm worn brown leather and dusty red accents. Drawn 2D STICKER art with a clean narrow warm-white cutout border around EACH pose, TRUE transparent background. Not pixel art, not 3D, not photorealistic. No words, numbers, grid lines, motion trails or backdrop. A SINGLE sprite sheet with exactly FOUR full-body poses in an exact regular 2 by 2 grid of EQUAL square cells. Top left=neutral REST; top right=ATTACK at impact; bottom left=HURT recoil; bottom right=DEFEATED collapsed. Each pose entirely contained in its cell with 8 percent safe margin, no objects crossing cells. Same identity, outfit, weapon, drawing scale and direction in every cell. Standing poses share baseline near bottom of cell; defeated pose at that same floor baseline. No intermediate frames or walk cycle. Skeleton fighter looking LEFT in every pose: cracked warm ivory skull with small red eyes, exposed ribs, worn leather belt, dark ragged loincloth, rusty short sword. Match supplied skeleton identity. Attack strikes toward LEFT, hurt recoils backward, defeat collapsed bones low on floor. Compact proportions, clear skull and weapon.",
+    "refs": [
+      "D:/Proyectos/PetJam/art/pilot_illustrated_2026_10_02/skeleton.png"
+    ],
+    "transparent": true,
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-cdc4eb90-f374-4475-8b7e-1ef1018c4d3d.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "characters/slime",
+    "prompt": "Edit target: this four-pose green slime sheet. Keep the ink drawing style, colors, 2x2 sheet arrangement, narrow white sticker borders and true transparent backdrop. REMOVE ALL swords, handles and humanoid hands from ALL four poses. This is an UNARMED green slime, not a sword fighter. Top left rests as a green dome; top right lunges LEFT using its blob body only; bottom left squashes in pain with eyes shut; bottom right is a flat puddle with shut eyes. No weapons, no detached objects or paper speckles. Each blob entirely within its equal square cell with clear 8% margin.",
+    "refs": [
+      "D:/Proyectos/PetJam/art/stickers/sources/characters/slime.png"
+    ],
+    "transparent": true,
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-e1e348e4-4590-4732-8918-b508270a1744.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "characters/bat",
+    "prompt": "Hand-inked fantasy illustration matching the supplied old weapons: thin irregular dark outlines, restrained scratch marks and simple muted shading, desaturated blue-grey iron, warm worn brown leather and dusty red accents. Drawn 2D STICKER art with a clean narrow warm-white cutout border around EACH pose, TRUE transparent background. Not pixel art, not 3D, not photorealistic. No words, numbers, grid lines, motion trails or backdrop. A SINGLE sprite sheet with exactly FOUR full-body poses in an exact regular 2 by 2 grid of EQUAL square cells. Top left=neutral REST; top right=ATTACK at impact; bottom left=HURT recoil; bottom right=DEFEATED collapsed. Each pose entirely contained in its cell with 8 percent safe margin, no objects crossing cells. Same identity, outfit, weapon, drawing scale and direction in every cell. Standing poses share baseline near bottom of cell; defeated pose at that same floor baseline. No intermediate frames or walk cycle. A dark muted plum purple cave bat with oversized pointed ears, small red eyes, leathery ragged wings, compact body, facing LEFT. Rest hovering wings held open; attack diving left with wings swept; hurt recoiling with scrunched face; defeat lying on ground with folded wings. Entire wings inside each cell.",
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "transparent": true,
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-ce193921-889b-4b9c-b7d5-60bc0ff2b107.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "characters/golem",
+    "prompt": "Hand-inked fantasy illustration matching the supplied old weapons: thin irregular dark outlines, restrained scratch marks and simple muted shading, desaturated blue-grey iron, warm worn brown leather and dusty red accents. Drawn 2D STICKER art with a clean narrow warm-white cutout border around EACH pose, TRUE transparent background. Not pixel art, not 3D, not photorealistic. No words, numbers, grid lines, motion trails or backdrop. A SINGLE sprite sheet with exactly FOUR full-body poses in an exact regular 2 by 2 grid of EQUAL square cells. Top left=neutral REST; top right=ATTACK at impact; bottom left=HURT recoil; bottom right=DEFEATED collapsed. Each pose entirely contained in its cell with 8 percent safe margin, no objects crossing cells. Same identity, outfit, weapon, drawing scale and direction in every cell. Standing poses share baseline near bottom of cell; defeated pose at that same floor baseline. No intermediate frames or walk cycle. Stocky stone golem monster facing LEFT, blue-grey rough stone blocks, chunky arms and fists, dark joints, faint muted amber eyes and sparse glowing cracks. Rest upright; attack slams one large fist to left; hurt shoulders recoiling; defeated pile of the SAME stones. Entire fists inside each cell. No sword or equipment.",
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "transparent": true,
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-bf78ecf4-7fdc-4014-b0f1-0441aee306f8.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "characters/wraith",
+    "prompt": "Hand-inked fantasy illustration matching the supplied old weapons: thin irregular dark outlines, restrained scratch marks and simple muted shading, desaturated blue-grey iron, warm worn brown leather and dusty red accents. Drawn 2D STICKER art with a clean narrow warm-white cutout border around EACH pose, TRUE transparent background. Not pixel art, not 3D, not photorealistic. No words, numbers, grid lines, motion trails or backdrop. A SINGLE sprite sheet with exactly FOUR full-body poses in an exact regular 2 by 2 grid of EQUAL square cells. Top left=neutral REST; top right=ATTACK at impact; bottom left=HURT recoil; bottom right=DEFEATED collapsed. Each pose entirely contained in its cell with 8 percent safe margin, no objects crossing cells. Same identity, outfit, weapon, drawing scale and direction in every cell. Standing poses share baseline near bottom of cell; defeated pose at that same floor baseline. No intermediate frames or walk cycle. A floating spectral creature facing LEFT: ragged desaturated pale teal shroud, dark hollow face, two small violet eyes, long ghostly hands, tapered mist lower body. No legs, sword, armor or held equipment. Rest floating; attack reaches left with one small violet orb at fingertips; hurt shroud recoils; defeated shroud and fading wisp collapsed low. Reference supplied weapon is STYLE ONLY; DO NOT include or reproduce the weapon.",
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "transparent": true,
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-5b1afd1c-6679-4c1c-b1d3-2b34f7e356c5.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "characters/boss_0",
+    "prompt": "Hand-inked fantasy illustration matching the supplied old weapons: thin irregular dark outlines, restrained scratch marks and simple muted shading, desaturated blue-grey iron, warm worn brown leather and dusty red accents. Drawn 2D STICKER art with a clean narrow warm-white cutout border around EACH pose, TRUE transparent background. Not pixel art, not 3D, not photorealistic. No words, numbers, grid lines, motion trails or backdrop. A SINGLE sprite sheet with exactly FOUR full-body poses in an exact regular 2 by 2 grid of EQUAL square cells. Top left=neutral REST; top right=ATTACK at impact; bottom left=HURT recoil; bottom right=DEFEATED collapsed. Each pose entirely contained in its cell with 8 percent safe margin, no objects crossing cells. Same identity, outfit, weapon, drawing scale and direction in every cell. Standing poses share baseline near bottom of cell; defeated pose at that same floor baseline. No intermediate frames or walk cycle. Rey Osario, a crowned skeleton king facing LEFT, antique tarnished gold crown, cracked ivory skull, red eye points, dark dusty burgundy royal cape with worn gold edging, skeletal legs, bone scepter. Rest proud; attack thrusts scepter toward LEFT; hurt recoils gripping chest; defeated kneeling skull lowered and scepter on ground. More imposing than regular skeleton. Reference weapon is STYLE ONLY, no copy of sword.",
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "transparent": true,
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-847c09f2-c55b-42ec-b632-7a0bbc62ee88.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "characters/boss_1",
+    "prompt": "Hand-inked fantasy illustration matching the supplied old weapons: thin irregular dark outlines, restrained scratch marks and simple muted shading, desaturated blue-grey iron, warm worn brown leather and dusty red accents. Drawn 2D STICKER art with a clean narrow warm-white cutout border around EACH pose, TRUE transparent background. Not pixel art, not 3D, not photorealistic. No words, numbers, grid lines, motion trails or backdrop. A SINGLE sprite sheet with exactly FOUR full-body poses in an exact regular 2 by 2 grid of EQUAL square cells. Top left=neutral REST; top right=ATTACK at impact; bottom left=HURT recoil; bottom right=DEFEATED collapsed. Each pose entirely contained in its cell with 8 percent safe margin, no objects crossing cells. Same identity, outfit, weapon, drawing scale and direction in every cell. Standing poses share baseline near bottom of cell; defeated pose at that same floor baseline. No intermediate frames or walk cycle. Madre del Musgo, imposing moss-and-root forest monster queen facing LEFT: stocky body made of gnarled dark brown roots, leafy muted green moss, root antlers like crown, amber eyes in wooden face, thick vine arms. No sword, metal armor or humanoid clothing. Rest rooted, attack extends huge root arm LEFT, hurt cracks and recoils, defeated heap of roots and fallen leaves. Reference sword STYLE ONLY.",
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "transparent": true,
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-cec04a38-4fea-4fc6-a843-d299567e3b04.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "characters/boss_2",
+    "prompt": "Hand-inked fantasy illustration matching the supplied old weapons: thin irregular dark outlines, restrained scratch marks and simple muted shading, desaturated blue-grey iron, warm worn brown leather and dusty red accents. Drawn 2D STICKER art with a clean narrow warm-white cutout border around EACH pose, TRUE transparent background. Not pixel art, not 3D, not photorealistic. No words, numbers, grid lines, motion trails or backdrop. A SINGLE sprite sheet with exactly FOUR full-body poses in an exact regular 2 by 2 grid of EQUAL square cells. Top left=neutral REST; top right=ATTACK at impact; bottom left=HURT recoil; bottom right=DEFEATED collapsed. Each pose entirely contained in its cell with 8 percent safe margin, no objects crossing cells. Same identity, outfit, weapon, drawing scale and direction in every cell. Standing poses share baseline near bottom of cell; defeated pose at that same floor baseline. No intermediate frames or walk cycle. Señor del Magma, large volcanic stone monster facing LEFT: charcoal black basalt plates, muted glowing orange cracks, angular furnace face, chunky fists, small jagged crownlike rock crest. Rest hulking, attack smashes fist toward LEFT, hurt recoiling stone plates, defeated pile of dim ember rocks. No sword, axe or held equipment. Reference sword STYLE ONLY.",
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "transparent": true,
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-4d1b936f-cf8c-484d-97d5-36620b4390f7.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "characters/boss_3",
+    "prompt": "Hand-inked fantasy illustration matching the supplied old weapons: thin irregular dark outlines, restrained scratch marks and simple muted shading, desaturated blue-grey iron, warm worn brown leather and dusty red accents. Drawn 2D STICKER art with a clean narrow warm-white cutout border around EACH pose, TRUE transparent background. Not pixel art, not 3D, not photorealistic. No words, numbers, grid lines, motion trails or backdrop. A SINGLE sprite sheet with exactly FOUR full-body poses in an exact regular 2 by 2 grid of EQUAL square cells. Top left=neutral REST; top right=ATTACK at impact; bottom left=HURT recoil; bottom right=DEFEATED collapsed. Each pose entirely contained in its cell with 8 percent safe margin, no objects crossing cells. Same identity, outfit, weapon, drawing scale and direction in every cell. Standing poses share baseline near bottom of cell; defeated pose at that same floor baseline. No intermediate frames or walk cycle. Coloso de Escarcha, massive blue-grey ice stone golem facing LEFT: layered frosted ice plates, jagged crystalline shoulders and fists, dim pale cyan eyes. Rest hulking, attack heavy fist toward LEFT, hurt recoil with crack, defeated low pile of same ice crystals. Entire shoulders and fists contained in each cell. No sword or equipment. Reference sword STYLE ONLY.",
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "transparent": true,
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-fd7780cb-590c-404d-b8b2-27e0dd7aecb5.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "characters/boss_4",
+    "prompt": "Hand-inked fantasy illustration matching the supplied old weapons: thin irregular dark outlines, restrained scratch marks and simple muted shading, desaturated blue-grey iron, warm worn brown leather and dusty red accents. Drawn 2D STICKER art with a clean narrow warm-white cutout border around EACH pose, TRUE transparent background. Not pixel art, not 3D, not photorealistic. No words, numbers, grid lines, motion trails or backdrop. A SINGLE sprite sheet with exactly FOUR full-body poses in an exact regular 2 by 2 grid of EQUAL square cells. Top left=neutral REST; top right=ATTACK at impact; bottom left=HURT recoil; bottom right=DEFEATED collapsed. Each pose entirely contained in its cell with 8 percent safe margin, no objects crossing cells. Same identity, outfit, weapon, drawing scale and direction in every cell. Standing poses share baseline near bottom of cell; defeated pose at that same floor baseline. No intermediate frames or walk cycle. Heraldo del Vacío facing LEFT, imposing hooded dark purple wraith with void-black faceless hood, two violet eye points, layered ragged dark robes and sparse drawn muted lilac rune accents. Long spectral hands, floating lower robe. Rest hovering, attack casts a small violet orb toward LEFT, hurt recoils, defeated collapsed robe with fading violet wisp. No sword or equipment. Reference sword STYLE ONLY.",
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "transparent": true,
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-ceb2c694-dc54-4c71-b4b4-e50a331b1aa8.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "characters/brasa",
+    "prompt": "Hand-inked fantasy illustration matching the supplied old weapons: thin irregular dark outlines, restrained scratch marks and simple muted shading, desaturated blue-grey iron, warm worn brown leather and dusty red accents. Drawn 2D STICKER art with a clean narrow warm-white cutout border around EACH pose, TRUE transparent background. Not pixel art, not 3D, not photorealistic. No words, numbers, grid lines, motion trails or backdrop. A SINGLE exactly 2x2 regular square-cell sprite sheet, FOUR full-body poses of the SAME Brasa blacksmith character facing RIGHT. Brasa is a sturdy adult dwarf woman, red hair in high bun with one braid, freckles, smith goggles on forehead, rolled beige sleeves, worn brown leather apron, heavy brown boots, iron working hammer. Top left=REST holding hammer lowered, top right=HAMMERING forward with hammer at impact, bottom left=SEWING with large needle held before apron, bottom right=CELEBRATING with fist up and joyful expression. Same outfit and size, all tools inside each cell with 8% transparent margin, no labels, no extra props. Reference sword STYLE ONLY, do not include a sword.",
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "transparent": true,
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-7b78d05f-6619-4fc6-88c1-27b9f8b0bc25.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/boots_advanced",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: one tall reinforced leather boot, shaft in left column and toe extending right at bottom, L silhouette. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[0,0],[0,1],[1,1]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 2:2; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-3d22f0ac-4bc5-4b22-aca8-c1ea74b67e69.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/boots_basic",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: one short worn leather ankle boot, square silhouette. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[0,0]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 1:1; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-a518ca41-7557-4da1-a7f4-ef62a8cdf0f2.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/boots_master",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: one very tall gold-edged armored leather greave boot, tall left shaft and right bottom toe, L silhouette. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[0,0],[0,1],[0,2],[1,2]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 2:3; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-de76a93f-2aab-45a6-812f-f125ffa1a4c2.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/helmet_advanced",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: wide iron helmet with side cheek guards. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[0,0],[1,0]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 2:1; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-11576990-dc54-4790-84ef-56368c56bb14.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/helmet_basic",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: simple round iron skullcap. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[0,0]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 1:1; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-7cdd8ea4-8bb9-4c6d-8e05-edcab71c990f.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/helmet_master",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: royal gold-trimmed iron helmet, high central crest above wide lower faceguard, upside-down T silhouette. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[1,0],[0,1],[1,1],[2,1]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 3:2; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-15039520-576b-47fb-a1b7-cae7e7a80f6e.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/shield_advanced",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: broad square iron reinforced wooden shield. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[0,0],[1,0],[0,1],[1,1]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 2:2; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-11690d8c-048b-4dc5-b1a6-6ade6e6ccb29.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/shield_basic",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: tall simple wooden kite shield with iron edge. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[0,0],[0,1]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 1:2; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-0ccad1b2-74a1-45a6-8199-c07826a1c0ae.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/shield_master",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: large tall ornate royal shield gold rim, muted bluegrey face dusty red heraldry. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[0,0],[1,0],[0,1],[1,1],[0,2],[1,2]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 2:3; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-e8efbe59-1f29-4058-a23a-173e0721cdb7.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/sword_advanced",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: long steel sword, angular guard, muted bluegrey blade dusty red reflection. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[0,0],[0,1],[0,2]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 1:3; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-76d50cb5-fa22-4a69-9c76-01babcb8c1a7.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/sword_basic",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: short broad straight iron sword, simple crossguard brown leather grip. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[0,0],[0,1]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 1:2; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-166e307a-a661-4dc7-b6ba-f25bb0d0ec1c.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/sword_masterwork",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: very long elegant masterwork sword, ornate gold curling guard, polished muted bluegrey blade dusty red reflection. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[0,0],[0,1],[0,2],[0,3]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 1:4; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-aa7fe7da-ea48-4e0c-93a7-d4ac66c45dee.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/aro",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: thick circular bladed throwing ring, open transparent center. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[0,0],[1,0],[2,0],[0,1],[2,1],[0,2],[1,2],[2,2]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 3:3; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-49a06708-b981-4a81-95fc-c36d44665ae0.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/ballesta",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: horizontal wide compact wooden crossbow, side view. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[0,0],[1,0]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 2:1; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-403530c8-df51-4c52-8cf3-c46d567eb37f.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/cruz",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: symmetrical iron magical battle cross, equal top side and bottom arms, plus silhouette. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[1,0],[0,1],[1,1],[2,1],[1,2]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 3:3; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-c2870d6c-fd09-4683-9da4-7dd9ae4aaa10.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/espada_vaina",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: vertical sword inside worn brown leather sheath. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[0,0],[0,1],[0,2]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 1:3; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-5219fa32-237b-4313-a1da-c8c32afb1510.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/guadana",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: iron scythe, tall left wooden shaft, crescent blade curving right at top and hooked counterweight right at bottom, C silhouette open right middle. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[0,0],[1,0],[0,1],[0,2],[1,2]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 2:3; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-7a559ccc-bf7f-4d00-a1fa-93e243933c2c.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/guantelete",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: large closed iron armored fist gauntlet, compact square silhouette. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[0,0],[1,0],[0,1],[1,1]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 2:2; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-56ea3ade-2ee3-40f3-b2b9-900513e9ef49.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/lanza",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: long slender vertical spear, broad iron tip leather wrapped shaft. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[0,0],[0,1],[0,2]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 1:3; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-73b592d5-9f4f-4b22-9c9d-1b372a950e14.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/martillo",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: very broad horizontal iron hammer head on short centered handle, exact T silhouette wider than tall. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[0,0],[1,0],[2,0],[1,1]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 3:2; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-e6c92791-36a8-42d0-af9e-c2a97757ce2d.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/maza",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: vertical iron mace with heavy spiked head brown leather grip. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[0,0],[0,1]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 1:2; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-6037dd13-0460-4555-962d-c0ee365d2b4a.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "gear/pico",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png",
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_masterwork.png"
+    ],
+    "prompt": "Create ONE isolated fantasy inventory object: pickaxe with upright wooden handle at left and curved iron head extending right at bottom, L silhouette. Reference images are ONLY the drawing style, not extra objects. Match thin irregular hand-inked outlines, restrained hatch scratches, muted bluegrey iron, dusty red reflections and warm brown leather. 2D hand-painted, no pixel art, no 3D. Item upright orientation as described. Its inventory footprint uses unit square cells at coordinates [[0,0],[0,1],[1,1]] (origin upper left). Make the silhouette visibly occupy these cells and preserve transparent empty cells, especially the L,T,C and ring silhouettes. Canvas aspect 2:2; fit item in canvas with just 5% margin. TRUE transparent background, no grid, no labels, no frame, no drop shadow, no white sticker outline. One complete object only.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-de924eb1-06b1-4699-8662-d04835462290.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "materials/bone",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: ivory monster bone with cracks, one femur. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-c22e773c-8608-43ec-a364-ecf3aabe1dc1.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "materials/cloth",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: folded coarse cream fabric swatch, visible frayed edges. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-02ee5a6d-a1c4-419d-b4c4-345674023f8b.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "materials/fire",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: small enchanted ember stone, glowing warm orange core, contained small flame. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-80b8759d-ead0-44b5-8d59-dffef95819ee.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "materials/frost",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: pale blue snowflake-like frost crystal rosette, distinct from solid ice. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-34e2ffc2-c571-417f-b0e8-8fc239675ea6.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "materials/herb",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: fresh green healing herb sprig with three leaves. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-d62dc2da-072f-4c0f-ac6b-687af29608a5.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "materials/ice",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: solid pointed cyan ice crystal chunk. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-6d86a332-35a9-43f9-94b4-070cf3dab6af.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "materials/iron",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: heavy rough bluegrey iron ore nugget, red-brown mineral veins. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-a212784c-b797-4301-bbdb-a0cbaddeaa2e.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "materials/leather",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: rolled warm brown leather hide patch. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-dbbca1ff-36ff-447a-95d9-38486c8c6b42.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "materials/moss",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: compact tuft of deep green soft moss. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-297a939d-9486-4a56-af72-f3550ab68a3b.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "materials/obsidian",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: sharp glossy black volcanic stone with restrained red reflection. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-6384045b-e553-4214-8ed2-3b3d0fc2d238.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "materials/poison",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: small purple toxic mushroom with green droplets. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-a0462d64-10ce-4753-8ab4-b99f1130849a.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "materials/void_shard",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: jagged dark violet magical crystal with pale lavender center fissure. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-227ab9fe-17c7-4368-b836-e093e954c3f5.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "materials/water",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: single blue magical water droplet wrapped in small pale ripple. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-e733e466-58f0-4abe-b7b3-114d8ae34cfc.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "materials/wood",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: three short bundled brown timber logs. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-5fc022e5-32cd-43c8-9e13-7f352594d7ec.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "potions/potion_heal",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: squat corked healing potion glass flask red liquid, heart-shaped paper tag without text. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-af5884ea-239e-4a0c-abbf-b561c1d20bb0.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "potions/potion_speed",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: slender corked potion glass flask amber liquid, tiny lightning-shaped brass tag. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-69fcdace-c279-4282-9b21-fd7e2424d46d.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "potions/potion_luck",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: round corked potion glass flask green liquid, small clover-shaped paper tag. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-70f7e50e-6dbb-4569-8f43-858d28f7ed5f.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "stations/forge",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: Fantasy crafting furnace station: large stone hearth glowing orange with modest flames, iron grate, bellows and coal pile. Full object three-quarter front view, quiet readable central hearth.. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Landscape canvas 3:2.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-9be68383-f93b-43cb-8d22-c2f346a4cf41.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "stations/hammer",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: Fantasy forging station: heavy worn iron anvil on sturdy oak stump, hammer on side and stone support base. Full object three-quarter front view, large clear working surface.. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Landscape canvas 3:2.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-578e8a4f-128b-4697-a9fb-958c26332f0c.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "stations/sew",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: Fantasy sewing station: worn wooden workbench with brown leather spread across it, spool of dusty red thread, large needle and folded fabric. Full object three-quarter front view, unobstructed table top.. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Landscape canvas 3:2.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-d2296410-8dbe-4d1b-8dda-a4667a9269ff.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "stations/quench",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: Fantasy quenching station: large open wooden water barrel with iron bands, water visible, modest steam rising, stone stand. Full object three-quarter front view, clear wide open water surface.. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Landscape canvas 3:2.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-c2cd40ae-debc-46e6-976f-6bbd178ad937.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "tools/hammer",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: compact blacksmith hammer, broad worn iron head, short leather wrapped wooden handle. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-a24343f7-aa99-401f-bb5d-9281ee119790.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "tools/needle",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: large steel sewing needle diagonally placed with loop of dusty red thread. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-0438e874-30c0-4b50-b328-3c7581379000.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "tools/steel_bar",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: one warm glowing rectangular forged steel billet. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-1bb5869a-e582-414c-8d8e-bbc199fac45c.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "tools/water_bucket",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: sturdy small wood bucket filled with blue water, iron bands and metal handle. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-f6ff2855-7f1e-4705-92ca-06bfb12d9dc3.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "ui/blueprints",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: rolled bluegrey parchment blueprint, tiny abstract item line drawing, no text. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-97fe394a-fe12-4f76-b702-2f4c917b3e54.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "ui/equipment",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: small iron helmet resting against kite shield, simple compact emblem. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-acd8e679-158d-4e6b-8c9c-2f393e86139c.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "ui/shop",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: small brown leather coin purse with golden clasp. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-c885474a-0700-4618-bb9a-ba3649b2d154.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "ui/delivery",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: small tied wooden parcel with cloth wrap. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-ee85b80f-8d93-43b5-b21d-29691e687b02.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "ui/backpack",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: compact worn leather adventurer backpack, buckles. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-6a7465bc-4158-4e53-84c2-66de0262abd7.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "ui/coin",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: one round old gold coin with simple anvil symbol. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-7d56a5b7-e749-40d8-b644-99bcc13696a8.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "ui/anvil",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: compact heavy bluegrey iron blacksmith anvil, clearly shaped horn. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-4d1dddf6-aa5f-4943-a363-4eb75435bce7.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "ui/spark",
+    "transparent": true,
+    "refs": [
+      "D:/Proyectos/PetJam/art/assets/Imagenes/Items/sword_basic.png"
+    ],
+    "prompt": "ONE isolated game art asset: one crisp four-point orange gold forge spark. Supplied weapon is ONLY reference for hand-inked illustrative style; do not include swords. Thin irregular dark outlines, restrained scratches and simple muted shading, bluegrey metal, worn warm brown leather, dusty red accents. Match the existing old weapon illustration. No pixel art, no 3D, no photorealism. Centered bold legible silhouette using 88% of canvas, full object visible, TRUE transparent background, no white border, no drop shadow, no typography, no UI frame. Square canvas. Readable as an inventory icon at 64px.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-6573454d-d174-4a90-865c-b11ed66e0e8c.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "backgrounds/biome_0",
+    "transparent": false,
+    "refs": [
+      "D:/Proyectos/PetJam/art/pilot_illustrated_2026_10_02/catacombs.png"
+    ],
+    "prompt": "Create one side-scrolling game corridor background, ancient catacombs of warm grey stone arches, dusty red torn banners and dim amber torches. Use supplied image as composition and illustrative style reference. Hand-inked fantasy, thin irregular outlines, muted simple painted shading; no pixel art, no 3D. Exact side view, landscape panoramic canvas 3:1, horizon level, flat horizontal continuous walkway at 82% of image height. Center fighting area quiet and unobstructed. Background low contrast darker than characters; strongest details at edges and upper arches. No characters, weapons, UI, words, stickers. Left and right edges share matching wall and floor colors for repeatable scrolling. Fully opaque.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-96bf4c08-d535-4cba-917e-dcffa199fea3.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "backgrounds/biome_1",
+    "transparent": false,
+    "refs": [
+      "D:/Proyectos/PetJam/art/pilot_illustrated_2026_10_02/catacombs.png"
+    ],
+    "prompt": "Create one side-scrolling game corridor background, mossy crypt, worn green-grey stone arches, roots and vines, soft green bioluminescence. Use supplied image as composition and illustrative style reference. Hand-inked fantasy, thin irregular outlines, muted simple painted shading; no pixel art, no 3D. Exact side view, landscape panoramic canvas 3:1, horizon level, flat horizontal continuous walkway at 82% of image height. Center fighting area quiet and unobstructed. Background low contrast darker than characters; strongest details at edges and upper arches. No characters, weapons, UI, words, stickers. Left and right edges share matching wall and floor colors for repeatable scrolling. Fully opaque.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-a56ea7cd-db69-4568-8545-060997361aca.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "backgrounds/biome_2",
+    "transparent": false,
+    "refs": [
+      "D:/Proyectos/PetJam/art/pilot_illustrated_2026_10_02/catacombs.png"
+    ],
+    "prompt": "Create one side-scrolling game corridor background, magma cavern, dark basalt arches and volcanic rocks, small orange lava fissures behind the floor. Use supplied image as composition and illustrative style reference. Hand-inked fantasy, thin irregular outlines, muted simple painted shading; no pixel art, no 3D. Exact side view, landscape panoramic canvas 3:1, horizon level, flat horizontal continuous walkway at 82% of image height. Center fighting area quiet and unobstructed. Background low contrast darker than characters; strongest details at edges and upper arches. No characters, weapons, UI, words, stickers. Left and right edges share matching wall and floor colors for repeatable scrolling. Fully opaque.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-f6dd80da-d4b7-435c-bf1f-57aca0eda794.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "backgrounds/biome_3",
+    "transparent": false,
+    "refs": [
+      "D:/Proyectos/PetJam/art/pilot_illustrated_2026_10_02/catacombs.png"
+    ],
+    "prompt": "Create one side-scrolling game corridor background, forgotten glacier, bluegrey frozen stone arches, icicles and pale cyan crystal clusters. Use supplied image as composition and illustrative style reference. Hand-inked fantasy, thin irregular outlines, muted simple painted shading; no pixel art, no 3D. Exact side view, landscape panoramic canvas 3:1, horizon level, flat horizontal continuous walkway at 82% of image height. Center fighting area quiet and unobstructed. Background low contrast darker than characters; strongest details at edges and upper arches. No characters, weapons, UI, words, stickers. Left and right edges share matching wall and floor colors for repeatable scrolling. Fully opaque.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-0a1d4ec4-5b55-4007-8577-8bffeadf4225.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "backgrounds/biome_4",
+    "transparent": false,
+    "refs": [
+      "D:/Proyectos/PetJam/art/pilot_illustrated_2026_10_02/catacombs.png"
+    ],
+    "prompt": "Create one side-scrolling game corridor background, void sanctuary, dark violet carved stone arches, small lavender abstract rune lights. Use supplied image as composition and illustrative style reference. Hand-inked fantasy, thin irregular outlines, muted simple painted shading; no pixel art, no 3D. Exact side view, landscape panoramic canvas 3:1, horizon level, flat horizontal continuous walkway at 82% of image height. Center fighting area quiet and unobstructed. Background low contrast darker than characters; strongest details at edges and upper arches. No characters, weapons, UI, words, stickers. Left and right edges share matching wall and floor colors for repeatable scrolling. Fully opaque.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-9f8925f8-4e49-4f0b-b9c2-566b2730c672.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "screens/start",
+    "transparent": false,
+    "refs": [
+      "D:/Proyectos/PetJam/art/stickers/sources/characters/tico_basic.png",
+      "D:/Proyectos/PetJam/art/stickers/sources/characters/brasa.png"
+    ],
+    "prompt": "Create portrait 9:16 title-screen illustration for a fantasy game, using reference Tico and blacksmith Brasa identities and hand-inked muted illustrative style. Tico brown hair red scarf brown vest and small sword, Brasa red hair bun goggles leather apron. They stand in the bottom third beside a warm forge and dungeon arch, hopeful small adventure. Upper half quiet dark warm stone gradient for the game title to be overlaid by code. No text, no logos, no UI, no white sticker borders, no pixel art. Complete opaque artwork.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-8db04b41-b991-4e9d-82d5-c87deefd114a.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  },
+  {
+    "id": "screens/defeat",
+    "transparent": false,
+    "refs": [
+      "D:/Proyectos/PetJam/art/stickers/sources/characters/tico_basic.png"
+    ],
+    "prompt": "Create portrait 9:16 defeat-screen background illustration for fantasy game. Reference Tico young brown hair red scarf brown vest, sitting tired beside a resting sword at bottom third, slumped but safe and determined, no wounds. Quiet dim catacombs with faint warm light beyond an arch. Hand-inked thin irregular lines, muted bluegrey stone brown leather dusty red cloth. Upper half empty low contrast dark stone for text overlaid by code. No text or UI, no white sticker border, no pixel art. Fully opaque.",
+    "output_hint": "Generated images are saved to C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c as C:\\Users\\drila\\.codex\\generated_images\\01a0fe0e-f131-7e02-8b57-93225d60647c\\exec-a5144117-96d8-4cd8-bc16-e94178b4a86c.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+  }
+]

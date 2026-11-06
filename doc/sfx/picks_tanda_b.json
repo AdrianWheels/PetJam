@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "chosen": [
+    {
+      "id": "boss_defeated",
+      "category": "feedback",
+      "chosen": "feedback/boss_defeated_v3.wav",
+      "note": "Elegida por adherencia CLAP directa (el margen se confunde con la campanilla del plano); reauditar a oído"
+    },
+    {
+      "id": "blueprint_found",
+      "category": "feedback",
+      "chosen": "feedback/blueprint_found_v1.wav",
+      "note": "Elegida por CLAP (adherencia al prompt); reauditar a oído"
+    }
+  ],
+  "pool": {},
+  "layers": {},
+  "layer_mix": {},
+  "scores": []
+}

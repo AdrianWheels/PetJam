@@ -1,0 +1,63 @@
+[gd_scene load_steps=2 format=3 uid="uid://28clsjg2fun"]
+
+[ext_resource type="Script" path="res://scripts/ui/EquipmentPanel.gd" id="1"]
+
+[node name="EquipmentPanel" type="ColorRect"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.09, 0.06, 0.05, 1)
+script = ExtResource("1")
+
+[node name="Title" type="Label" parent="."]
+offset_left = 60.0
+offset_top = 20.0
+offset_right = 700.0
+offset_bottom = 96.0
+theme_override_font_sizes/font_size = 52
+text = "Equipo"
+vertical_alignment = 1
+
+[node name="CloseBtn" type="Button" parent="."]
+offset_left = 930.0
+offset_top = 16.0
+offset_right = 1020.0
+offset_bottom = 96.0
+theme_override_font_sizes/font_size = 40
+text = "X"
+
+[node name="LootTitle" type="Label" parent="."]
+offset_left = 60.0
+offset_top = 1026.0
+offset_right = 700.0
+offset_bottom = 1066.0
+theme_override_font_sizes/font_size = 30
+text = "Botín"
+
+[node name="SellAllBtn" type="Button" parent="."]
+offset_left = 760.0
+offset_top = 1020.0
+offset_right = 1020.0
+offset_bottom = 1066.0
+theme_override_font_sizes/font_size = 26
+text = "Vender todo"
+
+[node name="SellZone" type="Panel" parent="."]
+offset_left = 760.0
+offset_top = 1540.0
+offset_right = 1020.0
+offset_bottom = 1740.0
+mouse_filter = 2
+
+[node name="SellLabel" type="Label" parent="SellZone"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_font_sizes/font_size = 28
+text = "Suelta aquí para vender"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3

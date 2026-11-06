@@ -1,34 +1,65 @@
 extends Node
 class_name InventoryManager
 
+## Materiales y piezas forjadas. Cada pieza está siempre en uno de tres sitios (spec
+## doc/specs/2026-09-27-inventario-en-rejilla.md, apartado 3):
+##  - la rejilla de Tico (hero_grid): lo único que cuenta para sus estadísticas;
+##  - la mochila (bag_grid, 6×4 fija): guarda sin contar;
+##  - el botín (loot): lista sin límite con lo más nuevo delante. Aquí llega todo lo forjado.
+## Nada se coloca solo, salvo en la migración de partidas antiguas. Las reglas viven en PieceShape,
+## GearGrid, GearAuras, LegendaryPowers, GearPacker y GridExpansions.
+## Aparte de las piezas, dos huecos de consumibles (consumables, spec apartado 8): las pociones de la tienda
+## esperan ahí y GameManager las bebe solas. Su catálogo y sus topes viven en Potions.
+
+const _SaveManager = preload("res://scripts/core/SaveManager.gd")
+
 signal inventory_changed(current_inventory)
 signal crafted_items_changed(items_array)
+signal equipment_changed(equipment_stats: Dictionary)  ## ha cambiado la rejilla de Tico
+signal loot_changed(count: int)
+signal grid_resized(size: Vector2i)
+signal consumables_changed(slots: Array)
+signal loot_poses_changed  ## la caja del botín ha dejado en sus piezas dónde están (GameManager guarda)
+
+const PLACE_HERO := &"hero"
+const PLACE_BAG := &"bag"
+const PLACE_LOOT := &"loot"
+const BAG_SIZE := Vector2i(6, 4)
+const LEVEL_ORDER := {"basic": 0, "advanced": 1, "master": 2}
 
 # Diccionario de materiales (StringName -> int)
 var inventory: Dictionary = {}
-
-# Array de items crafteados (Array[CraftedItem])
+## Todas las piezas forjadas, estén donde estén
 var crafted_items: Array[CraftedItem] = []
-
-# Items equipados por slot (String -> CraftedItem)
-var equipped_items: Dictionary = {}
+var hero_grid: GearGrid = GearGrid.new(GridExpansions.START_SIZE)
+var bag_grid: GearGrid = GearGrid.new(BAG_SIZE)
+var loot: Array[CraftedItem] = []
+## Recetas de ampliación ya forjadas: la rejilla de Tico mide GridExpansions.size_after(expansions.size())
+var expansions: Array[StringName] = []
+## Huecos de consumibles: [{"id": StringName, "count": int}, …]; id vacío o count 0 = libre
+var consumables: Array = _empty_slots()
 
 func _ready() -> void:
-	"""Inicializar inventario con materiales básicos para evitar softlocks"""
-	# Dar materiales generosos al inicio para poder craftear los primeros pedidos gratis
-	var starting_materials := {
-		"wood": 40,
-		"iron": 40,
-		"leather": 40,
-		"cloth": 40,
-		"herb": 30,
-		"fire": 20,
-		"water": 20
-	}
-	
-	for mat_id in starting_materials:
-		add_item(StringName(mat_id), starting_materials[mat_id])
-	
+	"""Inicializa inventario. Si hay save, se cargará luego via load_save_data().
+	Si no hay save, da materiales de inicio."""
+	if not _SaveManager.has_save():
+		_give_starting_materials()
+	else:
+		print("InventoryManager: Save detectado, esperando load_save_data()")
+
+## Materiales generosos al inicio para evitar softlocks. Solo materiales que pide algún plano.
+const STARTING_MATERIALS := {
+	"wood": 40,
+	"iron": 40,
+	"leather": 40,
+	"cloth": 40,
+	"fire": 20,
+	"water": 20,
+}
+
+func _give_starting_materials() -> void:
+	for mat_id in STARTING_MATERIALS:
+		add_item(StringName(mat_id), STARTING_MATERIALS[mat_id])
 	print("InventoryManager: Inicializado con materiales de inicio")
 
 func add_item(item_id: StringName, quantity: int) -> void:
@@ -83,117 +114,499 @@ func consume_materials(required_materials: Dictionary) -> bool:
 func clear() -> void:
 	inventory.clear()
 	crafted_items.clear()
-	equipped_items.clear()
+	loot.clear()
+	expansions.clear()
+	hero_grid = GearGrid.new(GridExpansions.START_SIZE)
+	bag_grid = GearGrid.new(BAG_SIZE)
+	consumables = _empty_slots()
 	emit_signal("inventory_changed", inventory.duplicate())
-	emit_signal("crafted_items_changed", crafted_items)
+	grid_resized.emit(hero_grid.size)
+	consumables_changed.emit(consumables)
+	_changed(true)
 
 # ═══════════════════════════════════════════════════════════════════
-#  SISTEMA DE ITEMS CRAFTEADOS
+#  PIEZAS
 # ═══════════════════════════════════════════════════════════════════
 
-## Añade un item crafteado al inventario
+## Lo recién forjado llega al botín, delante. Nada se coloca solo.
 func add_crafted_item(item: CraftedItem) -> void:
 	if item == null:
 		push_warning("InventoryManager: Intentando añadir item null")
 		return
-	
 	crafted_items.append(item)
-	emit_signal("crafted_items_changed", crafted_items)
-	print("InventoryManager: Item crafteado añadido: %s (calidad: %d%%)" % [item.get_display_name(), item.get_quality_percent()])
+	_put_in_loot(item, 0)
+	_changed(false)
+	print("InventoryManager: Pieza al botín: %s (calidad: %d%%)" % [item.get_display_name(), item.get_quality_percent()])
 
-## Retorna todos los items crafteados
+
 func get_crafted_items() -> Array[CraftedItem]:
 	return crafted_items
 
-## Retorna items crafteados no equipados
+
+func get_loot() -> Array[CraftedItem]:
+	return loot
+
+
+func get_loot_count() -> int:
+	return loot.size()
+
+
+func get_hero_items() -> Array[CraftedItem]:
+	return hero_grid.items
+
+
+func get_bag_items() -> Array[CraftedItem]:
+	return bag_grid.items
+
+
+## Lo que no lleva Tico (botín y mochila): lo que la tienda deja vender.
 func get_unequipped_items() -> Array[CraftedItem]:
-	var result: Array[CraftedItem] = []
-	for item in crafted_items:
-		if not item.is_equipped:
-			result.append(item)
-	return result
+	var out: Array[CraftedItem] = []
+	out.append_array(loot)
+	out.append_array(bag_grid.items)
+	return out
 
-## Retorna items equipados
-func get_equipped_items() -> Array[CraftedItem]:
-	var result: Array[CraftedItem] = []
-	for item in crafted_items:
-		if item.is_equipped:
-			result.append(item)
-	return result
 
-## Equipa un item en el slot correspondiente
-func equip_item(item: CraftedItem) -> bool:
-	if item == null or item not in crafted_items:
+func grid_for(place: StringName) -> GearGrid:
+	if place == PLACE_HERO:
+		return hero_grid
+	if place == PLACE_BAG:
+		return null  # mochila retirada: su contenido guardado pasa al botín
+	return null
+
+
+func hero_grid_size() -> Vector2i:
+	return hero_grid.size
+
+
+## Qué pasaría al soltar `item` en `place` con esa casilla y giro: {"ok": bool, "swap": pieza o null}.
+## En el botín siempre cabe. En una rejilla, en casillas libres, o encima de una sola pieza si cabe al
+## quitarla (intercambio).
+func drop_result(item: CraftedItem, place: StringName, cell: Vector2i = Vector2i.ZERO, rot: int = 0) -> Dictionary:
+	if item == null:
+		return {"ok": false, "swap": null, "reason": "invalid"}
+	if place == PLACE_LOOT:
+		return {"ok": true, "swap": null, "reason": "loot"}
+	var grid := grid_for(place)
+	if grid == null:
+		return {"ok": false, "swap": null, "reason": "invalid"}
+	var cells := grid.cells_at(item, cell, rot)
+	for c in cells.clean + cells.aristas:
+		if not grid.in_bounds(c):
+			return {"ok": false, "swap": null, "reason": "outside"}
+	var others := grid.overlapping(item, cell, rot)
+	if others.is_empty():
+		return {"ok": true, "swap": null, "reason": "fits"}
+	if others.size() == 1 and grid.fits(item, cell, rot, [item, others[0]]):
+		return {"ok": true, "swap": others[0], "reason": "swap"}
+	return {"ok": false, "swap": null, "reason": "overlap"}
+
+
+func move_item(item: CraftedItem, place: StringName, cell: Vector2i = Vector2i.ZERO, rot: int = 0) -> bool:
+	if item == null or not (item in crafted_items):
 		return false
-	
-	var slot = item.get_equipment_slot()
-	if slot == "":
-		push_warning("InventoryManager: Item sin slot de equipamiento")
+	if _is_in_place(item, place, cell, rot):
+		return true
+	var res := drop_result(item, place, cell, rot)
+	if not res.ok:
 		return false
-	
-	# Desequipar item previo si existe
-	if slot in equipped_items:
-		var prev_item = equipped_items[slot]
-		prev_item.is_equipped = false
-	
-	# Equipar nuevo item
-	equipped_items[slot] = item
-	item.is_equipped = true
-	
-	emit_signal("crafted_items_changed", crafted_items)
-	print("InventoryManager: Equipado %s en slot %s" % [item.get_display_name(), slot])
+	var from_place := item.place
+	var from_cell := item.cell
+	var from_loot := loot.find(item)
+	var other: CraftedItem = res.swap
+	var hero_changed := from_place == PLACE_HERO or place == PLACE_HERO
+	_take_out(item)
+	if other:
+		_take_out(other)
+	_put(item, place, cell, rot)
+	if other:
+		if from_place == PLACE_LOOT or not _try_put(other, from_place, from_cell, other.rot):
+			_put_in_loot(other, maxi(0, from_loot))
+	_changed(hero_changed)
 	return true
 
-## Desequipa un item del slot
-func unequip_item(slot: String) -> bool:
-	if slot not in equipped_items:
+
+## Toque sobre una pieza de una rejilla: gira 90° sobre su centro, o sobre su esquina si así cabe.
+## false si girada no cabe (el panel la hace temblar).
+func rotate_in_place(item: CraftedItem) -> bool:
+	var grid := grid_for(item.place)
+	if grid == null:
 		return false
-	
-	var item = equipped_items[slot]
-	item.is_equipped = false
-	equipped_items.erase(slot)
-	
-	emit_signal("crafted_items_changed", crafted_items)
-	print("InventoryManager: Desequipado item del slot %s" % slot)
-	return true
+	var new_rot := (item.rot + 1) % 4
+	var old_size: Vector2i = PieceShape.of_item(item).size
+	var new_size: Vector2i = PieceShape.of_item(item, new_rot).size
+	@warning_ignore("integer_division")
+	var centered := item.cell + Vector2i((old_size.x - new_size.x) / 2, (old_size.y - new_size.y) / 2)
+	for cell in [centered, item.cell]:
+		if grid.fits(item, cell, new_rot, [item]):
+			grid.place(item, cell, new_rot)
+			item.cell = cell
+			item.rot = new_rot
+			_changed(item.place == PLACE_HERO)
+			return true
+	return false
 
-## Retorna el item equipado en un slot específico
-func get_equipped_item(slot: String) -> CraftedItem:
-	return equipped_items.get(slot, null)
 
-## Calcula estadísticas totales del héroe con items equipados
-func calculate_total_stats() -> Dictionary:
-	var total_stats = {
-		"damage": 0,
-		"str": 0,
-		"agi": 0,
-		"int": 0,
-		"hp": 0,
-		"armor": 0,
-		"crit": 0.0,
-		"aps": 0.0
-	}
-	
-	for item in equipped_items.values():
-		for stat in item.calculated_stats:
-			if stat in total_stats:
-				total_stats[stat] += item.calculated_stats[stat]
-	
-	return total_stats
+## Vende una pieza (esté donde esté) y suma su oro. Devuelve el oro (0 si no se vendió).
+func sell_item(item: CraftedItem) -> int:
+	if item == null or not (item in crafted_items):
+		return 0
+	var price := item.get_sell_price()
+	remove_crafted_item(item)
+	add_item(&"gold", price)
+	return price
 
-## Remove un item crafteado del inventario (ej: al venderlo)
+
+## Lo que vende "Vender todo": el botín salvo las Épicas y las Legendarias.
+func sellable_loot() -> Array[CraftedItem]:
+	var out: Array[CraftedItem] = []
+	for item in loot:
+		if not (item.get_quality_tier() in ["epic", "legendary"]):
+			out.append(item)
+	return out
+
+
+## "Vender todo": vende sellable_loot() y devuelve el oro ganado.
+func sell_all_loot() -> int:
+	var gold := 0
+	for item in sellable_loot():
+		gold += item.get_sell_price()
+		_take_out(item)
+		crafted_items.erase(item)
+	if gold > 0:
+		add_item(&"gold", gold)
+		_changed(false)
+	return gold
+
+
+## Quita una pieza del inventario (venta en la tienda, pruebas).
 func remove_crafted_item(item: CraftedItem) -> bool:
-	if item not in crafted_items:
+	if item == null or not (item in crafted_items):
 		return false
-	
-	# Desequipar si estaba equipado
-	if item.is_equipped:
-		for slot in equipped_items.keys():
-			if equipped_items[slot] == item:
-				unequip_item(slot)
-				break
-	
+	var was_hero := item.place == PLACE_HERO
+	_take_out(item)
 	crafted_items.erase(item)
-	emit_signal("crafted_items_changed", crafted_items)
+	_changed(was_hero)
 	return true
 
+
+## Las piezas del botín tienen pose nueva (la caja con física se ha quedado quieta, o se ha cerrado el panel): pide el
+## guardado diferido de siempre (spec del botín con física, apartado 8).
+func note_loot_poses() -> void:
+	loot_poses_changed.emit()
+
+# ═══════════════════════════════════════════════════════════════════
+#  ESTADÍSTICAS DE TICO
+# ═══════════════════════════════════════════════════════════════════
+
+## Totales del equipo para Tico: las piezas de su rejilla con auras, zonas y tope (GearAuras).
+func calculate_total_stats() -> Dictionary:
+	return GearAuras.totals(hero_grid)
+
+
+## Aumentos de cada pieza de Tico (pieza → {estadística: fracción}): ficha y brillos del panel.
+func hero_bonuses() -> Dictionary:
+	return GearAuras.bonuses(hero_grid)
+
+
+## Habilidades legendarias que cuentan: las de las piezas legendarias de la rejilla de Tico.
+func active_legendary_powers() -> Array[StringName]:
+	return LegendaryPowers.active(hero_grid.items)
+
+
+## La rejilla de Tico como quedaría tras soltar `item` ahí. Es una copia: no mueve nada.
+func simulate_hero_grid(item: CraftedItem, place: StringName, cell: Vector2i, rot: int) -> GearGrid:
+	var g := hero_grid.duplicate_grid()
+	var res := drop_result(item, place, cell, rot)
+	if not res.ok:
+		return g
+	var other: CraftedItem = res.swap
+	g.remove(item)
+	if place == PLACE_HERO:
+		if other:
+			g.remove(other)
+		g.place(item, cell, rot)
+	if other and item.place == PLACE_HERO:
+		g.place(other, item.cell, other.rot)  # la otra vuelve al sitio de la primera, si cabe
+	return g
+
+
+## Estadísticas del equipo si `item` se soltara ahí (sin mover nada): vista previa del arrastre.
+func preview_stats(item: CraftedItem, place: StringName, cell: Vector2i, rot: int) -> Dictionary:
+	return GearAuras.totals(simulate_hero_grid(item, place, cell, rot))
+
+
+## La mejor pieza de un tipo ("main_hand", "off_hand", "head" o "feet") en la rejilla de Tico: primero
+## el rango, después el nivel y después la calidad. Es la que dibuja su sprite.
+func best_hero_item(slot: String) -> CraftedItem:
+	return best_item_in(hero_grid, slot)
+
+
+## La mejor pieza de un tipo en una rejilla cualquiera (la de Tico o una copia simulada), con gear_score.
+static func best_item_in(grid: GearGrid, slot: String) -> CraftedItem:
+	var best: CraftedItem = null
+	for item in grid.items:
+		if item.get_equipment_slot() != slot:
+			continue
+		if best == null or gear_score(item) > gear_score(best):
+			best = item
+	return best
+
+
+static func gear_score(item: CraftedItem) -> float:
+	var level: int = LEVEL_ORDER.get(String(item.item_resource.rarity) if item.item_resource else "basic", 0)
+	return float(item.rank) * 1000.0 + float(level) * 10.0 + item.quality
+
+
+## Rango del equipo (spec de rangos, apartado 6, "Base de Tico"; spec del inventario, apartado 6) de una rejilla: el
+## menor rango entre sus mejores piezas de cada tipo. La regla vive en Ranks.team_rank; aquí solo se juntan los rangos.
+## Un tipo que no lleva no cuenta, y añadir una pieza de un tipo que ya lleva nunca lo baja. Sin piezas, rango I.
+static func grid_rank(grid: GearGrid) -> int:
+	var ranks: Array = []
+	for slot in ["main_hand", "off_hand", "head", "feet"]:
+		var best := best_item_in(grid, slot)
+		if best:
+			ranks.append(best.rank)
+	return Ranks.team_rank(ranks)
+
+
+## Rango del equipo de Tico: el de su rejilla.
+func equipment_rank() -> int:
+	return grid_rank(hero_grid)
+
+
+## Ampliación de la rejilla de Tico: crece al tamaño siguiente, sea cual sea la ampliación. false si ya
+## estaba o si `id` no es una ampliación. Hoy la llama GameManager al vencer a los jefes (provisional);
+## con los rangos la llamarán las recetas.
+func apply_grid_expansion(id: StringName) -> bool:
+	if not GridExpansions.is_expansion(id) or id in expansions:
+		return false
+	expansions.append(id)
+	hero_grid.resize(GridExpansions.size_after(expansions.size()))
+	grid_resized.emit(hero_grid.size)
+	_changed(true)  # las zonas de borde se mueven con la rejilla
+	return true
+
+# ═══════════════════════════════════════════════════════════════════
+#  CONSUMIBLES
+# ═══════════════════════════════════════════════════════════════════
+
+## Dos huecos libres: un tipo de poción por hueco, hasta Potions.MAX_STACK.
+static func _empty_slots() -> Array:
+	var out := []
+	for i in Potions.SLOTS:
+		out.append({"id": &"", "count": 0})
+	return out
+
+
+## Hueco donde entraría una poción de ese tipo: el suyo si no está lleno, o uno libre. -1 si no hay.
+func potion_slot_for(id: StringName) -> int:
+	for i in consumables.size():
+		if consumables[i].id == id and int(consumables[i].count) > 0:
+			return i if int(consumables[i].count) < Potions.MAX_STACK else -1
+	for i in consumables.size():
+		if int(consumables[i].count) <= 0:
+			return i
+	return -1
+
+
+## Guarda una poción comprada. false si no hay hueco: la tienda no la cobra.
+func add_potion(id: StringName) -> bool:
+	var i := potion_slot_for(id)
+	if i < 0:
+		return false
+	var count := int(consumables[i].count) + 1 if consumables[i].id == id else 1
+	consumables[i] = {"id": id, "count": count}
+	consumables_changed.emit(consumables)
+	return true
+
+
+func potion_count(id: StringName) -> int:
+	var n := 0
+	for s in consumables:
+		if s.id == id:
+			n += int(s.count)
+	return n
+
+
+## Saca una poción para beberla. false si no queda ninguna de ese tipo.
+func take_potion(id: StringName) -> bool:
+	for i in consumables.size():
+		if consumables[i].id == id and int(consumables[i].count) > 0:
+			var left := int(consumables[i].count) - 1
+			consumables[i] = {"id": id if left > 0 else &"", "count": left}
+			consumables_changed.emit(consumables)
+			return true
+	return false
+
+
+## Vende las pociones de un hueco a mitad de precio y lo deja libre. Devuelve el oro.
+func sell_potion_slot(index: int) -> int:
+	if index < 0 or index >= consumables.size() or int(consumables[index].count) <= 0:
+		return 0
+	var info: Dictionary = Potions.CATALOG.get(consumables[index].id, {})
+	var gold := roundi(int(consumables[index].count) * int(info.get("price", 0)) * 0.5)
+	consumables[index] = {"id": &"", "count": 0}
+	add_item(&"gold", gold)
+	consumables_changed.emit(consumables)
+	return gold
+
+# ═══════════════════════════════════════════════════════════════════
+#  SITIOS (privado)
+# ═══════════════════════════════════════════════════════════════════
+
+## Saca una pieza de donde esté, sin avisar. Fuera del botín su pose no vale: si vuelve, cae desde arriba.
+func _take_out(item: CraftedItem) -> void:
+	hero_grid.remove(item)
+	bag_grid.remove(item)
+	loot.erase(item)
+	item.loot_pose = {}
+
+
+## Pone una pieza (ya fuera de todo sitio) en `place`. Si no cabe en la rejilla, al botín.
+func _put(item: CraftedItem, place: StringName, cell: Vector2i, rot: int) -> void:
+	if place == PLACE_LOOT or not _try_put(item, place, cell, rot):
+		_put_in_loot(item, 0)
+
+
+func _try_put(item: CraftedItem, place: StringName, cell: Vector2i, rot: int) -> bool:
+	var grid := grid_for(place)
+	if grid == null or not grid.place(item, cell, rot):
+		return false
+	item.place = place
+	item.cell = cell
+	item.rot = posmod(rot, 4)
+	return true
+
+
+func _put_in_loot(item: CraftedItem, index: int) -> void:
+	loot.insert(clampi(index, 0, loot.size()), item)
+	item.place = PLACE_LOOT
+
+
+## true si soltar `item` en ese sitio, casilla y giro lo dejaría como está: en su rejilla, en su casilla y
+## con su giro, o en el botín estando ya en él.
+func _is_in_place(item: CraftedItem, place: StringName, cell: Vector2i, rot: int) -> bool:
+	if place == PLACE_LOOT:
+		return item in loot
+	var grid := grid_for(place)
+	return grid != null and grid.has(item) and grid.cell_of(item) == cell and grid.rot_of(item) == posmod(rot, 4)
+
+
+## Avisa de un cambio de piezas; si ha cambiado la rejilla de Tico, también de su equipo.
+func _changed(hero_changed: bool) -> void:
+	emit_signal("crafted_items_changed", crafted_items)
+	loot_changed.emit(loot.size())
+	if hero_changed:
+		emit_signal("equipment_changed", calculate_total_stats())
+
+# ═══════════════════════════════════════════════════════════════════
+#  PERSISTENCIA
+# ═══════════════════════════════════════════════════════════════════
+
+func migrate_retired_bag() -> void:
+	var moved := bag_grid.items.duplicate()
+	for item: CraftedItem in moved:
+		bag_grid.remove(item)
+		item.loot_pose = {}
+		if not item in loot:
+			_put_in_loot(item, loot.size())
+	if not moved.is_empty():
+		_changed(false)
+
+func to_save_data() -> Dictionary:
+	migrate_retired_bag()
+	var mats := {}
+	for mat_id in inventory:
+		mats[String(mat_id)] = inventory[mat_id]
+	# El botín primero y en su orden (lo más nuevo delante); después la rejilla de Tico y la mochila
+	var ordered: Array[CraftedItem] = []
+	ordered.append_array(loot)
+	ordered.append_array(hero_grid.items)
+	ordered.append_array(bag_grid.items)
+	var items_arr: Array = []
+	for item in ordered:
+		items_arr.append(item.to_dict())
+	return {
+		"materials": mats,
+		"crafted_items": items_arr,
+		"hero_grid": [hero_grid.size.x, hero_grid.size.y],
+		"expansions": expansions.map(func(id): return String(id)),
+		"consumables": consumables.map(func(s): return {"id": String(s.id), "count": int(s.count)}),
+	}
+
+
+## Carga el inventario. `record` es la sala máxima alcanzada de la misma partida
+## (GameManager.best_enemy_level). En una partida anterior a la rejilla (sin "hero_grid"), la migra:
+## da forjadas las ampliaciones de los jefes vencidos, sortea las aristas de cada pieza con una semilla
+## fija, coloca lo que estaba equipado con GearPacker (las mejores primero) y manda el resto al botín.
+## Nunca se pierde una pieza: una posición guardada imposible también acaba en el botín.
+func load_save_data(data: Dictionary, record: int = 1) -> void:
+	inventory.clear()
+	crafted_items.clear()
+	loot.clear()
+	expansions.clear()
+	var mats: Dictionary = data.get("materials", {})
+	for mat_id_str in mats:
+		inventory[StringName(mat_id_str)] = int(mats[mat_id_str])
+	var migrating := not data.has("hero_grid")
+	if migrating:
+		expansions.assign(GridExpansions.unlocked_for_record(record))
+	else:
+		for id in data.get("expansions", []):
+			if GridExpansions.is_expansion(StringName(id)) and not (StringName(id) in expansions):
+				expansions.append(StringName(id))
+	hero_grid = GearGrid.new(GridExpansions.size_after(expansions.size()))
+	bag_grid = GearGrid.new(BAG_SIZE)
+	var was_equipped := {}  # posiciones de la lista equipadas en las versiones 1 y 2
+	var slots: Dictionary = data.get("equipped_slots", {})
+	for slot in slots:
+		was_equipped[int(slots[slot])] = true
+	var to_pack: Array = []
+	var to_loot: Array = []
+	var dm := get_node_or_null("/root/DataManager")
+	var items_arr: Array = data.get("crafted_items", [])
+	for i in items_arr.size():
+		var item_data = items_arr[i]
+		if not item_data is Dictionary:
+			continue
+		var item_id := StringName(item_data.get("item_id", ""))
+		var item_res: ItemResource = null
+		if item_id != StringName() and dm and dm.has_method("get_item_resource"):
+			item_res = dm.get_item_resource(item_id)
+		if item_res == null:
+			push_warning("InventoryManager: No se pudo resolver ItemResource '%s' — pieza omitida" % item_id)
+			continue
+		var crafted := CraftedItem.from_dict(item_data, item_res)
+		crafted_items.append(crafted)
+		if migrating:
+			var rng := RandomNumberGenerator.new()
+			rng.seed = hash([int(item_data.get("timestamp", 0)), i])
+			crafted.aristas = PieceShape.roll_aristas(item_res, crafted.get_quality_tier(), rng)
+			if was_equipped.has(i) or bool(item_data.get("equipped", false)):
+				to_pack.append(crafted)
+			else:
+				to_loot.append(crafted)
+		elif crafted.place == PLACE_LOOT or not _try_put(crafted, crafted.place, crafted.cell, crafted.rot):
+			_put_in_loot(crafted, loot.size())
+	if migrating:
+		to_pack.sort_custom(func(a, b): return gear_score(a) > gear_score(b))
+		for item in to_pack:
+			var spot := GearPacker.find_spot(hero_grid, item)
+			if spot.is_empty() or not _try_put(item, PLACE_HERO, spot.cell, spot.rot):
+				to_loot.append(item)
+		to_loot.sort_custom(func(a, b): return gear_score(a) > gear_score(b))
+		for item in to_loot:
+			_put_in_loot(item, loot.size())
+	# Huecos de consumibles: solo pociones del catálogo, con la pila dentro de su tope (una partida anterior no los tiene)
+	consumables = _empty_slots()
+	var saved_slots: Array = data.get("consumables", [])
+	for i in mini(saved_slots.size(), Potions.SLOTS):
+		var s = saved_slots[i]
+		if s is Dictionary and Potions.CATALOG.has(StringName(s.get("id", ""))) and int(s.get("count", 0)) > 0:
+			consumables[i] = {"id": StringName(s.id), "count": mini(int(s.count), Potions.MAX_STACK)}
+	print("InventoryManager: %d materiales, %d piezas (Tico %d, mochila %d, botín %d)%s" % [inventory.size(), crafted_items.size(), hero_grid.items.size(), bag_grid.items.size(), loot.size(), " — partida migrada" if migrating else ""])
+	emit_signal("inventory_changed", inventory.duplicate())
+	grid_resized.emit(hero_grid.size)
+	consumables_changed.emit(consumables)
+	_changed(true)

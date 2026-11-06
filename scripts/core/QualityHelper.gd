@@ -34,15 +34,15 @@ static func get_quality_color(quality: float) -> Color:
 	var tier = get_quality_tier(quality)
 	match tier:
 		"legendary":
-			return Color.ORANGE  # FF6A00
+			return Color("ffa629")  # naranja
 		"epic":
-			return Color.PURPLE  # A020F0
+			return Color("b46bff")  # morado
 		"rare":
-			return Color.DODGER_BLUE  # 1E90FF
+			return Color("4ea3ff")  # azul
 		"uncommon":
-			return Color.GREEN  # 00FF00
+			return Color("6ad16a")  # verde
 		_:
-			return Color.WHITE  # FFFFFF
+			return Color("cfd6dc")  # acero
 
 ## Retorna label de calidad en español
 static func get_quality_label(quality: float) -> String:

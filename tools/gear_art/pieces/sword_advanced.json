@@ -1,0 +1,19 @@
+{
+ "source": "arma_avanzada.png",
+ "cells": [
+  [
+   0,
+   0
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   0,
+   2
+  ]
+ ],
+ "rotate": 90,
+ "fit": "contain"
+}

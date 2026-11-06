@@ -1,18 +1,23 @@
 # Godot
 .godot/
 *.import
+# Traducciones: salen de importar locale/textos.csv (--import o el editor), como el resto de importados
+locale/*.translation
 
-# Documentation
+# Documentation (clone de docs oficiales)
 doc/godotdocu/
 
 # Logs
 logs/
 
-# Builds
+# Build outputs
 builds/
+EXE/
 *.exe
+*.console.exe
 *.pck
 *.zip
+*.rar
 
 # OS
 Thumbs.db
@@ -25,5 +30,9 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.swp
-*.bakEXE.rar
-EXE.rar
+*.bak
+
+# AI agent config folders
+.agent/
+.agents/
+.claude/

@@ -1,0 +1,15 @@
+{
+ "source": "arma_basica.png",
+ "cells": [
+  [
+   0,
+   0
+  ],
+  [
+   0,
+   1
+  ]
+ ],
+ "rotate": 90,
+ "fit": "contain"
+}

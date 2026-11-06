@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://bw7yn5q8gk5h1"]
 
 [ext_resource type="Script" path="res://scripts/ui/MaterialRow.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://dxhjx5n1pc3ms" path="res://art/placeholders/forge/material_wood.png" id="2_placeholder"]
+[ext_resource type="Texture2D" path="res://art/stickers/sources/materials/wood.png" id="2_placeholder"]
 
 [node name="MaterialRow" type="HBoxContainer"]
 custom_minimum_size = Vector2(110, 0)

@@ -6,17 +6,17 @@ extends HBoxContainer
 @onready var name_label: Label = $NameLabel
 @onready var quantity_label: Label = $QuantityLabel
 
-# Material ID to display name mapping (English)
+# Nombre de cada material si falta su MaterialResource (texto base en español; se traduce con tr())
 const MATERIAL_NAMES := {
-	"iron": "Iron",
-	"wood": "Wood",
-	"leather": "Leather",
-	"cloth": "Cloth",
-	"herb": "Herb",
-	"water": "Water",
-	"fire": "Fire",
-	"ice": "Ice",
-	"poison": "Poison"
+	"iron": "Hierro",
+	"wood": "Madera",
+	"leather": "Cuero",
+	"cloth": "Tela",
+	"herb": "Hierba",
+	"water": "Agua",
+	"fire": "Fuego",
+	"ice": "Hielo",
+	"poison": "Veneno"
 }
 
 func set_material_data(material_id: String, quantity: int) -> void:
@@ -27,9 +27,9 @@ func set_material_data(material_id: String, quantity: int) -> void:
 		if material_res:
 			# Use display_name from resource if available
 			if "display_name" in material_res and material_res.display_name != "":
-				name_label.text = material_res.display_name
+				name_label.text = tr(material_res.display_name)
 			else:
-				name_label.text = MATERIAL_NAMES.get(material_id, material_id.capitalize())
+				name_label.text = tr(MATERIAL_NAMES.get(material_id, material_id.capitalize()))
 			
 			# Use icon from resource if available
 			if "icon" in material_res and material_res.icon:
@@ -38,11 +38,11 @@ func set_material_data(material_id: String, quantity: int) -> void:
 				_try_fallback_icon(material_id)
 		else:
 			# Failed to load resource
-			name_label.text = MATERIAL_NAMES.get(material_id, material_id.capitalize())
+			name_label.text = tr(MATERIAL_NAMES.get(material_id, material_id.capitalize()))
 			_try_fallback_icon(material_id)
 	else:
 		# Resource doesn't exist, use fallback
-		name_label.text = MATERIAL_NAMES.get(material_id, material_id.capitalize())
+		name_label.text = tr(MATERIAL_NAMES.get(material_id, material_id.capitalize()))
 		_try_fallback_icon(material_id)
 	
 	# Cantidad con color

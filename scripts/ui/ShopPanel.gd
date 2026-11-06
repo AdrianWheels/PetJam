@@ -1,0 +1,575 @@
+extends Control
+class_name ShopPanel
+
+## Panel de tienda para comprar materiales y pociones con oro
+## Se abre desde el botón ShopBtn en el BottomRightPanel
+
+signal shop_closed
+signal item_purchased(item_id: StringName, quantity: int, cost: int)
+signal item_sold(item: CraftedItem, gold_earned: int)
+
+# ═══════════════════════════════════════════════════════════════════
+#  CATÁLOGO DE LA TIENDA
+# ═══════════════════════════════════════════════════════════════════
+
+## Materiales disponibles para compra: id → {display_name, price, icon_path}
+const MATERIAL_CATALOG := {
+	&"wood": {"display_name": "Madera", "price": 15, "quantity": 5},
+	&"iron": {"display_name": "Hierro", "price": 25, "quantity": 5},
+	&"leather": {"display_name": "Cuero", "price": 20, "quantity": 5},
+	&"cloth": {"display_name": "Tela", "price": 15, "quantity": 5},
+	&"fire": {"display_name": "Fuego", "price": 40, "quantity": 3},
+	&"water": {"display_name": "Agua", "price": 40, "quantity": 3},
+	&"ice": {"display_name": "Hielo", "price": 50, "quantity": 2},
+	&"poison": {"display_name": "Veneno", "price": 50, "quantity": 2},
+}
+
+## Pociones: el catálogo vive en Potions (se compran para los huecos de consumibles y se beben solas)
+const POTION_CATALOG := Potions.CATALOG
+
+# ═══════════════════════════════════════════════════════════════════
+#  NODOS INTERNOS (creados en _build_ui)
+# ═══════════════════════════════════════════════════════════════════
+
+var _bg: ColorRect
+var _panel: PanelContainer
+var _title_label: Label
+var _gold_label: Label
+var _tab_container: TabContainer
+var _materials_grid: GridContainer
+var _potions_grid: GridContainer
+var _inventory_grid: VBoxContainer
+var _inventory_empty_label: Label
+var _close_btn: Button
+var _toast_label: Label
+var _toast_tween: Tween
+
+var _inventory_manager: Node
+
+
+func _ready() -> void:
+	theme = UIClarity.readable_theme()
+	_inventory_manager = get_node_or_null("/root/InventoryManager")
+	_build_ui()
+	_populate_materials()
+	_populate_potions()
+	_populate_sell_items()
+	_update_gold_display()
+	_update_material_cards()
+	
+	# Conectar señal de inventario para actualizar oro y cantidades
+	if _inventory_manager and _inventory_manager.has_signal("inventory_changed"):
+		_inventory_manager.inventory_changed.connect(_on_inventory_changed)
+	if _inventory_manager and _inventory_manager.has_signal("crafted_items_changed"):
+		_inventory_manager.crafted_items_changed.connect(_on_crafted_items_changed)
+	if _inventory_manager and _inventory_manager.has_signal("consumables_changed"):
+		_inventory_manager.consumables_changed.connect(func(_slots): _update_potion_cards())
+
+
+func _build_ui() -> void:
+	# Fondo semitransparente — solo cubre la zona del minijuego (25%-75% vertical)
+	_bg = ColorRect.new()
+	_bg.color = Color(0, 0, 0, 0.7)
+	_bg.anchor_left = 0.0
+	_bg.anchor_top = 0.25
+	_bg.anchor_right = 1.0
+	_bg.anchor_bottom = 0.75
+	_bg.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_bg)
+	
+	# Panel central — misma zona que el MinigamePanel
+	_panel = PanelContainer.new()
+	_panel.anchor_left = 0.0
+	_panel.anchor_top = 0.30
+	_panel.anchor_right = 1.0
+	_panel.anchor_bottom = 0.75
+	_panel.offset_left = 40
+	_panel.offset_top = 10
+	_panel.offset_right = -40
+	_panel.offset_bottom = -10
+	add_child(_panel)
+	UIClarity.compact_panel(_panel)
+	
+	var main_vbox := VBoxContainer.new()
+	main_vbox.add_theme_constant_override("separation", 12)
+	_panel.add_child(main_vbox)
+	
+	# ── Header: Título + Oro + Cerrar ──
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 10)
+	main_vbox.add_child(header)
+	
+	_title_label = Label.new()
+	_title_label.text = tr("Tienda")
+	UIClarity.panel_title(_title_label)
+	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(_title_label)
+	
+	_gold_label = Label.new()
+	_gold_label.text = "💰 0"
+	_gold_label.add_theme_font_size_override("font_size", 34)
+	_gold_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
+	_gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	header.add_child(_gold_label)
+	
+	_close_btn = Button.new()
+	UIClarity.close_button(_close_btn)
+	_close_btn.pressed.connect(_on_close_pressed)
+	header.add_child(_close_btn)
+	
+	# ── Separador ──
+	var sep := HSeparator.new()
+	main_vbox.add_child(sep)
+	
+	# ── Tabs: Materiales / Pociones ──
+	_tab_container = TabContainer.new()
+	_tab_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	main_vbox.add_child(_tab_container)
+	_tab_container.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	_tab_container.get_tab_bar().add_theme_font_size_override("font_size", 32)
+	
+	# Tab Materiales
+	var materials_scroll := ScrollContainer.new()
+	materials_scroll.name = "Materiales"
+	materials_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	materials_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_tab_container.add_child(materials_scroll)
+	
+	_materials_grid = GridContainer.new()
+	_materials_grid.columns = 2
+	_materials_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_materials_grid.add_theme_constant_override("h_separation", 12)
+	_materials_grid.add_theme_constant_override("v_separation", 12)
+	materials_scroll.add_child(_materials_grid)
+	
+	# Tab Pociones
+	var potions_scroll := ScrollContainer.new()
+	potions_scroll.name = "Pociones"
+	potions_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	potions_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_tab_container.add_child(potions_scroll)
+	
+	_potions_grid = GridContainer.new()
+	_potions_grid.columns = 1
+	_potions_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_potions_grid.add_theme_constant_override("h_separation", 12)
+	_potions_grid.add_theme_constant_override("v_separation", 12)
+	potions_scroll.add_child(_potions_grid)
+	
+	# Tab Vender
+	var sell_scroll := ScrollContainer.new()
+	sell_scroll.name = "Vender"
+	sell_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sell_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_tab_container.add_child(sell_scroll)
+	
+	_inventory_grid = VBoxContainer.new()
+	_inventory_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_inventory_grid.add_theme_constant_override("separation", 12)
+	sell_scroll.add_child(_inventory_grid)
+
+	# Las pestañas toman el nombre del nodo: se les pone el título traducido
+	_tab_container.set_tab_title(0, tr("Materiales"))
+	_tab_container.set_tab_title(1, tr("Pociones"))
+	_tab_container.set_tab_title(2, tr("Vender"))
+
+	# Label vacío para cuando no hay objetos
+	_inventory_empty_label = Label.new()
+	_inventory_empty_label.text = _empty_sell_text()
+	_inventory_empty_label.add_theme_font_size_override("font_size", 26)
+	_inventory_empty_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
+	_inventory_empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_inventory_empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_inventory_grid.add_child(_inventory_empty_label)
+	
+	# ── Toast de feedback ──
+	_toast_label = Label.new()
+	_toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_toast_label.add_theme_font_size_override("font_size", 26)
+	_toast_label.modulate.a = 0.0
+	main_vbox.add_child(_toast_label)
+
+
+func _populate_materials() -> void:
+	for mat_id in MATERIAL_CATALOG:
+		var info: Dictionary = MATERIAL_CATALOG[mat_id]
+		var card := _create_material_card(mat_id, info)
+		_materials_grid.add_child(card)
+
+
+func _populate_potions() -> void:
+	for pot_id in POTION_CATALOG:
+		var info: Dictionary = POTION_CATALOG[pot_id]
+		var card := _create_potion_card(pot_id, info)
+		_potions_grid.add_child(card)
+	_update_potion_cards()
+
+
+func _create_material_card(mat_id: StringName, info: Dictionary) -> PanelContainer:
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(0, 126)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	card.add_child(row)
+	var icon := TextureRect.new()
+	icon.custom_minimum_size = Vector2(90, 100)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	var material := load("res://data/materials/%s.tres" % mat_id)
+	icon.texture = material.icon
+	row.add_child(icon)
+	var info_box := VBoxContainer.new()
+	info_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_child(info_box)
+	var name_label := Label.new()
+	name_label.name = "NameLabel"
+	name_label.text = tr(info.display_name)
+	name_label.add_theme_font_size_override("font_size", 30)
+	info_box.add_child(name_label)
+	var owned := Label.new()
+	owned.name = "OwnedLabel"
+	owned.add_theme_font_size_override("font_size", 26)
+	owned.add_theme_color_override("font_color", Color("e5cdb0"))
+	info_box.add_child(owned)
+	var buy := Button.new()
+	buy.name = "BuyBtn"
+	buy.text = "×%d\n%d %s" % [info.quantity, info.price, tr("oro")]
+	buy.custom_minimum_size = Vector2(112, 100)
+	UIClarity.light_button(buy)
+	buy.add_theme_font_size_override("font_size", 28)
+	buy.pressed.connect(_on_buy_material.bind(mat_id, info.quantity, info.price))
+	row.add_child(buy)
+	card.set_meta("mat_id", mat_id)
+	return card
+
+
+func _create_potion_card(pot_id: StringName, info: Dictionary) -> PanelContainer:
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(0, 172)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	card.add_child(row)
+	var icon := TextureRect.new()
+	icon.texture = load(info.icon)
+	icon.custom_minimum_size = Vector2(100, 140)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	row.add_child(icon)
+	var box := VBoxContainer.new()
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(box)
+	var label := Label.new()
+	label.text = tr(info.display_name)
+	label.add_theme_font_size_override("font_size", 34)
+	box.add_child(label)
+	var description := Label.new()
+	description.text = tr(info.description)
+	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	description.add_theme_font_size_override("font_size", 28)
+	description.add_theme_color_override("font_color", Color("f0deca"))
+	box.add_child(description)
+	var owned := Label.new()
+	owned.name = "OwnedLabel"
+	owned.add_theme_font_size_override("font_size", 26)
+	box.add_child(owned)
+	var buy := Button.new()
+	buy.text = "%d %s" % [info.price, tr("oro")]
+	buy.custom_minimum_size = Vector2(140, 96)
+	UIClarity.light_button(buy)
+	buy.pressed.connect(_on_buy_potion.bind(pot_id, info.price))
+	row.add_child(buy)
+	card.set_meta("pot_id", pot_id)
+	return card
+
+
+func _on_buy_material(mat_id: StringName, quantity: int, price: int) -> void:
+	if not _inventory_manager:
+		return
+	
+	var gold: int = _inventory_manager.get_quantity(&"gold")
+	if gold < price:
+		_show_toast("❌ %s" % tr("Oro insuficiente"), Color(1.0, 0.3, 0.3))
+		return
+
+	# Consumir oro y añadir materiales
+	_inventory_manager.consume_materials({&"gold": price})
+	_inventory_manager.add_item(mat_id, quantity)
+
+	var info: Dictionary = MATERIAL_CATALOG.get(mat_id, {})
+	var display_name: String = info.get("display_name", String(mat_id))
+	_show_toast("✅ +%d %s" % [quantity, tr(display_name)], Color(0.3, 1.0, 0.3))
+	item_purchased.emit(mat_id, quantity, price)
+	
+	print("ShopPanel: Comprado %dx %s por %d oro" % [quantity, mat_id, price])
+
+
+func _on_buy_potion(pot_id: StringName, price: int) -> void:
+	if not _inventory_manager:
+		return
+	
+	var gold: int = _inventory_manager.get_quantity(&"gold")
+	if gold < price:
+		_show_toast("❌ %s" % tr("Oro insuficiente"), Color(1.0, 0.3, 0.3))
+		return
+	# Se compra para llevarla en un hueco de consumibles; si no hay hueco, ni se compra ni se cobra
+	if not _inventory_manager.add_potion(pot_id):
+		_show_toast(tr("No hay hueco"), Color(1.0, 0.65, 0.3))
+		return
+	_inventory_manager.consume_materials({&"gold": price})
+	var info: Dictionary = POTION_CATALOG.get(pot_id, {})
+	_show_toast("✅ %s" % (tr("%s: %d en el hueco") % [tr(info.get("display_name", String(pot_id))), _inventory_manager.potion_count(pot_id)]), Color(0.3, 1.0, 0.3))
+	item_purchased.emit(pot_id, 1, price)
+	_update_potion_cards()
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  UI UPDATES
+# ═══════════════════════════════════════════════════════════════════
+
+func _update_gold_display() -> void:
+	if _gold_label and _inventory_manager:
+		var gold: int = _inventory_manager.get_quantity(&"gold")
+		_gold_label.text = "%d %s" % [gold, tr("oro")]
+
+
+func _update_material_cards() -> void:
+	if not _materials_grid or not _inventory_manager:
+		return
+	for card in _materials_grid.get_children():
+		if not card.has_meta("mat_id"):
+			continue
+		var id: StringName = card.get_meta("mat_id")
+		var owned := card.find_child("OwnedLabel", true, false) as Label
+		owned.text = tr("Tienes %d") % _inventory_manager.get_quantity(id)
+		var buy := card.find_child("BuyBtn", true, false) as Button
+		buy.disabled = _inventory_manager.get_quantity(&"gold") < int(MATERIAL_CATALOG[id].price)
+
+
+func _update_potion_cards() -> void:
+	if not _potions_grid or not _inventory_manager:
+		return
+	for card in _potions_grid.get_children():
+		if not card.has_meta("pot_id"):
+			continue
+		var label: Label = card.find_child("OwnedLabel", true, false)
+		if label:
+			label.text = tr("En hueco: %d") % _inventory_manager.potion_count(card.get_meta("pot_id"))
+
+
+func _on_inventory_changed(_inv: Dictionary) -> void:
+	_update_gold_display()
+	_update_material_cards()
+	_update_material_cards()
+
+
+func _on_crafted_items_changed(_items: Array) -> void:
+	# Con la tienda oculta no hace falta: son unos 7 controles por pieza del botín y la mochila en cada cambio, y open()
+	# rehace la lista al abrirla
+	if visible:
+		_populate_sell_items()
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  TAB VENDER — Items crafteados
+# ═══════════════════════════════════════════════════════════════════
+
+func _get_sell_price(item: CraftedItem) -> int:
+	return item.get_sell_price()
+
+
+func _populate_sell_items() -> void:
+	if not _inventory_grid:
+		return
+	
+	# Limpiar grid actual
+	for child in _inventory_grid.get_children():
+		child.queue_free()
+	
+	if not _inventory_manager:
+		return
+	
+	# Obtener items no equipados
+	var items: Array = []
+	if _inventory_manager.has_method("get_unequipped_items"):
+		items = _inventory_manager.get_unequipped_items()
+	
+	if items.is_empty():
+		# Mostrar mensaje vacío
+		_inventory_empty_label = Label.new()
+		_inventory_empty_label.text = _empty_sell_text()
+		_inventory_empty_label.add_theme_font_size_override("font_size", 26)
+		_inventory_empty_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
+		_inventory_empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_inventory_empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_inventory_grid.add_child(_inventory_empty_label)
+		return
+	
+	# Crear tarjeta de venta por cada item
+	for item in items:
+		if item is CraftedItem:
+			var card := _create_sell_card(item)
+			_inventory_grid.add_child(card)
+
+
+func _create_sell_card(item: CraftedItem) -> PanelContainer:
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(0, 130)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	
+	# Borde de color según tier
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.12, 0.09, 0.07, 0.25)
+	style.border_color = item.get_quality_color()
+	style.set_border_width_all(0)
+	style.set_corner_radius_all(8)
+	style.set_content_margin_all(12)
+	card.add_theme_stylebox_override("panel", style)
+	
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 14)
+	card.add_child(hbox)
+	
+	# Info del item (izquierda)
+	var info_vbox := VBoxContainer.new()
+	info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_vbox.add_theme_constant_override("separation", 4)
+	hbox.add_child(info_vbox)
+	
+	# Nombre con color de tier
+	var name_label := Label.new()
+	name_label.text = item.get_display_name()
+	name_label.add_theme_font_size_override("font_size", 26)
+	name_label.add_theme_color_override("font_color", item.get_quality_color())
+	info_vbox.add_child(name_label)
+	
+	# Tier label
+	var tier_label := Label.new()
+	tier_label.text = item.get_quality_label()
+	tier_label.add_theme_font_size_override("font_size", 20)
+	tier_label.add_theme_color_override("font_color", item.get_quality_color().lerp(Color.WHITE, 0.3))
+	info_vbox.add_child(tier_label)
+	
+	# Stats resumidos, con los mismos nombres que la pantalla de resultado (Daño, Vida…)
+	var stats_text := ""
+	for stat_key in item.calculated_stats:
+		var shown := CraftResultScreen.format_stat_value(String(stat_key), item.calculated_stats[stat_key])
+		if shown == "":
+			continue
+		if stats_text != "":
+			stats_text += " · "
+		var stat_name: String = tr(CraftResultScreen.STAT_NAMES.get(stat_key, String(stat_key).capitalize()))
+		stats_text += "%s: %s" % [stat_name, shown]
+	
+	if stats_text != "":
+		var stats_label := Label.new()
+		stats_label.text = stats_text
+		stats_label.add_theme_font_size_override("font_size", 28)
+		stats_label.add_theme_color_override("font_color", Color("ecdfd0"))
+		stats_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		info_vbox.add_child(stats_label)
+	
+	# Botón vender (derecha)
+	var sell_price := _get_sell_price(item)
+	var sell_btn := Button.new()
+	sell_btn.text = "💰 %d" % sell_price
+	sell_btn.custom_minimum_size = Vector2(130, 70)
+	sell_btn.add_theme_font_size_override("font_size", 26)
+	sell_btn.pressed.connect(_on_sell_item.bind(item, sell_price))
+	hbox.add_child(sell_btn)
+	
+	return card
+
+
+func _on_sell_item(item: CraftedItem, price: int) -> void:
+	if not _inventory_manager:
+		return
+	
+	# Eliminar item del inventario
+	if _inventory_manager.has_method("remove_crafted_item"):
+		var success: bool = _inventory_manager.remove_crafted_item(item)
+		if not success:
+			_show_toast("❌ %s" % tr("Error al vender"), Color(1.0, 0.3, 0.3))
+			return
+
+	# Dar oro
+	_inventory_manager.add_item(&"gold", price)
+
+	var display_name := item.get_display_name()
+	_show_toast("💰 %s" % (tr("+%d oro por %s") % [price, display_name]), Color(1.0, 0.85, 0.2))
+	item_sold.emit(item, price)
+	
+	print("ShopPanel: Vendido '%s' por %d oro" % [display_name, price])
+	
+	# Refrescar lista de items vendibles
+	_populate_sell_items()
+
+
+## Aviso de la pestaña Vender cuando no hay objetos (dos frases, una por línea).
+func _empty_sell_text() -> String:
+	return "%s\n%s" % [tr("No tienes objetos para vender."), tr("Forja equipo y véndelo aquí.")]
+
+
+func _show_toast(text: String, color: Color = Color.WHITE) -> void:
+	if not _toast_label:
+		return
+	
+	_toast_label.text = text
+	_toast_label.add_theme_color_override("font_color", color)
+	
+	if _toast_tween:
+		_toast_tween.kill()
+	
+	_toast_tween = create_tween()
+	_toast_label.modulate.a = 1.0
+	_toast_tween.tween_interval(1.5)
+	_toast_tween.tween_property(_toast_label, "modulate:a", 0.0, 0.5)
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  APERTURA / CIERRE
+# ═══════════════════════════════════════════════════════════════════
+
+func open() -> void:
+	visible = true
+	_update_gold_display()
+	_update_material_cards()
+	_update_material_cards()
+	_populate_sell_items()
+	# Ocultar fondo de forja si existe (estamos sobre el MinigamePanel)
+	var hud_main = get_parent()
+	if hud_main and hud_main.has_method("get_minigame_viewport"):
+		var vp: SubViewport = hud_main.get_minigame_viewport()
+		if vp:
+			var bg = vp.get_node_or_null("ForgeBackground")
+			if bg:
+				bg.visible = false
+	# Fade in
+	modulate.a = 0.0
+	var tween := create_tween()
+	tween.tween_property(self, "modulate:a", 1.0, 0.2)
+
+
+func close() -> void:
+	var tween := create_tween()
+	tween.tween_property(self, "modulate:a", 0.0, 0.15)
+	tween.tween_callback(func():
+		visible = false
+		# Restaurar fondo de forja
+		var hud_main = get_parent()
+		if hud_main and hud_main.has_method("get_minigame_viewport"):
+			var vp: SubViewport = hud_main.get_minigame_viewport()
+			if vp:
+				var bg = vp.get_node_or_null("ForgeBackground")
+				if bg:
+					bg.visible = true
+		shop_closed.emit()
+	)
+
+
+func _on_close_pressed() -> void:
+	close()

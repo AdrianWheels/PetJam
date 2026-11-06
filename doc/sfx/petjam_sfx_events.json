@@ -1,0 +1,204 @@
+{
+  "project": {
+    "name": "PetJam / AFK Armory",
+    "brief": "Idle móvil: un herrero forja equipo con minijuegos mientras un héroe geométrico baja por una mazmorra endless. SFX para el combate del corredor, sus hitos (jefe, bioma, muerte) y la interfaz.",
+    "direction": "Piedra, metal y cristal; impactos cercanos y secos. La magia suena a vidrio y aire, nunca a voces. Los enemigos son figuras geométricas: al morir se rompen como cerámica. Sonidos cortos porque se repiten mucho en móvil; los hitos (jefe, récord) destacan por encima.",
+    "assumptions": [
+      "La interfaz queda por debajo del combate y el combate por debajo de los hitos",
+      "Sin criaturas ni voces: el modelo es débil en sonidos orgánicos",
+      "Los golpes de espada ya existen (art/sounds/sfx/combat) y se mantienen"
+    ]
+  },
+  "events": [
+    {
+      "id": "enemy_shatter",
+      "category": "combat",
+      "kind": "pool",
+      "variants": 3,
+      "desc": "Un enemigo geométrico se rompe en fragmentos",
+      "when": "Cada vez que el héroe mata a un enemigo, cada pocos segundos",
+      "trigger": "scripts/gameplay/Corridor.gd _on_enemy_died_fx",
+      "prompt": "brittle ceramic tiles shattering once and scattering across a stone floor, short dry close impact",
+      "seconds": 2,
+      "importance": 3,
+      "ucs": "GLASBreak",
+      "design": {
+        "reason": "Rotura de cerámica = la figura se hace añicos; seca para no cansar al repetirse"
+      },
+      "candidates": 5,
+      "first_hit": false
+    },
+    {
+      "id": "boss_appear",
+      "category": "combat",
+      "kind": "one_shot",
+      "desc": "Aparece el jefe de la sala",
+      "when": "Al entrar en pantalla el jefe, cada 10 salas",
+      "trigger": "scripts/gameplay/Corridor.gd _boss_intro",
+      "prompt": "a huge iron portcullis slamming down with a deep booming impact and a long low stone rumble, large hall",
+      "seconds": 4,
+      "importance": 5,
+      "first_hit": false,
+      "ucs": "DOORMetl",
+      "candidates": 4
+    },
+    {
+      "id": "boss_defeated",
+      "category": "feedback",
+      "kind": "one_shot",
+      "desc": "Jefe derrotado",
+      "when": "Al matar al jefe, un momento especial poco frecuente",
+      "trigger": "scripts/gameplay/Corridor.gd _on_enemy_died_fx (was_boss)",
+      "prompt": "a large bronze church bell struck once, deep resonant ring with a long warm shimmering decay",
+      "seconds": 4,
+      "importance": 5,
+      "first_hit": false,
+      "ucs": "BELLHand",
+      "candidates": 4,
+      "design": {
+        "note": "Segundo diseño: el primero (campana triunfal / pergamino + campanilla) puntuó mal en CLAP"
+      }
+    },
+    {
+      "id": "hero_fall",
+      "category": "combat",
+      "kind": "one_shot",
+      "desc": "El héroe cae",
+      "when": "Cuando el héroe muere, cada pocos minutos",
+      "trigger": "scripts/gameplay/Corridor.gd _on_local_hero_died",
+      "prompt": "heavy steel armor plates collapsing onto stone with a dull thud and a fading glassy crumble",
+      "seconds": 3,
+      "importance": 4,
+      "first_hit": false,
+      "ucs": "METLCrsh",
+      "candidates": 4
+    },
+    {
+      "id": "hero_respawn",
+      "category": "feedback",
+      "kind": "one_shot",
+      "desc": "El héroe reaparece en un haz de luz",
+      "when": "Tras cada muerte, al volver a la sala 1",
+      "trigger": "scripts/gameplay/Corridor.gd _perform_respawn",
+      "prompt": "a soft rising glass shimmer swelling upward into a gentle bright chime",
+      "seconds": 2,
+      "importance": 3,
+      "ucs": "DSGNRisr",
+      "candidates": 4
+    },
+    {
+      "id": "loot_coins",
+      "category": "feedback",
+      "kind": "pool",
+      "variants": 3,
+      "desc": "Botín de materiales al matar",
+      "when": "Con cada muerte de enemigo, junto a la rotura",
+      "trigger": "scripts/gameplay/Corridor.gd _on_enemy_died_fx (loot_pop)",
+      "prompt": "a few small metal coins dropped onto a wooden table, short bright jingle, close and dry",
+      "seconds": 1,
+      "importance": 2,
+      "ucs": "OBJCoin",
+      "candidates": 5,
+      "first_hit": false
+    },
+    {
+      "id": "blueprint_found",
+      "category": "feedback",
+      "kind": "one_shot",
+      "desc": "Plano nuevo desbloqueado",
+      "when": "La primera vez que se mata a un enemigo de cierto nivel, raro",
+      "trigger": "scripts/gameplay/Corridor.gd _on_blueprint_unlocked",
+      "prompt": "a small brass handbell rung once, clear bright ring with a soft sparkling decay",
+      "seconds": 2,
+      "importance": 4,
+      "ucs": "PAPRFltr",
+      "candidates": 4,
+      "design": {
+        "note": "Segundo diseño: el primero (campana triunfal / pergamino + campanilla) puntuó mal en CLAP"
+      }
+    },
+    {
+      "id": "biome_enter",
+      "category": "ambience",
+      "kind": "one_shot",
+      "desc": "Entrada a un bioma nuevo",
+      "when": "Al cruzar la puerta de la primera sala de un bioma, cada 10 salas",
+      "trigger": "scripts/ui/HeroViewOverlay.gd _on_biome_entered",
+      "prompt": "a deep low whoosh of air rushing through a long stone tunnel with a soft distant rumble",
+      "seconds": 3,
+      "importance": 3,
+      "first_hit": false,
+      "ucs": "AIRWhsh",
+      "candidates": 4
+    },
+    {
+      "id": "wraith_orb",
+      "category": "combat",
+      "kind": "pool",
+      "variants": 3,
+      "desc": "Orbe mágico del espectro",
+      "when": "Cada ataque del espectro, alrededor de una vez por segundo mientras pelea",
+      "trigger": "scripts/gameplay/Enemy.gd attack (style cast)",
+      "prompt": "a small glowing glass orb humming and then released with a soft airy whoosh",
+      "seconds": 1,
+      "importance": 2,
+      "ucs": "DSGNTonl",
+      "candidates": 5,
+      "first_hit": false
+    },
+    {
+      "id": "golem_slam",
+      "category": "combat",
+      "kind": "pool",
+      "variants": 3,
+      "desc": "Puñetazo del gólem contra el suelo",
+      "when": "Cada golpe del gólem o del jefe, cada dos segundos en su sala",
+      "trigger": "scripts/gameplay/CombatController.gd _execute_enemy_attack (slam)",
+      "prompt": "two heavy stone blocks slammed together once, deep crunching impact with a little gravel scatter, close",
+      "seconds": 2,
+      "importance": 4,
+      "ucs": "ROCKImpt",
+      "candidates": 5,
+      "first_hit": false
+    },
+    {
+      "id": "equip_clink",
+      "category": "ui",
+      "kind": "one_shot",
+      "desc": "Equipar un objeto al héroe",
+      "when": "Al tocar un objeto en el panel de Equipo",
+      "trigger": "scripts/ui/EquipmentPanel.gd _equip_feedback",
+      "prompt": "a steel buckle snapping shut and light armor plates settling, short close metallic clink",
+      "seconds": 1,
+      "importance": 2,
+      "ucs": "METLHndl",
+      "candidates": 4
+    },
+    {
+      "id": "request_accept",
+      "category": "ui",
+      "kind": "one_shot",
+      "desc": "Aceptar un pedido",
+      "when": "Al tocar una tarjeta de pedido y empezar a forjar",
+      "trigger": "scripts/ui/HUDMain.gd _fly_request_to_forge",
+      "prompt": "a thick paper card slapped onto a wooden counter once, dry close thump",
+      "seconds": 1,
+      "importance": 2,
+      "ucs": "PAPRHndl",
+      "candidates": 4
+    },
+    {
+      "id": "ui_tap",
+      "category": "ui",
+      "kind": "one_shot",
+      "desc": "Toque de botón",
+      "when": "Al pulsar botones del panel inferior, muy frecuente",
+      "trigger": "scripts/ui/HUDMain.gd (botones Planos/Equipo/Tienda)",
+      "prompt": "a small wooden block tapped once, soft short dry click, very close",
+      "seconds": 1,
+      "importance": 1,
+      "ucs": "WOODTonl",
+      "candidates": 4
+    }
+  ]
+}

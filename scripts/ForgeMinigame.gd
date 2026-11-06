@@ -38,6 +38,7 @@ var _trial_qualities: Array[String] = []
 var _forge_speed := 1.0  # Velocidad del cursor (multiplicador)
 
 func _ready():
+	UIClarity.readable_labels(self)
 	# 🎶 Configurar SoundSet específico para Forge (usar sonidos genéricos por ahora)
 	var forge_soundset := MinigameSoundSet.new()
 	forge_soundset.sound_perfect = load("res://art/sounds/perfect.mp3")
@@ -53,9 +54,9 @@ func _ready():
 	
 	# Crear pantalla de título (sistema original)
 	setup_title_screen(
-		"🔥 FORGE - Precisión",
-		"Stop the hammer at the right spot",
-		"Pulsa ESPACIO o CLIC para empezar"
+		tr("¡A LA FORJA!"),
+		tr("Detén el calor en la zona justa"),
+		tr("Toca en el momento exacto")
 	)
 
 func _exit_tree():
@@ -66,7 +67,8 @@ func start_trial(config: TrialConfig) -> void:
 	super.start_trial(config)
 	
 	# Leer configuración
-	var difficulty: float = clamp(float(config.get_parameter(&"difficulty", 0.5)), 0.0, 1.0)
+	# La dificultad de la ventana viene como `precision` en los planos (antes `difficulty`, que ninguno pasaba)
+	var difficulty: float = clamp(float(config.get_parameter(&"precision", config.get_parameter(&"difficulty", 0.5))), 0.0, 1.0)
 	_forge_speed = clamp(float(config.get_parameter(&"forge_speed", 1.0)), 0.3, 2.5)
 	_total_trials = int(config.get_parameter(&"trials", TOTAL_TRIALS))
 	_total_trials = max(_total_trials, 3)  # Mínimo 3 trials
@@ -78,7 +80,7 @@ func start_trial(config: TrialConfig) -> void:
 	
 	# Actualizar UI
 	_update_target_zone_position()
-	_progress_label.text = "Soplidos: 0/%d" % _total_trials
+	_progress_label.text = tr("Soplidos: %d/%d") % [0, _total_trials]
 
 func start_game():
 	"""Inicia el minijuego. Override de MinigameBase."""
@@ -169,7 +171,16 @@ func _process(delta):
 func _input(event):
 	if not _running:
 		return
-	if (event is InputEventMouseButton and event.pressed) or (event is InputEventKey and event.pressed and event.keycode == KEY_SPACE):
+	
+	var is_action := false
+	if event is InputEventScreenTouch and event.pressed:
+		is_action = true
+	elif event is InputEventMouseButton and event.pressed:
+		is_action = true
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_SPACE:
+		is_action = true
+		
+	if is_action:
 		_finish_attempt()
 		accept_event()
 
@@ -200,13 +211,14 @@ func _finish_attempt():
 	# 🎨 Efectos visuales y sonoros
 	var feedback_pos := _cursor.global_position + Vector2(_cursor.size.x / 2, 0)
 	MinigameFX.full_feedback(feedback_pos, quality, self)
-	MinigameFX.create_floating_label(feedback_pos, quality, quality, self)
+	MinigameFX.create_floating_label(feedback_pos, MinigameFX.quality_text(quality), quality, self)
 	MinigameAudio.play_feedback(quality)
 	
 	# Actualizar progreso
-	_progress_label.text = "Soplidos: %d/%d" % [_current_trial, _total_trials]
+	_progress_label.text = tr("Soplidos: %d/%d") % [_current_trial, _total_trials]
 	
 	print("  🔥 [FORGE] Trial %d: %.1f pts (%s)" % [_current_trial, score, quality])
+	emit_signal("hit_scored", quality, int(score))
 	
 	# ¿Terminamos todos los trials?
 	if _current_trial >= _total_trials:

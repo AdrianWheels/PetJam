@@ -33,6 +33,13 @@ class_name ItemResource
 @export var base_aps_min: float = 0.0
 @export var base_aps_max: float = 0.0
 
+# Forma en la rejilla de equipo (spec doc/specs/2026-09-27-inventario-en-rejilla.md, apartado 2)
+@export_group("Rejilla")
+## Casillas de la pieza bien hecha, sin girar: (columna, fila), con la fila hacia abajo.
+@export var shape_cells: Array[Vector2i] = [Vector2i(0, 0)]
+## 3 casillas pegadas por un lado a la forma, donde puede salir una arista al forjarla peor.
+@export var arista_spots: Array[Vector2i] = []
+
 func get_icon() -> Texture2D:
 	return icon
 

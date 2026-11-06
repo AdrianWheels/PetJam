@@ -1,18 +1,20 @@
 [gd_resource type="Resource" script_class="ItemResource" load_steps=3 format=3 uid="uid://cbu7fw36bu5ty"]
 
 [ext_resource type="Script" uid="uid://clwxwng7r6vh2" path="res://scripts/data/ItemResource.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://c8vii618s72tt" path="res://art/assets/Imagenes/Items/helmet_advanced.png" id="2"]
+[ext_resource type="Texture2D" path="res://art/stickers/sources/gear/helmet_advanced.png" id="2"]
 
 [resource]
 script = ExtResource("1")
 item_id = &"helmet_advanced"
-display_name = "Advanced Helmet"
-description = "A reinforced helmet"
+display_name = "Casco avanzado"
+description = "Un casco reforzado"
 icon = ExtResource("2")
 item_type = "armor"
 equipment_slot = "head"
 rarity = "advanced"
-base_hp_min = 35
-base_hp_max = 75
+base_hp_min = 34
+base_hp_max = 76
 base_armor_min = 3
-base_armor_max = 7
+base_armor_max = 6
+shape_cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0)])
+arista_spots = Array[Vector2i]([Vector2i(0, -1), Vector2i(2, 0), Vector2i(1, 1)])

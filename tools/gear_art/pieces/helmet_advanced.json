@@ -1,0 +1,16 @@
+{
+ "source": "casco_avanzado.png",
+ "cells": [
+  [
+   0,
+   0
+  ],
+  [
+   1,
+   0
+  ]
+ ],
+ "white_bg": true,
+ "strip_border": false,
+ "fit": "contain"
+}

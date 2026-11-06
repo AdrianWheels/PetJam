@@ -1,0 +1,13 @@
+id,archetype,slot,rarity,level,budget,damage_min,damage_nominal,damage_max,hp_min,hp_nominal,hp_max,armor_min,armor_nominal,armor_max,crit_min,crit_nominal,crit_max,aps_min,aps_nominal,aps_max,effects,rounding_error
+sword_basic,espada,main_hand,basic,1,9.85,3,6,8,,,,,,,0.04,0.07,0.09,0.065,0.115,0.15,,0.0192
+shield_basic,escudo,off_hand,basic,1,4.3488,,,,19,33,44,1,3,3,,,,,,,,0.0217
+helmet_basic,casco,head,basic,1,3.3815,,,,15,25,34,1,2,3,,,,,,,,-0.011
+boots_basic,botas,feet,basic,1,1.837,,,,8,14,18,1,1,2,,,,,,,,0.0143
+sword_advanced,espada,main_hand,advanced,1,22.127,8,13,18,,,,,,,0.09,0.15,0.2,0.15,0.255,0.34,,-0.012
+shield_advanced,escudo,off_hand,advanced,1,9.7691,,,,43,73,97,3,6,8,,,,,,,,0.0009
+helmet_advanced,casco,head,advanced,1,7.5962,,,,34,57,76,3,4,6,,,,,,,,-0.002
+boots_advanced,botas,feet,advanced,1,4.1267,,,,18,30,41,2,3,4,,,,,,,,-0.016
+sword_masterwork,espada,main_hand,master,1,44.5121,17,27,35,,,,,,,0.19,0.3,0.38,0.33,0.51,0.66,,0.0048
+shield_master,escudo,off_hand,master,1,19.6521,,,,95,147,190,7,11,15,,,,,,,,-0.0024
+helmet_master,casco,head,master,1,15.281,,,,74,115,148,5,9,11,,,,,,,,0.0057
+boots_master,botas,feet,master,1,8.3015,,,,40,61,79,4,6,8,,,,,,,,-0.0064

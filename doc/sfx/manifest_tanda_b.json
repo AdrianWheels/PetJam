@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "complete": true,
+  "events": [
+    {
+      "id": "boss_defeated",
+      "kind": "one_shot",
+      "files": [
+        "feedback/boss_defeated.wav"
+      ],
+      "sources": [
+        "feedback/boss_defeated_v3.wav"
+      ],
+      "description": "Jefe derrotado",
+      "when": "Al matar al jefe, un momento especial poco frecuente",
+      "mix_db": 0.0,
+      "usage": "Play once per event."
+    },
+    {
+      "id": "blueprint_found",
+      "kind": "one_shot",
+      "files": [
+        "feedback/blueprint_found.wav"
+      ],
+      "sources": [
+        "feedback/blueprint_found_v1.wav"
+      ],
+      "description": "Plano nuevo desbloqueado",
+      "when": "La primera vez que se mata a un enemigo de cierto nivel, raro",
+      "mix_db": -3.0,
+      "usage": "Play once per event."
+    }
+  ],
+  "project": {
+    "name": "PetJam / AFK Armory",
+    "brief": "Idle móvil: un herrero forja equipo con minijuegos mientras un héroe geométrico baja por una mazmorra endless. SFX para el combate del corredor, sus hitos (jefe, bioma, muerte) y la interfaz.",
+    "direction": "Piedra, metal y cristal; impactos cercanos y secos. La magia suena a vidrio y aire, nunca a voces. Los enemigos son figuras geométricas: al morir se rompen como cerámica. Sonidos cortos porque se repiten mucho en móvil; los hitos (jefe, récord) destacan por encima.",
+    "assumptions": [
+      "La interfaz queda por debajo del combate y el combate por debajo de los hitos",
+      "Sin criaturas ni voces: el modelo es débil en sonidos orgánicos",
+      "Los golpes de espada ya existen (art/sounds/sfx/combat) y se mantienen"
+    ]
+  },
+  "target_lufs": -20.0,
+  "mix_offsets_baked_in": true,
+  "note": "Do not apply mix_db again in the engine. Artistic quality requires listening.",
+  "sha256": {
+    "feedback/blueprint_found.wav": "0a448f4b09a4c104c9b9c8ae3e772eb368db02fc2b8d67bb7807df47c2a94438",
+    "feedback/boss_defeated.wav": "afcb3fa22dbf24fe7a9aec73684bc1df5a097e34a25f216e17a0af232130d52c"
+  },
+  "source_sha256": {
+    "feedback/blueprint_found_v1.wav": "046979836e20054a8643e2556358d22f973e32b9df10e645c619a3614d6cdbc7",
+    "feedback/boss_defeated_v3.wav": "8c48a0685d78f768e15b02f4ccd5ee8fa1d6763f60d7526aa5628b8706cbcf80"
+  }
+}

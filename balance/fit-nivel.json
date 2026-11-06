@@ -1,0 +1,136 @@
+{
+  "format": 1,
+  "kitVersion": "0.1.0",
+  "catalogHash": "ca94b7ef4cd68ecda0fc92f8aa7f8d69d96acdd1c5da3af79736ea1600475e80",
+  "curve": {
+    "base": 10.819820552738491,
+    "growth": 1.978711824649996
+  },
+  "rarities": {
+    "pieza": 1
+  },
+  "slots": {
+    "main_hand": 1,
+    "feet": 0.18546811703218938,
+    "head": 0.34112815817251074,
+    "off_hand": 0.43853495135740445
+  },
+  "quality": {
+    "pieza": {
+      "lo": 0.5926,
+      "hi": 1.3333,
+      "ref": 0.55
+    }
+  },
+  "weights": {
+    "botas": {
+      "hp": 0.9378,
+      "armor": 0.0622
+    },
+    "casco": {
+      "hp": 0.9522,
+      "armor": 0.0478
+    },
+    "escudo": {
+      "hp": 0.9505,
+      "armor": 0.0495
+    },
+    "espada": {
+      "damage": 0.602,
+      "crit": 0.123,
+      "aps": 0.275
+    }
+  },
+  "items": [
+    {
+      "id": "boots_advanced",
+      "implied": 4.0864289828296325,
+      "fitted": 3.970743831826939,
+      "residual": 0.029134377814916013,
+      "source": "model"
+    },
+    {
+      "id": "boots_basic",
+      "implied": 2.0431973631249782,
+      "fitted": 2.0067317445425905,
+      "residual": 0.018171645852295804,
+      "source": "model"
+    },
+    {
+      "id": "boots_master",
+      "implied": 7.498274488812093,
+      "fitted": 7.856957772692,
+      "residual": -0.04565167514665314,
+      "source": "model"
+    },
+    {
+      "id": "helmet_advanced",
+      "implied": 7.626377636291852,
+      "fitted": 7.303317419731458,
+      "residual": 0.044234722112389324,
+      "source": "model"
+    },
+    {
+      "id": "helmet_basic",
+      "implied": 3.885927352779551,
+      "fitted": 3.690945456912759,
+      "residual": 0.05282708675675796,
+      "source": "model"
+    },
+    {
+      "id": "helmet_master",
+      "implied": 13.14460518023876,
+      "fitted": 14.451160537594935,
+      "residual": -0.09041179453768788,
+      "source": "model"
+    },
+    {
+      "id": "shield_advanced",
+      "implied": 9.709115667903433,
+      "fitted": 9.388729346083366,
+      "residual": 0.034124566808789725,
+      "source": "model"
+    },
+    {
+      "id": "shield_basic",
+      "implied": 5.064988224673345,
+      "fitted": 4.744869479791019,
+      "residual": 0.0674662909582131,
+      "source": "model"
+    },
+    {
+      "id": "shield_master",
+      "implied": 16.82915629328307,
+      "fitted": 18.57758977553358,
+      "residual": -0.0941151948867538,
+      "source": "model"
+    },
+    {
+      "id": "sword_advanced",
+      "implied": 22.394143862678398,
+      "fitted": 21.40930686829471,
+      "residual": 0.046000414700120285,
+      "source": "model"
+    },
+    {
+      "id": "sword_basic",
+      "implied": 8.770015807506002,
+      "fitted": 10.819820552738491,
+      "residual": -0.18944905188041072,
+      "source": "model"
+    },
+    {
+      "id": "sword_masterwork",
+      "implied": 49.9658156599686,
+      "fitted": 42.36284865785512,
+      "residual": 0.17947251525786379,
+      "source": "model"
+    }
+  ],
+  "fixed": {
+    "rarity": "pieza",
+    "slot": "main_hand"
+  },
+  "dof": 7,
+  "rmsLog": 0.09371127887457838
+}

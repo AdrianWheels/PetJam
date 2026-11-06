@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://c8x8x8x8x8"]
 
 [ext_resource type="Script" uid="uid://ctmkpw2ekolug" path="res://scripts/MaterialIcon.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://dxhjx5n1pc3ms" path="res://art/placeholders/forge/material_wood.png" id="2_w1uac"]
+[ext_resource type="Texture2D" path="res://art/stickers/sources/materials/wood.png" id="2_w1uac"]
 
 [node name="MaterialIcon" type="Control"]
 custom_minimum_size = Vector2(20, 20)

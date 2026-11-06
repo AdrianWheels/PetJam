@@ -1,0 +1,68 @@
+{
+  "$schema": "file:///D:/Proyectos/Balanza/schema/balance.schema.json",
+  "version": 1,
+  "reference": "damage",
+  "levels": [1],
+  "curve": { "type": "linexp", "base": 9.85, "growth": 1 },
+  "rarities": {
+    "basic": { "mult": 1, "quality": { "lo": 0.5769, "hi": 1.3462, "ref": 0.55 } },
+    "advanced": { "mult": 2.2464, "quality": { "lo": 0.5926, "hi": 1.3333, "ref": 0.55 } },
+    "master": { "mult": 4.519, "quality": { "lo": 0.6452, "hi": 1.2903, "ref": 0.55 } }
+  },
+  "slots": { "main_hand": 1, "off_hand": 0.4415, "head": 0.3433, "feet": 0.1865 },
+  "stats": {
+    "damage": { "step": 1, "value": 1 },
+    "hp": { "step": 1, "value": "measured", "guess": 0.15 },
+    "armor": { "step": 1, "value": "measured", "guess": 1.5 },
+    "crit": { "step": 0.01, "value": "measured", "guess": 30, "scaling": "fixed" },
+    "aps": { "step": 0.005, "value": "measured", "guess": 30, "scaling": "fixed" }
+  },
+  "scenarios": { "duel": 1 },
+  "builds": {
+    "basico": { "items": ["sword_basic", "shield_basic", "helmet_basic", "boots_basic"] },
+    "avanzado": { "items": ["sword_advanced", "shield_advanced", "helmet_advanced", "boots_advanced"] },
+    "maestro": { "items": ["sword_masterwork", "shield_master", "helmet_master", "boots_master"] }
+  },
+  "targets": [
+    {
+      "id": "escalera", "type": "order", "for": { "N": [1, 5] }, "params": { "rank": "N" },
+      "scenario": "duel", "metric": "wall", "step": { "min": 0, "max": 7 },
+      "sequence": [
+        { "build": "basico", "params": { "quality": 0.4 } }, { "build": "basico", "params": { "quality": 0.55 } },
+        { "build": "basico", "params": { "quality": 0.7 } }, { "build": "basico", "params": { "quality": 0.85 } },
+        { "build": "basico", "params": { "quality": 1 } },
+        { "build": "avanzado", "params": { "quality": 0.4 } }, { "build": "avanzado", "params": { "quality": 0.55 } },
+        { "build": "avanzado", "params": { "quality": 0.7 } }, { "build": "avanzado", "params": { "quality": 0.85 } },
+        { "build": "avanzado", "params": { "quality": 1 } },
+        { "build": "maestro", "params": { "quality": 0.4 } }, { "build": "maestro", "params": { "quality": 0.55 } },
+        { "build": "maestro", "params": { "quality": 0.7 } }, { "build": "maestro", "params": { "quality": 0.85 } },
+        { "build": "maestro", "params": { "quality": 1 } }
+      ]
+    },
+    { "id": "hito-basico", "type": "band", "for": { "N": [1, 5] }, "build": "basico", "params": { "rank": "N", "quality": 0.85 }, "scenario": "duel", "metric": "wall", "min": "50*(N-1)+21" },
+    { "id": "hito-avanzado", "type": "band", "for": { "N": [1, 5] }, "build": "avanzado", "params": { "rank": "N", "quality": 0.85 }, "scenario": "duel", "metric": "wall", "min": "50*(N-1)+41" },
+    { "id": "hito-maestro", "type": "band", "for": { "N": [1, 5] }, "build": "maestro", "params": { "rank": "N", "quality": 0.85 }, "scenario": "duel", "metric": "wall", "min": "50*N+1" },
+    { "id": "cota-basico", "type": "band", "for": { "N": [1, 5] }, "build": "basico", "params": { "rank": "N", "quality": 1 }, "scenario": "duel", "metric": "wall", "max": "50*(N-1)+41" },
+    { "id": "cota-avanzado", "type": "band", "for": { "N": [1, 5] }, "build": "avanzado", "params": { "rank": "N", "quality": 1 }, "scenario": "duel", "metric": "wall", "max": "50*N+1" },
+    { "id": "cota-maestro", "type": "band", "for": { "N": [1, 5] }, "build": "maestro", "params": { "rank": "N", "quality": 1 }, "scenario": "duel", "metric": "wall", "max": "50*N+11" }
+  ],
+  "measure": { "seeds": 1, "reference": [{ "level": 1, "build": "avanzado", "params": { "quality": 0.55, "rank": 1 } }] },
+  "fit": { "fixRarity": "basic", "fixSlot": "main_hand" },
+  "godot": {
+    "binding": "res://scripts/tests/BalanzaBinding.gd",
+    "items": {
+      "dir": "res://data/items",
+      "template": "res://data/items/sword_basic.tres",
+      "idField": "item_id",
+      "rarityField": "rarity",
+      "slotField": "equipment_slot",
+      "fields": {
+        "damage": ["base_damage_min", "base_damage_max"],
+        "hp": ["base_hp_min", "base_hp_max"],
+        "armor": ["base_armor_min", "base_armor_max"],
+        "crit": ["base_crit_min", "base_crit_max"],
+        "aps": ["base_aps_min", "base_aps_max"]
+      }
+    }
+  }
+}

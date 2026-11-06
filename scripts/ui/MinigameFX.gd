@@ -19,6 +19,15 @@ const COLORS := {
 	"Success": Color("#10b981"),     # Verde éxito
 }
 
+## Texto que se enseña para cada calidad (las claves "Perfect", "Good"… son identificadores internos).
+## Es el texto base en español: quality_text() lo traduce (locale/textos.csv).
+const QUALITY_TEXT := {
+	"Perfect": "¡Perfecto!",
+	"Good": "¡Bien!",
+	"Regular": "Regular",
+	"Miss": "Fallo",
+}
+
 # 🎯 INTENSIDADES DE EFECTOS POR CALIDAD
 const INTENSITY := {
 	"Perfect": {"pulse_scale": 1.5, "particles": 24, "shake": 0.15, "flash": 0.6},
@@ -232,6 +241,10 @@ static func create_glow_pulse(position: Vector2, color: Color, parent: Node) -> 
 	tween.tween_property(glow, "scale", Vector2.ONE * 1.3, 0.5)
 	tween.tween_property(glow, "modulate:a", 0.2, 0.5)
 	tween.chain().tween_callback(glow.queue_free)
+
+## Texto visible de una calidad en el idioma del jugador ("Perfect" → "¡Perfecto!" / "Perfect!").
+static func quality_text(quality: String) -> String:
+	return TranslationServer.translate(QUALITY_TEXT.get(quality, quality))
 
 ## Helper: obtener color por calidad
 static func get_quality_color(quality: String) -> Color:
